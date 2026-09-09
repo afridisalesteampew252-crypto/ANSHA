@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Loader2, ArrowLeft, Plus, X, Image as ImageIcon, Trash2, Upload, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,8 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Category, PartCondition, PartCompatibility, PartPhoto, PartWithRelations } from '@/lib/types';
 
-export default function EditPartPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function EditPartPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [part, setPart] = useState<PartWithRelations | null>(null);
