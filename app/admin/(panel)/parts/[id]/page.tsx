@@ -105,7 +105,7 @@ export default function EditPartPage({ params }: { params: Promise<{ id: string 
     }));
   };
 
-  const handleSave = async (publish: boolean) => {
+  const handleSave = async () => {
     if (!part) return;
     if (!name.trim()) {
       toast.error('Part name is required.');
@@ -128,7 +128,7 @@ export default function EditPartPage({ params }: { params: Promise<{ id: string 
         quantity: parseInt(quantity, 10) || 0,
         location: location.trim() || null,
         description: description.trim() || null,
-        is_published: publish,
+        is_published: isPublished,
         is_featured: isFeatured,
         show_price: showPrice,
       })
@@ -158,7 +158,7 @@ export default function EditPartPage({ params }: { params: Promise<{ id: string 
     }
 
     setLoading(false);
-    toast.success(publish ? 'Part published successfully.' : 'Part saved successfully.');
+    toast.success('Part saved successfully.');
     router.push('/admin/parts');
   };
 
@@ -225,7 +225,8 @@ export default function EditPartPage({ params }: { params: Promise<{ id: string 
   };
 
   const getPhotoUrl = (path: string) => {
-    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${path}`;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    return `${supabaseUrl}/storage/v1/object/public/part-images/${path}`;
   };
 
   if (fetching) {
@@ -460,13 +461,9 @@ export default function EditPartPage({ params }: { params: Promise<{ id: string 
         {/* Actions */}
         <div className="flex gap-3 justify-end">
           <Button variant="outline" onClick={() => router.push('/admin/parts')}>Cancel</Button>
-          <Button variant="secondary" disabled={loading} onClick={() => handleSave(false)}>
+          <Button disabled={loading} onClick={() => handleSave()}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save Draft
-          </Button>
-          <Button disabled={loading} onClick={() => handleSave(true)}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Publish Part
+            Save Changes
           </Button>
         </div>
       </div>
