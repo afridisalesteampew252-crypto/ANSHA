@@ -45,13 +45,21 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="container-page py-12">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Contact Us</h1>
-        <p className="mt-3 text-muted-foreground text-lg">
-          Have a question about a part or need help finding something? Send us a message or reach out on WhatsApp.
-        </p>
+    <div>
+      {/* Page header */}
+      <section className="border-b border-border bg-secondary/40">
+        <div className="container-page py-10">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Get in Touch</p>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Contact Us</h1>
+          <p className="mt-2 text-muted-foreground max-w-2xl">
+            Have a question about a part or need help finding something? Send us a message or reach out on WhatsApp.
+          </p>
+        </div>
+      </section>
 
+      <div className="container-page py-12">
+
+        <div className="mx-auto max-w-4xl">
         <div className="mt-8 grid gap-8 md:grid-cols-2">
           {/* Contact info */}
           <div className="space-y-6">
@@ -61,8 +69,8 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Phone className="h-5 w-5 text-primary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/50">
+                    <Phone className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">Phone</p>
@@ -70,8 +78,8 @@ export default function ContactPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Mail className="h-5 w-5 text-primary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/50">
+                    <Mail className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">Email</p>
@@ -79,8 +87,8 @@ export default function ContactPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <MapPin className="h-5 w-5 text-primary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/50">
+                    <MapPin className="h-5 w-5 text-foreground" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">Address</p>
@@ -166,6 +174,7 @@ export default function ContactPage() {
               </form>
             </CardContent>
           </Card>
+        </div>
         </div>
       </div>
     </div>

@@ -50,6 +50,14 @@ const config: Config = {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: '0 0% 100%',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          foreground: '0 0% 100%',
+        },
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -62,6 +70,10 @@ const config: Config = {
         },
       },
       keyframes: {
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(12px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
         'accordion-down': {
           from: {
             height: '0',
@@ -80,6 +92,7 @@ const config: Config = {
         },
       },
       animation: {
+        'fade-up': 'fade-up 0.5s ease-out forwards',
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },

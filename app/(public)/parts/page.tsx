@@ -153,15 +153,21 @@ export default function PartsCatalogPage() {
     (selectedCondition !== 'all' ? 1 : 0);
 
   return (
-    <div className="container-page py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Parts Catalog</h1>
-        <p className="mt-1 text-muted-foreground">
-          {loading && parts.length === 0
-            ? 'Loading parts...'
-            : `${totalCount} part${totalCount !== 1 ? 's' : ''} found`}
-        </p>
-      </div>
+    <div>
+      {/* Page header */}
+      <section className="border-b border-border bg-secondary/40">
+        <div className="container-page py-10">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Catalog</p>
+          <h1 className="text-2xl font-bold tracking-tight">Parts Catalog</h1>
+          <p className="mt-1 text-muted-foreground">
+            {loading && parts.length === 0
+              ? 'Loading parts...'
+              : `${totalCount} part${totalCount !== 1 ? 's' : ''} found`}
+          </p>
+        </div>
+      </section>
+
+      <div className="container-page py-8">
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Desktop sidebar filters */}
@@ -396,6 +402,7 @@ export default function PartsCatalogPage() {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

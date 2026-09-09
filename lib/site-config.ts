@@ -1,7 +1,9 @@
 export const siteConfig = {
-  name: 'ANSHATRADING',
+  name: 'ANSHA TRADING',
+  shortName: 'ANSHA',
+  tagline: 'Premium Automotive Spare Parts',
   description:
-    'Quality automotive spare parts. Search by part name, OEM number, or vehicle compatibility.',
+    'Quality automotive spare parts for every vehicle. Search by part name, OEM number, or vehicle compatibility.',
   whatsappNumber: '923139188872',
   whatsappDisplay: '+92 313 9188872',
   email: 'info@anshatrading.com',
@@ -18,9 +20,9 @@ export const conditionLabels: Record<string, string> = {
 };
 
 export const conditionBadgeClasses: Record<string, string> = {
-  new: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  used: 'bg-blue-100 text-blue-700 border-blue-200',
-  refurbished: 'bg-amber-100 text-amber-700 border-amber-200',
+  new: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  used: 'bg-blue-50 text-blue-700 border-blue-200',
+  refurbished: 'bg-amber-50 text-amber-700 border-amber-200',
   'for-parts': 'bg-stone-100 text-stone-600 border-stone-200',
 };
 

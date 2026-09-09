@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight, Cog } from 'lucide-react';
+import { ChevronRight, Package } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PartCard } from '@/components/public/part-card';
 import { supabase } from '@/lib/supabase/client';
@@ -72,8 +72,8 @@ export default function CategoryDetailPage({ params }: { params: { slug: string 
       </nav>
 
       <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-          <Cog className="h-6 w-6 text-primary" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-secondary/50">
+          <Package className="h-6 w-6 text-foreground" />
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{category?.name}</h1>
@@ -89,12 +89,12 @@ export default function CategoryDetailPage({ params }: { params: { slug: string 
 
       {parts.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-center">
-          <Cog className="h-12 w-12 text-muted-foreground/30" />
+          <Package className="h-12 w-12 text-muted-foreground/30" />
           <h3 className="mt-4 text-lg font-semibold">No parts in this category yet</h3>
           <p className="mt-1 text-muted-foreground">Check back soon or browse other categories.</p>
           <Link
             href="/parts"
-            className="mt-4 text-primary font-medium hover:underline"
+            className="mt-4 text-foreground font-medium hover:underline"
           >
             Browse All Parts →
           </Link>

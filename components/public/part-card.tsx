@@ -2,9 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Wrench, ShieldCheck, Truck, Headphones } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Wrench, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { conditionBadgeClasses, conditionLabels } from '@/lib/site-config';
@@ -23,7 +21,7 @@ export function PartCard({ part }: PartCardProps) {
 
   return (
     <Link href={`/parts/${part.slug}`} className="group block">
-      <Card className="overflow-hidden transition-all hover:shadow-md hover:border-primary/30">
+      <Card className="overflow-hidden transition-all hover:shadow-lg hover:border-foreground/15">
         <div className="relative aspect-square bg-secondary overflow-hidden">
           {photoUrl ? (
             <Image
@@ -31,28 +29,28 @@ export function PartCard({ part }: PartCardProps) {
               alt={part.name}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <Wrench className="h-12 w-12 text-muted-foreground/30" />
+              <Wrench className="h-12 w-12 text-muted-foreground/25" />
             </div>
           )}
-          <div className="absolute top-2 left-2">
-            <Badge variant="outline" className={`capitalize ${conditionBadgeClasses[part.condition] || ''}`}>
+          <div className="absolute top-2.5 left-2.5">
+            <Badge variant="outline" className={`capitalize backdrop-blur-sm ${conditionBadgeClasses[part.condition] || ''}`}>
               {conditionLabels[part.condition] || part.condition}
             </Badge>
           </div>
           {part.quantity > 0 && (
-            <div className="absolute top-2 right-2">
-              <Badge variant="outline" className="bg-white/90 text-emerald-700 border-emerald-200">
-                Available
+            <div className="absolute top-2.5 right-2.5">
+              <Badge variant="outline" className="bg-white/90 backdrop-blur-sm text-emerald-700 border-emerald-200">
+                In Stock
               </Badge>
             </div>
           )}
         </div>
         <CardContent className="p-4">
-          <h3 className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="font-semibold text-sm leading-snug line-clamp-2 transition-colors group-hover:text-foreground">
             {part.name}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground font-mono">{part.part_code}</p>
@@ -65,14 +63,15 @@ export function PartCard({ part }: PartCardProps) {
           )}
           <div className="mt-3 flex items-center justify-between">
             {part.show_price && part.price ? (
-              <span className="font-bold text-sm">
+              <span className="font-bold text-base">
                 {part.currency} {part.price.toLocaleString()}
               </span>
             ) : (
               <span className="text-xs text-muted-foreground">Price on inquiry</span>
             )}
-            <span className="text-xs font-medium text-primary group-hover:underline">
-              View Details →
+            <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+              View
+              <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </span>
           </div>
         </CardContent>
