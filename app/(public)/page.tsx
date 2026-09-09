@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Wrench, ShieldCheck, Truck, Headphones, ArrowRight, Cog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     (async () => {
       const [catRes, featRes, latestRes] = await Promise.all([
         supabase
@@ -42,13 +42,13 @@ export default function HomePage() {
           .limit(8),
       ]);
 
-      setCategories(catRes.data || []);
-      setFeaturedParts(featRes.data || []);
-      setLatestParts(latestRes.data || []);
+      setCategories((catRes.data || []) as Category[]);
+      setFeaturedParts((featRes.data || []) as unknown as PartWithRelations[]);
+      setLatestParts((latestRes.data || []) as unknown as PartWithRelations[]);
       setLoading(false);
       setLoaded(true);
     })();
-  });
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -25,7 +25,7 @@ export default function CategoriesPage() {
 
       if (cats) {
         const withCounts = await Promise.all(
-          cats.map(async (cat) => {
+          (cats as Category[]).map(async (cat) => {
             const { count } = await supabase
               .from('parts')
               .select('id', { count: 'exact', head: true })

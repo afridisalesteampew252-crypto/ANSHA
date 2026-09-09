@@ -20,6 +20,7 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     type: 'website',
   },
+  metadataBase: new URL(siteConfig.url),
   twitter: {
     card: 'summary_large_image',
     title: siteConfig.name,

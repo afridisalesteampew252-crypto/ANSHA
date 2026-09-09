@@ -30,7 +30,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
         return;
       }
 
-      setCategory(cat);
+      setCategory(cat as Category);
 
       const { data: partData } = await supabase
         .from('parts')
@@ -39,7 +39,7 @@ export default function CategoryDetailPage({ params }: { params: Promise<{ slug:
         .eq('category_id', cat.id)
         .order('created_at', { ascending: false });
 
-      setParts(partData || []);
+      setParts((partData || []) as unknown as PartWithRelations[]);
       setLoading(false);
     })();
   }, [slug]);

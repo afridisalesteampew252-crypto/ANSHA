@@ -43,7 +43,7 @@ export default function PartsCatalogPage() {
 
   const fetchCategories = useCallback(async () => {
     const { data } = await supabase.from('categories').select('*').order('sort_order');
-    setCategories(data || []);
+    setCategories((data || []) as Category[]);
   }, []);
 
   const fetchParts = useCallback(
@@ -95,10 +95,10 @@ export default function PartsCatalogPage() {
       const { data, count } = await dbQuery;
 
       if (reset) {
-        setParts(data || []);
+        setParts((data || []) as unknown as PartWithRelations[]);
         setPage(1);
       } else {
-        setParts((prev) => [...prev, ...(data || [])]);
+        setParts((prev) => [...prev, ...((data || []) as unknown as PartWithRelations[])]);
       }
       setTotalCount(count || 0);
       setHasMore((count || 0) > pageNum * pageSize);

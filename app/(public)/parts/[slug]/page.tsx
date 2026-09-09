@@ -52,22 +52,23 @@ export default function PartDetailPage({ params }: { params: Promise<{ slug: str
         return;
       }
 
-      const sortedPhotos = (data.part_photos || []).sort((a, b) => a.sort_order - b.sort_order);
+      const typedData = data as unknown as PartWithRelations;
+      const sortedPhotos = (typedData.part_photos || []).sort((a, b) => a.sort_order - b.sort_order);
       const coverIndex = sortedPhotos.findIndex((p) => p.is_cover);
-      setPart({ ...data, part_photos: sortedPhotos });
+      setPart({ ...typedData, part_photos: sortedPhotos });
       setSelectedImage(coverIndex >= 0 ? coverIndex : 0);
       setLoading(false);
 
       // Fetch related parts (same category, excluding this one)
-      if (data.category_id) {
+      if (typedData.category_id) {
         const { data: related } = await supabase
           .from('parts')
           .select('*, categories(*), part_photos(*), part_compatibility(*)')
           .eq('is_published', true)
-          .eq('category_id', data.category_id)
-          .neq('id', data.id)
+          .eq('category_id', typedData.category_id)
+          .neq('id', typedData.id)
           .limit(4);
-        setRelatedParts(related || []);
+        setRelatedParts((related || []) as unknown as PartWithRelations[]);
       }
     })();
   }, [slug]);
