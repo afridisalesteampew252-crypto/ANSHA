@@ -2,10 +2,10 @@ export const siteConfig = {
   name: 'ANSHATRADING',
   description:
     'Quality automotive spare parts. Search by part name, OEM number, or vehicle compatibility.',
-  whatsappNumber: '0000000000',
-  whatsappDisplay: '+00 000 000 0000',
+  whatsappNumber: '923139188872',
+  whatsappDisplay: '+92 313 9188872',
   email: 'info@anshatrading.com',
-  phone: '+00 000 000 0000',
+  phone: '+92 313 9188872',
   address: 'Industrial Area, City, Country',
   url: 'https://anshatrading.com',
 };

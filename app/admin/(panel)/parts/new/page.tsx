@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Loader2, ArrowLeft, Plus, X, Image as ImageIcon } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, Plus, X, Upload, Star, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,8 +14,14 @@ import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Category, PartCondition, PartCompatibility } from '@/lib/types';
 
+interface PendingPhoto {
+  file: File;
+  previewUrl: string;
+}
+
 export default function AddPartPage() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -34,6 +40,9 @@ export default function AddPartPage() {
   const [isPublished, setIsPublished] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
   const [showPrice, setShowPrice] = useState(false);
+
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
+  const [coverIndex, setCoverIndex] = useState(0);
 
   const [compatRows, setCompatRows] = useState<Partial<PartCompatibility>[]>([
     { make: '', model: '', variant: '', chassis_code: '', engine_code: '', year_from: undefined, year_to: undefined },
@@ -65,6 +74,31 @@ export default function AddPartPage() {
     }));
   };
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newPhotos: PendingPhoto[] = [];
+    for (let i = 0; i < files.length; i++) {
+      newPhotos.push({ file: files[i], previewUrl: URL.createObjectURL(files[i]) });
+    }
+    setPendingPhotos((prev) => [...prev, ...newPhotos]);
+    e.target.value = '';
+  };
+
+  const removePhoto = (idx: number) => {
+    setPendingPhotos((prev) => {
+      const updated = prev.filter((_, i) => i !== idx);
+      URL.revokeObjectURL(prev[idx].previewUrl);
+      if (coverIndex >= updated.length) setCoverIndex(Math.max(0, updated.length - 1));
+      if (idx < coverIndex) setCoverIndex((c) => c - 1);
+      return updated;
+    });
+  };
+
+  const moveCover = (idx: number) => {
+    setCoverIndex(idx);
+  };
+
   const generateSlug = (text: string) => {
     return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
   };
@@ -81,7 +115,6 @@ export default function AddPartPage() {
 
     const slug = generateSlug(name + '-' + Date.now().toString().slice(-6));
 
-    // Generate part code: ANS-P-XXXXXX
     const { count } = await supabase.from('parts').select('id', { count: 'exact', head: true });
     const partCode = `ANS-P-${String((count || 0) + 1).padStart(6, '0')}`;
 
@@ -114,11 +147,46 @@ export default function AddPartPage() {
       return;
     }
 
+    const partId = newPart.id;
+
+    // Upload photos
+    if (pendingPhotos.length > 0) {
+      let uploadSuccessCount = 0;
+      for (let i = 0; i < pendingPhotos.length; i++) {
+        const photo = pendingPhotos[i];
+        const ext = photo.file.name.split('.').pop();
+        const fileName = `${partCode}/${Date.now()}-${i}.${ext}`;
+
+        const { error: upErr } = await supabase.storage
+          .from('part-images')
+          .upload(fileName, photo.file);
+
+        if (upErr) {
+          toast.error(`Failed to upload photo ${i + 1}`);
+          continue;
+        }
+
+        const { error: photoErr } = await supabase
+          .from('part_photos')
+          .insert({
+            part_id: partId,
+            storage_path: fileName,
+            is_cover: i === coverIndex,
+            sort_order: i,
+          });
+
+        if (!photoErr) uploadSuccessCount++;
+      }
+      if (uploadSuccessCount > 0) {
+        toast.success(`${uploadSuccessCount} photo(s) uploaded.`);
+      }
+    }
+
     // Save compatibility entries
     const validCompat = compatRows.filter((r) => r.make && r.model);
-    if (validCompat.length > 0 && newPart) {
+    if (validCompat.length > 0) {
       const compatData = validCompat.map((r) => ({
-        part_id: newPart.id,
+        part_id: partId,
         make: r.make!,
         model: r.model!,
         variant: r.variant || null,
@@ -129,6 +197,9 @@ export default function AddPartPage() {
       }));
       await supabase.from('part_compatibility').insert(compatData);
     }
+
+    // Revoke object URLs
+    pendingPhotos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
 
     setLoading(false);
     toast.success(publish ? 'Part published successfully.' : 'Draft saved successfully.');
@@ -156,6 +227,67 @@ export default function AddPartPage() {
       </div>
 
       <form className="space-y-6">
+        {/* Photos */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Photos</CardTitle>
+                <CardDescription>Upload photos now or add them later by editing the part</CardDescription>
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoSelect} />
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-4 w-4" />
+                Select Photos
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {pendingPhotos.length === 0 ? (
+              <div
+                className="flex cursor-pointer flex-col items-center rounded-lg border-2 border-dashed border-border py-10 text-center transition-colors hover:border-primary/50"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
+                <p className="mt-3 text-sm text-muted-foreground">Click to select photos</p>
+                <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WEBP — multiple files allowed</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {pendingPhotos.map((photo, idx) => (
+                  <div key={idx} className="group relative overflow-hidden rounded-md border border-border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo.previewUrl} alt={`Preview ${idx + 1}`} className="aspect-square w-full object-cover" />
+                    {idx === coverIndex && (
+                      <div className="absolute top-1 left-1 rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
+                        Cover
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                      {idx !== coverIndex && (
+                        <Button type="button" size="icon" variant="secondary" className="h-8 w-8" onClick={() => moveCover(idx)} title="Set as cover">
+                          <Star className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button type="button" size="icon" variant="destructive" className="h-8 w-8" onClick={() => removePhoto(idx)} title="Remove">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {/* Add more button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex aspect-square items-center justify-center rounded-md border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                >
+                  <Plus className="h-6 w-6" />
+                </button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -334,14 +466,6 @@ export default function AddPartPage() {
               <Switch id="is-featured" checked={isFeatured} onCheckedChange={setIsFeatured} />
               <Label htmlFor="is-featured">Feature on homepage</Label>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Photo upload note */}
-        <Card>
-          <CardContent className="flex items-center gap-3 p-6 text-sm text-muted-foreground">
-            <ImageIcon className="h-5 w-5" />
-            Photos can be uploaded after saving the part. You'll be able to add multiple photos and set a cover image.
           </CardContent>
         </Card>
 
