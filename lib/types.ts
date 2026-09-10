@@ -120,6 +120,55 @@ export interface PartWithRelations extends Part {
   part_compatibility: PartCompatibility[];
 }
 
+export type BlogPostStatus = 'draft' | 'published' | 'archived';
+export type PartRequestStatus = 'new' | 'reviewed' | 'fulfilled' | 'closed';
+
+export interface BlogCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string | null;
+  featured_image: string | null;
+  category_id: string | null;
+  author_id: string | null;
+  status: BlogPostStatus;
+  is_featured: boolean;
+  meta_title: string | null;
+  meta_description: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPostWithCategory extends BlogPost {
+  blog_categories: BlogCategory | null;
+}
+
+export interface PartRequest {
+  id: string;
+  customer_name: string;
+  email: string | null;
+  phone: string | null;
+  vehicle_make: string | null;
+  vehicle_model: string | null;
+  vehicle_year: string | null;
+  part_name: string | null;
+  part_number: string | null;
+  message: string | null;
+  status: PartRequestStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -162,6 +211,21 @@ export interface Database {
         Row: VehiclePhoto;
         Insert: Partial<VehiclePhoto>;
         Update: Partial<VehiclePhoto>;
+      };
+      blog_categories: {
+        Row: BlogCategory;
+        Insert: Partial<BlogCategory>;
+        Update: Partial<BlogCategory>;
+      };
+      blog_posts: {
+        Row: BlogPost;
+        Insert: Partial<BlogPost>;
+        Update: Partial<BlogPost>;
+      };
+      part_requests: {
+        Row: PartRequest;
+        Insert: Partial<PartRequest>;
+        Update: Partial<PartRequest>;
       };
     };
   };
