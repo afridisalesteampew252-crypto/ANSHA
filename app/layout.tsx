@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { siteConfig } from '@/lib/site-config';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -44,6 +45,7 @@ export default function RootLayout({
           {children}
           <Toaster />
         </TooltipProvider>
+        <Analytics />
       </body>
     </html>
   );
