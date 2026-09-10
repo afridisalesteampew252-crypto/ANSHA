@@ -227,7 +227,7 @@ export default function PartDetailPage({ params }: { params: { slug: string } })
           {/* Price & availability */}
           <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
             <div>
-              {part.show_price && part.price ? (
+              {part.show_price && part.price && part.price > 0 ? (
                 <>
                   <p className="text-xs text-muted-foreground">Price</p>
                   <p className="text-2xl font-bold">
@@ -237,7 +237,7 @@ export default function PartDetailPage({ params }: { params: { slug: string } })
               ) : (
                 <>
                   <p className="text-xs text-muted-foreground">Price</p>
-                  <p className="text-lg font-semibold text-muted-foreground">Price on inquiry</p>
+                  <p className="text-2xl font-bold">Ask Price</p>
                 </>
               )}
             </div>
