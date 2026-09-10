@@ -158,7 +158,7 @@ export default function HomePage() {
           {loading ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-28 animate-pulse rounded-lg bg-muted" />
+                <div key={i} className="aspect-[4/3] animate-pulse rounded-lg bg-muted" />
               ))}
             </div>
           ) : categories.length === 0 ? (
@@ -167,11 +167,23 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {categories.slice(0, 6).map((cat) => (
                 <Link key={cat.id} href={`/categories/${cat.slug}`}>
-                  <Card className="group hover:border-foreground/20 hover:shadow-md transition-all">
-                    <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-                      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-secondary group-hover:bg-foreground group-hover:text-background transition-colors">
-                        <Package className="h-5 w-5" />
-                      </div>
+                  <Card className="group overflow-hidden hover:border-foreground/20 hover:shadow-md transition-all">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
+                      {cat.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={cat.image_url}
+                          alt={cat.name}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Package className="h-8 w-8 text-muted-foreground/25" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    </div>
+                    <CardContent className="p-3 text-center">
                       <span className="text-sm font-medium">{cat.name}</span>
                     </CardContent>
                   </Card>

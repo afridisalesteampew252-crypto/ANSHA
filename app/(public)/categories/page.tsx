@@ -55,7 +55,7 @@ export default function CategoriesPage() {
         {loading ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-xl" />
+              <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
             ))}
           </div>
         ) : categories.length === 0 ? (
@@ -70,21 +70,31 @@ export default function CategoriesPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {categories.map((cat) => (
               <Link key={cat.id} href={`/categories/${cat.slug}`}>
-                <Card className="group hover:border-foreground/20 hover:shadow-md transition-all">
-                  <CardContent className="flex items-center justify-between p-5">
-                    <div className="flex items-center gap-3.5">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary group-hover:bg-foreground group-hover:text-background transition-colors">
-                        <Package className="h-6 w-6" />
+                <Card className="group overflow-hidden hover:border-foreground/20 hover:shadow-md transition-all">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
+                    {cat.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={cat.image_url}
+                        alt={cat.name}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground/25" />
                       </div>
-                      <div>
-                        <h3 className="font-semibold">{cat.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {cat.part_count} part{cat.part_count !== 1 ? 's' : ''}
-                        </p>
-                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <h3 className="font-semibold text-white">{cat.name}</h3>
+                      <p className="text-sm text-white/70">
+                        {cat.part_count} part{cat.part_count !== 1 ? 's' : ''}
+                      </p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
-                  </CardContent>
+                    <div className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 opacity-0 transition-opacity group-hover:opacity-100">
+                      <ChevronRight className="h-4 w-4 text-foreground" />
+                    </div>
+                  </div>
                 </Card>
               </Link>
             ))}
