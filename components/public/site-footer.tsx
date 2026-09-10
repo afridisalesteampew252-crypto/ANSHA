@@ -50,6 +50,7 @@ export function SiteFooter() {
               <li><Link href="/vehicles" className="text-background/70 transition-colors hover:text-background hover:translate-x-0.5 inline-block">Vehicles</Link></li>
               <li><Link href="/categories" className="text-background/70 transition-colors hover:text-background hover:translate-x-0.5 inline-block">Categories</Link></li>
               <li><Link href="/about" className="text-background/70 transition-colors hover:text-background hover:translate-x-0.5 inline-block">About Us</Link></li>
+              <li><Link href="/blog" className="text-background/70 transition-colors hover:text-background hover:translate-x-0.5 inline-block">Blog</Link></li>
               <li><Link href="/contact" className="text-background/70 transition-colors hover:text-background hover:translate-x-0.5 inline-block">Contact</Link></li>
             </ul>
           </div>

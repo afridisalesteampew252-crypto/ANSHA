@@ -4,16 +4,25 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Search, ShieldCheck, Truck, Headphones, ArrowRight, Package,
-  CheckCircle2, Wrench, Cog, PackageCheck, Globe2, Send,
+  PackageCheck, Globe2, Send, BookOpen, Car, FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { PartCard } from '@/components/public/part-card';
 import { VehicleCard } from '@/components/public/vehicle-card';
+import { BlogCard } from '@/components/public/blog-card';
+import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
-import type { Category, PartWithRelations, VehicleWithPhotos } from '@/lib/types';
+import type { Category, PartWithRelations, VehicleWithPhotos, BlogPostWithCategory } from '@/lib/types';
+
+interface MakeStat {
+  make: string;
+  count: number;
+}
+
+const POPULAR_MAKES = ['Toyota', 'Nissan', 'Honda', 'Mazda', 'Mitsubishi', 'Subaru', 'Suzuki', 'Daihatsu'];
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,17 +30,15 @@ export default function HomePage() {
   const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>([]);
   const [latestParts, setLatestParts] = useState<PartWithRelations[]>([]);
   const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>([]);
+  const [latestPosts, setLatestPosts] = useState<BlogPostWithCategory[]>([]);
+  const [makes, setMakes] = useState<MakeStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [catRes, featRes, latestRes, featVehiclesRes] = await Promise.all([
-        supabase
-          .from('categories')
-          .select('*')
-          .order('sort_order')
-          .limit(12),
+      const [catRes, featRes, latestRes, featVehiclesRes, postsRes] = await Promise.all([
+        supabase.from('categories').select('*').order('sort_order').limit(12),
         supabase
           .from('parts')
           .select('*, categories(*), part_photos(*), part_compatibility(*)')
@@ -52,16 +59,47 @@ export default function HomePage() {
           .eq('is_featured', true)
           .order('created_at', { ascending: false })
           .limit(4),
+        supabase
+          .from('blog_posts')
+          .select('*, blog_categories(*)')
+          .eq('status', 'published')
+          .order('published_at', { ascending: false, nullsFirst: false })
+          .limit(3),
       ]);
 
       setCategories((catRes.data || []) as Category[]);
       setFeaturedParts((featRes.data || []) as unknown as PartWithRelations[]);
       setLatestParts((latestRes.data || []) as unknown as PartWithRelations[]);
       setFeaturedVehicles((featVehiclesRes.data || []) as unknown as VehicleWithPhotos[]);
+      setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
+
+      // Build makes from compatibility table
+      const { data: compatData } = await supabase
+        .from('part_compatibility')
+        .select('make')
+        .not('make', 'is', null);
+
+      if (compatData) {
+        const counts: Record<string, number> = {};
+        for (const row of compatData) {
+          if (row.make) counts[row.make] = (counts[row.make] || 0) + 1;
+        }
+        const sorted = Object.entries(counts)
+          .map(([make, count]) => ({ make, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 8);
+        setMakes(sorted);
+      }
+
       setLoading(false);
       setLoaded(true);
     })();
   }, []);
+
+  // Merge DB makes with popular makes for display when DB has no data
+  const displayMakes: MakeStat[] = makes.length > 0
+    ? makes
+    : POPULAR_MAKES.map((m) => ({ make: m, count: 0 }));
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +138,6 @@ export default function HomePage() {
               Search thousands of quality automotive spare parts by name, OEM number, or vehicle compatibility. Source, ship, and repair with confidence.
             </p>
 
-            {/* Search bar */}
             <form onSubmit={handleSearch} className="mt-8 max-w-xl">
               <div className="relative flex items-center rounded-lg bg-background p-1.5 shadow-2xl">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -152,6 +189,39 @@ export default function HomePage() {
                   <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Shop by Make */}
+      <section className="py-16 bg-secondary/30">
+        <div className="container-page">
+          <div className="mb-8 flex items-end justify-between">
+            <div>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="accent-bar" />
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">By Manufacturer</p>
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Shop Parts by Make</h2>
+            </div>
+            <Link href="/parts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              All Parts →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+            {displayMakes.map((item) => (
+              <Link key={item.make} href={`/parts?q=${encodeURIComponent(item.make)}`}>
+                <div className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-white p-4 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-card-hover">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/40 text-accent group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent transition-colors">
+                    <Car className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-semibold leading-tight">{item.make}</span>
+                  {makes.length > 0 && item.count > 0 && (
+                    <span className="text-[10px] text-muted-foreground">{item.count} part{item.count !== 1 ? 's' : ''}</span>
+                  )}
+                </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -261,7 +331,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* How we work — process */}
+      {/* How we work */}
       <section className="py-16 bg-secondary/30">
         <div className="container-page">
           <div className="mb-10 text-center">
@@ -292,7 +362,7 @@ export default function HomePage() {
                 <h3 className="mt-4 text-sm font-semibold">{item.title}</h3>
                 <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
                 {idx < 3 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-2.5 z-10 h-5 w-5 items-center justify-center">
+                  <div className="hidden lg:block absolute top-1/2 -right-2.5 z-10 h-5 w-5">
                     <ArrowRight className="h-4 w-4 text-muted-foreground/30" />
                   </div>
                 )}
@@ -348,7 +418,100 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* CTA */}
+      {/* Request a Part */}
+      <section className="py-16 bg-secondary/30">
+        <div className="container-page">
+          <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-start">
+            <div>
+              <div className="mb-1.5 flex items-center gap-2">
+                <span className="accent-bar" />
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Can't find it?</p>
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Request a Part</h2>
+              <p className="mt-3 text-muted-foreground leading-relaxed">
+                Can't find the part you need in our catalog? Tell us what you're looking for and our team will help locate it for you.
+              </p>
+              <div className="mt-6 space-y-3">
+                {[
+                  { title: 'Send your requirements', desc: 'Fill in your vehicle details and the part you need.' },
+                  { title: 'We source it for you', desc: 'Our team searches our network of suppliers.' },
+                  { title: 'We contact you', desc: 'We get back to you with availability and pricing.' },
+                ].map((step, i) => (
+                  <div key={step.title} className="flex items-start gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold mt-0.5">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold">{step.title}</p>
+                      <p className="text-xs text-muted-foreground">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-white p-6">
+              <PartRequestForm />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Latest from Blog */}
+      {!loading && latestPosts.length > 0 && (
+        <section className="py-16">
+          <div className="container-page">
+            <div className="mb-8 flex items-end justify-between">
+              <div>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <span className="accent-bar" />
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Automotive Knowledge</p>
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight">Latest From Our Blog</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Buying guides, parts knowledge and insights from the Japanese automotive market.</p>
+              </div>
+              <Link href="/blog" className="hidden sm:block text-sm font-medium text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap">
+                View All Articles →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {latestPosts.map((post) => (
+                <BlogCard key={post.id} post={post} />
+              ))}
+            </div>
+            <div className="mt-6 sm:hidden text-center">
+              <Link href="/blog">
+                <Button variant="outline">
+                  <BookOpen className="h-4 w-4" />
+                  View All Articles
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Blog empty state — only show the section shell if no posts */}
+      {loaded && !loading && latestPosts.length === 0 && (
+        <section className="py-12">
+          <div className="container-page">
+            <div className="rounded-xl border border-dashed border-border p-8 text-center">
+              <FileText className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
+              <h3 className="font-semibold">Blog coming soon</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Automotive guides and insights will be published here.
+              </p>
+              <Link href="/admin/blog/new" className="mt-3 inline-block">
+                <Button variant="outline" size="sm">
+                  <BookOpen className="h-4 w-4" />
+                  Write First Article
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Final CTA */}
       <section className="bg-foreground text-background">
         <div className="container-page flex flex-col items-center justify-between gap-6 py-14 text-center md:flex-row md:text-left">
           <div>

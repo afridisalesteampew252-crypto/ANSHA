@@ -12,6 +12,7 @@ import {
   Wrench,
   Loader2,
   Car,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
+  { href: '/admin/blog', label: 'Blog', icon: BookOpen },
 ];
 
 export default function AdminLayout({
