@@ -2,26 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, ShieldCheck, Truck, Headphones, ArrowRight, Package, Star } from 'lucide-react';
+import { Search, ShieldCheck, Truck, Headphones, ArrowRight, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { PartCard } from '@/components/public/part-card';
+import { VehicleCard } from '@/components/public/vehicle-card';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
-import type { Category, PartWithRelations } from '@/lib/types';
+import type { Category, PartWithRelations, VehicleWithPhotos } from '@/lib/types';
 
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>([]);
   const [latestParts, setLatestParts] = useState<PartWithRelations[]>([]);
+  const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>([]);
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [catRes, featRes, latestRes] = await Promise.all([
+      const [catRes, featRes, latestRes, featVehiclesRes] = await Promise.all([
         supabase
           .from('categories')
           .select('*')
@@ -40,11 +42,19 @@ export default function HomePage() {
           .eq('is_published', true)
           .order('created_at', { ascending: false })
           .limit(8),
+        supabase
+          .from('vehicles')
+          .select('*, vehicle_photos(*)')
+          .eq('is_published', true)
+          .eq('is_featured', true)
+          .order('created_at', { ascending: false })
+          .limit(4),
       ]);
 
       setCategories((catRes.data || []) as Category[]);
       setFeaturedParts((featRes.data || []) as unknown as PartWithRelations[]);
       setLatestParts((latestRes.data || []) as unknown as PartWithRelations[]);
+      setFeaturedVehicles((featVehiclesRes.data || []) as unknown as VehicleWithPhotos[]);
       setLoading(false);
       setLoaded(true);
     })();
@@ -193,6 +203,28 @@ export default function HomePage() {
           )}
         </div>
       </section>
+
+      {/* Featured vehicles */}
+      {!loading && featuredVehicles.length > 0 && (
+        <section className="py-16 bg-secondary/30">
+          <div className="container-page">
+            <div className="mb-8 flex items-end justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Showroom</p>
+                <h2 className="text-2xl font-bold tracking-tight">Featured Vehicles</h2>
+              </div>
+              <Link href="/vehicles" className="text-sm font-medium text-foreground hover:underline">
+                View All →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured parts */}
       {!loading && featuredParts.length > 0 && (
