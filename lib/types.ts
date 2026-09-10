@@ -68,6 +68,44 @@ export interface Inquiry {
   updated_at: string;
 }
 
+export interface Vehicle {
+  id: string;
+  title: string;
+  slug: string;
+  make: string;
+  model: string;
+  variant: string | null;
+  year: number | null;
+  chassis_code: string | null;
+  engine_code: string | null;
+  transmission: string | null;
+  fuel_type: string | null;
+  mileage: number | null;
+  color: string | null;
+  price: number | null;
+  currency: string;
+  show_price: boolean;
+  description: string | null;
+  location: string | null;
+  is_published: boolean;
+  is_featured: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VehiclePhoto {
+  id: string;
+  vehicle_id: string;
+  storage_path: string;
+  is_cover: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface VehicleWithPhotos extends Vehicle {
+  vehicle_photos: VehiclePhoto[];
+}
+
 export interface AdminProfile {
   id: string;
   full_name: string | null;
@@ -113,6 +151,16 @@ export interface Database {
         Row: AdminProfile;
         Insert: Partial<AdminProfile>;
         Update: Partial<AdminProfile>;
+      };
+      vehicles: {
+        Row: Vehicle;
+        Insert: Partial<Vehicle>;
+        Update: Partial<Vehicle>;
+      };
+      vehicle_photos: {
+        Row: VehiclePhoto;
+        Insert: Partial<VehiclePhoto>;
+        Update: Partial<VehiclePhoto>;
       };
     };
   };

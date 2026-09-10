@@ -11,6 +11,7 @@ import {
   LogOut,
   Wrench,
   Loader2,
+  Car,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import type { AdminProfile } from '@/lib/types';
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/parts', label: 'Parts', icon: Package },
+  { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
 ];
