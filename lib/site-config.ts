@@ -9,7 +9,7 @@ export const siteConfig = {
   email: 'info@anshatrading.com',
   phone: '+92 313 9188872',
   address: 'Industrial Area, City, Country',
-  url: 'https://anshatrading.com',
+  url: 'https://anshatradingco.netlify.app',
 };
 
 export const conditionLabels: Record<string, string> = {
