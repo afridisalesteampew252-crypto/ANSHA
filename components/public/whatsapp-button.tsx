@@ -8,7 +8,7 @@ import { siteConfig } from '@/lib/site-config';
 interface WhatsAppButtonProps {
   message?: string;
   className?: string;
-  variant?: 'default' | 'outline' | 'secondary';
+  variant?: 'default' | 'accent' | 'outline' | 'secondary';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   label?: string;
 }
