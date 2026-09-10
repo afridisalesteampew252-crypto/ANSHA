@@ -45,7 +45,10 @@ export default function CategoriesPage() {
       {/* Page header */}
       <section className="border-b border-border bg-secondary/40">
         <div className="container-page py-10">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Browse</p>
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="accent-bar" />
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Browse</p>
+          </div>
           <h1 className="text-2xl font-bold tracking-tight">Categories</h1>
           <p className="mt-1 text-muted-foreground">Browse parts by category type</p>
         </div>

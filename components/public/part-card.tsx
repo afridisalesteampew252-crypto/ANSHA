@@ -24,7 +24,7 @@ export function PartCard({ part }: PartCardProps) {
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg hover:border-foreground/15">
+    <Card className="group overflow-hidden transition-all duration-200 hover:shadow-card-hover hover:border-foreground/15">
       <Link href={`/parts/${part.slug}`} className="block">
         <div className="relative aspect-square bg-secondary overflow-hidden">
           {photoUrl ? (
@@ -57,7 +57,7 @@ export function PartCard({ part }: PartCardProps) {
 
       <CardContent className="p-4">
         <Link href={`/parts/${part.slug}`} className="block">
-          <h3 className="font-semibold text-sm leading-snug line-clamp-2 transition-colors group-hover:text-foreground">
+          <h3 className="font-semibold text-sm leading-snug line-clamp-2 transition-colors group-hover:text-accent">
             {part.name}
           </h3>
         </Link>

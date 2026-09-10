@@ -23,7 +23,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg hover:border-foreground/15">
+    <Card className="group overflow-hidden transition-all duration-200 hover:shadow-card-hover hover:border-foreground/15">
       <Link href={`/vehicles/${vehicle.slug}`} className="block">
         <div className="relative aspect-[4/3] bg-secondary overflow-hidden">
           {photoUrl ? (
@@ -41,7 +41,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           )}
           {vehicle.is_featured && (
             <div className="absolute top-2.5 left-2.5">
-              <Badge variant="outline" className="bg-foreground text-background border-foreground backdrop-blur-sm">
+              <Badge className="bg-accent text-accent-foreground border-accent backdrop-blur-sm">
                 Featured
               </Badge>
             </div>
@@ -51,7 +51,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
 
       <CardContent className="p-4">
         <Link href={`/vehicles/${vehicle.slug}`} className="block">
-          <h3 className="font-semibold text-sm leading-snug line-clamp-1 transition-colors group-hover:text-foreground">
+          <h3 className="font-semibold text-sm leading-snug line-clamp-1 transition-colors group-hover:text-accent">
             {vehicle.title}
           </h3>
         </Link>

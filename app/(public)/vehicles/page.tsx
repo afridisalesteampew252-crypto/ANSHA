@@ -57,7 +57,10 @@ export default function VehiclesPage() {
     <div>
       <section className="border-b border-border bg-secondary/40">
         <div className="container-page py-10">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Showroom</p>
+          <div className="mb-1.5 flex items-center gap-2">
+            <span className="accent-bar" />
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Showroom</p>
+          </div>
           <h1 className="text-2xl font-bold tracking-tight">Vehicles</h1>
           <p className="mt-1 text-muted-foreground">Browse our available vehicles</p>
         </div>
