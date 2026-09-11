@@ -16,7 +16,7 @@ export function SiteFooter() {
             <Link href="/" className="group flex flex-col items-start" aria-label="Ansha Trading Co. home">
               <span className="flex h-16 w-[190px] items-center overflow-hidden rounded-md bg-background transition-transform group-hover:scale-[1.02] sm:w-[220px]">
                 <Image
-                  src="/images/logo/Gemini_Generated_Image_.png"
+                  src="/images/logo/Gemini_Generated_Image_ copy 3.png"
                   alt="Ansha Trading Co."
                   width={1365}
                   height={768}

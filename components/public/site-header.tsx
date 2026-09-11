@@ -82,7 +82,7 @@ export function SiteHeader() {
             <Link href="/" className="group flex shrink-0 items-center gap-2" aria-label="Ansha Trading Co. home">
               <span className="flex h-12 w-[150px] items-center overflow-hidden rounded-md sm:w-[170px]">
                 <Image
-                  src="/images/logo/Gemini_Generated_Image_.png"
+                  src="/images/logo/Gemini_Generated_Image_ copy 3.png"
                   alt="Ansha Trading Co."
                   width={1365}
                   height={768}
