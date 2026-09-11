@@ -17,7 +17,6 @@ import {
   Palette,
   ZoomIn,
   ChevronLeft,
-  ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
 import {
   Dialog,
@@ -169,7 +168,7 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
                   onClick={(e) => { e.stopPropagation(); navigatePhoto('next'); }}
                   className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white"
                 >
-                  <ChevronRightIcon className="h-5 w-5" />
+                  <ChevronRight className="h-5 w-5" />
                 </button>
                 <div className="absolute bottom-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
                   {selectedImage + 1} / {photos.length}
@@ -308,7 +307,7 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
                   onClick={() => navigatePhoto('next')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
                 >
-                  <ChevronRightIcon className="h-6 w-6" />
+                  <ChevronRight className="h-6 w-6" />
                 </button>
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md bg-white/10 px-3 py-1 text-sm text-white">
                   {selectedImage + 1} / {photos.length}
