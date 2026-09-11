@@ -79,15 +79,21 @@ export function SiteHeader() {
         <div className="container-page">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex h-12 w-[170px] shrink-0 items-center overflow-hidden rounded-md transition-transform group-hover:scale-[1.02] sm:w-[190px]" aria-label="Ansha Trading Co. home">
-              <Image
-                src="/images/logo/Gemini_Generated_Image_.png"
-                alt="Ansha Trading Co."
-                width={1365}
-                height={768}
-                priority
-                className="h-full w-full object-contain"
-              />
+            <Link href="/" className="group flex shrink-0 items-center gap-2" aria-label="Ansha Trading Co. home">
+              <span className="flex h-12 w-[150px] items-center overflow-hidden rounded-md sm:w-[170px]">
+                <Image
+                  src="/images/logo/Gemini_Generated_Image_.png"
+                  alt="Ansha Trading Co."
+                  width={1365}
+                  height={768}
+                  priority
+                  className="h-full w-full object-contain"
+                />
+              </span>
+              <span className="hidden flex-col leading-tight sm:flex lg:min-w-[112px]">
+                <span className="text-sm font-extrabold tracking-tight text-foreground">Ansha Trading Co.</span>
+                <span className="text-[9px] font-medium uppercase tracking-[0.12em] text-muted-foreground">Parts &amp; Accessories</span>
+              </span>
             </Link>
 
             {/* Desktop search */}
