@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Search, ShieldCheck, Truck, Headphones, ArrowRight, Package,
   PackageCheck, Globe2, Send, BookOpen, Car, FileText,
@@ -15,6 +16,7 @@ import { BlogCard } from '@/components/public/blog-card';
 import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
+import { getManufacturerLogo } from '@/lib/manufacturer-logos';
 import type { Category, PartWithRelations, VehicleWithPhotos, BlogPostWithCategory } from '@/lib/types';
 
 interface MakeStat {
@@ -210,19 +212,28 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-            {displayMakes.map((item) => (
-              <Link key={item.make} href={`/parts?q=${encodeURIComponent(item.make)}`}>
-                <div className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-white p-4 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-card-hover">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/40 text-accent group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent transition-colors">
-                    <Car className="h-5 w-5" />
+            {displayMakes.map((item) => {
+              const logo = getManufacturerLogo(item.make);
+              return (
+                <Link key={item.make} href={`/parts?q=${encodeURIComponent(item.make)}`}>
+                  <div className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-white p-4 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-card-hover">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/40 group-hover:bg-accent group-hover:border-accent transition-colors">
+                      <Image
+                        src={logo}
+                        alt={`${item.make} logo`}
+                        width={40}
+                        height={40}
+                        className="h-8 w-8 object-contain"
+                      />
+                    </div>
+                    <span className="text-xs font-semibold leading-tight">{item.make}</span>
+                    {makes.length > 0 && item.count > 0 && (
+                      <span className="text-[10px] text-muted-foreground">{item.count} part{item.count !== 1 ? 's' : ''}</span>
+                    )}
                   </div>
-                  <span className="text-xs font-semibold leading-tight">{item.make}</span>
-                  {makes.length > 0 && item.count > 0 && (
-                    <span className="text-[10px] text-muted-foreground">{item.count} part{item.count !== 1 ? 's' : ''}</span>
-                  )}
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
