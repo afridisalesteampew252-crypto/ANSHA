@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Car, Gauge, Fuel, Calendar, ArrowRight, MessageCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,12 +26,11 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
       <Link href={`/vehicles/${vehicle.slug}`} className="block">
         <div className="relative aspect-[4/3] bg-secondary overflow-hidden">
           {photoUrl ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={photoUrl}
               alt={vehicle.title}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center">

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import {
   Car,
@@ -16,7 +15,15 @@ import {
   Cog,
   Hash,
   Palette,
+  ZoomIn,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,6 +92,15 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${currentPhoto.storage_path}`
     : null;
 
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  const navigatePhoto = (dir: 'prev' | 'next') => {
+    setSelectedImage((prev) => {
+      if (dir === 'prev') return prev === 0 ? photos.length - 1 : prev - 1;
+      return prev === photos.length - 1 ? 0 : prev + 1;
+    });
+  };
+
   const hasPrice = vehicle.show_price && vehicle.price && vehicle.price > 0;
 
   const specs = [
@@ -112,15 +128,16 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Image gallery */}
         <div className="space-y-4">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-secondary">
+          <div
+            className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-secondary cursor-pointer"
+            onClick={() => photoUrl && setLightboxOpen(true)}
+          >
             {photoUrl ? (
-              <Image
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 src={photoUrl}
                 alt={vehicle.title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
-                priority
+                className="h-full w-full object-cover"
               />
             ) : (
               <div className="flex h-full items-center justify-center">
@@ -131,6 +148,33 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
               <div className="absolute top-3 left-3">
                 <Badge className="bg-foreground text-background border-foreground">Featured</Badge>
               </div>
+            )}
+            {photoUrl && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/20 group-hover:opacity-100">
+                <div className="flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium shadow-lg">
+                  <ZoomIn className="h-4 w-4" />
+                  Click to view
+                </div>
+              </div>
+            )}
+            {photos.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigatePhoto('prev'); }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigatePhoto('next'); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+                <div className="absolute bottom-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
+                  {selectedImage + 1} / {photos.length}
+                </div>
+              </>
             )}
           </div>
 
@@ -146,12 +190,11 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
                       idx === selectedImage ? 'border-foreground' : 'border-border hover:border-foreground/40'
                     }`}
                   >
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={thumbUrl}
                       alt={`${vehicle.title} ${idx + 1}`}
-                      fill
-                      sizes="80px"
-                      className="object-cover"
+                      className="h-full w-full object-cover"
                     />
                   </button>
                 );
@@ -239,6 +282,42 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
           )}
         </div>
       </div>
+
+      {/* Lightbox */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="max-w-4xl border-border bg-black/95 p-0 overflow-hidden">
+          <DialogTitle className="sr-only">{vehicle.title} — Image {selectedImage + 1}</DialogTitle>
+          <div className="relative flex items-center justify-center min-h-[50vh]">
+            {photoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt={vehicle.title}
+                className="max-h-[80vh] w-auto object-contain"
+              />
+            )}
+            {photos.length > 1 && (
+              <>
+                <button
+                  onClick={() => navigatePhoto('prev')}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={() => navigatePhoto('next')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                >
+                  <ChevronRightIcon className="h-6 w-6" />
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md bg-white/10 px-3 py-1 text-sm text-white">
+                  {selectedImage + 1} / {photos.length}
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
