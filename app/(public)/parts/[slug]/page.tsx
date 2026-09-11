@@ -44,6 +44,7 @@ export default function PartDetailPage({ params }: { params: { slug: string } })
   const [loading, setLoading] = useState(true);
   const [notFoundFlag, setNotFoundFlag] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -107,7 +108,6 @@ export default function PartDetailPage({ params }: { params: { slug: string } })
   const photoUrl = currentPhoto
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${currentPhoto.storage_path}`
     : null;
-  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const navigatePhoto = (dir: 'prev' | 'next') => {
     setSelectedImage((prev) => {
