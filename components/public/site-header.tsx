@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Menu, X, Search, Phone, Mail, ChevronRight } from 'lucide-react';
@@ -78,18 +79,15 @@ export function SiteHeader() {
         <div className="container-page">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-foreground transition-transform group-hover:scale-105">
-                <svg viewBox="0 0 24 24" className="h-5 w-5 text-background" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-                </svg>
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="text-base font-extrabold tracking-tight text-foreground">
-                  ANSHA<span className="text-accent"> TRADING</span>
-                </span>
-                <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-muted-foreground">Auto Spare Parts</span>
-              </div>
+            <Link href="/" className="flex h-12 w-[170px] shrink-0 items-center overflow-hidden rounded-md transition-transform group-hover:scale-[1.02] sm:w-[190px]" aria-label="Ansha Trading Co. home">
+              <Image
+                src="/images/logo/Gemini_Generated_Image_.png"
+                alt="Ansha Trading Co."
+                width={1365}
+                height={768}
+                priority
+                className="h-full w-full object-contain"
+              />
             </Link>
 
             {/* Desktop search */}
