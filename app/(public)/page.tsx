@@ -5,11 +5,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Search, ShieldCheck, Truck, Headphones, ArrowRight, Package,
-  PackageCheck, Globe2, Send, BookOpen, Car, FileText,
+  PackageCheck, Globe2, Send, BookOpen, FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { PartCard } from '@/components/public/part-card';
 import { VehicleCard } from '@/components/public/vehicle-card';
 import { BlogCard } from '@/components/public/blog-card';
