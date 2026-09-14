@@ -13,18 +13,14 @@ export function SiteFooter() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="group flex flex-col items-start" aria-label="Ansha Trading Co. home">
-              <span className="flex h-16 w-[190px] items-center overflow-hidden rounded-md bg-background transition-transform group-hover:scale-[1.02] sm:w-[220px]">
-                <Image
-                  src="/images/logo/Gemini_Generated_Image_ copy 3.png"
-                  alt="Ansha Trading Co."
-                  width={1365}
-                  height={768}
-                  className="h-full w-full object-contain"
-                />
-              </span>
-              <span className="mt-2 text-sm font-bold tracking-tight text-background">Ansha Trading Co.</span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-background/50">Parts &amp; Accessories</span>
+            <Link href="/" className="group inline-flex items-center rounded-md bg-background p-2 transition-transform group-hover:scale-[1.02]" aria-label="Ansha Trading Co. - Parts & Accessories home">
+              <Image
+                src="/images/ansha-trading-logo.jpg"
+                alt="Ansha Trading Co. - Parts & Accessories"
+                width={888}
+                height={429}
+                className="h-16 w-auto object-contain sm:h-20"
+              />
             </Link>
             <p className="mt-4 text-sm text-background/60 leading-relaxed max-w-xs">
               {siteConfig.description}
