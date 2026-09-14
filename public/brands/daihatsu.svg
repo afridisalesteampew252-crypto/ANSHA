@@ -6,6 +6,3 @@ const DaihatsuLogo = (props: BrandLogoProps) => (
     />
   </Logo>
 );
-
-/* ISUZU */
-export
