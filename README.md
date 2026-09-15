@@ -56,7 +56,7 @@ Database changes must be added under `supabase/migrations/`, tested transactiona
 Latest migration:
 
 ```text
-supabase/migrations/20260915203621_phase_1_security_authorization_hardening.sql
+supabase/migrations/20260915203819_phase_1_security_authorization_hardening.sql
 ```
 
 ## Planned global SEO and exporter schema
