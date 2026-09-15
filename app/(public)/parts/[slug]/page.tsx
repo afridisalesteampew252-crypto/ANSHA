@@ -36,6 +36,7 @@ import { BrandLogo } from '@/components/public/brand-logo';
 import { supabase } from '@/lib/supabase/client';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
 import type { PartWithRelations } from '@/lib/types';
+import { JsonLd } from '@/components/seo/json-ld';
 
 export default function PartDetailPage(props: { params: Promise<{ slug: string }> }) {
   const params = use(props.params);
@@ -119,6 +120,26 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
 
   return (
     <div className="container-page py-8">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: part.name,
+          description: part.description || `${part.name} supplied by ${siteConfig.name}`,
+          sku: part.part_code,
+          mpn: part.part_number || part.oem_number || undefined,
+          brand: part.brand ? { '@type': 'Brand', name: part.brand } : undefined,
+          image: photos.map((photo) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${photo.storage_path}`),
+          url: `${siteConfig.url}/parts/${part.slug}`,
+          offers: {
+            '@type': 'Offer',
+            availability: part.quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            priceCurrency: part.currency,
+            price: part.show_price && part.price ? part.price : undefined,
+            url: `${siteConfig.url}/parts/${part.slug}`,
+          },
+        }}
+      />
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Home</Link>
@@ -437,4 +458,3 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
     </div>
   );
 }
-

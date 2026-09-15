@@ -1,15 +1,15 @@
 export const siteConfig = {
   name: 'ANSHA TRADING',
   shortName: 'ANSHA',
-  tagline: 'Premium Automotive Spare Parts',
+  tagline: 'Global Vehicles and Automotive Parts Exporter',
   description:
-    'Quality automotive spare parts for every vehicle. Search by part name, OEM number, or vehicle compatibility.',
+    'Global exporter of vehicles and automotive parts for all brands. Search inventory by OEM part number, chassis code, engine code, make, model, and year.',
   whatsappNumber: '923139188872',
   whatsappDisplay: '+92 313 9188872',
   email: 'info@anshatrading.com',
   phone: '+92 313 9188872',
   address: 'Industrial Area, City, Country',
-  url: 'https://anshatradingco.netlify.app',
+  url: 'https://www.anshatrading.com',
 };
 
 export const conditionLabels: Record<string, string> = {

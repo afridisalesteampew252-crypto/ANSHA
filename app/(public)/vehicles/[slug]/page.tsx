@@ -33,6 +33,7 @@ import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import type { VehicleWithPhotos } from '@/lib/types';
+import { JsonLd } from '@/components/seo/json-ld';
 
 export default function VehicleDetailPage(props: { params: Promise<{ slug: string }> }) {
   const params = use(props.params);
@@ -115,6 +116,28 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
 
   return (
     <div className="container-page py-8">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': ['Vehicle', 'Product'],
+          name: vehicle.title,
+          description: vehicle.description || `${vehicle.year || ''} ${vehicle.make} ${vehicle.model} for export`,
+          brand: { '@type': 'Brand', name: vehicle.make },
+          model: vehicle.model,
+          vehicleModelDate: vehicle.year?.toString(),
+          vehicleIdentificationNumber: vehicle.chassis_code || undefined,
+          mileageFromOdometer: vehicle.mileage != null ? { '@type': 'QuantitativeValue', value: vehicle.mileage, unitCode: 'KMT' } : undefined,
+          image: photos.map((photo) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${photo.storage_path}`),
+          url: `${siteConfig.url}/vehicles/${vehicle.slug}`,
+          offers: {
+            '@type': 'Offer',
+            availability: 'https://schema.org/InStock',
+            priceCurrency: vehicle.currency,
+            price: hasPrice ? vehicle.price : undefined,
+            url: `${siteConfig.url}/vehicles/${vehicle.slug}`,
+          },
+        }}
+      />
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground">Home</Link>
@@ -320,4 +343,3 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
     </div>
   );
 }
-
