@@ -16,8 +16,8 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Supabase authorization and storage hardening | Complete |
-| 2 | Server-side admin authentication and route protection | Next |
-| 3 | Dependency modernization, CI, and quality gates | Planned |
+| 2 | Server-side admin authentication and route protection | Complete |
+| 3 | Dependency modernization, CI, and quality gates | Next |
 | 4 | Global SEO and exporter schema for parts and vehicles | Planned |
 | 5 | Catalog, inquiries, media, and bulk import/export workflows | Planned |
 | 6 | Vercel environments, deployments, domains, and runtime validation | Blocked by connector access |
@@ -38,13 +38,26 @@ Completed on 2026-09-15.
 
 Manual security action still required: enable leaked-password protection in Supabase Auth settings.
 
+## Phase 2 completion
+
+Completed on 2026-09-15.
+
+- Added cookie-based browser and server Supabase clients with `@supabase/ssr`.
+- Added middleware token verification with `supabase.auth.getClaims()`.
+- Protected every admin panel route with both signed-token and `admin_profiles` checks.
+- Preserved refreshed session cookies and cache-control headers across redirects.
+- Redirected signed-in staff away from the login page to the dashboard.
+- Pinned `@supabase/ssr` and `@supabase/supabase-js` and updated the lockfile.
+- Passed TypeScript validation.
+- No database migration was required because this phase changed application session handling only.
+
 ## Environment variables
 
 Create a local `.env.local` file. Never commit real credentials.
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=\n# Legacy fallback only:\nNEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 Only public/publishable Supabase keys belong in browser variables. Never expose a Supabase secret or service-role key through a `NEXT_PUBLIC_` variable.
