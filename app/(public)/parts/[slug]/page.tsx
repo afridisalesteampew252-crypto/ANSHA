@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -37,7 +37,8 @@ import { supabase } from '@/lib/supabase/client';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
 import type { PartWithRelations } from '@/lib/types';
 
-export default function PartDetailPage({ params }: { params: { slug: string } }) {
+export default function PartDetailPage(props: { params: Promise<{ slug: string }> }) {
+  const params = use(props.params);
   const { slug } = params;
   const [part, setPart] = useState<PartWithRelations | null>(null);
   const [relatedParts, setRelatedParts] = useState<PartWithRelations[]>([]);
@@ -436,3 +437,4 @@ export default function PartDetailPage({ params }: { params: { slug: string } })
     </div>
   );
 }
+

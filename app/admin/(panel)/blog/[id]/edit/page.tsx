@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, Loader2 } from 'lucide-react';
@@ -9,7 +9,8 @@ import { BlogPostForm } from '@/components/admin/blog-post-form';
 import { supabase } from '@/lib/supabase/client';
 import type { BlogPost } from '@/lib/types';
 
-export default function EditBlogPostPage({ params }: { params: { id: string } }) {
+export default function EditBlogPostPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const { id } = params;
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,3 +58,4 @@ export default function EditBlogPostPage({ params }: { params: { id: string } })
     </div>
   );
 }
+

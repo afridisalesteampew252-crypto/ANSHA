@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronRight, Package } from 'lucide-react';
@@ -9,7 +9,8 @@ import { PartCard } from '@/components/public/part-card';
 import { supabase } from '@/lib/supabase/client';
 import type { Category, PartWithRelations } from '@/lib/types';
 
-export default function CategoryDetailPage({ params }: { params: { slug: string } }) {
+export default function CategoryDetailPage(props: { params: Promise<{ slug: string }> }) {
+  const params = use(props.params);
   const { slug } = params;
   const [category, setCategory] = useState<Category | null>(null);
   const [parts, setParts] = useState<PartWithRelations[]>([]);
@@ -109,3 +110,4 @@ export default function CategoryDetailPage({ params }: { params: { slug: string 
     </div>
   );
 }
+

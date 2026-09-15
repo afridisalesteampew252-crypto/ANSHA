@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -14,7 +14,8 @@ import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import type { BlogPostWithCategory, BlogCategory } from '@/lib/types';
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
+export default function BlogPostPage(props: { params: Promise<{ slug: string }> }) {
+  const params = use(props.params);
   const { slug } = params;
   const [post, setPost] = useState<BlogPostWithCategory | null>(null);
   const [related, setRelated] = useState<BlogPostWithCategory[]>([]);
@@ -265,3 +266,4 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
     </div>
   );
 }
+
