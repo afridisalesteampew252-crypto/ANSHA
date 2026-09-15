@@ -17,6 +17,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 2 | Server-side admin authentication and route protection | Complete |
 | 3 | Next.js modernization, Vercel cleanup, CI, and quality gates | Complete |
 | 4 | Global SEO and exporter schema for parts and vehicles | Complete |
+| 4B | Premium responsive homepage, logo, brand directory, and UX fixes | Complete |
 | 5 | Admin customers/users, Excel imports, and ZIP image matching | Next |
 | 6 | Vercel environments, deployments, domains, and runtime validation | In progress |
 | 7 | Final testing, performance, SEO validation, backups, and launch | Planned |
@@ -85,6 +86,19 @@ Completed on 2026-09-15.
 - Passed ESLint, TypeScript, and the complete Next.js production build.
 
 Post-migration advisors reported no new Phase 4 security defect. Existing follow-up items are the intentionally callable `is_admin()` authorization helper, leaked-password protection in Auth settings, one missing blog author foreign-key index, and RLS policy performance consolidation.
+
+## Phase 4B: premium homepage and brand experience
+
+Completed on 2026-09-15.
+
+- Integrated the supplied ANSHA Trading Co. LLC-FZ logo into the responsive header.
+- Repositioned the homepage around global vehicle and all-brand automotive-parts exports.
+- Added clear vehicle and parts calls to action and improved high-intent search messaging.
+- Added a responsive directory for all 55 currently supported manufacturers across seven regions.
+- Fixed manufacturer aliases so multi-word brand names resolve to the correct logo asset.
+- Replaced full-page browser navigation with Next.js client routing in homepage and header search.
+- Preserved lightweight responsive layouts and lazy-loaded non-critical manufacturer artwork.
+- Re-ran lint, TypeScript, lockfile installation, and the full production build successfully.
 
 ## Phase 5: admin and bulk catalog workflows
 
