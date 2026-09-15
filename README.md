@@ -49,6 +49,7 @@ Completed on 2026-09-15.
 - Added a Suspense boundary for the parts catalog search-parameter route.
 - Removed the Netlify build plugin and obsolete Next.js lint bypass.
 - Added ESLint flat configuration, TypeScript validation, and GitHub Actions CI.
+- Configured Vercel to use the lockfile with legacy peer-dependency resolution for React 19 compatibility with the existing UI component set.
 - Added a checked-in environment-variable template and Node.js 20.9+ requirement.
 - Passed lint, typecheck, and production build validation across all application routes.
 - No database migration was required.
