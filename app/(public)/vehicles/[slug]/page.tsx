@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -34,7 +34,8 @@ import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import type { VehicleWithPhotos } from '@/lib/types';
 
-export default function VehicleDetailPage({ params }: { params: { slug: string } }) {
+export default function VehicleDetailPage(props: { params: Promise<{ slug: string }> }) {
+  const params = use(props.params);
   const { slug } = params;
   const [vehicle, setVehicle] = useState<VehicleWithPhotos | null>(null);
   const [loading, setLoading] = useState(true);
@@ -319,3 +320,4 @@ export default function VehicleDetailPage({ params }: { params: { slug: string }
     </div>
   );
 }
+

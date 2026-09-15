@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, SlidersHorizontal, X, Wrench } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -23,7 +23,7 @@ const sortOptions = [
   { value: 'price-high', label: 'Price: High to Low' },
 ];
 
-export default function PartsCatalogPage() {
+function PartsCatalogPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -408,5 +408,20 @@ export default function PartsCatalogPage() {
       </div>
       </div>
     </div>
+  );
+}
+
+export default function PartsCatalogRoute() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container-page py-12">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="mt-6 h-96 w-full" />
+        </div>
+      }
+    >
+      <PartsCatalogPage />
+    </Suspense>
   );
 }
