@@ -71,6 +71,16 @@ const manufacturerLogos: Record<string, string> = {
   mahindra: '/brands/mahindra.svg',
 };
 
+export const SUPPORTED_MANUFACTURERS = [
+  'Toyota', 'Nissan', 'Honda', 'Mazda', 'Mitsubishi', 'Subaru', 'Suzuki', 'Daihatsu',
+  'Lexus', 'Isuzu', 'Hino', 'Infiniti', 'Acura', 'BMW', 'Mercedes-Benz', 'Audi',
+  'Volkswagen', 'Porsche', 'Volvo', 'Polestar', 'Peugeot', 'Renault', 'Citroen', 'Fiat',
+  'Ferrari', 'Lamborghini', 'Maserati', 'Alfa Romeo', 'Skoda', 'SEAT', 'Cupra', 'MINI',
+  'Bentley', 'Rolls-Royce', 'Aston Martin', 'Hyundai', 'Kia', 'Genesis', 'Ford',
+  'Chevrolet', 'Jeep', 'Tesla', 'Cadillac', 'GMC', 'Land Rover', 'Jaguar', 'MG',
+  'BYD', 'Geely', 'Chery', 'Haval', 'Great Wall', 'Changan', 'Tata', 'Mahindra',
+] as const;
+
 const manufacturerAliases: Record<string, string> = {
   'land cruiser': 'toyota',
   'land cruser': 'toyota',
@@ -82,8 +92,12 @@ const manufacturerAliases: Record<string, string> = {
   benz: 'mercedes',
 
   vw: 'volkswagen',
+  'alfa romeo': 'alfa-romeo',
+  'aston martin': 'aston-martin',
+  'rolls royce': 'rolls-royce',
 
   landrover: 'land-rover',
+  'land rover': 'land-rover',
   'range rover': 'land-rover',
 
   'nissan motor': 'nissan',
