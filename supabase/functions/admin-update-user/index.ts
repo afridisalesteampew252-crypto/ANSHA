@@ -8,11 +8,12 @@ Deno.serve(async (request) => {
     const url = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const authHeader = request.headers.get('Authorization') || '';
-    const admin = createClient(url, serviceKey, { global: { headers: { Authorization: authHeader } } });
+    const serviceClient = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const callerClient = createClient(url, serviceKey, { global: { headers: { Authorization: authHeader } }, auth: { persistSession: false, autoRefreshToken: false } });
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await admin.auth.getUser(token);
+    const { data: { user }, error: authError } = await callerClient.auth.getUser(token);
     if (authError || !user) throw new Error('Authentication required.');
-    const { data: caller } = await admin.from('admin_profiles').select('role').eq('id', user.id).maybeSingle();
+    const { data: caller } = await serviceClient.from('admin_profiles').select('role').eq('id', user.id).maybeSingle();
     if (caller?.role !== 'admin') throw new Error('Administrator access required.');
 
     const { id, email, password, full_name, role, avatar_url } = await request.json();
@@ -21,10 +22,10 @@ Deno.serve(async (request) => {
 
     const authUpdate: { email: string; password?: string; email_confirm: boolean } = { email, email_confirm: true };
     if (password) authUpdate.password = password;
-    const { error: updateError } = await admin.auth.admin.updateUserById(id, authUpdate);
+    const { error: updateError } = await serviceClient.auth.admin.updateUserById(id, authUpdate);
     if (updateError) throw updateError;
 
-    const { error: profileError } = await admin
+    const { error: profileError } = await serviceClient
       .from('admin_profiles')
       .update({ email, full_name, role, avatar_url: avatar_url || null })
       .eq('id', id);
