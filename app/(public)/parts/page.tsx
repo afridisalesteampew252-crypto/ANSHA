@@ -12,6 +12,7 @@ import { PartCard } from '@/components/public/part-card';
 import { supabase } from '@/lib/supabase/client';
 import type { Category, PartWithRelations, PartCondition } from '@/lib/types';
 import { conditionLabels } from '@/lib/site-config';
+import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const conditions: PartCondition[] = ['new', 'used', 'refurbished', 'for-parts'];
@@ -35,6 +36,7 @@ function PartsCatalogPage() {
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [selectedCondition, setSelectedCondition] = useState<string>(searchParams.get('condition') || 'all');
+  const [selectedBrand, setSelectedBrand] = useState(searchParams.get('brand') || 'all');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -73,6 +75,10 @@ function PartsCatalogPage() {
         dbQuery = dbQuery.eq('condition', selectedCondition);
       }
 
+      if (selectedBrand !== 'all') {
+        dbQuery = dbQuery.eq('brand', selectedBrand);
+      }
+
       switch (sortBy) {
         case 'oldest':
           dbQuery = dbQuery.order('created_at', { ascending: true });
@@ -104,7 +110,7 @@ function PartsCatalogPage() {
       setHasMore((count || 0) > pageNum * pageSize);
       setLoading(false);
     },
-    [query, selectedCategory, selectedCondition, sortBy, page, categories]
+    [query, selectedCategory, selectedCondition, selectedBrand, sortBy, page, categories]
   );
 
   useEffect(() => {
@@ -115,6 +121,7 @@ function PartsCatalogPage() {
     setQuery(searchParams.get('q') || '');
     setSelectedCategory(searchParams.get('category') || 'all');
     setSelectedCondition(searchParams.get('condition') || 'all');
+    setSelectedBrand(searchParams.get('brand') || 'all');
     setSortBy(searchParams.get('sort') || 'newest');
   }, [searchParams]);
 
@@ -122,7 +129,7 @@ function PartsCatalogPage() {
     if (categories.length > 0 || !selectedCategory || selectedCategory === 'all') {
       fetchParts(true);
     }
-  }, [query, selectedCategory, selectedCondition, sortBy, fetchParts, categories.length]);
+  }, [query, selectedCategory, selectedCondition, selectedBrand, sortBy, fetchParts, categories.length]);
 
   const updateUrl = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -143,6 +150,7 @@ function PartsCatalogPage() {
     setQuery('');
     setSelectedCategory('all');
     setSelectedCondition('all');
+    setSelectedBrand('all');
     setSortBy('newest');
     router.push('/parts');
   };
@@ -150,7 +158,8 @@ function PartsCatalogPage() {
   const activeFilterCount =
     (query ? 1 : 0) +
     (selectedCategory !== 'all' ? 1 : 0) +
-    (selectedCondition !== 'all' ? 1 : 0);
+    (selectedCondition !== 'all' ? 1 : 0) +
+    (selectedBrand !== 'all' ? 1 : 0);
 
   return (
     <div>
@@ -176,6 +185,18 @@ function PartsCatalogPage() {
         {/* Desktop sidebar filters */}
         <aside className="hidden lg:block w-64 shrink-0">
           <div className="sticky top-24 space-y-6">
+            <div>
+              <h3 className="mb-3 text-sm font-semibold">Brand</h3>
+              <Select value={selectedBrand} onValueChange={(v) => updateUrl('brand', v)}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="All brands" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Brands</SelectItem>
+                  {SUPPORTED_MANUFACTURERS.map((brand) => (
+                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <h3 className="mb-3 text-sm font-semibold">Category</h3>
               <Select value={selectedCategory} onValueChange={(v) => updateUrl('category', v)}>

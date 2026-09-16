@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
+import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { toast } from 'sonner';
 import type { Category, PartCondition, PartCompatibility } from '@/lib/types';
 
@@ -311,8 +312,15 @@ export default function AddPartPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="part-brand">Brand</Label>
-                <Input id="part-brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Toyota, Bosch" />
+                <Label>Brand</Label>
+                <Select value={brand} onValueChange={setBrand}>
+                  <SelectTrigger><SelectValue placeholder="Select brand" /></SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_MANUFACTURERS.map((manufacturer) => (
+                      <SelectItem key={manufacturer} value={manufacturer}>{manufacturer}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
