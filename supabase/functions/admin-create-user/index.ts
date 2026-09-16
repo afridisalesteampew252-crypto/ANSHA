@@ -18,7 +18,7 @@ Deno.serve(async (request) => {
     if (!email || !password || !full_name || !['admin', 'staff'].includes(role)) throw new Error('Invalid user details.');
     const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
     if (createError) throw createError;
-    const { error: profileError } = await admin.from('admin_profiles').insert({ id: created.user.id, full_name, role });
+    const { error: profileError } = await admin.from('admin_profiles').insert({ id: created.user.id, email, full_name, role });
     if (profileError) { await admin.auth.admin.deleteUser(created.user.id); throw profileError; }
     return Response.json({ id: created.user.id }, { headers: cors });
   } catch (error) {

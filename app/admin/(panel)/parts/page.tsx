@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Plus, Pencil, Eye, Wrench } from 'lucide-react';
+import { Search, Plus, Pencil, Eye, Trash2, Wrench } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +57,20 @@ export default function AdminPartsPage() {
     const cover = part.part_photos?.find((p) => p.is_cover) || part.part_photos?.[0];
     if (!cover) return null;
     return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${cover.storage_path}`;
+  };
+
+  const deletePart = async (part: PartWithRelations) => {
+    if (!window.confirm(`Delete ${part.name} permanently? This cannot be undone.`)) return;
+    const photoPaths = (part.part_photos || []).map((photo) => photo.storage_path);
+    const { error } = await supabase.from('parts').delete().eq('id', part.id);
+    if (error) {
+      window.alert(`Unable to delete part: ${error.message}`);
+      return;
+    }
+    if (photoPaths.length > 0) {
+      await supabase.storage.from('part-images').remove(photoPaths);
+    }
+    await fetchParts(true);
   };
 
   return (
@@ -161,6 +175,9 @@ export default function AdminPartsPage() {
                           Edit
                         </Button>
                       </Link>
+                      <Button variant="ghost" size="icon" onClick={() => deletePart(part)} title="Delete part" aria-label={`Delete ${part.name}`}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
