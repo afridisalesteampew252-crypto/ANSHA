@@ -12,8 +12,10 @@ import {
   Pencil,
   Plus,
   Reply,
+  Save,
   Search,
   Send,
+  Settings,
   Trash2,
   Users,
   X,
@@ -138,6 +140,10 @@ export default function ChatPage() {
   const [groupName, setGroupName] = useState('');
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [manageName, setManageName] = useState('');
+  const [managePeople, setManagePeople] = useState<string[]>([]);
+  const [managing, setManaging] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async (userId: string) => {
@@ -364,12 +370,49 @@ export default function ChatPage() {
     });
   }
 
+  function openGroupManager() {
+    if (!activeConversation) return;
+    setManageName(activeConversation.name || '');
+    setManagePeople(activeConversation.participants.map((participant) => participant.user_id));
+    setManageOpen(true);
+  }
+
+  async function saveGroup() {
+    if (!activeConversation || !manageName.trim() || managing) return;
+    setManaging(true);
+    setNotice('');
+    try {
+      const existing = activeConversation.participants.map((participant) => participant.user_id);
+      const additions = managePeople.filter((id) => !existing.includes(id));
+      const removals = existing.filter((id) => id !== currentUserId && !managePeople.includes(id));
+      const { error: conversationError } = await supabase.from('chat_conversations').update({ name: manageName.trim(), updated_at: new Date().toISOString() }).eq('id', activeConversation.id);
+      if (conversationError) throw conversationError;
+      if (additions.length) {
+        const { error } = await supabase.from('chat_participants').insert(additions.map((userId) => ({ conversation_id: activeConversation.id, user_id: userId })));
+        if (error) throw error;
+      }
+      if (removals.length) {
+        const { error } = await supabase.from('chat_participants').delete().eq('conversation_id', activeConversation.id).in('user_id', removals);
+        if (error) throw error;
+      }
+      setManageOpen(false);
+      await loadConversations(currentUserId);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to update the group.');
+    } finally {
+      setManaging(false);
+    }
+  }
+
   if (loading) {
     return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>;
   }
 
   const colleagues = Object.values(profiles).filter((profile) => profile.id !== currentUserId);
   const replyMessage = replyTo || editing;
+  const canManageGroup = Boolean(activeConversation
+    && activeConversation.conversation_type === 'group'
+    && (activeConversation.created_by === currentUserId || activeConversation.participants.some((participant) => participant.user_id === currentUserId && participant.is_manager)));
 
   return (
     <div className="-m-4 flex h-[calc(100vh-8rem)] min-h-[620px] overflow-hidden border-y bg-card md:-m-8 md:h-[calc(100vh-5rem)]">
@@ -407,7 +450,8 @@ export default function ChatPage() {
             <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4">
               <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setActiveId('')} aria-label="Back to conversations"><X className="h-4 w-4" /></Button>
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">{activeConversation.conversation_type === 'group' ? <Users className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}</span>
-              <div className="min-w-0"><h2 className="truncate font-semibold">{activeTitle(activeConversation)}</h2><p className="text-xs text-muted-foreground">{activeConversation.participants.length} participant{activeConversation.participants.length === 1 ? '' : 's'}</p></div>
+              <div className="min-w-0 flex-1"><h2 className="truncate font-semibold">{activeTitle(activeConversation)}</h2><p className="text-xs text-muted-foreground">{activeConversation.participants.length} participant{activeConversation.participants.length === 1 ? '' : 's'}</p></div>
+              {canManageGroup ? <Button variant="ghost" size="icon" onClick={openGroupManager} aria-label="Manage group"><Settings className="h-4 w-4" /></Button> : null}
             </header>
             <ScrollArea className="flex-1 bg-secondary/10 p-4">
               {loadingMessages ? <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : (
@@ -457,6 +501,15 @@ export default function ChatPage() {
           {createType === 'group' ? <div className="space-y-1.5"><Label htmlFor="group-name">Group name</Label><Input id="group-name" value={groupName} onChange={(event) => setGroupName(event.target.value)} placeholder="Shipping Operations" maxLength={120} /></div> : null}
           <div className="space-y-2"><Label>Select {createType === 'direct' ? 'a colleague' : 'participants'}</Label><ScrollArea className="h-64 rounded-lg border">{colleagues.map((profile) => <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent"><Checkbox checked={selectedPeople.includes(profile.id)} onCheckedChange={() => togglePerson(profile.id)} /><span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{initials(profile)}</span><span><span className="block text-sm font-medium">{personName(profile)}</span><span className="block text-xs text-muted-foreground">{profile.email}</span></span></label>)}</ScrollArea></div>
           <DialogFooter><Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button><Button disabled={creating || !selectedPeople.length || (createType === 'group' && !groupName.trim())} onClick={() => void createConversation()}>{creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Create</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={manageOpen} onOpenChange={setManageOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader><DialogTitle>Manage group</DialogTitle><DialogDescription>Rename the group and choose who can participate.</DialogDescription></DialogHeader>
+          <div className="space-y-1.5"><Label htmlFor="manage-group-name">Group name</Label><Input id="manage-group-name" value={manageName} onChange={(event) => setManageName(event.target.value)} maxLength={120} /></div>
+          <div className="space-y-2"><Label>Participants</Label><ScrollArea className="h-64 rounded-lg border">{colleagues.map((profile) => <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent"><Checkbox checked={managePeople.includes(profile.id)} onCheckedChange={() => setManagePeople((current) => current.includes(profile.id) ? current.filter((id) => id !== profile.id) : [...current, profile.id])} /><span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{initials(profile)}</span><span><span className="block text-sm font-medium">{personName(profile)}</span><span className="block text-xs text-muted-foreground">{profile.email}</span></span></label>)}</ScrollArea><p className="text-xs text-muted-foreground">You remain in groups that you manage.</p></div>
+          <DialogFooter><Button variant="outline" onClick={() => setManageOpen(false)}>Cancel</Button><Button disabled={managing || !manageName.trim()} onClick={() => void saveGroup()}>{managing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save group</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
