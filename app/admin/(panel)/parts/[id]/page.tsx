@@ -25,6 +25,8 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
+  const [photoActionId, setPhotoActionId] = useState<string | null>(null);
 
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -169,6 +171,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
     if (!files || files.length === 0 || !part) return;
 
     setUploading(true);
+    setUploadProgress({ completed: 0, total: files.length });
     const partCode = part.part_code;
     let successCount = 0;
 
@@ -183,6 +186,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
       if (upErr) {
         toast.error(`Failed to upload ${file.name}`);
+        setUploadProgress((progress) => ({ ...progress, completed: progress.completed + 1 }));
         continue;
       }
 
@@ -201,6 +205,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
         setPhotos((prev) => [...prev, photoData as PartPhoto]);
         successCount++;
       }
+      setUploadProgress((progress) => ({ ...progress, completed: progress.completed + 1 }));
     }
 
     setUploading(false);
@@ -212,17 +217,40 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
   const setCoverPhoto = async (photoId: string) => {
     if (!part) return;
-    await supabase.from('part_photos').update({ is_cover: false }).eq('part_id', part.id);
-    await supabase.from('part_photos').update({ is_cover: true }).eq('id', photoId);
+    setPhotoActionId(photoId);
+    const { error: clearError } = await supabase.from('part_photos').update({ is_cover: false }).eq('part_id', part.id);
+    const { error: coverError } = await supabase.from('part_photos').update({ is_cover: true }).eq('id', photoId);
+    setPhotoActionId(null);
+    if (clearError || coverError) {
+      toast.error('Could not update the cover photo.');
+      return;
+    }
     setPhotos((prev) => prev.map((p) => ({ ...p, is_cover: p.id === photoId })));
     toast.success('Cover photo updated.');
   };
 
   const deletePhoto = async (photoId: string, storagePath: string) => {
     if (!part) return;
-    await supabase.storage.from('part-images').remove([storagePath]);
-    await supabase.from('part_photos').delete().eq('id', photoId);
-    setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+    if (!window.confirm('Delete this photo permanently?')) return;
+    setPhotoActionId(photoId);
+    const deletedPhoto = photos.find((photo) => photo.id === photoId);
+    const { error: storageError } = await supabase.storage.from('part-images').remove([storagePath]);
+    const { error: databaseError } = await supabase.from('part_photos').delete().eq('id', photoId);
+    if (storageError || databaseError) {
+      setPhotoActionId(null);
+      toast.error('Could not delete the photo.');
+      return;
+    }
+    const remainingPhotos = photos.filter((photo) => photo.id !== photoId);
+    setPhotos(remainingPhotos);
+    if (deletedPhoto?.is_cover && remainingPhotos[0]) {
+      const replacement = remainingPhotos[0];
+      const { error: replacementError } = await supabase.from('part_photos').update({ is_cover: true }).eq('id', replacement.id);
+      if (!replacementError) {
+        setPhotos((current) => current.map((photo) => ({ ...photo, is_cover: photo.id === replacement.id })));
+      }
+    }
+    setPhotoActionId(null);
     toast.success('Photo deleted.');
   };
 
@@ -242,7 +270,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => router.push('/admin/parts')}>
           <ArrowLeft className="h-5 w-5" />
@@ -255,48 +283,57 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
       <div className="space-y-6">
         {/* Photos */}
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-lg">Photos</CardTitle>
-                <CardDescription>Upload and manage part images</CardDescription>
+                <CardDescription>{photos.length} {photos.length === 1 ? 'image' : 'images'} · Choose one cover image for listings</CardDescription>
               </div>
               <label>
                 <input type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
                 <Button type="button" variant="outline" size="sm" asChild disabled={uploading}>
                   <span>
                     {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    Upload Photos
+                    {uploading ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}` : 'Upload Photos'}
                   </span>
                 </Button>
               </label>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <label className="flex cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-4 py-5 text-center transition-colors hover:border-foreground/30 hover:bg-secondary/60">
+              <input type="file" accept="image/png,image/jpeg,image/webp" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
+              {uploading ? <Loader2 className="h-6 w-6 animate-spin text-accent" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+              <span>
+                <span className="block text-sm font-semibold">{uploading ? 'Uploading your images…' : 'Select multiple product photos'}</span>
+                <span className="block text-xs text-muted-foreground">PNG, JPG or WEBP · clear square images work best</span>
+              </span>
+            </label>
             {photos.length === 0 ? (
-              <div className="flex flex-col items-center py-8 text-center">
+              <div className="flex flex-col items-center rounded-xl bg-secondary/30 py-10 text-center">
                 <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
                 <p className="mt-3 text-sm text-muted-foreground">No photos uploaded yet.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                {photos.map((photo) => (
-                  <div key={photo.id} className="group relative overflow-hidden rounded-md border border-border">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {photos.map((photo, index) => (
+                  <div key={photo.id} className={`group overflow-hidden rounded-xl border bg-secondary/30 ${photo.is_cover ? 'border-accent ring-2 ring-accent/15' : 'border-border'}`}>
+                    <div className="relative aspect-square">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={getPhotoUrl(photo.storage_path)} alt="Part photo" className="aspect-square w-full object-cover" />
+                    <img src={getPhotoUrl(photo.storage_path)} alt={`${name || 'Part'} photo ${index + 1}`} className="h-full w-full object-contain p-2" />
                     {photo.is_cover && (
-                      <div className="absolute top-1 left-1 rounded bg-primary px-1.5 py-0.5 text-xs font-medium text-primary-foreground">
-                        Cover
+                      <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-accent px-2 py-1 text-[11px] font-semibold text-accent-foreground shadow-sm">
+                        <Star className="h-3 w-3 fill-current" /> Cover
                       </div>
                     )}
-                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                      {!photo.is_cover && (
-                        <Button size="icon" variant="secondary" className="h-8 w-8" onClick={() => setCoverPhoto(photo.id)} title="Set as cover">
-                          <Star className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button size="icon" variant="destructive" className="h-8 w-8" onClick={() => deletePhoto(photo.id, photo.storage_path)} title="Delete">
+                    </div>
+                    <div className="flex items-center justify-between gap-2 border-t border-border p-2">
+                      <Button type="button" size="sm" variant="ghost" className="h-8 flex-1 justify-start px-2 text-xs" disabled={photo.is_cover || photoActionId === photo.id} onClick={() => setCoverPhoto(photo.id)}>
+                        {photoActionId === photo.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Star className="h-3.5 w-3.5" />}
+                        {photo.is_cover ? 'Cover image' : 'Make cover'}
+                      </Button>
+                      <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" disabled={photoActionId === photo.id} onClick={() => deletePhoto(photo.id, photo.storage_path)} aria-label={`Delete photo ${index + 1}`}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

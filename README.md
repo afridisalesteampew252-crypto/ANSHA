@@ -142,5 +142,8 @@ In progress from 2026-09-16.
 - Added `npm run verify:release` to run lint, TypeScript, brand-asset coverage, and the complete production build as one release gate.
 - Fixed administrator user creation and editing by separating caller JWT validation from service-role Auth administration in both Edge Functions.
 - Deployed `admin-create-user` version 3 and `admin-update-user` version 2; avatar creation now proceeds after successful user creation.
+- Redesigned the public part gallery with uncropped product imagery, touch-friendly controls, scrolling thumbnails, an accessible full-screen viewer, and image-count badges on catalog cards.
+- Redesigned the admin part photo manager with multi-image upload progress, responsive previews, persistent cover controls, deletion feedback, and automatic cover reassignment.
+- Added persistent light/dark mode with system-theme support and public/admin header toggles, while replacing hard-coded light header surfaces with theme-aware tokens.
 - Confirmed no Vercel runtime errors during the audit window.
-- No database migration was required because this phase changes deployment and runtime configuration only.
+- No database migration was required for these UI changes because they use the existing part-photo schema and storage bucket.
