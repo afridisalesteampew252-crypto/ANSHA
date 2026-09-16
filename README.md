@@ -20,7 +20,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 4B | Premium responsive homepage, logo, brand directory, and UX fixes | Complete |
 | 5 | Admin customers/users, Excel imports, and ZIP image matching | Complete |
 | 6 | Vercel environments, deployments, domains, and runtime validation | Complete |
-| 7 | Final testing, performance, SEO validation, backups, and launch | Next |
+| 7 | Final testing, performance, SEO validation, backups, and launch | In progress |
 
 ## Phase 1 completion
 
@@ -131,5 +131,14 @@ Completed on 2026-09-16.
 - Added private profile-image storage with administrator-only signed reads, uploads, replacements, and deletions.
 - Added confirmed part deletion with associated Storage image cleanup.
 - Applied migration `20260916091902_phase_6_admin_profile_management` and deployed the administrator user-update function.
+
+## Phase 7: final launch validation
+
+In progress from 2026-09-16.
+
+- Restored local SVG assets for all 55 supported manufacturers plus an accessible default automotive mark.
+- Added maintained official vector marks where available and deterministic branded wordmark badges where an official distributable mark is unavailable.
+- Added `npm run verify:brands` to fail CI/release checks when a mapped logo is missing, empty, malformed, or lacks an accessible name.
+- Added `npm run verify:release` to run lint, TypeScript, brand-asset coverage, and the complete production build as one release gate.
 - Confirmed no Vercel runtime errors during the audit window.
 - No database migration was required because this phase changes deployment and runtime configuration only.
