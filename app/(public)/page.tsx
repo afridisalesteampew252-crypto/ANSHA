@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   Search, ShieldCheck, Truck, Headphones, ArrowRight, Package,
   PackageCheck, Globe2, Send, BookOpen, FileText,
@@ -16,7 +17,7 @@ import { BlogCard } from '@/components/public/blog-card';
 import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
-import { getManufacturerLogo } from '@/lib/manufacturer-logos';
+import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import type { Category, PartWithRelations, VehicleWithPhotos, BlogPostWithCategory } from '@/lib/types';
 
 interface MakeStat {
@@ -24,9 +25,8 @@ interface MakeStat {
   count: number;
 }
 
-const POPULAR_MAKES = ['Toyota', 'Nissan', 'Honda', 'Mazda', 'Mitsubishi', 'Subaru', 'Suzuki', 'Daihatsu'];
-
 export default function HomePage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>([]);
@@ -98,15 +98,16 @@ export default function HomePage() {
     })();
   }, []);
 
-  // Merge DB makes with popular makes for display when DB has no data
-  const displayMakes: MakeStat[] = makes.length > 0
-    ? makes
-    : POPULAR_MAKES.map((m) => ({ make: m, count: 0 }));
+  const makeCounts = new Map(makes.map((item) => [item.make.toLowerCase(), item.count]));
+  const displayMakes: MakeStat[] = SUPPORTED_MANUFACTURERS.map((make) => ({
+    make,
+    count: makeCounts.get(make.toLowerCase()) || 0,
+  }));
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/parts?q=${encodeURIComponent(searchQuery.trim())}`;
+      router.push(`/parts?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -130,14 +131,14 @@ export default function HomePage() {
           <div className="max-w-2xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-background/15 bg-background/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-background/70 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              Trusted Automotive Spare Parts Supplier
+              Global vehicle and automotive parts exporter
             </div>
             <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-balance md:text-5xl lg:text-6xl">
-              Find the Right Part<br />
-              <span className="text-background/40">for Your Vehicle</span>
+              Vehicles and Parts<br />
+              <span className="text-background/50">for Every Market</span>
             </h1>
             <p className="mt-5 text-lg text-background/60 leading-relaxed max-w-xl">
-              Search thousands of quality automotive spare parts by name, OEM number, or vehicle compatibility. Source, ship, and repair with confidence.
+              Source inspected vehicles and quality parts for all major brands. Search by OEM number, chassis code, engine code, make, model, or year—and export worldwide with confidence.
             </p>
 
             <form onSubmit={handleSearch} className="mt-8 max-w-xl">
@@ -155,6 +156,11 @@ export default function HomePage() {
                 </Button>
               </div>
             </form>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link href="/vehicles"><Button variant="accent" size="lg">Browse Vehicles <ArrowRight className="h-4 w-4" /></Button></Link>
+              <Link href="/parts"><Button variant="outline" size="lg" className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white">Browse Parts</Button></Link>
+            </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
               <span className="text-background/40">Popular:</span>
@@ -205,13 +211,14 @@ export default function HomePage() {
                 <span className="accent-bar" />
                 <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">By Manufacturer</p>
               </div>
-              <h2 className="text-2xl font-bold tracking-tight">Shop Parts by Make</h2>
+              <h2 className="text-2xl font-bold tracking-tight">All Supported Vehicle Brands</h2>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Search genuine, OEM, aftermarket, new, used, and refurbished parts across Japanese, European, Korean, American, British, Chinese, and Indian brands.</p>
             </div>
             <Link href="/parts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               All Parts →
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">
             {displayMakes.map((item) => {
               const logo = getManufacturerLogo(item.make);
               return (
@@ -227,7 +234,7 @@ export default function HomePage() {
                       />
                     </div>
                     <span className="text-xs font-semibold leading-tight">{item.make}</span>
-                    {makes.length > 0 && item.count > 0 && (
+                    {item.count > 0 && (
                       <span className="text-[10px] text-muted-foreground">{item.count} part{item.count !== 1 ? 's' : ''}</span>
                     )}
                   </div>

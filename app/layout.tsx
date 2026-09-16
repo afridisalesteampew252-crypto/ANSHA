@@ -6,17 +6,18 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { siteConfig } from '@/lib/site-config';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { JsonLd } from '@/components/seo/json-ld';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: {
-    default: `${siteConfig.name} — Automotive Spare Parts`,
+    default: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
   openGraph: {
-    title: `${siteConfig.name} — Automotive Spare Parts`,
+    title: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`,
     description: siteConfig.description,
     url: siteConfig.url,
     siteName: siteConfig.name,
@@ -32,6 +33,7 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  alternates: { canonical: '/' },
 };
 
 export default function RootLayout({
@@ -42,6 +44,30 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <JsonLd
+          data={[
+            {
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: siteConfig.name,
+              url: siteConfig.url,
+              email: siteConfig.email,
+              telephone: siteConfig.phone,
+              description: siteConfig.description,
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: siteConfig.name,
+              url: siteConfig.url,
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: `${siteConfig.url}/parts?q={search_term_string}`,
+                'query-input': 'required name=search_term_string',
+              },
+            },
+          ]}
+        />
         <TooltipProvider delayDuration={200}>
           {children}
           <Toaster />

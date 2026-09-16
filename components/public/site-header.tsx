@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Menu, X, Search, Phone, Mail, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,6 +22,7 @@ const navLinks = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
@@ -41,7 +42,7 @@ export function SiteHeader() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/parts?q=${encodeURIComponent(searchQuery.trim())}`;
+      router.push(`/parts?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -83,10 +84,10 @@ export function SiteHeader() {
               <Image
                 src="/images/ansha-trading-logo.jpg"
                 alt="Ansha Trading Co. - Parts & Accessories"
-                width={888}
-                height={429}
+                width={320}
+                height={159}
                 priority
-                className="h-11 w-auto object-contain sm:h-12 md:h-14"
+                className="h-12 w-auto max-w-[180px] object-contain sm:max-w-[220px] md:h-14"
               />
             </Link>
 

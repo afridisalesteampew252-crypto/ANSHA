@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm ci --legacy-peer-deps",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://ydrnilquojvalhgifest.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_aVnBb-IFMi4WI3jyhyR4yw_eI2KD7PS"
+  }
+}
