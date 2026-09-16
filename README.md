@@ -18,8 +18,8 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 3 | Next.js modernization, Vercel cleanup, CI, and quality gates | Complete |
 | 4 | Global SEO and exporter schema for parts and vehicles | Complete |
 | 4B | Premium responsive homepage, logo, brand directory, and UX fixes | Complete |
-| 5 | Admin customers/users, Excel imports, and ZIP image matching | Next |
-| 6 | Vercel environments, deployments, domains, and runtime validation | In progress |
+| 5 | Admin customers/users, Excel imports, and ZIP image matching | Complete |
+| 6 | Vercel environments, deployments, domains, and runtime validation | Next |
 | 7 | Final testing, performance, SEO validation, backups, and launch | Planned |
 
 ## Phase 1 completion
@@ -69,7 +69,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migration: `supabase/migrations/20260915214041_phase_4_global_seo_exporter_schema.sql`.
+Latest migration: `supabase/migrations/20260916082738_phase_5_admin_bulk_workflows.sql`.
 
 ## Phase 4: global SEO and exporter schema
 
@@ -102,9 +102,14 @@ Completed on 2026-09-15.
 
 ## Phase 5: admin and bulk catalog workflows
 
-- Add and manage customers from the admin dashboard.
-- Invite and manage approved admin users without exposing service-role credentials to the browser.
-- Import parts and vehicles from validated Excel templates with preview, error reporting, and idempotent upserts.
-- Upload vehicle-image ZIP files matched by chassis number.
-- Upload part-image ZIP files matched by part number.
-- Record import jobs, unmatched files, duplicates, and row-level failures for safe retry and audit.
+Completed on 2026-09-16.
+
+- Added protected customer creation, search, listing, and deletion in the admin dashboard.
+- Added secure administrator-created Supabase users with passwords through the JWT-protected `admin-create-user` Edge Function.
+- Added Parts and Vehicles Excel `.xlsx` preview and import with required-field validation and idempotent updates.
+- Added vehicle-image ZIP uploads matched by normalized chassis number.
+- Added part-image ZIP uploads matched by normalized part number.
+- Added `import_jobs` and `import_rows` audit records with success/failure totals and row-level error messages.
+- Added admin-only RLS policies for customers and import audit data.
+- Applied and verified migration `20260916082738_phase_5_admin_bulk_workflows` and deployed Edge Function version 1.
+- Added pinned `read-excel-file` and `fflate` dependencies and updated the lockfile.

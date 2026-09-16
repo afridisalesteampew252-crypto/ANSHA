@@ -13,6 +13,9 @@ import {
   Loader2,
   Car,
   BookOpen,
+  Users,
+  UserCog,
+  Upload,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,6 +29,9 @@ const navItems = [
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
+  { href: '/admin/customers', label: 'Customers', icon: Users },
+  { href: '/admin/users', label: 'Users', icon: UserCog },
+  { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
 ];
 
 export default function AdminLayout({

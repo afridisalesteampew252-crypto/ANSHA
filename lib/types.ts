@@ -114,6 +114,36 @@ export interface AdminProfile {
   created_at: string;
 }
 
+export interface Customer {
+  id: string;
+  customer_code: string;
+  full_name: string;
+  company_name: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  country: string | null;
+  address: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ImportJob {
+  id: string;
+  import_type: 'parts_excel' | 'vehicles_excel' | 'parts_images_zip' | 'vehicles_images_zip';
+  file_name: string;
+  status: 'processing' | 'completed' | 'completed_with_errors' | 'failed';
+  total_rows: number;
+  successful_rows: number;
+  failed_rows: number;
+  created_by: string;
+  error_summary: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
 export interface PartWithRelations extends Part {
   categories: Category | null;
   part_photos: PartPhoto[];
@@ -226,6 +256,16 @@ export interface Database {
         Row: PartRequest;
         Insert: Partial<PartRequest>;
         Update: Partial<PartRequest>;
+      };
+      customers: {
+        Row: Customer;
+        Insert: Partial<Customer>;
+        Update: Partial<Customer>;
+      };
+      import_jobs: {
+        Row: ImportJob;
+        Insert: Partial<ImportJob>;
+        Update: Partial<ImportJob>;
       };
     };
   };
