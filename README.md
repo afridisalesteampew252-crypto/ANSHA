@@ -137,8 +137,10 @@ Completed on 2026-09-16.
 In progress from 2026-09-16.
 
 - Restored local SVG assets for all 55 supported manufacturers plus an accessible default automotive mark.
-- Added maintained official vector marks where available and deterministic branded wordmark badges where an official distributable mark is unavailable.
+- Added genuine manufacturer artwork for all supported brands from the curated MIT-licensed automotive logo dataset, with the current Hino mark sourced from Wikimedia Commons.
 - Added `npm run verify:brands` to fail CI/release checks when a mapped logo is missing, empty, malformed, or lacks an accessible name.
 - Added `npm run verify:release` to run lint, TypeScript, brand-asset coverage, and the complete production build as one release gate.
+- Fixed administrator user creation and editing by separating caller JWT validation from service-role Auth administration in both Edge Functions.
+- Deployed `admin-create-user` version 3 and `admin-update-user` version 2; avatar creation now proceeds after successful user creation.
 - Confirmed no Vercel runtime errors during the audit window.
 - No database migration was required because this phase changes deployment and runtime configuration only.
