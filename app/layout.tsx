@@ -7,6 +7,7 @@ import { siteConfig } from '@/lib/site-config';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JsonLd } from '@/components/seo/json-ld';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -42,10 +43,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <JsonLd
-          data={[
+        <ThemeProvider>
+          <JsonLd
+            data={[
             {
               '@context': 'https://schema.org',
               '@type': 'Organization',
@@ -66,14 +68,15 @@ export default function RootLayout({
                 'query-input': 'required name=search_term_string',
               },
             },
-          ]}
-        />
-        <TooltipProvider delayDuration={200}>
-          {children}
-          <Toaster />
-        </TooltipProvider>
-        <Analytics />
-        <SpeedInsights />
+            ]}
+          />
+          <TooltipProvider delayDuration={200}>
+            {children}
+            <Toaster />
+          </TooltipProvider>
+          <Analytics />
+          <SpeedInsights />
+        </ThemeProvider>
       </body>
     </html>
   );

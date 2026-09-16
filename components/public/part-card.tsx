@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Wrench, ArrowRight, MessageCircle } from 'lucide-react';
+import { Wrench, ArrowRight, MessageCircle, Images } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BrandLogo } from '@/components/public/brand-logo';
@@ -26,13 +26,13 @@ export function PartCard({ part }: PartCardProps) {
   return (
     <Card className="group overflow-hidden transition-all duration-200 hover:shadow-card-hover hover:border-foreground/15">
       <Link href={`/parts/${part.slug}`} className="block">
-        <div className="relative aspect-square bg-secondary overflow-hidden">
+        <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary to-background">
           {photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={photoUrl}
               alt={part.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="h-full w-full object-contain p-3 transition-transform duration-500 group-hover:scale-[1.03]"
             />
           ) : (
             <div className="flex h-full items-center justify-center">
@@ -49,6 +49,12 @@ export function PartCard({ part }: PartCardProps) {
               <Badge variant="outline" className="bg-white/90 backdrop-blur-sm text-emerald-700 border-emerald-200">
                 In Stock
               </Badge>
+            </div>
+          )}
+          {(part.part_photos?.length || 0) > 1 && (
+            <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-full bg-foreground/75 px-2 py-1 text-[11px] font-medium text-background backdrop-blur-sm">
+              <Images className="h-3 w-3" />
+              {part.part_photos?.length}
             </div>
           )}
         </div>

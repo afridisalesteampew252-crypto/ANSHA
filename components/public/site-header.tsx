@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { siteConfig } from '@/lib/site-config';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -73,8 +74,8 @@ export function SiteHeader() {
         className={cn(
           'border-b transition-all duration-200',
           scrolled
-            ? 'border-border bg-white/95 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/90'
-            : 'border-border/60 bg-white/80 backdrop-blur-sm'
+            ? 'border-border bg-background/95 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-background/90'
+            : 'border-border/60 bg-background/80 backdrop-blur-sm'
         )}
       >
         <div className="container-page">
@@ -132,18 +133,21 @@ export function SiteHeader() {
                   Find Parts
                 </Button>
               </Link>
+              <ThemeToggle className="ml-1" />
             </nav>
 
             {/* Mobile toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="Toggle menu"
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            <div className="flex items-center md:hidden">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label="Toggle menu"
+              >
+                {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -155,7 +159,7 @@ export function SiteHeader() {
             className="fixed inset-0 top-[60px] z-40 bg-foreground/20 md:hidden"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="md:hidden border-b border-border bg-white shadow-lg animate-slide-down">
+          <div className="border-b border-border bg-background shadow-lg animate-slide-down md:hidden">
             <div className="container-page py-4 space-y-3">
               <form onSubmit={handleSearch}>
                 <div className="relative">

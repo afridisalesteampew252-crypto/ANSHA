@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile } from '@/lib/types';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -85,7 +86,7 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-secondary/20">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-white">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex">
         <div className="flex h-16 items-center gap-2 border-b border-border px-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
             <Wrench className="h-4 w-4 text-primary-foreground" />
@@ -128,20 +129,23 @@ export default function AdminLayout({
 
       {/* Mobile top bar */}
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-border bg-white px-4 md:hidden">
+        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-4 md:hidden">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
               <Wrench className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="text-sm font-bold">ANSHA<span className="text-primary">TRADING</span></span>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center">
+            <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Sign out">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </header>
 
         {/* Mobile nav */}
-        <nav className="flex border-b border-border bg-white px-2 md:hidden overflow-x-auto">
+        <nav className="flex overflow-x-auto border-b border-border bg-card px-2 md:hidden">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
