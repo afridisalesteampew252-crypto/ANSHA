@@ -262,6 +262,12 @@ export default function ChatPage() {
         void loadConversations(currentUserId);
         if (changed.conversation_id === activeId) void loadMessages(activeId, currentUserId);
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_participants' }, () => {
+        void loadConversations(currentUserId);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_conversations' }, () => {
+        void loadConversations(currentUserId);
+      })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [activeId, currentUserId, loadConversations, loadMessages]);
