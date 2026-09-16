@@ -57,7 +57,7 @@ Completed on 2026-09-15.
 
 ## Vercel status
 
-The Vercel project is connected. Production is healthy, but the latest preview deployment failed because Preview does not contain `NEXT_PUBLIC_SUPABASE_URL` and a Supabase publishable/anon key. Add the variables to Preview, Production, and Development before Phase 6 validation.
+The Vercel project is connected, and Production and Preview deployments are healthy. Browser-safe Supabase public configuration is available during Vercel builds; secret and service-role keys remain server-only. Phase 6 will validate environment coverage, domains, and runtime behavior end to end.
 
 ## Environment variables
 
