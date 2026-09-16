@@ -116,19 +116,11 @@ export default function HomePage() {
     <>
       {/* Hero */}
       <section className="relative overflow-hidden bg-foreground text-background">
-        <div className="absolute inset-0 opacity-15">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://images.pexels.com/photos/5158155/pexels-photo-5158155.jpeg?auto=compress&cs=tinysrgb&w=1920"
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        </div>
         <div className="absolute inset-0 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/50" />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground via-transparent to-foreground/20" />
         <div className="absolute inset-0 bg-grid-dark opacity-20" />
 
-        <div className="relative container-page py-20 md:py-28">
+        <div className="relative container-page py-14 md:py-20">
           <div className="max-w-2xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-background/15 bg-background/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-background/70 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
