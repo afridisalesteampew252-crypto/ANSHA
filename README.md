@@ -23,6 +23,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 7 | Final testing, performance, SEO validation, backups, and launch | In progress |
 | 9A | Admin operations shell, account menu, access visibility, and quick actions | Complete |
 | 9B | Secure internal chat, file sharing, groups, and internal mail | Planned |
+| 9C | Automatic catalog image optimization for direct and ZIP uploads | Complete |
 
 ## Phase 1 completion
 
@@ -185,3 +186,14 @@ Backend foundation applied on 2026-09-16; interface work is in progress.
 - Restricted all communication tables to authenticated ANSHA workspace users with membership- and recipient-aware policies.
 - Added covering indexes for conversation, message, sender, recipient, reply, and attachment relationships.
 - Applied migrations `20260916154000_phase_9_internal_communications` and `20260916154500_phase_9_internal_communications_indexes` to the linked Supabase project.
+
+## Phase 9C: catalog image optimization
+
+Completed on 2026-09-16.
+
+- Added automatic in-browser resizing for all new part and vehicle images, including ZIP image imports.
+- Constrained the longest image edge to 1,920 pixels and converted uploads to WebP at a balanced quality setting.
+- Added descriptive, normalized image filenames built from part or vehicle identifiers.
+- Added one-year immutable Storage cache metadata for faster repeat visits and lower transfer overhead.
+- Kept original aspect ratios and high-quality resampling while reducing oversized uploads before network transfer.
+- No database migration is required because the existing photo records and Storage buckets continue to store the optimized asset paths.

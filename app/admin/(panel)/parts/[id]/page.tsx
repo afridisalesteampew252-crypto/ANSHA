@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase/client';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
+import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
 import type { Category, PartCondition, PartCompatibility, PartPhoto, PartWithRelations } from '@/lib/types';
 
@@ -177,12 +178,12 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const ext = file.name.split('.').pop();
-      const fileName = `${partCode}/${Date.now()}-${i}.${ext}`;
+      const optimized = await compressCatalogImage(file, `${brand || 'part'}-${partNumber || partCode}-${photos.length + i + 1}`);
+      const fileName = `${partCode}/${Date.now()}-${optimized.file.name}`;
 
       const { error: upErr } = await supabase.storage
         .from('part-images')
-        .upload(fileName, file);
+        .upload(fileName, optimized.file, { contentType: 'image/webp', cacheControl: '31536000' });
 
       if (upErr) {
         toast.error(`Failed to upload ${file.name}`);
