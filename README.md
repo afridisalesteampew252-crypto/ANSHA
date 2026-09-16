@@ -127,5 +127,9 @@ Completed on 2026-09-16.
 - Added `npm run verify:deployment -- <https-url>` to check public routes, SEO files, health, security headers, and unauthenticated admin protection.
 - Replaced free-text part brands with the shared supported-manufacturer dropdown on create and edit screens.
 - Connected homepage brand cards and catalog filtering directly to each published part's saved brand.
+- Added editable customer and staff profiles, including names, contact details, roles, account email, optional password changes, and profile pictures.
+- Added private profile-image storage with administrator-only signed reads, uploads, replacements, and deletions.
+- Added confirmed part deletion with associated Storage image cleanup.
+- Applied migration `20260916091902_phase_6_admin_profile_management` and deployed the administrator user-update function.
 - Confirmed no Vercel runtime errors during the audit window.
 - No database migration was required because this phase changes deployment and runtime configuration only.
