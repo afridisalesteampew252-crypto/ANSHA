@@ -125,5 +125,7 @@ Completed on 2026-09-16.
 - Added no-store and no-index headers for protected admin routes.
 - Added `/api/health` to validate build configuration and live Supabase REST connectivity without exposing credentials.
 - Added `npm run verify:deployment -- <https-url>` to check public routes, SEO files, health, security headers, and unauthenticated admin protection.
+- Replaced free-text part brands with the shared supported-manufacturer dropdown on create and edit screens.
+- Connected homepage brand cards and catalog filtering directly to each published part's saved brand.
 - Confirmed no Vercel runtime errors during the audit window.
 - No database migration was required because this phase changes deployment and runtime configuration only.
