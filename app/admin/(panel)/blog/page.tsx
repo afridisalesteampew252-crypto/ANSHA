@@ -111,7 +111,7 @@ export default function AdminBlogPage() {
           </Link>
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-white overflow-hidden">
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>

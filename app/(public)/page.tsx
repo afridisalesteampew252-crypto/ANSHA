@@ -180,7 +180,7 @@ export default function HomePage() {
       </section>
 
       {/* Trust badges */}
-      <section className="border-b border-border bg-white">
+      <section className="border-b border-border bg-card">
         <div className="container-page py-8">
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -224,7 +224,7 @@ export default function HomePage() {
               const logo = getManufacturerLogo(item.make);
               return (
                 <Link key={item.make} href={`/parts?brand=${encodeURIComponent(item.make)}`}>
-                  <div className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-white p-4 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-card-hover">
+                  <div className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-4 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-card-hover">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/40 group-hover:bg-accent group-hover:border-accent transition-colors">
                       <Image
                         src={logo}
@@ -371,7 +371,7 @@ export default function HomePage() {
               { icon: PackageCheck, step: '03', title: 'Confirmation', desc: 'We confirm the part, condition, and price with you before packing.' },
               { icon: Truck, step: '04', title: 'Dispatch & Shipping', desc: 'Your order is packed securely and dispatched to your location.' },
             ].map((item, idx) => (
-              <div key={item.step} className="relative rounded-xl border border-border bg-white p-5 transition-shadow hover:shadow-card-hover">
+              <div key={item.step} className="relative rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-card-hover">
                 <div className="flex items-start justify-between">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/50 text-accent">
                     <item.icon className="h-5 w-5" />
@@ -468,7 +468,7 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
-            <div className="rounded-xl border border-border bg-white p-6">
+            <div className="rounded-xl border border-border bg-card p-6">
               <PartRequestForm />
             </div>
           </div>

@@ -152,7 +152,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
   return (
     <div className="max-w-4xl space-y-6">
       {/* Title + Slug */}
-      <div className="space-y-4 rounded-xl border border-border bg-white p-5">
+      <div className="space-y-4 rounded-xl border border-border bg-card p-5">
         <div className="space-y-2">
           <Label htmlFor="title">Title *</Label>
           <Input
@@ -186,7 +186,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main content */}
         <div className="space-y-4 lg:col-span-2">
-          <div className="rounded-xl border border-border bg-white p-5 space-y-4">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="excerpt">Excerpt</Label>
               <Textarea
@@ -214,7 +214,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
           </div>
 
           {/* SEO */}
-          <div className="rounded-xl border border-border bg-white p-5 space-y-4">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-4">
             <h3 className="font-semibold text-sm">SEO</h3>
             <div className="space-y-2">
               <Label htmlFor="meta-title">Meta Title</Label>
@@ -243,7 +243,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Actions */}
-          <div className="rounded-xl border border-border bg-white p-5 space-y-3">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="font-semibold text-sm">Publish</h3>
             <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
               <SelectTrigger>
@@ -286,7 +286,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
           </div>
 
           {/* Category */}
-          <div className="rounded-xl border border-border bg-white p-5 space-y-3">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="font-semibold text-sm">Category</h3>
             <Select value={categoryId || 'none'} onValueChange={(v) => setCategoryId(v === 'none' ? '' : v)}>
               <SelectTrigger>
@@ -314,7 +314,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
           </div>
 
           {/* Featured image */}
-          <div className="rounded-xl border border-border bg-white p-5 space-y-3">
+          <div className="rounded-xl border border-border bg-card p-5 space-y-3">
             <h3 className="font-semibold text-sm">Featured Image</h3>
             {imageUrl ? (
               <div className="relative">

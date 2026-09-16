@@ -17,6 +17,7 @@ import {
   Palette,
   ZoomIn,
   ChevronLeft,
+  Images,
 } from 'lucide-react';
 import {
   Dialog,
@@ -151,15 +152,24 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
         {/* Image gallery */}
         <div className="space-y-4">
           <div
-            className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-secondary cursor-pointer"
+            className="group relative aspect-[4/3] cursor-zoom-in overflow-hidden rounded-xl border border-border bg-gradient-to-br from-secondary/80 to-background shadow-sm"
             onClick={() => photoUrl && setLightboxOpen(true)}
+            role={photoUrl ? 'button' : undefined}
+            tabIndex={photoUrl ? 0 : undefined}
+            onKeyDown={(event) => {
+              if (photoUrl && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                setLightboxOpen(true);
+              }
+            }}
+            aria-label={photoUrl ? `Open ${vehicle.title} image ${selectedImage + 1} in full screen` : undefined}
           >
             {photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={photoUrl}
                 alt={vehicle.title}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain p-2 sm:p-4"
               />
             ) : (
               <div className="flex h-full items-center justify-center">
@@ -172,8 +182,8 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
               </div>
             )}
             {photoUrl && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/20 group-hover:opacity-100">
-                <div className="flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium shadow-lg">
+              <div className="absolute inset-0 hidden items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/15 group-hover:opacity-100 sm:flex">
+                <div className="flex items-center gap-2 rounded-lg bg-background/95 px-3 py-1.5 text-sm font-medium shadow-lg">
                   <ZoomIn className="h-4 w-4" />
                   Click to view
                 </div>
@@ -183,13 +193,15 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); navigatePhoto('prev'); }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white"
+                  className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-md transition hover:bg-background sm:opacity-0 sm:group-hover:opacity-100"
+                  aria-label="Previous photo"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); navigatePhoto('next'); }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white"
+                  className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-md transition hover:bg-background sm:opacity-0 sm:group-hover:opacity-100"
+                  aria-label="Next photo"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -201,22 +213,24 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           </div>
 
           {photos.length > 1 && (
-            <div className="grid grid-cols-5 gap-2">
+            <div className="flex snap-x gap-2 overflow-x-auto pb-2" aria-label="Vehicle photo thumbnails">
               {photos.map((photo, idx) => {
                 const thumbUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${photo.storage_path}`;
                 return (
                   <button
                     key={photo.id}
                     onClick={() => setSelectedImage(idx)}
-                    className={`relative aspect-square overflow-hidden rounded-md border-2 transition-all ${
-                      idx === selectedImage ? 'border-foreground' : 'border-border hover:border-foreground/40'
+                    aria-label={`Show photo ${idx + 1} of ${photos.length}`}
+                    aria-current={idx === selectedImage ? 'true' : undefined}
+                    className={`relative aspect-square w-20 shrink-0 snap-start overflow-hidden rounded-lg border-2 bg-secondary/60 transition-all sm:w-24 ${
+                      idx === selectedImage ? 'border-accent ring-2 ring-accent/15' : 'border-border hover:border-foreground/40'
                     }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={thumbUrl}
                       alt={`${vehicle.title} ${idx + 1}`}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain p-1"
                     />
                   </button>
                 );
@@ -307,15 +321,15 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
 
       {/* Lightbox */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-4xl border-border bg-black/95 p-0 overflow-hidden">
+        <DialogContent className="h-[92vh] max-w-[96vw] overflow-hidden border-white/10 bg-black/95 p-0 sm:max-w-6xl">
           <DialogTitle className="sr-only">{vehicle.title} — Image {selectedImage + 1}</DialogTitle>
-          <div className="relative flex items-center justify-center min-h-[50vh]">
+          <div className="relative flex h-full min-h-[50vh] flex-col items-center justify-center p-4 pb-24 sm:p-8 sm:pb-28">
             {photoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={photoUrl}
                 alt={vehicle.title}
-                className="max-h-[80vh] w-auto object-contain"
+                className="h-full min-h-0 w-full object-contain"
               />
             )}
             {photos.length > 1 && (
@@ -323,17 +337,35 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
                 <button
                   onClick={() => navigatePhoto('prev')}
                   className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  aria-label="Previous photo"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
                   onClick={() => navigatePhoto('next')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  aria-label="Next photo"
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-md bg-white/10 px-3 py-1 text-sm text-white">
-                  {selectedImage + 1} / {photos.length}
+                <div className="absolute bottom-3 left-3 right-3 flex items-center gap-3 overflow-x-auto rounded-xl bg-white/10 p-2 backdrop-blur-sm">
+                  <div className="flex shrink-0 items-center gap-1.5 px-1 text-xs text-white/80">
+                    <Images className="h-4 w-4" />
+                    {selectedImage + 1}/{photos.length}
+                  </div>
+                  {photos.map((photo, index) => (
+                    <button
+                      key={photo.id}
+                      type="button"
+                      onClick={() => setSelectedImage(index)}
+                      aria-label={`Show photo ${index + 1}`}
+                      aria-current={index === selectedImage ? 'true' : undefined}
+                      className={`h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 bg-white/5 ${index === selectedImage ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${photo.storage_path}`} alt="" className="h-full w-full object-contain" />
+                    </button>
+                  ))}
                 </div>
               </>
             )}

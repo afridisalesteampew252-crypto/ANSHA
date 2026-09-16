@@ -147,3 +147,12 @@ In progress from 2026-09-16.
 - Added persistent light/dark mode with system-theme support and public/admin header toggles, while replacing hard-coded light header surfaces with theme-aware tokens.
 - Confirmed no Vercel runtime errors during the audit window.
 - No database migration was required for these UI changes because they use the existing part-photo schema and storage bucket.
+
+## Phase 8: theme and gallery consistency
+
+In progress from 2026-09-16.
+
+- Extended dark-mode-safe surfaces across homepage brand cards, trust content, process cards, request forms, featured articles, and admin blog screens.
+- Brought the public vehicle gallery to feature parity with the parts gallery: uncropped media, keyboard and touch controls, scrolling thumbnails, and a full-screen thumbnail rail.
+- Confirmed the production deployment for Phase 7B is ready and the Vercel runtime error scan is clean.
+- No database migration is required because this phase changes presentation and interaction behavior only.
