@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "verify:deployment": "node scripts/verify-deployment.mjs"
+    "verify:deployment": "node scripts/verify-deployment.mjs",
+    "verify:brands": "node scripts/verify-brand-assets.mjs",
+    "verify:release": "npm run lint && npm run typecheck && npm run verify:brands && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
