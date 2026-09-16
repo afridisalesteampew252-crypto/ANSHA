@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { compressCatalogImage } from '@/lib/catalog-image';
 
 type Entity = 'parts' | 'vehicles';
 type PreviewRow = Record<string, string | number | boolean | null>;
@@ -89,8 +90,10 @@ export default function ImportsPage() {
       const [name, bytes] = imageEntries[index]; const filename = name.split('/').pop() || name; const key = normalize(filename.replace(/\.[^.]+$/, '').split(/[_-](?:image|img|photo)?\d*$/i)[0]); const recordId = recordMap.get(key);
       try {
         if (!recordId) throw new Error(`No ${lookupColumn} match for ${filename}`);
-        const storagePath = `${recordId}/${Date.now()}-${filename.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
-        const { error: uploadError } = await supabase.storage.from(bucket).upload(storagePath, bytes, { contentType: filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg' }); if (uploadError) throw uploadError;
+        const sourceType = filename.toLowerCase().endsWith('.png') ? 'image/png' : filename.toLowerCase().endsWith('.webp') ? 'image/webp' : filename.toLowerCase().endsWith('.gif') ? 'image/gif' : filename.toLowerCase().endsWith('.avif') ? 'image/avif' : 'image/jpeg';
+        const optimized = await compressCatalogImage(new Blob([bytes], { type: sourceType }), `${entity}-${key}-${index + 1}`);
+        const storagePath = `${recordId}/${Date.now()}-${optimized.file.name}`;
+        const { error: uploadError } = await supabase.storage.from(bucket).upload(storagePath, optimized.file, { contentType: 'image/webp', cacheControl: '31536000' }); if (uploadError) throw uploadError;
         const { error: photoError } = await supabase.from(photoTable).insert({ [entity === 'vehicles' ? 'vehicle_id' : 'part_id']: recordId, storage_path: storagePath, is_cover: false, sort_order: 99 }); if (photoError) throw photoError;
         success += 1; results.push({ import_job_id: job.id, row_number: index + 1, record_key: key, status: 'success', payload: { filename } });
       } catch (error) { results.push({ import_job_id: job.id, row_number: index + 1, record_key: key, status: 'failed', message: error instanceof Error ? error.message : 'Image import failed', payload: { filename } }); }
@@ -102,7 +105,7 @@ export default function ImportsPage() {
   return <div className="space-y-6"><div><h1 className="text-2xl font-bold">Bulk import</h1><p className="text-sm text-muted-foreground">Import Excel catalog data and ZIP image sets with auditable row results.</p></div>
     <div className="flex gap-2"><Button variant={entity==='parts'?'default':'outline'} onClick={()=>{setEntity('parts');setRows([]);}}>Parts</Button><Button variant={entity==='vehicles'?'default':'outline'} onClick={()=>{setEntity('vehicles');setRows([]);}}>Vehicles</Button></div>
     <div className="grid gap-6 lg:grid-cols-2"><Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><FileSpreadsheet className="h-5 w-5"/>Excel catalog</CardTitle></CardHeader><CardContent className="space-y-4"><div><Label>Excel file (.xlsx)</Label><input className="mt-2 block w-full text-sm" type="file" accept=".xlsx" onChange={e=>e.target.files?.[0]&&void previewExcel(e.target.files[0])}/></div>{rows.length>0&&<div className="max-h-56 overflow-auto rounded-md border text-xs"><table className="w-full"><thead><tr>{Object.keys(rows[0]).map(key=><th key={key} className="p-2 text-left">{key}</th>)}</tr></thead><tbody>{rows.slice(0,10).map((row,i)=><tr key={i} className="border-t">{Object.values(row).map((value,j)=><td key={j} className="p-2">{String(value??'')}</td>)}</tr>)}</tbody></table></div>}<Button disabled={busy||rows.length===0} onClick={importExcel}><Upload className="h-4 w-4"/>Import {entity}</Button></CardContent></Card>
-    <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Images className="h-5 w-5"/>ZIP images</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Name vehicle images with the chassis number and part images with the part number. Multiple files may end in <code>_1</code>, <code>_2</code>, and so on.</p><input className="block w-full text-sm" type="file" accept=".zip" disabled={busy} onChange={e=>e.target.files?.[0]&&void importZip(e.target.files[0])}/></CardContent></Card></div>
+    <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Images className="h-5 w-5"/>ZIP images</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Name vehicle images with the chassis number and part images with the part number. Multiple files may end in <code>_1</code>, <code>_2</code>, and so on. Images are automatically resized and converted to optimized WebP before upload.</p><input className="block w-full text-sm" type="file" accept=".zip" disabled={busy} onChange={e=>e.target.files?.[0]&&void importZip(e.target.files[0])}/></CardContent></Card></div>
     {message&&<div className="rounded-lg border bg-secondary/30 p-4 text-sm">{message}</div>}
   </div>;
 }

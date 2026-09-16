@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
+import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
 
 interface PendingPhoto {
@@ -119,12 +120,12 @@ export default function AddVehiclePage() {
       let uploadSuccessCount = 0;
       for (let i = 0; i < pendingPhotos.length; i++) {
         const photo = pendingPhotos[i];
-        const ext = photo.file.name.split('.').pop();
-        const fileName = `${slug}/${Date.now()}-${i}.${ext}`;
+        const optimized = await compressCatalogImage(photo.file, `${make}-${model}-${chassisCode || slug}-${i + 1}`);
+        const fileName = `${slug}/${Date.now()}-${optimized.file.name}`;
 
         const { error: upErr } = await supabase.storage
           .from('vehicle-images')
-          .upload(fileName, photo.file);
+          .upload(fileName, optimized.file, { contentType: 'image/webp', cacheControl: '31536000' });
 
         if (upErr) {
           toast.error(`Failed to upload photo ${i + 1}`);
