@@ -4,10 +4,10 @@ export const siteConfig = {
   tagline: 'Global Vehicles and Automotive Parts Exporter',
   description:
     'Global exporter of vehicles and automotive parts for all brands. Search inventory by OEM part number, chassis code, engine code, make, model, and year.',
-  whatsappNumber: '923139188872',
-  whatsappDisplay: '+92 313 9188872',
+  whatsappNumber: '971501677980',
+  whatsappDisplay: '+971 50 167 7980',
   email: 'info@anshatrading.com',
-  phone: '+92 313 9188872',
+  phone: '+971 50 167 7980',
   address: 'Industrial Area, City, Country',
   url: 'https://www.anshatrading.com',
 };
