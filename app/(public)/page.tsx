@@ -114,37 +114,6 @@ export default function HomePage() {
 
   return (
     <>
-      {/* Primary campaign banner */}
-      <section className="border-b border-border bg-black" aria-label="Ansha Trading global vehicles and parts">
-        <a
-          href="https://wa.me/971501677980?text=Hello%20Ansha%20Trading%2C%20I%20am%20interested%20in%20vehicles%20or%20automotive%20parts."
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
-          aria-label="Contact Ansha Trading on WhatsApp for vehicles and automotive parts"
-        >
-          <div className="relative aspect-[4/3] overflow-hidden sm:hidden">
-            <Image
-              src="/images/ansha-global-vehicles-parts-banner.webp"
-              alt="Ansha Trading — all vehicles and all parts solution with worldwide shipping"
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.01]"
-            />
-          </div>
-          <Image
-            src="/images/ansha-global-vehicles-parts-banner.webp"
-            alt="Ansha Trading — all vehicles and all parts solution with worldwide shipping"
-            width={1600}
-            height={595}
-            priority
-            sizes="100vw"
-            className="hidden h-auto w-full transition-opacity duration-200 group-hover:opacity-95 sm:block"
-          />
-        </a>
-      </section>
-
       {/* Hero */}
       <section className="relative overflow-hidden bg-foreground text-background">
         <div className="absolute inset-0 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/50" />
