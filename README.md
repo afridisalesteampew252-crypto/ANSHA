@@ -71,7 +71,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migration: `supabase/migrations/20260916082738_phase_5_admin_bulk_workflows.sql`.
+Latest migration: `supabase/migrations/20260916154500_phase_9_internal_communications_indexes.sql`.
 
 ## Phase 4: global SEO and exporter schema
 
@@ -173,3 +173,15 @@ Completed on 2026-09-16.
 - No database migration is required because this phase uses the existing `admin_profiles` table and private `profile-images` bucket.
 
 Phase 9B will add persisted direct/group conversations, protected document and image sharing, read state, and internal inbox/sent-mail workflows with Supabase RLS.
+
+## Phase 9B: internal communications
+
+Backend foundation applied on 2026-09-16; interface work is in progress.
+
+- Added persisted direct and group conversations, participants, messages, replies, attachment metadata, and per-user read state.
+- Added internal mail, To/CC/BCC recipients, inbox read/archive state, sent-mail ownership, and mail attachment metadata.
+- Added a private `internal-files` Storage bucket with a 25 MB file limit and conversation/mail-aware access policies.
+- Enabled Realtime delivery for chat messages while retaining table-level RLS filtering.
+- Restricted all communication tables to authenticated ANSHA workspace users with membership- and recipient-aware policies.
+- Added covering indexes for conversation, message, sender, recipient, reply, and attachment relationships.
+- Applied migrations `20260916154000_phase_9_internal_communications` and `20260916154500_phase_9_internal_communications_indexes` to the linked Supabase project.
