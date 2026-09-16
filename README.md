@@ -197,3 +197,14 @@ Completed on 2026-09-16.
 - Added one-year immutable Storage cache metadata for faster repeat visits and lower transfer overhead.
 - Kept original aspect ratios and high-quality resampling while reducing oversized uploads before network transfer.
 - No database migration is required because the existing photo records and Storage buckets continue to store the optimized asset paths.
+
+
+## Phase 10 — Internal communications UI and self-service profiles
+
+- Added production-ready direct and group Chat screens with realtime delivery, replies, edits, soft deletion, read state, unread counts, and private 25 MB attachments.
+- Added Internal Mail with Inbox, Sent, Archive, search, To/CC/BCC, read/unread controls, replies, and private attachments.
+- Added Chat and Internal Mail navigation to the admin operations workspace.
+- Added secure self-service profile name, optimized private avatar, and password updates.
+- Added transaction-safe database functions for conversation creation and internal mail sending.
+- Consolidated profile RLS policies and added missing foreign-key indexes.
+- Applied Supabase migrations `phase_10_communications_ui_support` and `phase_10_policy_and_index_cleanup`.
