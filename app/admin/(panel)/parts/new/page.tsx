@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
+import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
 import type { Category, PartCondition, PartCompatibility } from '@/lib/types';
 
@@ -155,12 +156,12 @@ export default function AddPartPage() {
       let uploadSuccessCount = 0;
       for (let i = 0; i < pendingPhotos.length; i++) {
         const photo = pendingPhotos[i];
-        const ext = photo.file.name.split('.').pop();
-        const fileName = `${partCode}/${Date.now()}-${i}.${ext}`;
+        const optimized = await compressCatalogImage(photo.file, `${brand || 'part'}-${partNumber || partCode}-${i + 1}`);
+        const fileName = `${partCode}/${Date.now()}-${optimized.file.name}`;
 
         const { error: upErr } = await supabase.storage
           .from('part-images')
-          .upload(fileName, photo.file);
+          .upload(fileName, optimized.file, { contentType: 'image/webp', cacheControl: '31536000' });
 
         if (upErr) {
           toast.error(`Failed to upload photo ${i + 1}`);
