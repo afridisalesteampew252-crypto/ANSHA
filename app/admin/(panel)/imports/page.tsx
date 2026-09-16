@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import readXlsxFile from 'read-excel-file';
 import { unzipSync } from 'fflate';
-import { FileSpreadsheet, Images, Upload } from 'lucide-react';
+import { BookOpen, Download, FileSpreadsheet, Images, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,12 @@ type PreviewRow = Record<string, string | number | boolean | null>;
 
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+const toBoolean = (value: unknown) => value === true || String(value ?? '').trim().toLowerCase() === 'true' || String(value ?? '').trim() === '1';
+
+const templateLinks = {
+  parts: '/templates/ansha-parts-import-template.xlsx',
+  vehicles: '/templates/ansha-vehicles-import-template.xlsx',
+};
 
 export default function ImportsPage() {
   const [entity, setEntity] = useState<Entity>('parts');
@@ -23,10 +29,14 @@ export default function ImportsPage() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const chooseEntity = (next: Entity) => {
+    setEntity(next); setFile(null); setRows([]); setMessage('');
+  };
+
   const previewExcel = async (selected: File) => {
     setFile(selected); setMessage('Reading workbook…');
     const sheet = await readXlsxFile(selected);
-    if (sheet.length < 2) return setMessage('Workbook has no data rows.');
+    if (sheet.length < 2) return setMessage('Workbook has no data rows. Add records below the header row first.');
     const headers = sheet[0].map((cell) => String(cell || '').trim().toLowerCase().replaceAll(' ', '_'));
     const parsed = sheet.slice(1).filter((row) => row.some((cell) => cell !== null)).map((row) => Object.fromEntries(headers.map((header, index) => [header, row[index] === undefined ? null : row[index]])) as PreviewRow);
     setRows(parsed); setMessage(`${parsed.length} rows ready for validation and import.`);
@@ -46,18 +56,16 @@ export default function ImportsPage() {
         if (entity === 'parts') {
           const partCode = String(row.part_code || '').trim(); const name = String(row.name || '').trim();
           if (!partCode || !name) throw new Error('part_code and name are required');
-          const payload = { part_code: partCode, name, slug: String(row.slug || slugify(`${name}-${partCode}`)), brand: row.brand || null, part_number: row.part_number || null, oem_number: row.oem_number || null, condition: row.condition || 'used', price: row.price || null, currency: row.currency || 'USD', quantity: Number(row.quantity || 0), description: row.description || null, location: row.location || null, is_published: Boolean(row.is_published ?? false), is_featured: Boolean(row.is_featured ?? false), show_price: Boolean(row.show_price ?? false) };
+          const payload = { part_code: partCode, name, slug: String(row.slug || slugify(`${name}-${partCode}`)), brand: row.brand || null, part_number: row.part_number || null, oem_number: row.oem_number || null, condition: row.condition || 'used', price: row.price || null, currency: row.currency || 'USD', quantity: Number(row.quantity || 0), description: row.description || null, location: row.location || null, is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured), show_price: toBoolean(row.show_price) };
           const { error } = await supabase.from('parts').upsert(payload, { onConflict: 'part_code' }); if (error) throw error;
           results.push({ import_job_id: job.id, row_number: index + 2, record_key: partCode, status: 'success', payload: row });
         } else {
           const chassis = String(row.chassis_number || '').trim(); const make = String(row.make || '').trim(); const model = String(row.model || '').trim();
           if (!chassis || !make || !model) throw new Error('chassis_number, make and model are required');
           const title = String(row.title || `${row.year || ''} ${make} ${model}`.trim());
-          const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, show_price: Boolean(row.show_price ?? false), is_published: Boolean(row.is_published ?? false), is_featured: Boolean(row.is_featured ?? false) };
+          const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
           const { data: existing } = await supabase.from('vehicles').select('id').eq('chassis_number', chassis).maybeSingle();
-          const mutation = existing
-            ? supabase.from('vehicles').update(payload).eq('id', existing.id)
-            : supabase.from('vehicles').insert(payload);
+          const mutation = existing ? supabase.from('vehicles').update(payload).eq('id', existing.id) : supabase.from('vehicles').insert(payload);
           const { error } = await mutation; if (error) throw error;
           results.push({ import_job_id: job.id, row_number: index + 2, record_key: chassis, status: 'success', payload: row });
         }
@@ -98,14 +106,25 @@ export default function ImportsPage() {
         success += 1; results.push({ import_job_id: job.id, row_number: index + 1, record_key: key, status: 'success', payload: { filename } });
       } catch (error) { results.push({ import_job_id: job.id, row_number: index + 1, record_key: key, status: 'failed', message: error instanceof Error ? error.message : 'Image import failed', payload: { filename } }); }
     }
-    await supabase.from('import_rows').insert(results); await supabase.from('import_jobs').update({ status: success === imageEntries.length ? 'completed' : 'completed_with_errors', successful_rows: success, failed_rows: imageEntries.length - success, completed_at: new Date().toISOString() }).eq('id', job.id);
+    await supabase.from('import_rows').insert(results);
+    await supabase.from('import_jobs').update({ status: success === imageEntries.length ? 'completed' : 'completed_with_errors', successful_rows: success, failed_rows: imageEntries.length - success, completed_at: new Date().toISOString() }).eq('id', job.id);
     setBusy(false); setMessage(`Uploaded ${success} of ${imageEntries.length} images. ${imageEntries.length - success} unmatched or failed.`);
   };
 
-  return <div className="space-y-6"><div><h1 className="text-2xl font-bold">Bulk import</h1><p className="text-sm text-muted-foreground">Import Excel catalog data and ZIP image sets with auditable row results.</p></div>
-    <div className="flex gap-2"><Button variant={entity==='parts'?'default':'outline'} onClick={()=>{setEntity('parts');setRows([]);}}>Parts</Button><Button variant={entity==='vehicles'?'default':'outline'} onClick={()=>{setEntity('vehicles');setRows([]);}}>Vehicles</Button></div>
-    <div className="grid gap-6 lg:grid-cols-2"><Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><FileSpreadsheet className="h-5 w-5"/>Excel catalog</CardTitle></CardHeader><CardContent className="space-y-4"><div><Label>Excel file (.xlsx)</Label><input className="mt-2 block w-full text-sm" type="file" accept=".xlsx" onChange={e=>e.target.files?.[0]&&void previewExcel(e.target.files[0])}/></div>{rows.length>0&&<div className="max-h-56 overflow-auto rounded-md border text-xs"><table className="w-full"><thead><tr>{Object.keys(rows[0]).map(key=><th key={key} className="p-2 text-left">{key}</th>)}</tr></thead><tbody>{rows.slice(0,10).map((row,i)=><tr key={i} className="border-t">{Object.values(row).map((value,j)=><td key={j} className="p-2">{String(value??'')}</td>)}</tr>)}</tbody></table></div>}<Button disabled={busy||rows.length===0} onClick={importExcel}><Upload className="h-4 w-4"/>Import {entity}</Button></CardContent></Card>
-    <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Images className="h-5 w-5"/>ZIP images</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Name vehicle images with the chassis number and part images with the part number. Multiple files may end in <code>_1</code>, <code>_2</code>, and so on. Images are automatically resized and converted to optimized WebP before upload.</p><input className="block w-full text-sm" type="file" accept=".zip" disabled={busy} onChange={e=>e.target.files?.[0]&&void importZip(e.target.files[0])}/></CardContent></Card></div>
-    {message&&<div className="rounded-lg border bg-secondary/30 p-4 text-sm">{message}</div>}
+  return <div className="mx-auto max-w-7xl space-y-6">
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold">Bulk import</h1><p className="text-sm text-muted-foreground">Download the correct template, preview records, then import catalog data or matched image ZIPs.</p></div><Button asChild variant="outline"><a href={templateLinks[entity]} download><Download className="h-4 w-4" />Download {entity} template</a></Button></div>
+    <div className="flex gap-2"><Button variant={entity === 'parts' ? 'default' : 'outline'} onClick={() => chooseEntity('parts')}>Parts</Button><Button variant={entity === 'vehicles' ? 'default' : 'outline'} onClick={() => chooseEntity('vehicles')}>Vehicles</Button></div>
+
+    <Card className="border-primary/20 bg-primary/[0.03]"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><BookOpen className="h-5 w-5" />Before you upload</CardTitle></CardHeader><CardContent className="grid gap-4 text-sm md:grid-cols-3">
+      <div><p className="font-semibold">1. Keep headers unchanged</p><p className="mt-1 text-muted-foreground">Use the downloaded workbook. Red columns are required and dropdowns prevent common format mistakes.</p></div>
+      <div><p className="font-semibold">2. Match image names exactly</p><p className="mt-1 text-muted-foreground">{entity === 'parts' ? 'Use the exact part_number' : 'Use the exact chassis_number'}, followed by _1, _2 or _3 for multiple photos.</p></div>
+      <div><p className="font-semibold">3. ZIP images only</p><p className="mt-1 text-muted-foreground">Put images directly in one ZIP. JPG, PNG, WebP, GIF and AVIF are accepted and optimized automatically.</p></div>
+    </CardContent></Card>
+
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Card className="min-w-0"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><FileSpreadsheet className="h-5 w-5" />Excel catalog</CardTitle></CardHeader><CardContent className="space-y-4"><div><Label htmlFor="excel-file">Excel file (.xlsx)</Label><input id="excel-file" className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2" type="file" accept=".xlsx" disabled={busy} onChange={(event) => event.target.files?.[0] && void previewExcel(event.target.files[0])} /></div>{rows.length > 0 && <div className="max-h-64 w-full overflow-auto rounded-md border text-xs"><table className="min-w-max"><thead className="sticky top-0 bg-secondary"><tr>{Object.keys(rows[0]).map((key) => <th key={key} className="whitespace-nowrap p-2 text-left">{key}</th>)}</tr></thead><tbody>{rows.slice(0, 10).map((row, index) => <tr key={index} className="border-t">{Object.values(row).map((value, cell) => <td key={cell} className="max-w-48 truncate p-2">{String(value ?? '')}</td>)}</tr>)}</tbody></table></div>}<Button disabled={busy || rows.length === 0} onClick={importExcel}><Upload className="h-4 w-4" />Import {entity}</Button></CardContent></Card>
+      <Card className="min-w-0"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Images className="h-5 w-5" />ZIP images</CardTitle></CardHeader><CardContent className="space-y-4"><div className="rounded-lg bg-secondary/50 p-4 text-sm text-muted-foreground"><p className="font-medium text-foreground">Naming examples</p><code className="mt-2 block break-all">{entity === 'parts' ? '04465-0K340_1.jpg' : 'JTEBX3FJ10K123456_1.jpg'}</code><code className="block break-all">{entity === 'parts' ? '04465-0K340_2.png' : 'JTEBX3FJ10K123456_2.png'}</code></div><input className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2" type="file" accept=".zip" disabled={busy} onChange={(event) => event.target.files?.[0] && void importZip(event.target.files[0])} /></CardContent></Card>
+    </div>
+    {message && <div role="status" className="rounded-lg border bg-secondary/30 p-4 text-sm">{message}</div>}
   </div>;
 }

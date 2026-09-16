@@ -22,7 +22,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 6 | Vercel environments, deployments, domains, and runtime validation | Complete |
 | 7 | Final testing, performance, SEO validation, backups, and launch | In progress |
 | 9A | Admin operations shell, account menu, access visibility, and quick actions | Complete |
-| 9B | Secure internal chat, file sharing, groups, and internal mail | Planned |
+| 9B | Secure internal chat, file sharing, groups, and internal mail | Complete |
 | 9C | Automatic catalog image optimization for direct and ZIP uploads | Complete |
 
 ## Phase 1 completion
@@ -208,3 +208,18 @@ Completed on 2026-09-16.
 - Added transaction-safe database functions for conversation creation and internal mail sending.
 - Consolidated profile RLS policies and added missing foreign-key indexes.
 - Applied Supabase migrations `phase_10_communications_ui_support` and `phase_10_policy_and_index_cleanup`.
+
+
+## Phase 11 — Responsive operations and invoicing
+
+- Optimized public and admin layouts for phones, tablets, laptops, and wide desktop screens.
+- Replaced boxed JPEG branding with the supplied transparent ANSHA logo, enlarged in the public header, admin shell, footer, and invoices.
+- Set light mode as the default while preserving the saved light/dark/system selector.
+- Added a persistent collapsible desktop admin sidebar and a closable mobile drawer.
+- Updated the company address to Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba, Dubai, U.A.E.
+- Added validated Parts and Vehicles Excel templates with required-field highlighting, dropdowns, and embedded image ZIP guidance.
+- Corrected Excel TRUE/FALSE parsing so FALSE values no longer import as enabled.
+- Added secure tax invoices with sequential invoice numbers, customer and seller tax snapshots, per-line VAT and discounts, payment tracking, outstanding balances, print/PDF output, structured JSON export, and provider submission fields.
+- Added a clear UAE eInvoice compliance boundary: PDF invoices remain printable records; tax-authority reporting requires a connected UAE accredited service provider.
+- Applied Supabase migrations `phase_11_invoicing_and_operations` and `phase_11_invoice_advisor_cleanup`.
+- Upgraded `admin-create-user` to version 4 with separated caller/service clients, robust CORS, direct administrator account creation, duplicate detection, and reliable profile creation.
