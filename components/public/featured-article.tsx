@@ -25,7 +25,7 @@ export function FeaturedArticle({ post }: FeaturedArticleProps) {
 
   return (
     <Link href={`/blog/${post.slug}`} className="group block">
-      <div className="grid gap-0 overflow-hidden rounded-xl border border-border bg-white transition-all duration-200 hover:shadow-elevated md:grid-cols-2">
+      <div className="grid gap-0 overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:shadow-elevated md:grid-cols-2">
         <div className="relative aspect-[16/10] bg-secondary overflow-hidden md:aspect-auto md:min-h-[320px]">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element

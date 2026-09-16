@@ -46,7 +46,7 @@ export function PartCard({ part }: PartCardProps) {
           </div>
           {part.quantity > 0 && (
             <div className="absolute top-2.5 right-2.5">
-              <Badge variant="outline" className="bg-white/90 backdrop-blur-sm text-emerald-700 border-emerald-200">
+              <Badge variant="outline" className="border-emerald-200 bg-background/90 text-emerald-700 backdrop-blur-sm dark:border-emerald-800 dark:text-emerald-400">
                 In Stock
               </Badge>
             </div>
