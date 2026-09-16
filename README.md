@@ -19,8 +19,8 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 4 | Global SEO and exporter schema for parts and vehicles | Complete |
 | 4B | Premium responsive homepage, logo, brand directory, and UX fixes | Complete |
 | 5 | Admin customers/users, Excel imports, and ZIP image matching | Complete |
-| 6 | Vercel environments, deployments, domains, and runtime validation | Next |
-| 7 | Final testing, performance, SEO validation, backups, and launch | Planned |
+| 6 | Vercel environments, deployments, domains, and runtime validation | Complete |
+| 7 | Final testing, performance, SEO validation, backups, and launch | Next |
 
 ## Phase 1 completion
 
@@ -57,7 +57,7 @@ Completed on 2026-09-15.
 
 ## Vercel status
 
-The Vercel project is connected, and Production and Preview deployments are healthy. Browser-safe Supabase public configuration is available during Vercel builds; secret and service-role keys remain server-only. Phase 6 will validate environment coverage, domains, and runtime behavior end to end.
+The Vercel project is connected, and Production and Preview deployments are healthy. Browser-safe Supabase public configuration is available during Vercel builds; secret and service-role keys remain server-only. Phase 6 validated domain coverage, deployment behavior, runtime health, and Supabase connectivity end to end.
 
 ## Environment variables
 
@@ -113,3 +113,23 @@ Completed on 2026-09-16.
 - Added admin-only RLS policies for customers and import audit data.
 - Applied and verified migration `20260916082738_phase_5_admin_bulk_workflows` and deployed Edge Function version 1.
 - Added pinned `read-excel-file` and `fflate` dependencies and updated the lockfile.
+
+## Phase 6: Vercel operations and runtime validation
+
+Completed on 2026-09-16.
+
+- Verified the connected Vercel project, GitHub deployment integration, and healthy Production and Preview builds.
+- Verified the canonical `www.anshatrading.com` domain and attached alternate domains.
+- Added permanent redirects from `anshatrading.com`, `anshatradingco.com`, and `www.anshatradingco.com` to the canonical domain.
+- Added site-wide content-type, framing, referrer, and browser-permission security headers.
+- Added no-store and no-index headers for protected admin routes.
+- Added `/api/health` to validate build configuration and live Supabase REST connectivity without exposing credentials.
+- Added `npm run verify:deployment -- <https-url>` to check public routes, SEO files, health, security headers, and unauthenticated admin protection.
+- Replaced free-text part brands with the shared supported-manufacturer dropdown on create and edit screens.
+- Connected homepage brand cards and catalog filtering directly to each published part's saved brand.
+- Added editable customer and staff profiles, including names, contact details, roles, account email, optional password changes, and profile pictures.
+- Added private profile-image storage with administrator-only signed reads, uploads, replacements, and deletions.
+- Added confirmed part deletion with associated Storage image cleanup.
+- Applied migration `20260916091902_phase_6_admin_profile_management` and deployed the administrator user-update function.
+- Confirmed no Vercel runtime errors during the audit window.
+- No database migration was required because this phase changes deployment and runtime configuration only.

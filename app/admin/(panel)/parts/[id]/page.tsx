@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase/client';
+import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { toast } from 'sonner';
 import type { Category, PartCondition, PartCompatibility, PartPhoto, PartWithRelations } from '@/lib/types';
 
@@ -328,7 +329,14 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               </div>
               <div className="space-y-2">
                 <Label>Brand</Label>
-                <Input value={brand} onChange={(e) => setBrand(e.target.value)} />
+                <Select value={brand} onValueChange={setBrand}>
+                  <SelectTrigger><SelectValue placeholder="Select brand" /></SelectTrigger>
+                  <SelectContent>
+                    {SUPPORTED_MANUFACTURERS.map((manufacturer) => (
+                      <SelectItem key={manufacturer} value={manufacturer}>{manufacturer}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -471,4 +479,3 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
     </div>
   );
 }
-

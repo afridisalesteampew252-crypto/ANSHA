@@ -75,16 +75,17 @@ export default function HomePage() {
       setFeaturedVehicles((featVehiclesRes.data || []) as unknown as VehicleWithPhotos[]);
       setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
 
-      // Build makes from compatibility table
-      const { data: compatData } = await supabase
-        .from('part_compatibility')
-        .select('make')
-        .not('make', 'is', null);
+      // Build manufacturer totals from the canonical brand saved on each published part.
+      const { data: brandData } = await supabase
+        .from('parts')
+        .select('brand')
+        .eq('is_published', true)
+        .not('brand', 'is', null);
 
-      if (compatData) {
+      if (brandData) {
         const counts: Record<string, number> = {};
-        for (const row of compatData) {
-          if (row.make) counts[row.make] = (counts[row.make] || 0) + 1;
+        for (const row of brandData) {
+          if (row.brand) counts[row.brand] = (counts[row.brand] || 0) + 1;
         }
         const sorted = Object.entries(counts)
           .map(([make, count]) => ({ make, count }))
@@ -222,7 +223,7 @@ export default function HomePage() {
             {displayMakes.map((item) => {
               const logo = getManufacturerLogo(item.make);
               return (
-                <Link key={item.make} href={`/parts?q=${encodeURIComponent(item.make)}`}>
+                <Link key={item.make} href={`/parts?brand=${encodeURIComponent(item.make)}`}>
                   <div className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-white p-4 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-card-hover">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/40 group-hover:bg-accent group-hover:border-accent transition-colors">
                       <Image

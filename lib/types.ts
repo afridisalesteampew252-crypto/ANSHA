@@ -109,8 +109,10 @@ export interface VehicleWithPhotos extends Vehicle {
 
 export interface AdminProfile {
   id: string;
+  email: string | null;
   full_name: string | null;
   role: AdminRole;
+  avatar_url: string | null;
   created_at: string;
 }
 
@@ -125,6 +127,7 @@ export interface Customer {
   country: string | null;
   address: string | null;
   notes: string | null;
+  avatar_url: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
