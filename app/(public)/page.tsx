@@ -114,21 +114,44 @@ export default function HomePage() {
 
   return (
     <>
+      {/* Primary campaign banner */}
+      <section className="border-b border-border bg-black" aria-label="Ansha Trading global vehicles and parts">
+        <a
+          href="https://wa.me/971501677980?text=Hello%20Ansha%20Trading%2C%20I%20am%20interested%20in%20vehicles%20or%20automotive%20parts."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+          aria-label="Contact Ansha Trading on WhatsApp for vehicles and automotive parts"
+        >
+          <div className="relative aspect-[4/3] overflow-hidden sm:hidden">
+            <Image
+              src="/images/ansha-global-vehicles-parts-banner.webp"
+              alt="Ansha Trading — all vehicles and all parts solution with worldwide shipping"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.01]"
+            />
+          </div>
+          <Image
+            src="/images/ansha-global-vehicles-parts-banner.webp"
+            alt="Ansha Trading — all vehicles and all parts solution with worldwide shipping"
+            width={1600}
+            height={595}
+            priority
+            sizes="100vw"
+            className="hidden h-auto w-full transition-opacity duration-200 group-hover:opacity-95 sm:block"
+          />
+        </a>
+      </section>
+
       {/* Hero */}
       <section className="relative overflow-hidden bg-foreground text-background">
-        <div className="absolute inset-0 opacity-15">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://images.pexels.com/photos/5158155/pexels-photo-5158155.jpeg?auto=compress&cs=tinysrgb&w=1920"
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        </div>
         <div className="absolute inset-0 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/50" />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground via-transparent to-foreground/20" />
         <div className="absolute inset-0 bg-grid-dark opacity-20" />
 
-        <div className="relative container-page py-20 md:py-28">
+        <div className="relative container-page py-14 md:py-20">
           <div className="max-w-2xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-background/15 bg-background/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-background/70 backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-accent" />
