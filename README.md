@@ -21,6 +21,8 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 5 | Admin customers/users, Excel imports, and ZIP image matching | Complete |
 | 6 | Vercel environments, deployments, domains, and runtime validation | Complete |
 | 7 | Final testing, performance, SEO validation, backups, and launch | In progress |
+| 9A | Admin operations shell, account menu, access visibility, and quick actions | Complete |
+| 9B | Secure internal chat, file sharing, groups, and internal mail | Planned |
 
 ## Phase 1 completion
 
@@ -158,3 +160,16 @@ In progress from 2026-09-16.
 - Removed the extra remote hero photograph to reduce competing downloads and keep the branded artwork local and performance-friendly.
 - Confirmed the production deployment for Phase 7B is ready and the Vercel runtime error scan is clean.
 - No database migration is required because this phase changes presentation and interaction behavior only.
+
+## Phase 9A: admin operations shell
+
+Completed on 2026-09-16.
+
+- Replaced the generic admin mark with the real ANSHA Trading logo across desktop and mobile navigation.
+- Added a signed-in account menu with private avatar preview, name, email, role, access summary, profile link, website shortcut, and sign-out action.
+- Added a dedicated profile overview page for the current user.
+- Added a desktop workspace header with contextual page titles, quick creation/import actions, website preview, and dark-mode control.
+- Kept dark mode and account access available on mobile and desktop layouts.
+- No database migration is required because this phase uses the existing `admin_profiles` table and private `profile-images` bucket.
+
+Phase 9B will add persisted direct/group conversations, protected document and image sharing, read state, and internal inbox/sent-mail workflows with Supabase RLS.
