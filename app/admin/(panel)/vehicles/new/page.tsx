@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { supabase } from '@/lib/supabase/client';
 import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
+import { STOCK_ORIGINS } from '@/lib/stock';
 
 interface PendingPhoto {
   file: File;
@@ -28,6 +29,9 @@ export default function AddVehiclePage() {
   const [model, setModel] = useState('');
   const [variant, setVariant] = useState('');
   const [year, setYear] = useState('');
+  const [stockNumber, setStockNumber] = useState('');
+  const [chassisNumber, setChassisNumber] = useState('');
+  const [stockOrigin, setStockOrigin] = useState('dubai');
   const [chassisCode, setChassisCode] = useState('');
   const [engineCode, setEngineCode] = useState('');
   const [transmission, setTransmission] = useState('');
@@ -91,6 +95,10 @@ export default function AddVehiclePage() {
         model: model.trim(),
         variant: variant.trim() || null,
         year: year ? parseInt(year, 10) : null,
+        stock_number: stockNumber.trim() || null,
+        chassis_number: chassisNumber.trim() || null,
+        stock_origin: stockOrigin,
+        stock_status: 'available',
         chassis_code: chassisCode.trim() || null,
         engine_code: engineCode.trim() || null,
         transmission: transmission.trim() || null,
@@ -284,6 +292,18 @@ export default function AddVehiclePage() {
             <div className="space-y-2">
               <Label htmlFor="vehicle-location">Location</Label>
               <Input id="vehicle-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Showroom / Warehouse" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vehicle-stock-number">Stock / reference number</Label>
+              <Input id="vehicle-stock-number" value={stockNumber} onChange={(e) => setStockNumber(e.target.value.toUpperCase())} placeholder="ANS-V-000001" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vehicle-chassis-number">Full chassis / VIN</Label>
+              <Input id="vehicle-chassis-number" value={chassisNumber} onChange={(e) => setChassisNumber(e.target.value.toUpperCase())} placeholder="NHP10-1234567" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vehicle-stock-origin">Stock location</Label>
+              <select id="vehicle-stock-origin" value={stockOrigin} onChange={(e) => setStockOrigin(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">{STOCK_ORIGINS.map((origin) => <option key={origin.value} value={origin.value}>{origin.label}</option>)}</select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="vehicle-chassis">Chassis Code</Label>

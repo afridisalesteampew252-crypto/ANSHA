@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
+  ChevronDown,
   ChevronRight,
   CircleUserRound,
   Headphones,
@@ -21,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { siteConfig } from '@/lib/site-config';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { STOCK_ORIGINS } from '@/lib/stock';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -138,6 +140,18 @@ export function SiteHeader() {
             <nav className="flex h-full items-center gap-1">
               {navLinks.map((link) => {
                 const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
+                if (link.href === '/vehicles') return (
+                  <div key={link.href} className="group relative flex h-full items-center">
+                    <Link href="/vehicles" className={cn('relative flex h-full items-center gap-1 px-3 text-sm font-semibold transition-colors', active ? 'text-accent' : 'text-muted-foreground hover:text-foreground')}>
+                      {link.label}<ChevronDown className="h-3.5 w-3.5" />
+                      {active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent" />}
+                    </Link>
+                    <div className="invisible absolute left-0 top-full z-50 w-52 translate-y-2 rounded-xl border border-border bg-background p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                      <Link href="/vehicles" className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-secondary">All vehicle stock</Link>
+                      {STOCK_ORIGINS.map((origin) => <a key={origin.value} href={`/vehicles?stock=${origin.value}`} className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground">{origin.label}</a>)}
+                    </div>
+                  </div>
+                );
                 return (
                   <Link key={link.href} href={link.href} className={cn(
                     'relative flex h-full items-center px-3 text-sm font-semibold transition-colors',
@@ -179,6 +193,10 @@ export function SiteHeader() {
                     </Link>
                   );
                 })}
+                <div className="rounded-xl border border-border p-2 sm:col-span-2">
+                  <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vehicle stock locations</p>
+                  <div className="grid grid-cols-2 gap-1">{STOCK_ORIGINS.map((origin) => <a key={origin.value} href={`/vehicles?stock=${origin.value}`} className="rounded-lg px-2 py-2 text-xs font-semibold hover:bg-secondary">{origin.label}</a>)}</div>
+                </div>
               </nav>
               <div className="grid grid-cols-2 gap-2">
                 <Button asChild variant="accent"><Link href="/parts">Find parts</Link></Button>

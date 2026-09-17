@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase/client';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
+import { STOCK_ORIGINS } from '@/lib/stock';
 import type { Category, PartCondition, PartCompatibility } from '@/lib/types';
 
 interface PendingPhoto {
@@ -38,6 +39,7 @@ export default function AddPartPage() {
   const [currency, setCurrency] = useState('USD');
   const [quantity, setQuantity] = useState('0');
   const [location, setLocation] = useState('');
+  const [stockOrigin, setStockOrigin] = useState('dubai');
   const [description, setDescription] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
@@ -135,6 +137,8 @@ export default function AddPartPage() {
         currency,
         quantity: parseInt(quantity, 10) || 0,
         location: location.trim() || null,
+        stock_origin: stockOrigin,
+        stock_status: 'available',
         description: description.trim() || null,
         is_published: publish,
         is_featured: isFeatured,
@@ -421,6 +425,10 @@ export default function AddPartPage() {
               <div className="space-y-2">
                 <Label htmlFor="part-location">Location</Label>
                 <Input id="part-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Warehouse / shelf" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="part-stock-origin">Stock location</Label>
+                <select id="part-stock-origin" value={stockOrigin} onChange={(e) => setStockOrigin(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">{STOCK_ORIGINS.map((origin) => <option key={origin.value} value={origin.value}>{origin.label}</option>)}</select>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">

@@ -1,6 +1,8 @@
 export type PartCondition = 'new' | 'used' | 'refurbished' | 'for-parts';
 export type InquiryStatus = 'new' | 'read' | 'responded' | 'closed';
 export type AdminRole = 'admin' | 'staff';
+export type StockOrigin = 'japan' | 'dubai' | 'singapore' | 'china' | 'thailand' | 'taiwan';
+export type StockStatus = 'available' | 'reserved' | 'sold';
 
 export interface Category {
   id: string;
@@ -31,6 +33,10 @@ export interface Part {
   is_published: boolean;
   is_featured: boolean;
   show_price: boolean;
+  stock_origin: StockOrigin;
+  stock_status: StockStatus;
+  sold_at: string | null;
+  sold_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -78,6 +84,8 @@ export interface Vehicle {
   variant: string | null;
   year: number | null;
   chassis_code: string | null;
+  chassis_number: string | null;
+  stock_number: string | null;
   engine_code: string | null;
   transmission: string | null;
   fuel_type: string | null;
@@ -90,6 +98,10 @@ export interface Vehicle {
   location: string | null;
   is_published: boolean;
   is_featured: boolean;
+  stock_origin: StockOrigin;
+  stock_status: StockStatus;
+  sold_at: string | null;
+  sold_by: string | null;
   created_at: string;
   updated_at: string;
 }

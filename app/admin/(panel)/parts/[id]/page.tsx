@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase/client';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
+import { STOCK_ORIGINS } from '@/lib/stock';
 import type { Category, PartCondition, PartCompatibility, PartPhoto, PartWithRelations } from '@/lib/types';
 
 export default function EditPartPage(props: { params: Promise<{ id: string }> }) {
@@ -39,6 +40,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
   const [currency, setCurrency] = useState('USD');
   const [quantity, setQuantity] = useState('0');
   const [location, setLocation] = useState('');
+  const [stockOrigin, setStockOrigin] = useState('dubai');
   const [description, setDescription] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
@@ -78,6 +80,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
       setCurrency(p.currency);
       setQuantity(p.quantity.toString());
       setLocation(p.location || '');
+      setStockOrigin(p.stock_origin || 'dubai');
       setDescription(p.description || '');
       setIsPublished(p.is_published);
       setIsFeatured(p.is_featured);
@@ -132,6 +135,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
         currency,
         quantity: parseInt(quantity, 10) || 0,
         location: location.trim() || null,
+        stock_origin: stockOrigin,
         description: description.trim() || null,
         is_published: isPublished,
         is_featured: isFeatured,
@@ -458,6 +462,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               </div>
               <div className="space-y-2"><Label>Quantity</Label><Input type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></div>
               <div className="space-y-2"><Label>Location</Label><Input value={location} onChange={(e) => setLocation(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Stock location</Label><select value={stockOrigin} onChange={(e) => setStockOrigin(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">{STOCK_ORIGINS.map((origin) => <option key={origin.value} value={origin.value}>{origin.label}</option>)}</select></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2"><Label>Price</Label><Input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} /></div>

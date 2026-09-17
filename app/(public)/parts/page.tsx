@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PartCard } from '@/components/public/part-card';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { conditionLabels } from '@/lib/site-config';
+import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
 import type { Category, PartCondition, PartWithRelations } from '@/lib/types';
 
@@ -35,6 +36,7 @@ function PartsCatalog() {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [selectedCondition, setSelectedCondition] = useState(searchParams.get('condition') || 'all');
   const [selectedBrand, setSelectedBrand] = useState(searchParams.get('brand') || 'all');
+  const [selectedStock, setSelectedStock] = useState(searchParams.get('stock') || 'all');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 12;
@@ -48,6 +50,7 @@ function PartsCatalog() {
     setSelectedCategory(searchParams.get('category') || 'all');
     setSelectedCondition(searchParams.get('condition') || 'all');
     setSelectedBrand(searchParams.get('brand') || 'all');
+    setSelectedStock(searchParams.get('stock') || 'all');
     setSortBy(searchParams.get('sort') || 'newest');
     setPage(Math.max(1, Number(searchParams.get('page')) || 1));
   }, [searchParams]);
@@ -67,6 +70,7 @@ function PartsCatalog() {
     }
     if (selectedCondition !== 'all') request = request.eq('condition', selectedCondition);
     if (selectedBrand !== 'all') request = request.eq('brand', selectedBrand);
+    if (selectedStock !== 'all') request = request.eq('stock_origin', selectedStock);
 
     if (sortBy === 'oldest') request = request.order('created_at', { ascending: true });
     else if (sortBy === 'name') request = request.order('name', { ascending: true });
@@ -79,7 +83,7 @@ function PartsCatalog() {
     setParts((data || []) as unknown as PartWithRelations[]);
     setTotalCount(count || 0);
     setLoading(false);
-  }, [categories, page, query, selectedBrand, selectedCategory, selectedCondition, sortBy]);
+  }, [categories, page, query, selectedBrand, selectedCategory, selectedCondition, selectedStock, sortBy]);
 
   useEffect(() => {
     if (selectedCategory === 'all' || categories.length > 0) fetchParts();
@@ -97,6 +101,7 @@ function PartsCatalog() {
   const activeFilters = [
     query && { key: 'q', label: `“${query}”` },
     selectedBrand !== 'all' && { key: 'brand', label: selectedBrand },
+    selectedStock !== 'all' && { key: 'stock', label: stockOriginLabel(selectedStock) },
     selectedCategory !== 'all' && { key: 'category', label: categories.find((category) => category.slug === selectedCategory)?.name || selectedCategory },
     selectedCondition !== 'all' && { key: 'condition', label: conditionLabels[selectedCondition] },
   ].filter(Boolean) as { key: string; label: string }[];
@@ -104,6 +109,13 @@ function PartsCatalog() {
 
   const filterControls = (
     <div className="space-y-6">
+      <div>
+        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Stock location</label>
+        <Select value={selectedStock} onValueChange={(value) => setParam('stock', value)}>
+          <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="All stock locations" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">All stock locations</SelectItem>{STOCK_ORIGINS.map((origin) => <SelectItem key={origin.value} value={origin.value}>{origin.label}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
       <div>
         <label className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Manufacturer</label>
         <Select value={selectedBrand} onValueChange={(value) => setParam('brand', value)}>
