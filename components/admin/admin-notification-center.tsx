@@ -52,9 +52,21 @@ export function AdminNotificationCenter({ userId }: { userId: string }) {
 
   useEffect(() => {
     void load();
-    const channel = supabase.channel(`admin-notifications-${userId}`)
+
+    const topic = `admin-notifications-${userId}`;
+    // Guard against a stale channel with the same topic still being registered
+    // (e.g. React Strict Mode double-invoke, or a fast remount) — supabase-js
+    // returns the existing instance for a topic it already knows about, and
+    // calling `.on()` on an already-subscribed channel throws.
+    const existing = supabase.getChannels().find((c) => c.topic === `realtime:${topic}`);
+    if (existing) {
+      void supabase.removeChannel(existing);
+    }
+
+    const channel = supabase.channel(topic)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_notifications', filter: `recipient_id=eq.${userId}` }, () => void load())
       .subscribe();
+
     return () => { void supabase.removeChannel(channel); };
   }, [load, userId]);
 
