@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 type VerificationItem = { description: string; quantity: number; unit_price: number; tax_rate: number; line_total: number };
 type Verification = {
   valid: boolean; invoice_number?: string; document_type?: string; issue_date?: string; due_date?: string;
-  seller_name?: string; seller_tax_registration_number?: string; seller_address?: string;
-  customer_name?: string; customer_company?: string; customer_tax_registration_number?: string;
+  seller?: { name?: string; tax_registration_number?: string; address?: string };
+  customer?: { name?: string; company?: string; tax_registration_number?: string };
   currency?: string; subtotal?: number; discount_amount?: number; tax_amount?: number; total_amount?: number;
   amount_paid?: number; balance_due?: number; status?: string; provider_status?: string;
-  verification_issued_at?: string; line_items?: VerificationItem[];
+  verification_issued_at?: string; items?: VerificationItem[];
 };
 
 const money = (value: number | undefined, currency = 'AED') =>
@@ -69,13 +69,13 @@ export default async function VerifyInvoicePage({ params }: { params: Promise<{ 
             </section>
 
             <section className="grid gap-5 rounded-xl border bg-secondary/20 p-4 sm:grid-cols-2 sm:p-5">
-              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued by</p><p className="font-bold">{result.seller_name}</p><p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{result.seller_address}</p><p className="mt-1 text-sm">TRN: {result.seller_tax_registration_number}</p></div>
-              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued to</p><p className="font-bold">{result.customer_company || result.customer_name}</p>{result.customer_company && <p className="text-sm text-muted-foreground">{result.customer_name}</p>}{result.customer_tax_registration_number && <p className="mt-1 text-sm">TRN: {result.customer_tax_registration_number}</p>}</div>
+              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued by</p><p className="font-bold">{result.seller?.name}</p><p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{result.seller?.address}</p><p className="mt-1 text-sm">TRN: {result.seller?.tax_registration_number}</p></div>
+              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued to</p><p className="font-bold">{result.customer?.company || result.customer?.name}</p>{result.customer?.company && <p className="text-sm text-muted-foreground">{result.customer?.name}</p>}{result.customer?.tax_registration_number && <p className="mt-1 text-sm">TRN: {result.customer.tax_registration_number}</p>}</div>
             </section>
 
             <section>
               <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><FileCheck2 className="h-5 w-5 text-primary" />Invoice details</h2>
-              <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[560px] text-sm"><thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Description</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Unit price</th><th className="p-3 text-right">VAT</th><th className="p-3 text-right">Total</th></tr></thead><tbody>{(result.line_items || []).map((item, index) => <tr key={index} className="border-t"><td className="whitespace-pre-line p-3">{item.description}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{money(item.unit_price, currency)}</td><td className="p-3 text-right">{item.tax_rate}%</td><td className="p-3 text-right font-medium">{money(item.line_total, currency)}</td></tr>)}</tbody></table></div>
+              <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[560px] text-sm"><thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Description</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Unit price</th><th className="p-3 text-right">VAT</th><th className="p-3 text-right">Total</th></tr></thead><tbody>{(result.items || []).map((item, index) => <tr key={index} className="border-t"><td className="whitespace-pre-line p-3">{item.description}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{money(item.unit_price, currency)}</td><td className="p-3 text-right">{item.tax_rate}%</td><td className="p-3 text-right font-medium">{money(item.line_total, currency)}</td></tr>)}</tbody></table></div>
             </section>
 
             <section className="ml-auto max-w-sm space-y-2 text-sm">
