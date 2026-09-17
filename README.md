@@ -276,4 +276,4 @@ Completed on 2026-09-17.
 - Added guarded invoice deletion; financial documents with linked payments or remittances must be reconciled first.
 - Added remittance editing with atomic invoice-payment reversal and recreation when the amount, invoice, date, currency, or status changes.
 - Added confirmed remittance deletion with private-document cleanup and automatic invoice balance recalculation.
-- Applied migration `20260917163000_phase_16_editable_financial_records` with invoker-safe RPCs, protected private triggers, and tightened RLS.
+- Applied migrations `20260917163000_phase_16_editable_financial_records` through `20260917165000_phase_16_after_trigger_financial_sync` with invoker-safe RPCs, protected private triggers, compatibility guards, and tightened RLS.
