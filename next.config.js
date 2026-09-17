@@ -10,10 +10,10 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: '(?:anshatrading\\.com|www\\.anshatradingco\\.com|anshatradingco\\.com)',
+            value: '(?:anshatrading\\.com|www\\.anshatrading\\.com|anshatradingco\\.com)',
           },
         ],
-        destination: 'https://www.anshatrading.com/:path*',
+        destination: 'https://www.anshatradingco.com/:path*',
         permanent: true,
       },
     ];

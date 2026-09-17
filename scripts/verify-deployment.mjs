@@ -6,10 +6,11 @@ if (!baseUrl || !baseUrl.startsWith('https://')) {
 }
 
 const checks = [
-  { path: '/', expected: [200] },
+  { path: '/', expected: [200], includes: 'https://www.anshatradingco.com' },
   { path: '/parts', expected: [200] },
   { path: '/vehicles', expected: [200] },
-  { path: '/robots.txt', expected: [200], includes: 'Sitemap:' },
+  { path: '/banking', expected: [200], includes: 'WIO BANK' },
+  { path: '/robots.txt', expected: [200], includes: 'https://www.anshatradingco.com/sitemap.xml' },
   { path: '/sitemap.xml', expected: [200], includes: '<urlset' },
   { path: '/api/health', expected: [200], includes: '"status":"healthy"' },
   { path: '/admin/dashboard', expected: [307, 308], location: '/admin' },

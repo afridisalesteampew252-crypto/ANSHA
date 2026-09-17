@@ -24,6 +24,9 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 9A | Admin operations shell, account menu, access visibility, and quick actions | Complete |
 | 9B | Secure internal chat, file sharing, groups, and internal mail | Complete |
 | 9C | Automatic catalog image optimization for direct and ZIP uploads | Complete |
+| 10 | Internal communications UI and self-service profiles | Complete |
+| 11 | Responsive operations, reliable user creation, imports, and invoicing | Complete |
+| 12 | Canonical domain migration and official banking page | Complete |
 
 ## Phase 1 completion
 
@@ -223,3 +226,13 @@ Completed on 2026-09-16.
 - Added a clear UAE eInvoice compliance boundary: PDF invoices remain printable records; tax-authority reporting requires a connected UAE accredited service provider.
 - Applied Supabase migrations `phase_11_invoicing_and_operations` and `phase_11_invoice_advisor_cleanup`.
 - Upgraded `admin-create-user` to version 4 with separated caller/service clients, robust CORS, direct administrator account creation, duplicate detection, and reliable profile creation.
+
+
+## Phase 12 — Canonical domain and banking information
+
+- Set `https://www.anshatradingco.com` as the canonical production origin across metadata, structured data, robots, sitemap, and generated public URLs.
+- Reversed legacy-domain redirects so `anshatrading.com`, `www.anshatrading.com`, and `anshatradingco.com` permanently redirect to `www.anshatradingco.com`.
+- Added a responsive official Banking Information page for the Wio AED account and Citi USD intermediary details.
+- Added one-click copy controls, payment-reference guidance, and an official WhatsApp verification action.
+- Kept the banking page out of search indexes while making it directly accessible from the public footer.
+- No database migration is required.
