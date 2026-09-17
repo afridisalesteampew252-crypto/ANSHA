@@ -5,9 +5,7 @@ import { siteConfig } from '@/lib/site-config';
 
 export function SiteFooter() {
   return (
-    <footer className="relative isolate overflow-hidden bg-black text-white">
-      <Image src="/images/ansha-global-vehicles-parts-banner.webp" alt="" fill sizes="100vw" className="-z-20 object-cover object-center opacity-35" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/70 via-black/90 to-black/95" />
+    <footer className="overflow-hidden bg-black text-white">
       <div className="h-0.5 w-full bg-accent" />
       <div className="container-page py-12 sm:py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
