@@ -205,7 +205,7 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
               {categories.map((category) => (
-                <Link key={category.id} href={`/categories/${category.slug}`} className="group relative min-h-44 overflow-hidden rounded-2xl border border-border bg-secondary">
+                <Link key={category.id} href={`/categories/${category.slug}`} className="group relative block aspect-[4/3] min-h-[9rem] overflow-hidden rounded-2xl border border-border bg-secondary">
                   {category.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={category.image_url} alt={category.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
