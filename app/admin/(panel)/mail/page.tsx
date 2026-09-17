@@ -169,8 +169,15 @@ export default function InternalMailPage() {
 
   useEffect(() => {
     if (!currentUserId) return;
+
+    const topic = `workspace-mail-${currentUserId}`;
+    const existing = supabase.getChannels().find((c) => c.topic === `realtime:${topic}`);
+    if (existing) {
+      void supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel(`workspace-mail-${currentUserId}`)
+      .channel(topic)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'internal_mail' }, () => void loadMail(currentUserId))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'internal_mail_recipients' }, () => void loadMail(currentUserId))
       .subscribe();
