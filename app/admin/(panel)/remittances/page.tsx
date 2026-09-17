@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 type Customer = { id: string; full_name: string; company_name: string | null };
 type Invoice = { id: string; invoice_number: string; customer_id: string | null; customer_name: string; customer_company: string | null; currency: string; balance_due: number; status: string };
-type Document = { id: string; remittance_id: string; storage_path: string; file_name: string; file_size: number };
+type Document = { id: string; remittance_id: string; storage_path: string; file_name: string; size_bytes: number };
 type Remittance = { id: string; remittance_number: string; customer_name: string; invoice_id: string | null; received_date: string; amount: number; currency: string; method: string; bank_reference: string | null; sender_bank: string | null; receiving_bank: string | null; status: string; notes: string | null; created_at: string };
 const emptyForm = { customer_id: '', invoice_id: '', customer_name: '', received_date: new Date().toISOString().slice(0, 10), amount: '', currency: 'AED', method: 'bank_transfer', bank_reference: '', sender_bank: '', receiving_bank: 'WIO BANK', status: 'pending', notes: '' };
 const money = (value: number, currency: string) => new Intl.NumberFormat('en-AE', { style: 'currency', currency }).format(Number(value || 0));
@@ -75,7 +75,7 @@ export default function RemittancesPage() {
         const path = `${user!.id}/${remittanceId}/${crypto.randomUUID()}-${safeName}`;
         const { error: uploadError } = await supabase.storage.from('remittance-documents').upload(path, file, { cacheControl: '31536000' });
         if (uploadError) throw uploadError;
-        const { error: rowError } = await supabase.from('remittance_documents').insert({ remittance_id: remittanceId, storage_path: path, file_name: file.name, mime_type: file.type || null, file_size: file.size, uploaded_by: user!.id });
+        const { error: rowError } = await supabase.from('remittance_documents').insert({ remittance_id: remittanceId, storage_path: path, file_name: file.name, mime_type: file.type || null, size_bytes: file.size, uploaded_by: user!.id });
         if (rowError) throw rowError;
       }
       setMessage(form.status === 'confirmed' && form.invoice_id ? 'Remittance confirmed and applied to the invoice once.' : 'Remittance saved.');
