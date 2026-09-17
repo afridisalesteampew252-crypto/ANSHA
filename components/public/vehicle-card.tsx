@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowUpRight, Calendar, Car, Fuel, Gauge, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { siteConfig } from '@/lib/site-config';
+import { stockOriginLabel } from '@/lib/stock';
 import type { VehicleWithPhotos } from '@/lib/types';
 
 interface VehicleCardProps {
@@ -29,12 +30,14 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
         )}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute left-3 top-3 flex gap-2">
-          {vehicle.is_featured && <Badge className="border-0 bg-accent text-white">Featured</Badge>}
+          {vehicle.stock_status === 'sold' ? <Badge className="border-0 bg-zinc-950 text-white">Sold</Badge> : vehicle.is_featured && <Badge className="border-0 bg-accent text-white">Featured</Badge>}
           <Badge className="border-0 bg-background/90 text-foreground">{vehicle.make}</Badge>
         </div>
         {vehicle.year && <span className="absolute bottom-3 left-3 text-sm font-bold text-white">{vehicle.year} {vehicle.model}</span>}
+        {vehicle.stock_status === 'sold' && <span className="absolute inset-0 grid place-items-center bg-black/25 text-3xl font-black uppercase tracking-[0.2em] text-white">Sold</span>}
       </Link>
       <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-accent">{stockOriginLabel(vehicle.stock_origin)}</p>
         <Link href={`/vehicles/${vehicle.slug}`}><h3 className="line-clamp-2 text-base font-bold group-hover:text-accent">{vehicle.title}</h3></Link>
         <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-secondary/55 p-3 text-[11px] text-muted-foreground">
           {vehicle.year && <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-accent" />{vehicle.year}</span>}
@@ -45,7 +48,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
         <div className="mt-auto flex items-end justify-between gap-3 pt-4">
           <div>
             <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">{hasPrice ? 'Export price' : 'Price'}</span>
-            <strong className="text-lg font-extrabold">{hasPrice ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}` : 'Ask for quote'}</strong>
+            <strong className="text-lg font-extrabold">{vehicle.stock_status === 'sold' ? 'Sold' : hasPrice ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}` : 'Ask for quote'}</strong>
           </div>
           <a href={waHref} target="_blank" rel="noopener noreferrer" className="grid h-10 w-10 place-items-center rounded-full bg-[#25D366] text-white" aria-label={`Ask about ${vehicle.title} on WhatsApp`}><MessageCircle className="h-4 w-4" /></a>
         </div>
