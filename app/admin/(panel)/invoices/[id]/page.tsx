@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, Banknote, FileJson, Loader2, Printer, Save } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Banknote, FileJson, Loader2, Pencil, Printer, Save, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +33,7 @@ const statusClass: Record<string, string> = { draft: 'bg-slate-100 text-slate-70
 
 export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -84,6 +85,15 @@ export default function InvoiceDetailPage() {
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${invoice.invoice_number}.json`; anchor.click(); URL.revokeObjectURL(url);
   };
 
+  const removeInvoice = async () => {
+    if (!invoice || !window.confirm(`Delete ${invoice.invoice_number}? This is permanent. Invoices with payments or remittances must be reconciled first.`)) return;
+    setBusy(true); setMessage('Deleting invoice…');
+    const { error } = await supabase.rpc('delete_invoice_safely', { p_invoice_id: invoice.id });
+    setBusy(false);
+    if (error) return setMessage(error.message);
+    router.push('/admin/invoices');
+  };
+
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!invoice) return <div className="space-y-4"><Button asChild variant="ghost"><Link href="/admin/invoices"><ArrowLeft className="h-4 w-4" />Invoices</Link></Button><Card><CardContent className="p-6">{message || 'Invoice not found.'}</CardContent></Card></div>;
 
@@ -92,7 +102,7 @@ export default function InvoiceDetailPage() {
 
   return <div className="mx-auto max-w-7xl space-y-6">
     <style jsx global>{`@media print { body { background: white !important; } .admin-invoice-actions, aside, header { display: none !important; } main { padding: 0 !important; overflow: visible !important; } .invoice-print { border: 0 !important; box-shadow: none !important; } .invoice-print * { color: #111827 !important; } }`}</style>
-    <div className="admin-invoice-actions flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href="/admin/invoices"><ArrowLeft className="h-4 w-4" />Invoices</Link></Button><div className="flex flex-wrap items-center gap-3"><h1 className="text-2xl font-bold">{invoice.invoice_number}</h1><span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusClass[effectiveStatus]}`}>{effectiveStatus.replace('_', ' ')}</span></div><p className="text-sm text-muted-foreground">Issued {invoice.issue_date} · Due {invoice.due_date}</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={exportJson}><FileJson className="h-4 w-4" />Export JSON</Button><Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" />Print / PDF</Button><Button onClick={() => setPaymentOpen((open) => !open)} disabled={invoice.status === 'cancelled' || invoice.balance_due <= 0}><Banknote className="h-4 w-4" />Record payment</Button></div></div>
+    <div className="admin-invoice-actions flex flex-col justify-between gap-4 xl:flex-row xl:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href="/admin/invoices"><ArrowLeft className="h-4 w-4" />Invoices</Link></Button><div className="flex flex-wrap items-center gap-3"><h1 className="text-2xl font-bold">{invoice.invoice_number}</h1><span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusClass[effectiveStatus]}`}>{effectiveStatus.replace('_', ' ')}</span></div><p className="text-sm text-muted-foreground">Issued {invoice.issue_date} · Due {invoice.due_date}</p></div><div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link href={`/admin/invoices/new?edit=${invoice.id}`}><Pencil className="h-4 w-4" />Edit</Link></Button><Button variant="outline" onClick={exportJson}><FileJson className="h-4 w-4" />Export JSON</Button><Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" />Print / PDF</Button><Button onClick={() => setPaymentOpen((open) => !open)} disabled={invoice.status === 'cancelled' || invoice.balance_due <= 0}><Banknote className="h-4 w-4" />Record payment</Button><Button variant="outline" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => void removeInvoice()}><Trash2 className="h-4 w-4" />Delete</Button></div></div>
 
     <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
       <Card className="invoice-print min-w-0"><CardContent className="p-5 sm:p-8 lg:p-10">
