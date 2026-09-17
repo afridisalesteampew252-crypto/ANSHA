@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile } from '@/lib/types';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
+import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const navItems = [
@@ -128,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-border bg-card/95 px-3 backdrop-blur md:hidden">
           <div className="flex min-w-0 items-center gap-2"><Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Open admin menu"><Menu className="h-6 w-6" /></Button><div className="min-w-0"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">ANSHA operations</p><h1 className="truncate text-base font-bold">{pageTitle}</h1></div></div>
-          <div className="flex shrink-0 items-center"><ThemeToggle /><AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
+          <div className="flex shrink-0 items-center"><AdminNotificationCenter userId={profile.id} /><ThemeToggle /><AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
         </header>
 
         <header className="hidden h-20 items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur md:flex xl:px-8">
@@ -136,6 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-2">
             <DropdownMenu><DropdownMenuTrigger asChild><Button><Plus className="h-4 w-4" />Quick add</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuLabel>Create or import</DropdownMenuLabel><DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu>
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
+            <AdminNotificationCenter userId={profile.id} />
             <ThemeToggle /><AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
           </div>
         </header>

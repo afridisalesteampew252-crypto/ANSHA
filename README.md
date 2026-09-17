@@ -277,3 +277,15 @@ Completed on 2026-09-17.
 - Added remittance editing with atomic invoice-payment reversal and recreation when the amount, invoice, date, currency, or status changes.
 - Added confirmed remittance deletion with private-document cleanup and automatic invoice balance recalculation.
 - Applied migrations `20260917163000_phase_16_editable_financial_records` through `20260917165000_phase_16_after_trigger_financial_sync` with invoker-safe RPCs, protected private triggers, compatibility guards, and tightened RLS.
+
+## Phase 17: notifications, chat receipts, customer SOA, and analytics
+
+Completed on 2026-09-17.
+
+- Added sent, delivered, and read indicators to direct and group chat using per-participant delivery/read timestamps.
+- Added a realtime admin notification center for team messages, internal mail, website inquiries, and part requests, with recipient-only RLS and mark-read controls.
+- Added a customer Statement of Account page covering posted invoices, invoice balances, confirmed remittances, available funds, allocation history, and stock-linked buying details.
+- Added auditable partial remittance allocations across multiple invoices, strict customer/currency/balance validation, and safe allocation reversal that recalculates invoice balances.
+- Backfilled existing linked remittance payments into the allocation ledger without changing production financial values.
+- Added six-month invoiced-versus-received charts, customer collection charts, inventory-status charts, financial KPIs, operational counts, and unread-chat totals.
+- Applied migrations `20260917180000_phase_17_notifications_customer_soa` and `20260917180500_phase_17_advisor_indexes` with explicit grants, RLS, realtime publication, and covering foreign-key indexes.
