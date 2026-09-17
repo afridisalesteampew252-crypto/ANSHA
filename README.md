@@ -27,6 +27,8 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 10 | Internal communications UI and self-service profiles | Complete |
 | 11 | Responsive operations, reliable user creation, imports, and invoicing | Complete |
 | 12 | Canonical domain migration and official banking page | Complete |
+| 13 | Public automotive catalog redesign and responsive UX | Complete |
+| 14 | QR-verifiable invoices and remittance management | Complete |
 
 ## Phase 1 completion
 
@@ -75,7 +77,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migration: `supabase/migrations/20260916154500_phase_9_internal_communications_indexes.sql`.
+Latest migration: `supabase/migrations/20260917103000_phase_14_remittance_advisor_cleanup.sql`.
 
 ## Phase 4: global SEO and exporter schema
 
@@ -236,3 +238,17 @@ Completed on 2026-09-16.
 - Added one-click copy controls, payment-reference guidance, and an official WhatsApp verification action.
 - Kept the banking page out of search indexes while making it directly accessible from the public footer.
 - No database migration is required.
+
+
+## Phase 14: invoice verification and remittances
+
+Completed on 2026-09-17.
+
+- Extended the existing invoice ledger without replacing or duplicating it.
+- Added proforma, tax, and commercial invoice types plus optional manual codes such as `RIYA0063`.
+- Adapted the attached RIYA0063 format with multiline vehicle specifications, WIO Bank details, USD intermediary details, and print/PDF output.
+- Added an unguessable per-invoice QR verification code and public authenticity page on the canonical ANSHA domain.
+- Limited public verification to document-facing seller, customer, line-item, total, payment-status, and tax fields; contact details, notes, and internal records remain private.
+- Added remittance records for pending or confirmed customer funds, optional customer/invoice association, and one-time linked invoice payments.
+- Added private 25 MB remittance evidence storage with RLS and five-minute signed document access.
+- Applied and verified migrations `20260917100000_phase_14_invoice_verification_remittances` and `20260917103000_phase_14_remittance_advisor_cleanup`.
