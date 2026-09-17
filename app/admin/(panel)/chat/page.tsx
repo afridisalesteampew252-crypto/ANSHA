@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Check,
+  CheckCheck,
   Download,
   FileText,
   Loader2,
@@ -62,6 +63,7 @@ type Participant = {
   is_manager: boolean;
   joined_at: string;
   last_read_at: string | null;
+  last_delivered_at: string | null;
 };
 
 type Attachment = {
@@ -125,6 +127,16 @@ function formatBytes(value: number | null) {
   if (!value) return '';
   if (value < 1024 * 1024) return `${Math.ceil(value / 1024)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function messageReceipt(message: Message, participants: Participant[]) {
+  const recipients = participants.filter((participant) => participant.user_id !== message.sender_id);
+  if (!recipients.length) return { state: 'sent', label: 'Sent' } as const;
+  const read = recipients.every((participant) => participant.last_read_at && participant.last_read_at >= message.created_at);
+  if (read) return { state: 'read', label: 'Read by everyone' } as const;
+  const delivered = recipients.every((participant) => participant.last_delivered_at && participant.last_delivered_at >= message.created_at);
+  if (delivered) return { state: 'delivered', label: 'Delivered to everyone' } as const;
+  return { state: 'sent', label: 'Sent' } as const;
 }
 
 export default function ChatPage() {
@@ -195,6 +207,13 @@ export default function ChatPage() {
     });
     setConversations(summaries);
     setActiveId((current) => current && summaries.some((item) => item.id === current) ? current : summaries[0]?.id || '');
+    const deliveryUpdates = summaries.flatMap((conversation) => {
+      const membership = memberships.find((row) => row.conversation_id === conversation.id);
+      const latestIncoming = recent.find((message) => message.conversation_id === conversation.id && message.sender_id !== userId);
+      if (!latestIncoming || (membership?.last_delivered_at && membership.last_delivered_at >= latestIncoming.created_at)) return [];
+      return [supabase.from('chat_participants').update({ last_delivered_at: latestIncoming.created_at }).eq('conversation_id', conversation.id).eq('user_id', userId)];
+    });
+    if (deliveryUpdates.length) await Promise.all(deliveryUpdates);
   }, []);
 
   const loadMessages = useCallback(async (conversationId: string, userId: string) => {
@@ -225,9 +244,10 @@ export default function ChatPage() {
       ...row,
       attachments: attachments.filter((attachment) => attachment.message_id === row.id),
     })));
+    const latestMessageAt = rows.at(-1)?.created_at || new Date().toISOString();
     await supabase
       .from('chat_participants')
-      .update({ last_read_at: new Date().toISOString() })
+      .update({ last_delivered_at: latestMessageAt, last_read_at: latestMessageAt })
       .eq('conversation_id', conversationId)
       .eq('user_id', userId);
     setLoadingMessages(false);
@@ -480,6 +500,7 @@ export default function ChatPage() {
                     const mine = message.sender_id === currentUserId;
                     const sender = profiles[message.sender_id];
                     const quoted = message.reply_to_id ? messages.find((item) => item.id === message.reply_to_id) : null;
+                    const receipt = mine ? messageReceipt(message, activeConversation.participants) : null;
                     return (
                       <div key={message.id} className={cn('group flex gap-2', mine ? 'justify-end' : 'justify-start')}>
                         {!mine ? <ProfileAvatar profile={sender} url={sender ? avatarUrls[sender.id] : ''} className="mt-1 h-8 w-8 text-xs" /> : null}
@@ -488,7 +509,7 @@ export default function ChatPage() {
                           {quoted ? <div className={cn('mb-2 rounded-lg border-l-2 px-2 py-1 text-xs', mine ? 'border-primary-foreground/50 bg-black/10' : 'border-primary bg-secondary')}>{quoted.deleted_at ? 'Removed message' : quoted.body || 'Attachment'}</div> : null}
                           {message.deleted_at ? <p className="text-sm italic opacity-70">Message removed</p> : <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>}
                           {!message.deleted_at && message.attachments.map((attachment) => <button type="button" key={attachment.id} onClick={() => void openAttachment(attachment)} className={cn('mt-2 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs', mine ? 'border-white/20 bg-black/10 hover:bg-black/20' : 'bg-secondary hover:bg-accent')}><FileText className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1 truncate">{attachment.file_name}</span><span className="opacity-70">{formatBytes(attachment.size_bytes)}</span><Download className="h-3.5 w-3.5" /></button>)}
-                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-70"><span>{formatMessageTime(message.created_at)}</span>{message.edited_at ? <span>edited</span> : null}{mine ? <Check className="h-3 w-3" /> : null}</div>
+                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80"><span>{formatMessageTime(message.created_at)}</span>{message.edited_at ? <span>edited</span> : null}{receipt?.state === 'sent' ? <Check className="h-3 w-3" aria-label={receipt.label} /> : receipt ? <CheckCheck className={cn('h-3.5 w-3.5', receipt.state === 'read' && 'text-sky-300')} aria-label={receipt.label} /> : null}</div>
                         </div>
                         {!message.deleted_at ? <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="mt-1 h-8 w-8 opacity-0 group-hover:opacity-100 focus:opacity-100"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align={mine ? 'end' : 'start'}><DropdownMenuItem onClick={() => { setReplyTo(message); setEditing(null); setBody(''); }}><Reply className="mr-2 h-4 w-4" />Reply</DropdownMenuItem>{mine ? <><DropdownMenuItem onClick={() => { setEditing(message); setReplyTo(null); setBody(message.body || ''); }}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem><DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => void softDeleteMessage(message)}><Trash2 className="mr-2 h-4 w-4" />Remove</DropdownMenuItem></> : null}</DropdownMenuContent></DropdownMenu> : null}
                       </div>
