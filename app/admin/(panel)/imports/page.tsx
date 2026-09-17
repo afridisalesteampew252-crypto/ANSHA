@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import readXlsxFile from 'read-excel-file';
 import { unzipSync } from 'fflate';
-import { BookOpen, Download, FileSpreadsheet, Images, Upload } from 'lucide-react';
+import { BookOpen, Download, FileSpreadsheet, Images, MapPin, Upload } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { compressCatalogImage } from '@/lib/catalog-image';
+import { STOCK_ORIGINS } from '@/lib/stock';
+import type { StockOrigin } from '@/lib/types';
 
 type Entity = 'parts' | 'vehicles';
 type PreviewRow = Record<string, string | number | boolean | null>;
@@ -28,6 +30,7 @@ export default function ImportsPage() {
   const [rows, setRows] = useState<PreviewRow[]>([]);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [vehicleStockOrigin, setVehicleStockOrigin] = useState<StockOrigin>('dubai');
 
   const chooseEntity = (next: Entity) => {
     setEntity(next); setFile(null); setRows([]); setMessage('');
@@ -63,7 +66,7 @@ export default function ImportsPage() {
           const chassis = String(row.chassis_number || '').trim(); const make = String(row.make || '').trim(); const model = String(row.model || '').trim();
           if (!chassis || !make || !model) throw new Error('chassis_number, make and model are required');
           const title = String(row.title || `${row.year || ''} ${make} ${model}`.trim());
-          const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
+          const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, stock_origin: vehicleStockOrigin, show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
           const { data: existing } = await supabase.from('vehicles').select('id').eq('chassis_number', chassis).maybeSingle();
           const mutation = existing ? supabase.from('vehicles').update(payload).eq('id', existing.id) : supabase.from('vehicles').insert(payload);
           const { error } = await mutation; if (error) throw error;
@@ -122,7 +125,7 @@ export default function ImportsPage() {
     </CardContent></Card>
 
     <div className="grid gap-6 xl:grid-cols-2">
-      <Card className="min-w-0"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><FileSpreadsheet className="h-5 w-5" />Excel catalog</CardTitle></CardHeader><CardContent className="space-y-4"><div><Label htmlFor="excel-file">Excel file (.xlsx)</Label><input id="excel-file" className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2" type="file" accept=".xlsx" disabled={busy} onChange={(event) => event.target.files?.[0] && void previewExcel(event.target.files[0])} /></div>{rows.length > 0 && <div className="max-h-64 w-full overflow-auto rounded-md border text-xs"><table className="min-w-max"><thead className="sticky top-0 bg-secondary"><tr>{Object.keys(rows[0]).map((key) => <th key={key} className="whitespace-nowrap p-2 text-left">{key}</th>)}</tr></thead><tbody>{rows.slice(0, 10).map((row, index) => <tr key={index} className="border-t">{Object.values(row).map((value, cell) => <td key={cell} className="max-w-48 truncate p-2">{String(value ?? '')}</td>)}</tr>)}</tbody></table></div>}<Button disabled={busy || rows.length === 0} onClick={importExcel}><Upload className="h-4 w-4" />Import {entity}</Button></CardContent></Card>
+      <Card className="min-w-0"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><FileSpreadsheet className="h-5 w-5" />Excel catalog</CardTitle></CardHeader><CardContent className="space-y-4">{entity === 'vehicles' && <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4"><Label htmlFor="vehicle-stock-origin" className="flex items-center gap-2"><MapPin className="h-4 w-4 text-primary" />Import into stock country</Label><select id="vehicle-stock-origin" value={vehicleStockOrigin} onChange={(event) => setVehicleStockOrigin(event.target.value as StockOrigin)} disabled={busy} className="mt-2 h-11 w-full rounded-md border bg-background px-3 text-sm font-medium">{STOCK_ORIGINS.map((origin) => <option key={origin.value} value={origin.value}>{origin.label}</option>)}</select><p className="mt-2 text-xs text-muted-foreground">Every vehicle in this workbook will be assigned to the selected stock location. Existing matching chassis records will also move to this location.</p></div>}<div><Label htmlFor="excel-file">Excel file (.xlsx)</Label><input id="excel-file" className="mt-2 block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2" type="file" accept=".xlsx" disabled={busy} onChange={(event) => event.target.files?.[0] && void previewExcel(event.target.files[0])} /></div>{rows.length > 0 && <div className="max-h-64 w-full overflow-auto rounded-md border text-xs"><table className="min-w-max"><thead className="sticky top-0 bg-secondary"><tr>{Object.keys(rows[0]).map((key) => <th key={key} className="whitespace-nowrap p-2 text-left">{key}</th>)}</tr></thead><tbody>{rows.slice(0, 10).map((row, index) => <tr key={index} className="border-t">{Object.values(row).map((value, cell) => <td key={cell} className="max-w-48 truncate p-2">{String(value ?? '')}</td>)}</tr>)}</tbody></table></div>}<Button disabled={busy || rows.length === 0} onClick={importExcel}><Upload className="h-4 w-4" />Import {entity === 'vehicles' ? `${STOCK_ORIGINS.find((origin) => origin.value === vehicleStockOrigin)?.label} vehicles` : entity}</Button></CardContent></Card>
       <Card className="min-w-0"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Images className="h-5 w-5" />ZIP images</CardTitle></CardHeader><CardContent className="space-y-4"><div className="rounded-lg bg-secondary/50 p-4 text-sm text-muted-foreground"><p className="font-medium text-foreground">Naming examples</p><code className="mt-2 block break-all">{entity === 'parts' ? '04465-0K340_1.jpg' : 'JTEBX3FJ10K123456_1.jpg'}</code><code className="block break-all">{entity === 'parts' ? '04465-0K340_2.png' : 'JTEBX3FJ10K123456_2.png'}</code></div><input className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2" type="file" accept=".zip" disabled={busy} onChange={(event) => event.target.files?.[0] && void importZip(event.target.files[0])} /></CardContent></Card>
     </div>
     {message && <div role="status" className="rounded-lg border bg-secondary/30 p-4 text-sm">{message}</div>}

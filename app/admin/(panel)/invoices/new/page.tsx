@@ -14,6 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 type Customer = { id: string; full_name: string; company_name: string | null; email: string | null; phone: string | null; address: string | null; tax_registration_number: string | null };
 type Line = { key: string; description: string; quantity: number; unit_price: number; discount_percent: number; tax_rate: number; inventory_type: '' | 'part' | 'vehicle'; part_id: string | null; vehicle_id: string | null; inventory_reference: string };
 type StockItem = { id: string; type: 'part' | 'vehicle'; reference: string; label: string; price: number | null; currency: string; status: string };
+type EditableInvoice = { id: string; invoice_number: string; document_type: string; customer_id: string | null; customer_name: string; customer_company: string | null; customer_email: string | null; customer_phone: string | null; customer_address: string | null; customer_tax_registration_number: string | null; issue_date: string; due_date: string; currency: string; reference: string | null; notes: string | null; terms: string | null };
+type EditableItem = { description: string; quantity: number; unit_price: number; discount_percent: number; tax_rate: number; inventory_type: '' | 'part' | 'vehicle' | null; part_id: string | null; vehicle_id: string | null; inventory_reference: string | null };
 
 const today = new Date().toISOString().slice(0, 10);
 const defaultDue = (() => { const date = new Date(); date.setDate(date.getDate() + 30); return date.toISOString().slice(0, 10); })();
@@ -37,17 +39,35 @@ export default function NewInvoicePage() {
   const [lines, setLines] = useState<Line[]>([newLine()]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [editingId, setEditingId] = useState('');
 
   useEffect(() => { void (async () => {
-    const [customerResult, partsResult, vehiclesResult] = await Promise.all([
+    const invoiceId = new URLSearchParams(window.location.search).get('edit') || '';
+    const [customerResult, partsResult, vehiclesResult, invoiceResult, itemResult] = await Promise.all([
       supabase.from('customers').select('id,full_name,company_name,email,phone,address,tax_registration_number').eq('is_active', true).order('company_name').order('full_name'),
       supabase.from('parts').select('id,part_code,name,price,currency,stock_status').neq('stock_status', 'sold').order('part_code').limit(500),
       supabase.from('vehicles').select('id,stock_number,chassis_number,chassis_code,title,price,currency,stock_status').neq('stock_status', 'sold').order('stock_number').limit(500),
+      invoiceId ? supabase.from('invoices').select('id,invoice_number,document_type,customer_id,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,reference,notes,terms').eq('id', invoiceId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      invoiceId ? supabase.from('invoice_items').select('description,quantity,unit_price,discount_percent,tax_rate,inventory_type,part_id,vehicle_id,inventory_reference').eq('invoice_id', invoiceId).order('sort_order') : Promise.resolve({ data: [], error: null }),
     ]);
     setCustomers((customerResult.data || []) as Customer[]);
     const parts: StockItem[] = (partsResult.data || []).map((item) => ({ id: item.id, type: 'part', reference: item.part_code, label: item.name, price: item.price, currency: item.currency, status: item.stock_status }));
     const vehicles: StockItem[] = (vehiclesResult.data || []).map((item) => ({ id: item.id, type: 'vehicle', reference: item.stock_number || item.chassis_number || item.chassis_code || item.id.slice(0, 8), label: item.title, price: item.price, currency: item.currency, status: item.stock_status }));
     setStockItems([...vehicles, ...parts]);
+    if (invoiceId) {
+      if (invoiceResult.error || !invoiceResult.data) {
+        setMessage(invoiceResult.error?.message || 'Invoice could not be loaded for editing.');
+        return;
+      }
+      const invoice = invoiceResult.data as EditableInvoice;
+      setEditingId(invoice.id); setInvoiceNumber(invoice.invoice_number); setDocumentType(invoice.document_type);
+      setCustomerId(invoice.customer_id || '');
+      setCustomer({ name: invoice.customer_name, company: invoice.customer_company || '', email: invoice.customer_email || '', phone: invoice.customer_phone || '', address: invoice.customer_address || '', trn: invoice.customer_tax_registration_number || '' });
+      setIssueDate(invoice.issue_date); setDueDate(invoice.due_date); setCurrency(invoice.currency);
+      setReference(invoice.reference || ''); setNotes(invoice.notes || ''); setTerms(invoice.terms || '');
+      const existingLines = (itemResult.data || []) as EditableItem[];
+      setLines(existingLines.length ? existingLines.map((item) => ({ ...item, key: crypto.randomUUID(), inventory_type: item.inventory_type || '', inventory_reference: item.inventory_reference || '' })) : [newLine()]);
+    }
   })(); }, []);
 
   const chooseCustomer = (id: string) => {
@@ -86,11 +106,11 @@ export default function NewInvoicePage() {
   }, { subtotal: 0, discount: 0, tax: 0, total: 0 }), [lines]);
 
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); setBusy(true); setMessage('Creating invoice…');
+    event.preventDefault(); setBusy(true); setMessage(editingId ? 'Updating invoice…' : 'Creating invoice…');
     const validLines = lines.filter((line) => line.description.trim());
     if (!customer.name.trim()) { setBusy(false); return setMessage('Customer name is required.'); }
     if (!validLines.length) { setBusy(false); return setMessage('Add at least one line item.'); }
-    const { data, error } = await supabase.rpc('create_invoice_v3', {
+    const payload = {
       p_invoice_number: invoiceNumber.trim() || null,
       p_document_type: documentType,
       p_customer_id: customerId || null,
@@ -107,14 +127,17 @@ export default function NewInvoicePage() {
       p_notes: notes.trim(),
       p_terms: terms.trim(),
       p_items: validLines.map((line) => ({ description: line.description, quantity: line.quantity, unit_price: line.unit_price, discount_percent: line.discount_percent, tax_rate: line.tax_rate, inventory_type: line.inventory_type || null, part_id: line.part_id, vehicle_id: line.vehicle_id, inventory_reference: line.inventory_reference || null })),
-    });
+    };
+    const { data, error } = editingId
+      ? await supabase.rpc('update_invoice_v4', { ...payload, p_invoice_id: editingId })
+      : await supabase.rpc('create_invoice_v3', payload);
     setBusy(false);
-    if (error || !data) return setMessage(error?.message || 'Could not create invoice.');
+    if (error || !data) return setMessage(error?.message || `Could not ${editingId ? 'update' : 'create'} invoice.`);
     router.push(`/admin/invoices/${data}`);
   };
 
   return <form onSubmit={submit} className="mx-auto max-w-7xl space-y-6">
-    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href="/admin/invoices"><ArrowLeft className="h-4 w-4" />Invoices</Link></Button><h1 className="text-2xl font-bold">New invoice</h1><p className="text-sm text-muted-foreground">Create delivery notes, quotations, proforma, tax, purchase, or commercial invoices with secure QR verification.</p></div><Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Saving…' : 'Create invoice'}</Button></div>
+    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href={editingId ? `/admin/invoices/${editingId}` : '/admin/invoices'}><ArrowLeft className="h-4 w-4" />{editingId ? 'Invoice' : 'Invoices'}</Link></Button><h1 className="text-2xl font-bold">{editingId ? `Edit ${invoiceNumber}` : 'New invoice'}</h1><p className="text-sm text-muted-foreground">{editingId ? 'Update customer details, dates, stock-linked lines, prices, VAT, notes, and terms.' : 'Create delivery notes, quotations, proforma, tax, purchase, or commercial invoices with secure QR verification.'}</p></div><Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Saving…' : editingId ? 'Update invoice' : 'Create invoice'}</Button></div>
 
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <div className="min-w-0 space-y-6">
@@ -146,7 +169,7 @@ export default function NewInvoicePage() {
       <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
         <Card><CardHeader><CardTitle className="text-lg">Invoice details</CardTitle></CardHeader><CardContent className="grid gap-4">
           <div className="space-y-1.5"><Label htmlFor="document-type">Document type</Label><select id="document-type" value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="proforma_invoice">Proforma invoice</option><option value="quotation">Quotation</option><option value="tax_invoice">Tax invoice</option><option value="delivery_note">Delivery note</option><option value="purchase_invoice">Purchase invoice</option><option value="commercial_invoice">Commercial invoice</option></select></div>
-          <div className="space-y-1.5"><Label htmlFor="invoice-number">Invoice number</Label><Input id="invoice-number" value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value.toUpperCase())} placeholder="RIYA0063 or leave blank" maxLength={40} /><p className="text-xs text-muted-foreground">Use an existing sales code such as RIYA0063, or leave blank for an automatic INV number.</p></div>
+          <div className="space-y-1.5"><Label htmlFor="invoice-number">Invoice number</Label><Input id="invoice-number" value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value.toUpperCase())} placeholder="RIYA0063 or leave blank" maxLength={40} /><p className="text-xs text-muted-foreground">{editingId ? 'Invoice numbers must remain unique.' : 'Use an existing sales code such as RIYA0063, or leave blank for an automatic INV number.'}</p></div>
           <div className="space-y-1.5"><Label htmlFor="issue-date">Issue date</Label><Input id="issue-date" type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="due-date">Due date</Label><Input id="due-date" type="date" min={issueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="currency">Currency</Label><select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="AED">AED</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select></div>

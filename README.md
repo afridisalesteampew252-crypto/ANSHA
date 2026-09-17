@@ -266,3 +266,14 @@ Completed on 2026-09-17.
 - Added a private supplier/market invoice archive with 25 MB PDF, image, Word, and Excel uploads.
 - Added signed private staff profile pictures to conversation lists, message threads, and group participant selection.
 - Applied migration `20260917150000_phase_15_stock_invoice_inventory` with RLS, private Storage policies, foreign-key indexes, and explicit Data API grants.
+
+## Phase 16: country-directed imports and editable financial records
+
+Completed on 2026-09-17.
+
+- Added a required stock-country selector to vehicle Excel imports for Japan, Dubai, Singapore, China, Thailand, and Taiwan.
+- Added full invoice editing for customer details, dates, document type, stock-linked lines, prices, discounts, VAT, notes, and terms.
+- Added guarded invoice deletion; financial documents with linked payments or remittances must be reconciled first.
+- Added remittance editing with atomic invoice-payment reversal and recreation when the amount, invoice, date, currency, or status changes.
+- Added confirmed remittance deletion with private-document cleanup and automatic invoice balance recalculation.
+- Applied migration `20260917163000_phase_16_editable_financial_records` with invoker-safe RPCs, protected private triggers, and tightened RLS.
