@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -38,11 +39,10 @@ export default function AdminPartsPage() {
 
   const filtered = useMemo(() => origin === 'all' ? parts : parts.filter((part) => part.stock_origin === origin), [origin, parts]);
 
-  async function updatePart(id: string, changes: Record<string, unknown>, success: string) {
+  async function updatePart(id: string, changes: Record<string, unknown>) {
     const { error } = await supabase.from('parts').update(changes).eq('id', id);
     if (error) return window.alert(error.message);
     await fetchParts();
-    window.setTimeout(() => {}, 0);
   }
 
   async function deletePart(part: PartWithRelations) {
@@ -64,8 +64,8 @@ export default function AdminPartsPage() {
       const photoUrl = cover ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${cover.storage_path}` : '';
       return <Card key={part.id} className="overflow-hidden"><CardContent className="p-0">
         <div className="flex gap-4 p-4"><div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-secondary">{photoUrl ? <img src={photoUrl} alt={part.name} className="h-full w-full object-contain p-1" /> : <span className="grid h-full place-items-center"><Wrench className="h-6 w-6 text-muted-foreground/30" /></span>}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><Badge className={statusClass[part.stock_status || 'available']}>{part.stock_status || 'available'}</Badge>{part.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}</div><h2 className="mt-2 truncate font-bold">{part.name}</h2><p className="font-mono text-xs text-muted-foreground">{part.part_code}</p><p className="mt-1 text-xs">{conditionLabels[part.condition]} · Qty {part.quantity} · <span className="font-medium text-primary">{stockOriginLabel(part.stock_origin)}</span></p></div></div>
-        <div className="grid gap-3 border-t p-4 sm:grid-cols-2"><label className="text-xs font-medium text-muted-foreground">Stock location<select value={part.stock_origin || 'dubai'} onChange={(event) => void updatePart(part.id, { stock_origin: event.target.value }, 'Stock location updated.')} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">{STOCK_ORIGINS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label className="text-xs font-medium text-muted-foreground">Availability<select value={part.stock_status || 'available'} onChange={(event) => void updatePart(part.id, { stock_status: event.target.value }, 'Availability updated.')} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"><option value="available">Available</option><option value="reserved">Reserved</option><option value="sold">Sold</option></select></label></div>
-        <div className="flex items-center gap-2 border-t p-3"><Button variant="outline" size="sm" onClick={() => void updatePart(part.id, { is_published: !part.is_published }, 'Publishing updated.')}>{part.is_published ? 'Unpublish' : 'Publish'}</Button><Button asChild variant="ghost" size="icon"><Link href={`/parts/${part.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link></Button><Button asChild variant="ghost" size="icon"><Link href={`/admin/parts/${part.id}`}><Pencil className="h-4 w-4" /></Link></Button><Button variant="ghost" size="icon" className="ml-auto text-destructive" onClick={() => void deletePart(part)}><Trash2 className="h-4 w-4" /></Button></div>
+        <div className="grid gap-3 border-t p-4 sm:grid-cols-2"><label className="text-xs font-medium text-muted-foreground">Stock location<select value={part.stock_origin || 'dubai'} onChange={(event) => void updatePart(part.id, { stock_origin: event.target.value })} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">{STOCK_ORIGINS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label><label className="text-xs font-medium text-muted-foreground">Availability<select value={part.stock_status || 'available'} onChange={(event) => void updatePart(part.id, { stock_status: event.target.value })} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"><option value="available">Available</option><option value="reserved">Reserved</option><option value="sold">Sold</option></select></label></div>
+        <div className="flex items-center gap-2 border-t p-3"><Button variant="outline" size="sm" onClick={() => void updatePart(part.id, { is_published: !part.is_published })}>{part.is_published ? 'Unpublish' : 'Publish'}</Button><Button asChild variant="ghost" size="icon"><Link href={`/parts/${part.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link></Button><Button asChild variant="ghost" size="icon"><Link href={`/admin/parts/${part.id}`}><Pencil className="h-4 w-4" /></Link></Button><Button variant="ghost" size="icon" className="ml-auto text-destructive" onClick={() => void deletePart(part)}><Trash2 className="h-4 w-4" /></Button></div>
       </CardContent></Card>;
     })}</div>}
   </div>;
