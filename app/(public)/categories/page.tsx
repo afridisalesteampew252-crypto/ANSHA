@@ -2,108 +2,77 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Package, ChevronRight } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ArrowRight, Boxes, Package, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase/client';
 import type { Category } from '@/lib/types';
 
 interface CategoryWithCount extends Category {
-  part_count?: number;
+  part_count: number;
 }
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryWithCount[]>([]);
+  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     (async () => {
-      const { data: cats } = await supabase
-        .from('categories')
-        .select('*')
-        .order('sort_order');
-
-      if (cats) {
-        const withCounts = await Promise.all(
-          (cats as Category[]).map(async (cat) => {
-            const { count } = await supabase
-              .from('parts')
-              .select('id', { count: 'exact', head: true })
-              .eq('category_id', cat.id)
-              .eq('is_published', true);
-            return { ...cat, part_count: count || 0 };
-          })
-        );
-        setCategories(withCounts);
-      }
+      const [{ data: categoryData }, { data: partData }] = await Promise.all([
+        supabase.from('categories').select('*').order('sort_order'),
+        supabase.from('parts').select('category_id').eq('is_published', true),
+      ]);
+      if (!active) return;
+      const counts: Record<string, number> = {};
+      for (const part of partData || []) if (part.category_id) counts[part.category_id] = (counts[part.category_id] || 0) + 1;
+      setCategories(((categoryData || []) as Category[]).map((category) => ({ ...category, part_count: counts[category.id] || 0 })));
       setLoading(false);
     })();
+    return () => {
+      active = false;
+    };
   }, []);
 
+  const filtered = categories.filter((category) => category.name.toLowerCase().includes(query.toLowerCase()) || category.description?.toLowerCase().includes(query.toLowerCase()));
+
   return (
-    <div>
-      {/* Page header */}
-      <section className="border-b border-border bg-secondary/40">
-        <div className="container-page py-10">
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="accent-bar" />
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Browse</p>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Categories</h1>
-          <p className="mt-1 text-muted-foreground">Browse parts by category type</p>
-        </div>
+    <>
+      <section className="relative overflow-hidden bg-[#101114] py-11 text-white sm:py-16">
+        <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(circle_at_80%_20%,rgba(220,38,38,.5),transparent_30%),linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:auto,42px_42px,42px_42px]" />
+        <div className="container-page relative"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-red-400">Catalog departments</span><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Browse parts by category</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">Explore ANSHA’s published inventory by automotive system and product family.</p></div>
       </section>
 
-      <div className="container-page py-10">
+      <div className="container-page py-8 sm:py-12">
+        <div className="relative mb-8 max-w-xl">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search categories" className="h-12 rounded-full bg-card pl-11 shadow-sm" />
+        </div>
+
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
-            ))}
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-border">
-              <Package className="h-8 w-8 text-muted-foreground/40" />
-            </div>
-            <h3 className="mt-6 text-lg font-semibold">No categories yet</h3>
-            <p className="mt-1 text-muted-foreground">Categories will appear here once they are added.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((cat) => (
-              <Link key={cat.id} href={`/categories/${cat.slug}`}>
-                <Card className="group overflow-hidden hover:border-foreground/20 hover:shadow-md transition-all">
-                  <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-                    {cat.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={cat.image_url}
-                        alt={cat.name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <Package className="h-8 w-8 text-muted-foreground/25" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="font-semibold text-white">{cat.name}</h3>
-                      <p className="text-sm text-white/70">
-                        {cat.part_count} part{cat.part_count !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    <div className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 opacity-0 transition-opacity group-hover:opacity-100">
-                      <ChevronRight className="h-4 w-4 text-foreground" />
-                    </div>
-                  </div>
-                </Card>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="aspect-[1.15] rounded-2xl" />)}</div>
+        ) : filtered.length ? (
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
+            {filtered.map((category) => (
+              <Link key={category.id} href={`/categories/${category.slug}`} className="group relative min-h-56 overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                {category.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={category.image_url} alt={category.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                ) : <span className="absolute inset-0 grid place-items-center"><Package className="h-12 w-12 text-muted-foreground/20" /></span>}
+                <span className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+                <span className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/55">{category.part_count} available</span>
+                  <strong className="mt-1 block text-base font-extrabold sm:text-lg">{category.name}</strong>
+                  <span className="mt-3 hidden items-center gap-2 text-xs font-bold text-white/80 sm:flex">Open category <ArrowRight className="h-3.5 w-3.5 text-accent" /></span>
+                </span>
               </Link>
             ))}
           </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-border py-20 text-center"><Boxes className="mx-auto h-10 w-10 text-muted-foreground/25" /><h2 className="mt-4 text-xl font-extrabold">No category matches that search</h2><button onClick={() => setQuery('')} className="mt-3 text-sm font-bold text-accent">Clear search</button></div>
         )}
       </div>
-    </div>
+    </>
   );
 }
