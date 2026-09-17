@@ -78,7 +78,7 @@ export function PartCard({ part }: PartCardProps) {
           </a>
         </div>
         <Link href={`/parts/${part.slug}`} className="mt-3 flex items-center justify-between rounded-xl bg-secondary/70 px-3 py-2.5 text-xs font-bold transition-colors hover:bg-foreground hover:text-background">
-          View specifications <ArrowUpRight className="h-3.5 w-3.5" />
+          View details <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
       </div>
     </article>
