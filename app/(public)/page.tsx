@@ -1,16 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Search, ShieldCheck, Truck, Headphones, ArrowRight, Package,
-  PackageCheck, Globe2, Send, BookOpen, FileText,
+  ArrowRight,
+  BadgeCheck,
+  Boxes,
+  CarFront,
+  ChevronRight,
+  CircleHelp,
+  ClipboardCheck,
+  Globe2,
+  Headphones,
+  PackageSearch,
+  Search,
+  Send,
+  ShieldCheck,
+  Ship,
+  Sparkles,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
 import { PartCard } from '@/components/public/part-card';
 import { VehicleCard } from '@/components/public/vehicle-card';
 import { BlogCard } from '@/components/public/blog-card';
@@ -18,7 +31,7 @@ import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
-import type { Category, PartWithRelations, VehicleWithPhotos, BlogPostWithCategory } from '@/lib/types';
+import type { BlogPostWithCategory, Category, PartWithRelations, VehicleWithPhotos } from '@/lib/types';
 
 interface MakeStat {
   make: string;
@@ -27,264 +40,182 @@ interface MakeStat {
 
 export default function HomePage() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [query, setQuery] = useState('');
+  const [finderBrand, setFinderBrand] = useState('all');
+  const [finderCategory, setFinderCategory] = useState('all');
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>([]);
   const [latestParts, setLatestParts] = useState<PartWithRelations[]>([]);
   const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>([]);
   const [latestPosts, setLatestPosts] = useState<BlogPostWithCategory[]>([]);
-  const [makes, setMakes] = useState<MakeStat[]>([]);
+  const [brandCounts, setBrandCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    let active = true;
     (async () => {
-      const [catRes, featRes, latestRes, featVehiclesRes, postsRes] = await Promise.all([
+      const [catRes, featuredRes, latestRes, vehiclesRes, postsRes, catalogRes] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order').limit(12),
-        supabase
-          .from('parts')
-          .select('*, categories(*), part_photos(*), part_compatibility(*)')
-          .eq('is_published', true)
-          .eq('is_featured', true)
-          .order('created_at', { ascending: false })
-          .limit(8),
-        supabase
-          .from('parts')
-          .select('*, categories(*), part_photos(*), part_compatibility(*)')
-          .eq('is_published', true)
-          .order('created_at', { ascending: false })
-          .limit(8),
-        supabase
-          .from('vehicles')
-          .select('*, vehicle_photos(*)')
-          .eq('is_published', true)
-          .eq('is_featured', true)
-          .order('created_at', { ascending: false })
-          .limit(4),
-        supabase
-          .from('blog_posts')
-          .select('*, blog_categories(*)')
-          .eq('status', 'published')
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(3),
+        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).eq('is_featured', true).order('created_at', { ascending: false }).limit(8),
+        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).order('created_at', { ascending: false }).limit(8),
+        supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true).eq('is_featured', true).order('created_at', { ascending: false }).limit(4),
+        supabase.from('blog_posts').select('*, blog_categories(*)').eq('status', 'published').order('published_at', { ascending: false, nullsFirst: false }).limit(3),
+        supabase.from('parts').select('brand, category_id').eq('is_published', true),
       ]);
+      if (!active) return;
 
       setCategories((catRes.data || []) as Category[]);
-      setFeaturedParts((featRes.data || []) as unknown as PartWithRelations[]);
+      setFeaturedParts((featuredRes.data || []) as unknown as PartWithRelations[]);
       setLatestParts((latestRes.data || []) as unknown as PartWithRelations[]);
-      setFeaturedVehicles((featVehiclesRes.data || []) as unknown as VehicleWithPhotos[]);
+      setFeaturedVehicles((vehiclesRes.data || []) as unknown as VehicleWithPhotos[]);
       setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
 
-      // Build manufacturer totals from the canonical brand saved on each published part.
-      const { data: brandData } = await supabase
-        .from('parts')
-        .select('brand')
-        .eq('is_published', true)
-        .not('brand', 'is', null);
-
-      if (brandData) {
-        const counts: Record<string, number> = {};
-        for (const row of brandData) {
-          if (row.brand) counts[row.brand] = (counts[row.brand] || 0) + 1;
-        }
-        const sorted = Object.entries(counts)
-          .map(([make, count]) => ({ make, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 8);
-        setMakes(sorted);
+      const nextBrandCounts: Record<string, number> = {};
+      const nextCategoryCounts: Record<string, number> = {};
+      for (const row of catalogRes.data || []) {
+        if (row.brand) nextBrandCounts[row.brand.toLowerCase()] = (nextBrandCounts[row.brand.toLowerCase()] || 0) + 1;
+        if (row.category_id) nextCategoryCounts[row.category_id] = (nextCategoryCounts[row.category_id] || 0) + 1;
       }
-
+      setBrandCounts(nextBrandCounts);
+      setCategoryCounts(nextCategoryCounts);
       setLoading(false);
-      setLoaded(true);
     })();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const makeCounts = new Map(makes.map((item) => [item.make.toLowerCase(), item.count]));
-  const displayMakes: MakeStat[] = SUPPORTED_MANUFACTURERS.map((make) => ({
+  const displayMakes = useMemo<MakeStat[]>(() => SUPPORTED_MANUFACTURERS.map((make) => ({
     make,
-    count: makeCounts.get(make.toLowerCase()) || 0,
-  }));
+    count: brandCounts[make.toLowerCase()] || 0,
+  })), [brandCounts]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/parts?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
+  const goToParts = (event: React.FormEvent) => {
+    event.preventDefault();
+    const params = new URLSearchParams();
+    if (query.trim()) params.set('q', query.trim());
+    if (finderBrand !== 'all') params.set('brand', finderBrand);
+    if (finderCategory !== 'all') params.set('category', finderCategory);
+    router.push(`/parts${params.size ? `?${params.toString()}` : ''}`);
   };
+
+  const featured = featuredParts.length ? featuredParts : latestParts;
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-foreground text-background">
-        <div className="absolute inset-0 bg-gradient-to-r from-foreground via-foreground/90 to-foreground/50" />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground via-transparent to-foreground/20" />
-        <div className="absolute inset-0 bg-grid-dark opacity-20" />
-
-        <div className="relative container-page py-14 md:py-20">
-          <div className="max-w-2xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-background/15 bg-background/5 px-4 py-1.5 text-xs font-medium uppercase tracking-wider text-background/70 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              Global vehicle and automotive parts exporter
-            </div>
-            <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-balance md:text-5xl lg:text-6xl">
-              Vehicles and Parts<br />
-              <span className="text-background/50">for Every Market</span>
+      <section className="relative overflow-hidden bg-[#101114] text-white">
+        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_78%_20%,rgba(220,38,38,.35),transparent_28%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
+        <div className="absolute -right-24 top-10 hidden h-[430px] w-[620px] rotate-[-8deg] rounded-[50%] border border-white/10 bg-gradient-to-br from-white/10 to-transparent blur-sm lg:block" />
+        <div className="container-page relative grid min-h-[590px] items-center gap-10 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20">
+          <div className="max-w-3xl">
+            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/75 backdrop-blur">
+              <Sparkles className="h-3.5 w-3.5 text-accent" />Vehicle and parts sourcing from Dubai
+            </span>
+            <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-[-0.045em] sm:text-5xl lg:text-6xl xl:text-7xl">
+              The right automotive stock, <span className="text-accent">ready to export.</span>
             </h1>
-            <p className="mt-5 text-lg text-background/60 leading-relaxed max-w-xl">
-              Source inspected vehicles and quality parts for all major brands. Search by OEM number, chassis code, engine code, make, model, or year—and export worldwide with confidence.
+            <p className="mt-6 max-w-2xl text-base leading-7 text-white/65 sm:text-lg">
+              Search verified parts by OEM number, chassis, make or model. Source inspected vehicles and export worldwide with one experienced team.
             </p>
-
-            <form onSubmit={handleSearch} className="mt-8 max-w-xl">
-              <div className="relative flex items-center rounded-lg bg-background p-1.5 shadow-2xl">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="search"
-                  placeholder="Search: Toyota Aqua Headlight, NHP10, 81110-52J30..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="border-0 bg-transparent pl-12 pr-4 h-11 text-base focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-                <Button type="submit" variant="accent" className="h-9 rounded-md shrink-0 mr-1">
-                  Search
-                </Button>
-              </div>
-            </form>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link href="/vehicles"><Button variant="accent" size="lg">Browse Vehicles <ArrowRight className="h-4 w-4" /></Button></Link>
-              <Link href="/parts"><Button variant="outline" size="lg" className="border-white/30 bg-white/5 text-white hover:bg-white/10 hover:text-white">Browse Parts</Button></Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild variant="accent" size="lg" className="h-12 rounded-full px-6"><Link href="/parts">Explore parts <ArrowRight className="h-4 w-4" /></Link></Button>
+              <Button asChild size="lg" className="h-12 rounded-full border border-white/20 bg-white/5 px-6 text-white hover:bg-white/10"><Link href="/vehicles">Browse vehicles</Link></Button>
             </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-background/40">Popular:</span>
-              {['Headlights', 'Toyota Aqua', 'NHP10', 'Brakes'].map((term) => (
-                <Link
-                  key={term}
-                  href={`/parts?q=${encodeURIComponent(term)}`}
-                  className="rounded-md border border-background/10 bg-background/5 px-2.5 py-1 text-background/60 transition-colors hover:text-background hover:border-background/20"
-                >
-                  {term}
-                </Link>
+            <div className="mt-9 grid max-w-xl grid-cols-3 gap-3 border-t border-white/10 pt-6">
+              {[
+                ['55+', 'Supported brands'],
+                ['Worldwide', 'Export service'],
+                ['Dubai', 'Operations base'],
+              ].map(([value, label]) => (
+                <div key={label}>
+                  <strong className="block text-lg font-extrabold sm:text-xl">{value}</strong>
+                  <span className="text-[10px] uppercase tracking-wider text-white/45 sm:text-xs">{label}</span>
+                </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Trust badges */}
-      <section className="border-b border-border bg-card">
-        <div className="container-page py-8">
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: ShieldCheck, title: 'Quality Assured', desc: 'Verified parts with accurate descriptions' },
-              { icon: Truck, title: 'Fast Dispatch', desc: 'Quick dispatch to your location' },
-              { icon: Globe2, title: 'Global Shipping', desc: 'Parts for all major vehicle brands' },
-              { icon: Headphones, title: 'Expert Support', desc: 'WhatsApp us anytime for help' },
-            ].map((item) => (
-              <div key={item.title} className="flex items-start gap-3.5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/40 text-accent">
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold">{item.title}</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Shop by Make */}
-      <section className="py-16 bg-secondary/30">
-        <div className="container-page">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="accent-bar" />
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">By Manufacturer</p>
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight">All Supported Vehicle Brands</h2>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Search genuine, OEM, aftermarket, new, used, and refurbished parts across Japanese, European, Korean, American, British, Chinese, and Indian brands.</p>
-            </div>
-            <Link href="/parts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              All Parts →
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8">
-            {displayMakes.map((item) => {
-              const logo = getManufacturerLogo(item.make);
-              return (
-                <Link key={item.make} href={`/parts?brand=${encodeURIComponent(item.make)}`}>
-                  <div className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-4 text-center transition-all duration-200 hover:border-foreground/20 hover:shadow-card-hover">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-secondary/40 group-hover:bg-accent group-hover:border-accent transition-colors">
-                      <Image
-                        src={logo}
-                        alt={`${item.make} logo`}
-                        width={40}
-                        height={40}
-                        className="h-8 w-8 object-contain"
-                      />
-                    </div>
-                    <span className="text-xs font-semibold leading-tight">{item.make}</span>
-                    {item.count > 0 && (
-                      <span className="text-[10px] text-muted-foreground">{item.count} part{item.count !== 1 ? 's' : ''}</span>
-                    )}
+          <div className="relative lg:pl-6">
+            <div className="rounded-[28px] border border-white/15 bg-white/[0.07] p-3 shadow-2xl backdrop-blur-xl sm:p-5">
+              <form onSubmit={goToParts} className="rounded-2xl bg-background p-5 text-foreground sm:p-7">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Smart catalog finder</span>
+                    <h2 className="mt-1 text-xl font-extrabold sm:text-2xl">Find the right part faster</h2>
                   </div>
-                </Link>
-              );
-            })}
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white"><PackageSearch className="h-5 w-5" /></span>
+                </div>
+                <label className="block">
+                  <span className="mb-2 block text-xs font-bold">Part, OEM or chassis number</span>
+                  <span className="relative block">
+                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. 81110-52J30, NHP10, headlight" className="h-12 rounded-xl bg-secondary/50 pl-10" />
+                  </span>
+                </label>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label>
+                    <span className="mb-2 block text-xs font-bold">Manufacturer</span>
+                    <select value={finderBrand} onChange={(event) => setFinderBrand(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm">
+                      <option value="all">All manufacturers</option>
+                      {SUPPORTED_MANUFACTURERS.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="mb-2 block text-xs font-bold">Category</span>
+                    <select value={finderCategory} onChange={(event) => setFinderCategory(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm">
+                      <option value="all">All categories</option>
+                      {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <Button type="submit" variant="accent" className="mt-5 h-12 w-full rounded-xl text-sm font-bold">Search available inventory <ArrowRight className="h-4 w-4" /></Button>
+                <p className="mt-4 flex items-center gap-2 text-[11px] text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />Searches only published ANSHA inventory.</p>
+              </form>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-16">
-        <div className="container-page">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="accent-bar" />
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Browse</p>
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight">Shop by Category</h2>
+      <section className="border-b border-border bg-card">
+        <div className="container-page grid grid-cols-2 divide-x divide-y divide-border py-2 lg:grid-cols-4 lg:divide-y-0">
+          {[
+            { icon: BadgeCheck, title: 'Verified Stock', text: 'Accurate listings and condition' },
+            { icon: Ship, title: 'Global Export', text: 'Shipping coordination worldwide' },
+            { icon: ClipboardCheck, title: 'Fitment Support', text: 'OEM and chassis matching' },
+            { icon: Headphones, title: 'Human Service', text: 'Direct help on WhatsApp' },
+          ].map((item) => (
+            <div key={item.title} className="flex min-h-24 items-center gap-3 px-3 py-4 sm:px-5">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"><item.icon className="h-5 w-5" /></span>
+              <div><h3 className="text-xs font-extrabold sm:text-sm">{item.title}</h3><p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs">{item.text}</p></div>
             </div>
-            <Link href="/categories" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              View All →
-            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="py-14 sm:py-20">
+        <div className="container-page">
+          <div className="section-heading">
+            <div><span className="eyebrow">Catalog departments</span><h2>Shop by category</h2><p>Move directly into the part family you need.</p></div>
+            <Link href="/categories" className="section-link">All categories <ArrowRight className="h-4 w-4" /></Link>
           </div>
           {loading ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="aspect-[4/3] animate-pulse rounded-lg bg-muted" />
-              ))}
-            </div>
-          ) : categories.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No categories available yet.</p>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />)}</div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {categories.slice(0, 6).map((cat) => (
-                <Link key={cat.id} href={`/categories/${cat.slug}`}>
-                  <Card className="group overflow-hidden hover:shadow-card-hover hover:border-foreground/15 transition-all duration-200">
-                    <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-                      {cat.image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={cat.image_url}
-                          alt={cat.name}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center">
-                          <Package className="h-8 w-8 text-muted-foreground/25" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                        <span className="text-xs font-semibold text-white">{cat.name}</span>
-                      </div>
-                    </div>
-                  </Card>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+              {categories.map((category) => (
+                <Link key={category.id} href={`/categories/${category.slug}`} className="group relative min-h-44 overflow-hidden rounded-2xl border border-border bg-secondary">
+                  {category.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={category.image_url} alt={category.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  ) : <span className="absolute inset-0 grid place-items-center"><Wrench className="h-10 w-10 text-muted-foreground/15" /></span>}
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                  <span className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <strong className="block text-sm">{category.name}</strong>
+                    <span className="mt-1 block text-[11px] text-white/65">{categoryCounts[category.id] || 0} available</span>
+                  </span>
+                  <ChevronRight className="absolute right-3 top-3 h-7 w-7 rounded-full bg-white/90 p-1.5 text-black opacity-0 transition group-hover:opacity-100" />
                 </Link>
               ))}
             </div>
@@ -292,257 +223,102 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured vehicles */}
-      {!loading && featuredVehicles.length > 0 && (
-        <section className="py-16 bg-secondary/30">
-          <div className="container-page">
-            <div className="mb-8 flex items-end justify-between">
-              <div>
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="accent-bar" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Showroom</p>
-                </div>
-                <h2 className="text-2xl font-bold tracking-tight">Featured Vehicles</h2>
-              </div>
-              <Link href="/vehicles" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                View All →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredVehicles.map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Featured parts */}
-      {!loading && featuredParts.length > 0 && (
-        <section className="py-16">
-          <div className="container-page">
-            <div className="mb-8 flex items-end justify-between">
-              <div>
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="accent-bar" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Hand-picked</p>
-                </div>
-                <h2 className="text-2xl font-bold tracking-tight">Featured Parts</h2>
-              </div>
-              <Link href="/parts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                All Parts →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredParts.map((part) => (
-                <PartCard key={part.id} part={part} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* How we work */}
-      <section className="py-16 bg-secondary/30">
+      <section className="bg-secondary/45 py-14 sm:py-20">
         <div className="container-page">
-          <div className="mb-10 text-center">
-            <div className="mb-1.5 flex items-center justify-center gap-2">
-              <span className="accent-bar" />
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Our Process</p>
-              <span className="accent-bar" />
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight">How It Works</h2>
-            <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">
-              From finding the right part to receiving it at your door — a simple, reliable process.
-            </p>
+          <div className="section-heading">
+            <div><span className="eyebrow">Ready to ship</span><h2>Featured parts</h2><p>Current published inventory selected by the ANSHA team.</p></div>
+            <Link href="/parts" className="section-link">View catalog <ArrowRight className="h-4 w-4" /></Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: Search, step: '01', title: 'Find Parts', desc: 'Search our catalog by name, OEM number, or vehicle compatibility.' },
-              { icon: Send, step: '02', title: 'Send Inquiry', desc: 'Submit an inquiry or message us on WhatsApp for availability.' },
-              { icon: PackageCheck, step: '03', title: 'Confirmation', desc: 'We confirm the part, condition, and price with you before packing.' },
-              { icon: Truck, step: '04', title: 'Dispatch & Shipping', desc: 'Your order is packed securely and dispatched to your location.' },
-            ].map((item, idx) => (
-              <div key={item.step} className="relative rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-card-hover">
-                <div className="flex items-start justify-between">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/50 text-accent">
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <span className="text-2xl font-extrabold text-muted-foreground/15">{item.step}</span>
-                </div>
-                <h3 className="mt-4 text-sm font-semibold">{item.title}</h3>
-                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
-                {idx < 3 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-2.5 z-10 h-5 w-5">
-                    <ArrowRight className="h-4 w-4 text-muted-foreground/30" />
-                  </div>
-                )}
-              </div>
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="aspect-[.72] animate-pulse rounded-2xl bg-muted" />)}</div>
+          ) : featured.length ? (
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{featured.slice(0, 8).map((part) => <PartCard key={part.id} part={part} />)}</div>
+          ) : (
+            <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center"><Boxes className="mx-auto h-10 w-10 text-muted-foreground/30" /><h3 className="mt-4 font-bold">Inventory is being prepared</h3><p className="mt-1 text-sm text-muted-foreground">Send your requirements and the team will source the right part.</p></div>
+          )}
+        </div>
+      </section>
+
+      <section className="py-14 sm:py-20">
+        <div className="container-page">
+          <div className="section-heading">
+            <div><span className="eyebrow">Manufacturer directory</span><h2>Parts for 55 automotive brands</h2><p>Choose a marque to open its filtered catalog.</p></div>
+            <Link href="/parts" className="section-link">All inventory <ArrowRight className="h-4 w-4" /></Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 xl:grid-cols-11">
+            {displayMakes.map(({ make, count }) => (
+              <Link key={make} href={`/parts?brand=${encodeURIComponent(make)}`} className="group flex min-h-24 flex-col items-center justify-center rounded-xl border border-border bg-card p-2 text-center transition hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-md">
+                <Image src={getManufacturerLogo(make)} alt={`${make} logo`} width={52} height={52} className="h-9 w-12 object-contain transition group-hover:scale-105" />
+                <strong className="mt-2 line-clamp-1 text-[10px] sm:text-[11px]">{make}</strong>
+                {count > 0 && <span className="mt-0.5 text-[9px] font-semibold text-accent">{count} in stock</span>}
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Latest parts */}
-      {!loading && latestParts.length > 0 && (
-        <section className="py-16">
-          <div className="container-page">
-            <div className="mb-8 flex items-end justify-between">
-              <div>
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="accent-bar" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">New Stock</p>
-                </div>
-                <h2 className="text-2xl font-bold tracking-tight">Latest Arrivals</h2>
-              </div>
-              <Link href="/parts" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                All Parts →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {latestParts.map((part) => (
-                <PartCard key={part.id} part={part} />
-              ))}
+      <section className="overflow-hidden bg-[#101114] py-14 text-white sm:py-20">
+        <div className="container-page grid items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
+          <div>
+            <span className="eyebrow text-red-400">Export showroom</span>
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Vehicles sourced for your destination market.</h2>
+            <p className="mt-4 max-w-xl leading-7 text-white/60">Browse published stock or send the make, model, year, and destination you need. ANSHA can coordinate inspection and export support from Dubai.</p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Button asChild variant="accent" className="rounded-full"><Link href="/vehicles">View vehicle stock <ArrowRight className="h-4 w-4" /></Link></Button>
+              <Button asChild className="rounded-full border border-white/20 bg-white/5 text-white hover:bg-white/10"><Link href="/contact">Request sourcing</Link></Button>
             </div>
           </div>
-        </section>
-      )}
+          {featuredVehicles.length ? (
+            <div className="grid gap-4 sm:grid-cols-2">{featuredVehicles.map((vehicle) => <VehicleCard key={vehicle.id} vehicle={vehicle} />)}</div>
+          ) : (
+            <div className="relative min-h-72 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] p-8">
+              <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
+              <CarFront className="h-14 w-14 text-accent" />
+              <h3 className="mt-8 text-2xl font-extrabold">Looking for a specific vehicle?</h3>
+              <p className="mt-3 max-w-md text-sm leading-6 text-white/55">Tell us the exact specification. We will respond with current availability instead of showing outdated or invented stock.</p>
+              <Link href="/contact" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white">Send requirements <ArrowRight className="h-4 w-4 text-accent" /></Link>
+            </div>
+          )}
+        </div>
+      </section>
 
-      {/* Empty state when no parts at all */}
-      {loaded && !loading && latestParts.length === 0 && featuredParts.length === 0 && (
-        <section className="py-20">
-          <div className="container-page text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-border">
-              <Package className="h-8 w-8 text-muted-foreground/40" />
-            </div>
-            <h2 className="mt-6 text-xl font-bold">Parts catalog coming soon</h2>
-            <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-              We're updating our inventory. Send us an inquiry or message us on WhatsApp for any part you need.
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <WhatsAppButton />
-              <Link href="/contact">
-                <Button variant="outline">Contact Us</Button>
-              </Link>
-            </div>
+      <section className="py-14 sm:py-20">
+        <div className="container-page grid gap-8 lg:grid-cols-[.8fr_1.2fr]">
+          <div className="rounded-[28px] bg-accent p-7 text-white sm:p-10">
+            <CircleHelp className="h-11 w-11" />
+            <h2 className="mt-6 text-3xl font-black tracking-tight">Can’t find the exact part?</h2>
+            <p className="mt-4 leading-7 text-white/75">Share the part name, OEM number, vehicle model or chassis code. Our sourcing team will review your request.</p>
+            <ul className="mt-7 space-y-3 text-sm font-semibold">
+              {['OEM and chassis matching', 'All major vehicle brands', 'Direct export support'].map((item) => <li key={item} className="flex items-center gap-2"><BadgeCheck className="h-4 w-4" />{item}</li>)}
+            </ul>
           </div>
-        </section>
-      )}
-
-      {/* Request a Part */}
-      <section className="py-16 bg-secondary/30">
-        <div className="container-page">
-          <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-start">
-            <div>
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="accent-bar" />
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Can't find it?</p>
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight">Request a Part</h2>
-              <p className="mt-3 text-muted-foreground leading-relaxed">
-                Can't find the part you need in our catalog? Tell us what you're looking for and our team will help locate it for you.
-              </p>
-              <div className="mt-6 space-y-3">
-                {[
-                  { title: 'Send your requirements', desc: 'Fill in your vehicle details and the part you need.' },
-                  { title: 'We source it for you', desc: 'Our team searches our network of suppliers.' },
-                  { title: 'We contact you', desc: 'We get back to you with availability and pricing.' },
-                ].map((step, i) => (
-                  <div key={step.title} className="flex items-start gap-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground text-xs font-bold mt-0.5">
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold">{step.title}</p>
-                      <p className="text-xs text-muted-foreground">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <PartRequestForm />
-            </div>
+          <div className="rounded-[28px] border border-border bg-card p-5 shadow-sm sm:p-8">
+            <PartRequestForm />
           </div>
         </div>
       </section>
 
-      {/* Latest from Blog */}
-      {!loading && latestPosts.length > 0 && (
-        <section className="py-16">
+      {latestPosts.length > 0 && (
+        <section className="border-t border-border bg-secondary/40 py-14 sm:py-20">
           <div className="container-page">
-            <div className="mb-8 flex items-end justify-between">
-              <div>
-                <div className="mb-1.5 flex items-center gap-2">
-                  <span className="accent-bar" />
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Automotive Knowledge</p>
-                </div>
-                <h2 className="text-2xl font-bold tracking-tight">Latest From Our Blog</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Buying guides, parts knowledge and insights from the Japanese automotive market.</p>
-              </div>
-              <Link href="/blog" className="hidden sm:block text-sm font-medium text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap">
-                View All Articles →
-              </Link>
+            <div className="section-heading">
+              <div><span className="eyebrow">Export insights</span><h2>Latest from ANSHA</h2><p>Guides and updates for automotive buyers.</p></div>
+              <Link href="/blog" className="section-link">All insights <ArrowRight className="h-4 w-4" /></Link>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {latestPosts.map((post) => (
-                <BlogCard key={post.id} post={post} />
-              ))}
-            </div>
-            <div className="mt-6 sm:hidden text-center">
-              <Link href="/blog">
-                <Button variant="outline">
-                  <BookOpen className="h-4 w-4" />
-                  View All Articles
-                </Button>
-              </Link>
-            </div>
+            <div className="grid gap-5 md:grid-cols-3">{latestPosts.map((post) => <BlogCard key={post.id} post={post} />)}</div>
           </div>
         </section>
       )}
 
-      {/* Blog empty state — only show the section shell if no posts */}
-      {loaded && !loading && latestPosts.length === 0 && (
-        <section className="py-12">
-          <div className="container-page">
-            <div className="rounded-xl border border-dashed border-border p-8 text-center">
-              <FileText className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
-              <h3 className="font-semibold">Blog coming soon</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Automotive guides and insights will be published here.
-              </p>
-              <Link href="/admin/blog/new" className="mt-3 inline-block">
-                <Button variant="outline" size="sm">
-                  <BookOpen className="h-4 w-4" />
-                  Write First Article
-                </Button>
-              </Link>
-            </div>
+      <section className="border-t border-border bg-card py-10">
+        <div className="container-page flex flex-col items-center justify-between gap-5 text-center md:flex-row md:text-left">
+          <div className="flex items-center gap-4">
+            <span className="grid h-12 w-12 place-items-center rounded-full bg-accent/10 text-accent"><Globe2 className="h-6 w-6" /></span>
+            <div><h2 className="text-lg font-extrabold">Ready to source or export?</h2><p className="text-sm text-muted-foreground">Speak directly with the ANSHA team in Dubai.</p></div>
           </div>
-        </section>
-      )}
-
-      {/* Final CTA */}
-      <section className="bg-foreground text-background">
-        <div className="container-page flex flex-col items-center justify-between gap-6 py-14 text-center md:flex-row md:text-left">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="h-1 w-10 rounded-full bg-accent" />
-              <span className="text-xs font-bold uppercase tracking-wider text-background/50">Can't find it?</span>
-            </div>
-            <h2 className="text-2xl font-bold">We'll source it for you</h2>
-            <p className="mt-1.5 text-background/60">
-              Send us an inquiry with your part details and we'll find it for you.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <WhatsAppButton variant="accent" />
-            <Link href="/parts">
-              <Button variant="outline" size="lg" className="bg-transparent border-background/25 text-background hover:bg-background/10 hover:text-background">
-                Browse All Parts
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+          <div className="flex flex-wrap justify-center gap-3">
+            <WhatsAppButton message="Hello ANSHA TRADING, I would like help sourcing a vehicle or automotive part." />
+            <Button asChild variant="outline"><Link href="/contact"><Send className="h-4 w-4" />Contact team</Link></Button>
           </div>
         </div>
       </section>
