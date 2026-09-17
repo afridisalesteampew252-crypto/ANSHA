@@ -105,6 +105,12 @@ function initials(profile?: AdminProfile) {
     .toUpperCase();
 }
 
+function ProfileAvatar({ profile, url, className }: { profile?: AdminProfile; url?: string; className?: string }) {
+  return <span className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 font-bold text-primary', className)}>
+    {url ? <img src={url} alt={personName(profile)} className="h-full w-full object-cover" /> : initials(profile)}
+  </span>;
+}
+
 function safeFileName(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'attachment';
 }
@@ -123,6 +129,7 @@ function formatBytes(value: number | null) {
 export default function ChatPage() {
   const [currentUserId, setCurrentUserId] = useState('');
   const [profiles, setProfiles] = useState<Record<string, AdminProfile>>({});
+  const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -236,8 +243,14 @@ export default function ChatPage() {
         const { data: profileData, error: profileError } = await supabase.from('admin_profiles').select('*').order('full_name');
         if (profileError) throw profileError;
         if (!active) return;
-        const profileMap = Object.fromEntries(((profileData || []) as AdminProfile[]).map((profile) => [profile.id, profile]));
+        const profileList = (profileData || []) as AdminProfile[];
+        const profileMap = Object.fromEntries(profileList.map((profile) => [profile.id, profile]));
         setProfiles(profileMap);
+        const signed = await Promise.all(profileList.filter((profile) => profile.avatar_url).map(async (profile) => {
+          const { data } = await supabase.storage.from('profile-images').createSignedUrl(profile.avatar_url!, 3600);
+          return [profile.id, data?.signedUrl || ''] as const;
+        }));
+        if (active) setAvatarUrls(Object.fromEntries(signed.filter(([, url]) => Boolean(url))));
         await loadConversations(session.user.id);
       } catch (error) {
         if (active) setNotice(error instanceof Error ? error.message : 'Unable to load chat.');
@@ -439,7 +452,7 @@ export default function ChatPage() {
             const profile = other ? profiles[other.user_id] : undefined;
             return (
               <button key={conversation.id} type="button" onClick={() => setActiveId(conversation.id)} className={cn('flex w-full items-center gap-3 border-b p-4 text-left transition-colors hover:bg-accent', activeId === conversation.id && 'bg-primary/5')}>
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">{conversation.conversation_type === 'group' ? <Users className="h-5 w-5" /> : initials(profile)}</span>
+                <span className="shrink-0">{conversation.conversation_type === 'group' ? <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-5 w-5" /></span> : <ProfileAvatar profile={profile} url={profile ? avatarUrls[profile.id] : ''} className="h-11 w-11" />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2"><span className="truncate text-sm font-semibold">{activeTitle(conversation)}</span>{conversation.lastMessage ? <span className="shrink-0 text-[10px] text-muted-foreground">{formatMessageTime(conversation.lastMessage.created_at)}</span> : null}</span>
                   <span className="mt-1 flex items-center justify-between gap-2"><span className="truncate text-xs text-muted-foreground">{conversation.lastMessage?.deleted_at ? 'Message removed' : conversation.lastMessage?.body || (conversation.lastMessage ? 'Attachment' : 'Start the conversation')}</span>{conversation.unread ? <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5">{conversation.unread}</Badge> : null}</span>
@@ -468,7 +481,7 @@ export default function ChatPage() {
                     const quoted = message.reply_to_id ? messages.find((item) => item.id === message.reply_to_id) : null;
                     return (
                       <div key={message.id} className={cn('group flex gap-2', mine ? 'justify-end' : 'justify-start')}>
-                        {!mine ? <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold">{initials(sender)}</span> : null}
+                        {!mine ? <ProfileAvatar profile={sender} url={sender ? avatarUrls[sender.id] : ''} className="mt-1 h-8 w-8 text-xs" /> : null}
                         <div className={cn('max-w-[84%] rounded-2xl px-4 py-2.5 shadow-sm', mine ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border bg-card')}>
                           {!mine ? <p className="mb-1 text-xs font-semibold text-primary">{personName(sender)}</p> : null}
                           {quoted ? <div className={cn('mb-2 rounded-lg border-l-2 px-2 py-1 text-xs', mine ? 'border-primary-foreground/50 bg-black/10' : 'border-primary bg-secondary')}>{quoted.deleted_at ? 'Removed message' : quoted.body || 'Attachment'}</div> : null}
@@ -505,7 +518,7 @@ export default function ChatPage() {
           <DialogHeader><DialogTitle>New conversation</DialogTitle><DialogDescription>Talk privately with one colleague or create an operations group.</DialogDescription></DialogHeader>
           <div className="grid grid-cols-2 gap-2"><Button type="button" variant={createType === 'direct' ? 'default' : 'outline'} onClick={() => { setCreateType('direct'); setSelectedPeople([]); }}><MessageCircle className="h-4 w-4" />Direct</Button><Button type="button" variant={createType === 'group' ? 'default' : 'outline'} onClick={() => { setCreateType('group'); setSelectedPeople([]); }}><Users className="h-4 w-4" />Group</Button></div>
           {createType === 'group' ? <div className="space-y-1.5"><Label htmlFor="group-name">Group name</Label><Input id="group-name" value={groupName} onChange={(event) => setGroupName(event.target.value)} placeholder="Shipping Operations" maxLength={120} /></div> : null}
-          <div className="space-y-2"><Label>Select {createType === 'direct' ? 'a colleague' : 'participants'}</Label><ScrollArea className="h-64 rounded-lg border">{colleagues.map((profile) => <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent"><Checkbox checked={selectedPeople.includes(profile.id)} onCheckedChange={() => togglePerson(profile.id)} /><span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{initials(profile)}</span><span><span className="block text-sm font-medium">{personName(profile)}</span><span className="block text-xs text-muted-foreground">{profile.email}</span></span></label>)}</ScrollArea></div>
+          <div className="space-y-2"><Label>Select {createType === 'direct' ? 'a colleague' : 'participants'}</Label><ScrollArea className="h-64 rounded-lg border">{colleagues.map((profile) => <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent"><Checkbox checked={selectedPeople.includes(profile.id)} onCheckedChange={() => togglePerson(profile.id)} /><ProfileAvatar profile={profile} url={avatarUrls[profile.id]} className="h-9 w-9 text-xs" /><span><span className="block text-sm font-medium">{personName(profile)}</span><span className="block text-xs text-muted-foreground">{profile.email}</span></span></label>)}</ScrollArea></div>
           <DialogFooter><Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button><Button disabled={creating || !selectedPeople.length || (createType === 'group' && !groupName.trim())} onClick={() => void createConversation()}>{creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}Create</Button></DialogFooter>
         </DialogContent>
       </Dialog>
@@ -514,7 +527,7 @@ export default function ChatPage() {
         <DialogContent className="max-w-xl">
           <DialogHeader><DialogTitle>Manage group</DialogTitle><DialogDescription>Rename the group and choose who can participate.</DialogDescription></DialogHeader>
           <div className="space-y-1.5"><Label htmlFor="manage-group-name">Group name</Label><Input id="manage-group-name" value={manageName} onChange={(event) => setManageName(event.target.value)} maxLength={120} /></div>
-          <div className="space-y-2"><Label>Participants</Label><ScrollArea className="h-64 rounded-lg border">{colleagues.map((profile) => <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent"><Checkbox checked={managePeople.includes(profile.id)} onCheckedChange={() => setManagePeople((current) => current.includes(profile.id) ? current.filter((id) => id !== profile.id) : [...current, profile.id])} /><span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{initials(profile)}</span><span><span className="block text-sm font-medium">{personName(profile)}</span><span className="block text-xs text-muted-foreground">{profile.email}</span></span></label>)}</ScrollArea><p className="text-xs text-muted-foreground">You remain in groups that you manage.</p></div>
+          <div className="space-y-2"><Label>Participants</Label><ScrollArea className="h-64 rounded-lg border">{colleagues.map((profile) => <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent"><Checkbox checked={managePeople.includes(profile.id)} onCheckedChange={() => setManagePeople((current) => current.includes(profile.id) ? current.filter((id) => id !== profile.id) : [...current, profile.id])} /><ProfileAvatar profile={profile} url={avatarUrls[profile.id]} className="h-9 w-9 text-xs" /><span><span className="block text-sm font-medium">{personName(profile)}</span><span className="block text-xs text-muted-foreground">{profile.email}</span></span></label>)}</ScrollArea><p className="text-xs text-muted-foreground">You remain in groups that you manage.</p></div>
           <DialogFooter><Button variant="outline" onClick={() => setManageOpen(false)}>Cancel</Button><Button disabled={managing || !manageName.trim()} onClick={() => void saveGroup()}>{managing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save group</Button></DialogFooter>
         </DialogContent>
       </Dialog>
