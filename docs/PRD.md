@@ -1,0 +1,44 @@
+# PRD
+
+## Product (current)
+
+ANSHA Trading is a live global vehicle and automotive-parts exporter site plus a staff operations workspace.
+
+Canonical public site: `https://www.anshatradingco.com`.
+
+### Public outcomes
+
+- Search and browse published parts and vehicles
+- Submit inquiries and part-sourcing requests
+- Read blog/about/contact
+- View official banking details
+- Verify invoice authenticity by QR UUID
+
+### Staff outcomes
+
+- Manage catalog, customers, invoices, remittances, imports
+- Internal chat, mail, and notifications
+- Provision staff users (admin role)
+
+### Out of current product
+
+Customer self-service portal, mobile apps, PWA, auction/yard/port operations, generic request ERP, AI automation, WhatsApp Business API, outbound email.
+
+## Users
+
+- Anonymous buyers/importers
+- Staff (`admin_profiles`)
+- Admin staff (user management)
+
+Customers in `customers` are CRM records, not logins.
+
+## Constraints
+
+- Production data must be preserved
+- One business database
+- Incremental change; no full rewrite
+- Documented in `docs/Rules.md`
+
+## Later vision (not committed scope)
+
+Unified platform: public website + staff ERP + customer portal + PWA/native wrappers + notifications + export operations + AI, still on this Supabase project. See `docs/Roadmap.md`.
