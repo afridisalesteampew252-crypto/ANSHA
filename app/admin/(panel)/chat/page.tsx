@@ -289,8 +289,15 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!currentUserId) return;
+
+    const topic = `workspace-chat-${currentUserId}`;
+    const existing = supabase.getChannels().find((c) => c.topic === `realtime:${topic}`);
+    if (existing) {
+      void supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel(`workspace-chat-${currentUserId}`)
+      .channel(topic)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, (payload) => {
         const changed = (payload.new || payload.old) as { conversation_id?: string };
         void loadConversations(currentUserId);
