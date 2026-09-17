@@ -24,6 +24,8 @@ export default function NewInvoicePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
   const [customer, setCustomer] = useState({ name: '', company: '', email: '', phone: '', address: '', trn: '' });
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [documentType, setDocumentType] = useState('proforma_invoice');
   const [issueDate, setIssueDate] = useState(today);
   const [dueDate, setDueDate] = useState(defaultDue);
   const [currency, setCurrency] = useState('AED');
@@ -61,7 +63,9 @@ export default function NewInvoicePage() {
     const validLines = lines.filter((line) => line.description.trim());
     if (!customer.name.trim()) { setBusy(false); return setMessage('Customer name is required.'); }
     if (!validLines.length) { setBusy(false); return setMessage('Add at least one line item.'); }
-    const { data, error } = await supabase.rpc('create_invoice', {
+    const { data, error } = await supabase.rpc('create_invoice_v2', {
+      p_invoice_number: invoiceNumber.trim() || null,
+      p_document_type: documentType,
       p_customer_id: customerId || null,
       p_customer_name: customer.name.trim(),
       p_customer_company: customer.company.trim(),
@@ -83,7 +87,7 @@ export default function NewInvoicePage() {
   };
 
   return <form onSubmit={submit} className="mx-auto max-w-7xl space-y-6">
-    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href="/admin/invoices"><ArrowLeft className="h-4 w-4" />Invoices</Link></Button><h1 className="text-2xl font-bold">New tax invoice</h1><p className="text-sm text-muted-foreground">Amounts are tax-exclusive. VAT is calculated for each line.</p></div><Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Saving…' : 'Create invoice'}</Button></div>
+    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href="/admin/invoices"><ArrowLeft className="h-4 w-4" />Invoices</Link></Button><h1 className="text-2xl font-bold">New invoice</h1><p className="text-sm text-muted-foreground">Create a proforma, tax, or commercial invoice with secure QR verification.</p></div><Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Saving…' : 'Create invoice'}</Button></div>
 
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <div className="min-w-0 space-y-6">
@@ -100,7 +104,7 @@ export default function NewInvoicePage() {
         <Card><CardHeader className="flex-row items-center justify-between"><CardTitle className="text-lg">Line items</CardTitle><Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, newLine()])}><Plus className="h-4 w-4" />Add line</Button></CardHeader><CardContent className="space-y-3">
           <div className="hidden grid-cols-[minmax(15rem,1fr)_5rem_7rem_5rem_5rem_2.5rem] gap-2 px-1 text-xs font-medium text-muted-foreground md:grid"><span>Description</span><span>Qty</span><span>Unit price</span><span>Discount %</span><span>VAT %</span><span /></div>
           {lines.map((line, index) => <div key={line.key} className="grid gap-3 rounded-lg border p-3 md:grid-cols-[minmax(15rem,1fr)_5rem_7rem_5rem_5rem_2.5rem] md:items-end md:border-0 md:p-0">
-            <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`description-${line.key}`}>Description</Label><Input id={`description-${line.key}`} required={index === 0} value={line.description} onChange={(event) => updateLine(line.key, 'description', event.target.value)} placeholder="Part, vehicle or service" /></div>
+            <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`description-${line.key}`}>Description</Label><Textarea id={`description-${line.key}`} required={index === 0} rows={4} value={line.description} onChange={(event) => updateLine(line.key, 'description', event.target.value)} placeholder={index === 0 ? "MAKE: HONDA\nMODEL: CIVIC\nCHASSIS: MRHFC\nENGINE CC: 1.6 VTI CVT\nYEAR: 2016\nDRIVE: 2WD\nTRANSMISSION: AUTOMATIC\nCOLOR: WHITE" : "Part, vehicle, shipping, or service"} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`quantity-${line.key}`}>Quantity</Label><Input id={`quantity-${line.key}`} type="number" min="0.001" step="0.001" value={line.quantity} onChange={(event) => updateLine(line.key, 'quantity', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`price-${line.key}`}>Unit price</Label><Input id={`price-${line.key}`} type="number" min="0" step="0.01" value={line.unit_price} onChange={(event) => updateLine(line.key, 'unit_price', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`discount-${line.key}`}>Discount %</Label><Input id={`discount-${line.key}`} type="number" min="0" max="100" step="0.01" value={line.discount_percent} onChange={(event) => updateLine(line.key, 'discount_percent', event.target.value)} /></div>
@@ -114,6 +118,8 @@ export default function NewInvoicePage() {
 
       <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
         <Card><CardHeader><CardTitle className="text-lg">Invoice details</CardTitle></CardHeader><CardContent className="grid gap-4">
+          <div className="space-y-1.5"><Label htmlFor="document-type">Document type</Label><select id="document-type" value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="proforma_invoice">Proforma invoice</option><option value="tax_invoice">Tax invoice</option><option value="commercial_invoice">Commercial invoice</option></select></div>
+          <div className="space-y-1.5"><Label htmlFor="invoice-number">Invoice number</Label><Input id="invoice-number" value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value.toUpperCase())} placeholder="RIYA0063 or leave blank" maxLength={40} /><p className="text-xs text-muted-foreground">Use an existing sales code such as RIYA0063, or leave blank for an automatic INV number.</p></div>
           <div className="space-y-1.5"><Label htmlFor="issue-date">Issue date</Label><Input id="issue-date" type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="due-date">Due date</Label><Input id="due-date" type="date" min={issueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="currency">Currency</Label><select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="AED">AED</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select></div>

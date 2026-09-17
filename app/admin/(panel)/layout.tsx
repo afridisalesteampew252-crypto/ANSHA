@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   BookOpen, Car, ChevronLeft, ChevronRight, ExternalLink, Inbox, LayoutDashboard,
-  Loader2, Mail, Menu, MessageCircle, Package, Plus, ReceiptText, Tag, Upload,
+  Loader2, Mail, Menu, MessageCircle, Package, Plus, ReceiptText, Tag, Upload, WalletCards,
   UserCog, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ const navItems = [
   { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
+  { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
   { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
   { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
   { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
@@ -130,7 +131,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="hidden h-20 items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur md:flex xl:px-8">
           <div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ANSHA operations</p><h1 className="text-xl font-bold tracking-tight">{pageTitle}</h1></div>
           <div className="flex items-center gap-2">
-            <DropdownMenu><DropdownMenuTrigger asChild><Button><Plus className="h-4 w-4" />Quick add</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuLabel>Create or import</DropdownMenuLabel><DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+            <DropdownMenu><DropdownMenuTrigger asChild><Button><Plus className="h-4 w-4" />Quick add</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuLabel>Create or import</DropdownMenuLabel><DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu>
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
             <ThemeToggle /><AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
           </div>
