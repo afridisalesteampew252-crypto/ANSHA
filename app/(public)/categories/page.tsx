@@ -55,7 +55,7 @@ export default function CategoriesPage() {
         ) : filtered.length ? (
           <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
             {filtered.map((category) => (
-              <Link key={category.id} href={`/categories/${category.slug}`} className="group relative min-h-56 overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+              <Link key={category.id} href={`/categories/${category.slug}`} className="group relative block aspect-[1.15] min-h-[11rem] overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
                 {category.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={category.image_url} alt={category.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
