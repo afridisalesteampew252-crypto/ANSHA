@@ -26,7 +26,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 | 9C | Automatic catalog image optimization for direct and ZIP uploads | Complete |
 | 10 | Internal communications UI and self-service profiles | Complete |
 | 11 | Responsive operations, reliable user creation, imports, and invoicing | Complete |
-| 12 | Canonical domain migration and official banking page | In progress |
+| 12 | Canonical domain migration and official banking page | Complete |
 
 ## Phase 1 completion
 
