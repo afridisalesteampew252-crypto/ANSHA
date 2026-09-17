@@ -57,8 +57,6 @@ export interface PartCompatibility {
   model: string;
   variant: string | null;
   chassis_code: string | null;
-  chassis_number: string | null;
-  stock_number: string | null;
   engine_code: string | null;
   year_from: number | null;
   year_to: number | null;
@@ -86,6 +84,8 @@ export interface Vehicle {
   variant: string | null;
   year: number | null;
   chassis_code: string | null;
+  chassis_number: string | null;
+  stock_number: string | null;
   engine_code: string | null;
   transmission: string | null;
   fuel_type: string | null;
