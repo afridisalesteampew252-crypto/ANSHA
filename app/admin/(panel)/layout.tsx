@@ -34,6 +34,8 @@ const navItems = [
   { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
 ];
 
+const isNavActive = (pathname: string, href: string) => pathname === href || (pathname.startsWith(`${href}/`) && !(href === '/admin/invoices' && pathname.startsWith('/admin/invoices/supplier')));
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -80,12 +82,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-secondary/30"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!profile) return null;
 
-  const activeItem = navItems.find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
+  const activeItem = navItems.find((item) => isNavActive(pathname, item.href));
   const pageTitle = pathname === '/admin/profile' ? 'My profile' : activeItem?.label || 'Admin workspace';
 
   const navigation = (mobile = false) => <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Admin navigation">
     {navItems.map((item) => {
-      const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+      const active = isNavActive(pathname, item.href);
       return <Link key={item.href} href={item.href} title={!mobile && collapsed ? item.label : undefined} className={cn('flex min-h-10 items-center rounded-md text-sm font-medium transition-colors', mobile || !collapsed ? 'gap-3 px-3 py-2.5' : 'justify-center px-2 py-2.5', active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground')}>
         <item.icon className="h-5 w-5 shrink-0" /><span className={cn(!mobile && collapsed && 'sr-only')}>{item.label}</span>
       </Link>;
