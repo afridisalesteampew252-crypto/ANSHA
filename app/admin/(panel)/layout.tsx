@@ -23,6 +23,7 @@ const navItems = [
   { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
   { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
+  { href: '/admin/invoices/supplier', label: 'Supplier Invoices', icon: ReceiptText },
   { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
   { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
   { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
