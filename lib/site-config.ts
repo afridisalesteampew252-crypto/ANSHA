@@ -10,7 +10,7 @@ export const siteConfig = {
   phone: '+971 50 167 7980',
   address: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba, Dubai, U.A.E.',
   taxRegistrationNumber: '105335274400003',
-  url: 'https://www.anshatrading.com',
+  url: 'https://www.anshatradingco.com',
 };
 
 export const conditionLabels: Record<string, string> = {
