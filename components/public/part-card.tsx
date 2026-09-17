@@ -5,6 +5,7 @@ import { ArrowUpRight, Images, MessageCircle, PackageCheck, Wrench } from 'lucid
 import { Badge } from '@/components/ui/badge';
 import { BrandLogo } from '@/components/public/brand-logo';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
+import { stockOriginLabel } from '@/lib/stock';
 import type { PartWithRelations } from '@/lib/types';
 
 interface PartCardProps {
@@ -34,12 +35,13 @@ export function PartCard({ part }: PartCardProps) {
           <Badge className="border-0 bg-background/90 capitalize text-foreground shadow-sm backdrop-blur">
             {conditionLabels[part.condition] || part.condition}
           </Badge>
-          {part.quantity > 0 && (
+          {part.stock_status !== 'sold' && part.quantity > 0 && (
             <Badge className="gap-1 border-0 bg-emerald-600 text-white shadow-sm">
               <PackageCheck className="h-3 w-3" />In stock
             </Badge>
           )}
         </div>
+        {part.stock_status === 'sold' && <span className="absolute inset-0 grid place-items-center bg-black/25 text-3xl font-black uppercase tracking-[0.2em] text-white">Sold</span>}
         {(part.part_photos?.length || 0) > 1 && (
           <span className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-[#101114]/80 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
             <Images className="h-3 w-3" />{part.part_photos?.length}
@@ -50,7 +52,7 @@ export function PartCard({ part }: PartCardProps) {
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-accent">
-            {part.categories?.name || 'Automotive part'}
+            {stockOriginLabel(part.stock_origin)} · {part.categories?.name || 'Automotive part'}
           </span>
           <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{part.part_code}</span>
         </div>
@@ -70,7 +72,7 @@ export function PartCard({ part }: PartCardProps) {
           <div>
             <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{hasPrice ? 'Export price' : 'Price'}</span>
             <strong className="text-lg font-extrabold tracking-tight">
-              {hasPrice ? `${part.currency} ${part.price!.toLocaleString()}` : 'Ask for quote'}
+              {part.stock_status === 'sold' ? 'Sold' : hasPrice ? `${part.currency} ${part.price!.toLocaleString()}` : 'Ask for quote'}
             </strong>
           </div>
           <a href={waHref} target="_blank" rel="noopener noreferrer" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#25D366] text-white shadow-md transition hover:scale-105" aria-label={`Ask about ${part.name} on WhatsApp`}>
