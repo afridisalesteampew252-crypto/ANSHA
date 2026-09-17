@@ -252,3 +252,17 @@ Completed on 2026-09-17.
 - Added remittance records for pending or confirmed customer funds, optional customer/invoice association, and one-time linked invoice payments.
 - Added private 25 MB remittance evidence storage with RLS and five-minute signed document access.
 - Applied and verified migrations `20260917100000_phase_14_invoice_verification_remittances` and `20260917103000_phase_14_remittance_advisor_cleanup`.
+
+
+## Phase 15: worldwide stock and inventory-linked documents
+
+Completed on 2026-09-17.
+
+- Added Japan, Dubai, Singapore, China, Thailand, and Taiwan stock locations for existing vehicle and parts inventory.
+- Added Available, Reserved, and Sold controls while preserving published sold records for transparent public listings.
+- Added public vehicle stock submenus and stock-location filters for both parts and vehicles.
+- Expanded document management with delivery notes, quotations, proforma invoices, tax invoices, purchase invoices, and commercial invoices.
+- Added stock-reference pickers so invoice lines can link directly to a part code or vehicle stock/chassis reference.
+- Added a private supplier/market invoice archive with 25 MB PDF, image, Word, and Excel uploads.
+- Added signed private staff profile pictures to conversation lists, message threads, and group participant selection.
+- Applied migration `20260917150000_phase_15_stock_invoice_inventory` with RLS, private Storage policies, foreign-key indexes, and explicit Data API grants.
