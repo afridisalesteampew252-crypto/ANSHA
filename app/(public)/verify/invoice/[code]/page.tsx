@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true },
 };
 
-type VerificationItem = { description: string; quantity: number; unit_price: number; tax_rate: number; line_total: number };
+type VerificationItem = { description: string; inventory_reference?: string | null; quantity: number; unit_price: number; tax_rate: number; line_total: number };
 type Verification = {
   valid: boolean; invoice_number?: string; document_type?: string; issue_date?: string; due_date?: string;
   seller_name?: string; seller_tax_registration_number?: string; seller_address?: string;
@@ -22,7 +22,7 @@ type Verification = {
 
 const money = (value: number | undefined, currency = 'AED') =>
   new Intl.NumberFormat('en-AE', { style: 'currency', currency }).format(Number(value || 0));
-const title = (value?: string) => ({ proforma_invoice: 'Proforma Invoice', tax_invoice: 'Tax Invoice', commercial_invoice: 'Commercial Invoice' }[value || ''] || 'Invoice');
+const title = (value?: string) => ({ delivery_note: 'Delivery Note', quotation: 'Quotation', proforma_invoice: 'Proforma Invoice', tax_invoice: 'Tax Invoice', purchase_invoice: 'Purchase Invoice', commercial_invoice: 'Commercial Invoice' }[value || ''] || 'Invoice');
 
 export default async function VerifyInvoicePage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
@@ -75,7 +75,7 @@ export default async function VerifyInvoicePage({ params }: { params: Promise<{ 
 
             <section>
               <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><FileCheck2 className="h-5 w-5 text-primary" />Invoice details</h2>
-              <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[560px] text-sm"><thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Description</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Unit price</th><th className="p-3 text-right">VAT</th><th className="p-3 text-right">Total</th></tr></thead><tbody>{(result.line_items || []).map((item, index) => <tr key={index} className="border-t"><td className="whitespace-pre-line p-3">{item.description}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{money(item.unit_price, currency)}</td><td className="p-3 text-right">{item.tax_rate}%</td><td className="p-3 text-right font-medium">{money(item.line_total, currency)}</td></tr>)}</tbody></table></div>
+              <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[560px] text-sm"><thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Description</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Unit price</th><th className="p-3 text-right">VAT</th><th className="p-3 text-right">Total</th></tr></thead><tbody>{(result.line_items || []).map((item, index) => <tr key={index} className="border-t"><td className="whitespace-pre-line p-3">{item.description}{item.inventory_reference && <span className="mt-1 block font-mono text-[10px] text-primary">Stock ref: {item.inventory_reference}</span>}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{money(item.unit_price, currency)}</td><td className="p-3 text-right">{item.tax_rate}%</td><td className="p-3 text-right font-medium">{money(item.line_total, currency)}</td></tr>)}</tbody></table></div>
             </section>
 
             <section className="ml-auto max-w-sm space-y-2 text-sm">
