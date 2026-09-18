@@ -436,13 +436,13 @@ Live read-only: Supabase `list_projects`, `list_tables` (public, verbose), `get_
 
 ## 21. Files You Created/Changed
 
-Created under `docs/` in this documentation pass (see companion files). Existing `docs/phase-13-public-redesign.md` retained. Application source, migrations, and production env were not modified except optional `.env.example` comments if present.
+Created under `docs/`: `PROJECT-AUDIT.md`, `PRD.md`, `Architecture.md`, `Database.md`, `API.md`, `Security.md`, `Roles.md`, `Modules.md`, `Design.md`, `Development.md`, `Deployment.md`, `Testing.md`, `Rules.md`, `Roadmap.md`. Existing `docs/phase-13-public-redesign.md` retained. README latest-migration pointer and `.env.example` comments updated. Application source, migrations, and production env were not otherwise modified.
 
 ---
 
 ## 22. Commands/Test Results
 
-Not run during the read-only audit. After documentation write: `npm run lint` and `npm run typecheck` from `ANSHA/` if the environment allows. `npm run build` and `npm run dev` were not required for docs. Database was not migrated or reset.
+Documentation-only pass. From `ANSHA/` after `npm ci --legacy-peer-deps`: `npm run lint` passed (`eslint . --max-warnings=0`); `npm run typecheck` passed (`tsc --noEmit`). `npm run build` and `npm run dev` were not run. Database was not migrated or reset. `npm audit` reported existing dependency advisories; they were not changed.
 
 ---
 
