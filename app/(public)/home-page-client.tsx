@@ -57,9 +57,9 @@ export default function HomePageClient() {
     (async () => {
       const [catRes, featuredRes, latestRes, vehiclesRes, postsRes] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order').limit(12),
-        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).eq('is_featured', true).order('created_at', { ascending: false }).limit(8),
-        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).order('created_at', { ascending: false }).limit(8),
-        supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true).eq('is_featured', true).order('created_at', { ascending: false }).limit(4),
+        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).eq('stock_status', 'available').eq('is_featured', true).order('created_at', { ascending: false }).limit(8),
+        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).eq('stock_status', 'available').order('created_at', { ascending: false }).limit(8),
+        supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true).eq('stock_status', 'available').eq('is_featured', true).order('created_at', { ascending: false }).limit(4),
         supabase.from('blog_posts').select('*, blog_categories(*)').eq('status', 'published').order('published_at', { ascending: false, nullsFirst: false }).limit(3),
       ]);
       if (!active) return;

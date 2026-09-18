@@ -11,23 +11,25 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918110000_phase_24_pwa_push.sql`.
+Latest migration in the repository: `20260918150000_phase_28_purchase_inventory.sql`.
 
 ## Entity groups
 
 ### Identity
 
-`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`), `email`, `avatar_url`, `created_at`.
+`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`), `email`, `avatar_url`, `is_active`, `created_at`.
 
 `customer_profiles` — PK `id` = `auth.users.id`, unique `customer_id` → `customers`. Portal identity only; never place portal users in `admin_profiles`.
 
 ### Catalog
 
 - `categories` — name/slug unique, `sort_order`, optional `image_url`
-- `parts` — unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`
+- `parts` — unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`
 - `part_photos`, `part_compatibility`
-- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`)
+- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts
 - `vehicle_photos`
+- `suppliers` — master (`supplier_code`, TRN, country, currency, …); ops RLS
+- `inventory_receipts` / `inventory_receipt_lines` — GRN into existing vehicle/part rows; optional `supplier_invoice_id`
 - `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
 ### Public marketing (Phase 24)

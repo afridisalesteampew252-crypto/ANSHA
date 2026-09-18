@@ -40,6 +40,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
         .select('*, vehicle_photos(*)')
         .eq('slug', slug)
         .eq('is_published', true)
+        .eq('stock_status', 'available')
         .maybeSingle();
 
       if (error || !data) {

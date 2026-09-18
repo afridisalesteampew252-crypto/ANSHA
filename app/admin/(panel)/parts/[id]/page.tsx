@@ -41,6 +41,12 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
   const [quantity, setQuantity] = useState('0');
   const [location, setLocation] = useState('');
   const [stockOrigin, setStockOrigin] = useState('dubai');
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [purchaseCurrency, setPurchaseCurrency] = useState('AED');
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [landedCost, setLandedCost] = useState('');
+  const [supplierId, setSupplierId] = useState('');
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
   const [description, setDescription] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
@@ -51,16 +57,18 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
   useEffect(() => {
     (async () => {
-      const [catRes, partRes] = await Promise.all([
+      const [catRes, partRes, supRes] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order'),
         supabase
           .from('parts')
           .select('*, categories(*), part_photos(*), part_compatibility(*)')
           .eq('id', id)
           .maybeSingle(),
+        supabase.from('suppliers').select('id,supplier_code,name').eq('is_active', true).order('name').limit(200),
       ]);
 
       setCategories((catRes.data || []) as Category[]);
+      setSuppliers((supRes.data || []).map((item) => ({ id: item.id, label: `${item.supplier_code} — ${item.name}` })));
 
       if (!partRes.data) {
         toast.error('Part not found.');
@@ -81,6 +89,11 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
       setQuantity(p.quantity.toString());
       setLocation(p.location || '');
       setStockOrigin(p.stock_origin || 'dubai');
+      setPurchasePrice(p.purchase_price != null ? String(p.purchase_price) : '');
+      setPurchaseCurrency(p.purchase_currency || 'AED');
+      setPurchaseDate(p.purchase_date || '');
+      setLandedCost(p.landed_cost != null ? String(p.landed_cost) : '');
+      setSupplierId(p.supplier_id || '');
       setDescription(p.description || '');
       setIsPublished(p.is_published);
       setIsFeatured(p.is_featured);
@@ -136,6 +149,11 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
         quantity: parseInt(quantity, 10) || 0,
         location: location.trim() || null,
         stock_origin: stockOrigin,
+        purchase_price: purchasePrice === '' ? null : parseFloat(purchasePrice),
+        purchase_currency: purchaseCurrency.trim().toUpperCase() || 'AED',
+        purchase_date: purchaseDate || null,
+        landed_cost: landedCost === '' ? null : parseFloat(landedCost),
+        supplier_id: supplierId || null,
         description: description.trim() || null,
         is_published: isPublished,
         is_featured: isFeatured,
@@ -463,6 +481,13 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               <div className="space-y-2"><Label>Quantity</Label><Input type="number" min="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></div>
               <div className="space-y-2"><Label>Location</Label><Input value={location} onChange={(e) => setLocation(e.target.value)} /></div>
               <div className="space-y-2"><Label>Stock location</Label><select value={stockOrigin} onChange={(e) => setStockOrigin(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">{STOCK_ORIGINS.map((origin) => <option key={origin.value} value={origin.value}>{origin.label}</option>)}</select></div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2"><Label>Purchase price</Label><Input type="number" min="0" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Purchase currency</Label><Input value={purchaseCurrency} onChange={(e) => setPurchaseCurrency(e.target.value)} maxLength={3} /></div>
+              <div className="space-y-2"><Label>Purchase date</Label><Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Landed cost</Label><Input type="number" min="0" step="0.01" value={landedCost} onChange={(e) => setLandedCost(e.target.value)} /></div>
+              <div className="space-y-2 sm:col-span-2"><Label>Supplier</Label><select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="">No supplier</option>{suppliers.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}</select></div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2"><Label>Price</Label><Input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} /></div>

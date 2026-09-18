@@ -47,6 +47,8 @@ Done (Phase 23): customer portal first slice on the same database. `customer_pro
 
 Done (Phase 27): portal account statement at `/portal/account` via sanitized RPC `get_my_customer_soa` (confirmed remittances, allocations, outstanding KPIs). No remittance notes, documents, drafts, or allocate/reverse RPCs for customers.
 
+Done (Phase 28): purchase-costed inventory on the existing `vehicles` / `parts` master — `suppliers`, cost columns, GRN (`inventory_receipts` + `create_inventory_receipt`), reserve/release RPCs, tax/commercial invoice stock apply via `create_invoice_v3`, public catalog filters `stock_status = available`. Ops-only purchase UI; sales can still reserve vehicles.
+
 Also in this phase: public catalog image optimization (Next.js Image), category/home SEO metadata, faster homepage category counts, footer portal link.
 
 ## 7. Mobile / PWA

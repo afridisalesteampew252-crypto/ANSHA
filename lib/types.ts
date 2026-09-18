@@ -67,6 +67,13 @@ export interface Part {
   stock_status: StockStatus;
   sold_at: string | null;
   sold_by: string | null;
+  purchase_price: number | null;
+  purchase_currency: string | null;
+  purchase_date: string | null;
+  supplier_id: string | null;
+  supplier_invoice_id: string | null;
+  landed_cost: number | null;
+  reserved_customer_id: string | null;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -140,6 +147,13 @@ export interface Vehicle {
   sold_at: string | null;
   sold_by: string | null;
   lifecycle_stage: LifecycleStage;
+  purchase_price: number | null;
+  purchase_currency: string | null;
+  purchase_date: string | null;
+  supplier_id: string | null;
+  supplier_invoice_id: string | null;
+  landed_cost: number | null;
+  reserved_customer_id: string | null;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -652,6 +666,7 @@ export interface RemittanceAllocation {
 
 export interface SupplierInvoice {
   id: string;
+  supplier_id: string | null;
   supplier_name: string;
   invoice_number: string | null;
   invoice_date: string;
@@ -666,6 +681,48 @@ export interface SupplierInvoice {
   created_by: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Supplier {
+  id: string;
+  supplier_code: string;
+  name: string;
+  trn: string | null;
+  country: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  currency: string;
+  notes: string | null;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryReceipt {
+  id: string;
+  receipt_number: string;
+  received_date: string;
+  supplier_id: string | null;
+  supplier_invoice_id: string | null;
+  currency: string;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InventoryReceiptLine {
+  id: string;
+  receipt_id: string;
+  inventory_type: 'part' | 'vehicle';
+  part_id: string | null;
+  vehicle_id: string | null;
+  quantity: number;
+  unit_cost: number;
+  notes: string | null;
+  created_at: string;
 }
 
 type TableDef<T> = {
@@ -692,6 +749,8 @@ export interface Database {
       import_jobs: TableDef<ImportJob>;
       import_rows: TableDef<ImportRow>;
       inquiries: TableDef<Inquiry>;
+      inventory_receipt_lines: TableDef<InventoryReceiptLine>;
+      inventory_receipts: TableDef<InventoryReceipt>;
       internal_mail: TableDef<InternalMail>;
       internal_mail_attachments: TableDef<InternalMailAttachment>;
       internal_mail_recipients: TableDef<InternalMailRecipient>;
@@ -711,6 +770,7 @@ export interface Database {
       remittances: TableDef<Remittance>;
       site_offers: TableDef<SiteOffer>;
       supplier_invoices: TableDef<SupplierInvoice>;
+      suppliers: TableDef<Supplier>;
       vehicle_photos: TableDef<VehiclePhoto>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;

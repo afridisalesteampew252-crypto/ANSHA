@@ -28,7 +28,7 @@ export default function VehiclesPage() {
 
   const loadVehicles = useCallback(async () => {
     setLoading(true);
-    let request = supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true);
+    let request = supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true).eq('stock_status', 'available');
     const safeQuery = query.trim().replace(/[,%()]/g, ' ');
     if (safeQuery) request = request.or(`title.ilike.%${safeQuery}%,make.ilike.%${safeQuery}%,model.ilike.%${safeQuery}%,chassis_code.ilike.%${safeQuery}%,stock_number.ilike.%${safeQuery}%`);
     if (brand !== 'all') request = request.eq('make', brand);

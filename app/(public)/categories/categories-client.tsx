@@ -24,7 +24,7 @@ export default function CategoriesPageClient() {
     (async () => {
       const [{ data: categoryData }, { data: partData }] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order'),
-        supabase.from('parts').select('category_id').eq('is_published', true),
+        supabase.from('parts').select('category_id').eq('is_published', true).eq('stock_status', 'available'),
       ]);
       if (!active) return;
       const counts: Record<string, number> = {};

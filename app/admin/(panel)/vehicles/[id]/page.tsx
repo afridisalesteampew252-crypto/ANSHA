@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
@@ -60,6 +59,15 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [location, setLocation] = useState('');
   const [stockOrigin, setStockOrigin] = useState('dubai');
   const [stockStatus, setStockStatus] = useState<StockStatus>('available');
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [purchaseCurrency, setPurchaseCurrency] = useState('AED');
+  const [purchaseDate, setPurchaseDate] = useState('');
+  const [landedCost, setLandedCost] = useState('');
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
+  const [supplierId, setSupplierId] = useState('');
+  const [customers, setCustomers] = useState<Array<{ id: string; label: string }>>([]);
+  const [reserveCustomerId, setReserveCustomerId] = useState('');
+  const [reserveBusy, setReserveBusy] = useState(false);
 
   const [nextStage, setNextStage] = useState<LifecycleStage>('auction');
   const [stageNotes, setStageNotes] = useState('');
@@ -97,9 +105,25 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setLocation(row.location || '');
     setStockOrigin(row.stock_origin || 'dubai');
     setStockStatus(row.stock_status || 'available');
+    setPurchasePrice(row.purchase_price != null ? String(row.purchase_price) : '');
+    setPurchaseCurrency(row.purchase_currency || 'AED');
+    setPurchaseDate(row.purchase_date || '');
+    setLandedCost(row.landed_cost != null ? String(row.landed_cost) : '');
+    setSupplierId(row.supplier_id || '');
+    setReserveCustomerId(row.reserved_customer_id || '');
     setNextStage(RECOMMENDED_NEXT_STAGE[row.lifecycle_stage || 'unassigned'] || 'auction');
     setEvents((eventsRes.data || []) as VehicleLifecycleEvent[]);
     setFetching(false);
+
+    const [supRes, custRes] = await Promise.all([
+      supabase.from('suppliers').select('id,supplier_code,name').eq('is_active', true).order('name').limit(200),
+      supabase.from('customers').select('id,customer_code,full_name,company_name').order('full_name').limit(500),
+    ]);
+    setSuppliers((supRes.data || []).map((item) => ({ id: item.id, label: `${item.supplier_code} — ${item.name}` })));
+    setCustomers((custRes.data || []).map((item) => ({
+      id: item.id,
+      label: `${item.customer_code} — ${item.company_name || item.full_name}`,
+    })));
   }, [id, router]);
 
   useEffect(() => {
@@ -131,6 +155,11 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         location: location.trim() || null,
         stock_origin: stockOrigin,
         stock_status: stockStatus,
+        purchase_price: purchasePrice === '' ? null : Number(purchasePrice),
+        purchase_currency: purchaseCurrency.trim().toUpperCase() || 'AED',
+        purchase_date: purchaseDate || null,
+        landed_cost: landedCost === '' ? null : Number(landedCost),
+        supplier_id: supplierId || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);
@@ -170,6 +199,31 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     toast.success(`${lifecycleEventLabel(eventType)} recorded.`);
     setEventTitle('');
     setEventNotes('');
+    await load();
+  };
+
+  const reserveVehicle = async () => {
+    if (!reserveCustomerId) {
+      toast.error('Select a customer to reserve for.');
+      return;
+    }
+    setReserveBusy(true);
+    const { error } = await supabase.rpc('reserve_vehicle_stock', {
+      p_vehicle_id: id,
+      p_customer_id: reserveCustomerId,
+    });
+    setReserveBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success('Vehicle reserved and unpublished from the website.');
+    await load();
+  };
+
+  const releaseReservation = async () => {
+    setReserveBusy(true);
+    const { error } = await supabase.rpc('release_vehicle_reservation', { p_vehicle_id: id });
+    setReserveBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success('Reservation released. Set public listing when ready.');
     await load();
   };
 
@@ -213,6 +267,68 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           </Link>
         </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Purchase cost &amp; reservation</CardTitle>
+          <CardDescription>
+            Cost comes from receive-stock (GRN) or manual entry. Reserve for a customer to hold stock and hide it from the public catalog.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void saveBasics(event)}>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Purchase price</span>
+              <Input type="number" min="0" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Purchase currency</span>
+              <Input value={purchaseCurrency} onChange={(e) => setPurchaseCurrency(e.target.value)} maxLength={3} />
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Purchase date</span>
+              <Input type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Landed cost</span>
+              <Input type="number" min="0" step="0.01" value={landedCost} onChange={(e) => setLandedCost(e.target.value)} />
+            </label>
+            <label className="space-y-1.5 text-sm sm:col-span-2">
+              <span className="font-medium">Supplier</span>
+              <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                <option value="">No supplier</option>
+                {suppliers.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
+              </select>
+            </label>
+            <div className="sm:col-span-2">
+              <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save purchase details</Button>
+            </div>
+          </form>
+          <div className="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_auto_auto]">
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Reserve for customer</span>
+              <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={reserveCustomerId} onChange={(e) => setReserveCustomerId(e.target.value)}>
+                <option value="">Select customer</option>
+                {customers.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
+              </select>
+            </label>
+            <div className="flex items-end">
+              <Button type="button" disabled={reserveBusy || vehicle.stock_status === 'sold'} onClick={() => void reserveVehicle()}>
+                {reserveBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Reserve
+              </Button>
+            </div>
+            <div className="flex items-end">
+              <Button type="button" variant="outline" disabled={reserveBusy || vehicle.stock_status !== 'reserved'} onClick={() => void releaseReservation()}>
+                Release
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Or <Link href="/admin/inventory/receive" className="text-primary underline">receive stock (GRN)</Link> to set cost from a supplier invoice.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

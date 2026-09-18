@@ -7,9 +7,11 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Module | Public | Staff | Data |
 |---|---|---|---|
 | Dashboard | no | `/admin/dashboard` | counts, charts over invoices/remittances/stock/chat |
-| Parts catalog | `/parts` | `/admin/parts` | `parts`, photos, compatibility |
-| Vehicles catalog | `/vehicles` | `/admin/vehicles`, `/admin/vehicles/[id]` lifecycle | `vehicles`, photos, `vehicle_lifecycle_events` |
+| Parts catalog | `/parts` | `/admin/parts` (+ purchase cost on edit) | `parts`, photos, compatibility, cost columns |
+| Vehicles catalog | `/vehicles` | `/admin/vehicles`, `/admin/vehicles/[id]` lifecycle + purchase/reserve | `vehicles`, photos, `vehicle_lifecycle_events`, cost columns |
 | Categories | `/categories` | `/admin/categories` | `categories` |
+| Suppliers | no | `/admin/suppliers` (ops: admin/staff) | `suppliers` |
+| Receive stock (GRN) | no | `/admin/inventory/receive` (ops) | `inventory_receipts`, `inventory_receipt_lines` |
 | Blog | `/blog` | `/admin/blog` | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
 | Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
@@ -32,6 +34,6 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 ## Not implemented
 
-Suppliers master, purchase orders, shipments beyond lifecycle events, audit-log module, outbound email, WhatsApp API, Capacitor/native apps, AI automation.
+Purchase orders / 3-way match, supplier AP SOA & payments, shipments beyond lifecycle events, audit-log module, outbound email, WhatsApp API, Capacitor/native apps, AI automation.
 
-Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables.
+Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`.

@@ -6,8 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   BookOpen, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, Inbox, LayoutDashboard,
-  Loader2, Mail, Megaphone, Menu, MessageCircle, Package, Plus, ReceiptText, Tag, Upload, WalletCards,
-  UserCog, Users, X,
+  Loader2, Mail, Megaphone, Menu, MessageCircle, Package, PackagePlus, Plus, ReceiptText, Tag, Truck,
+  Upload, WalletCards, UserCog, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
       { href: '/admin/categories', label: 'Categories', icon: Tag },
       { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
+      { href: '/admin/suppliers', label: 'Suppliers', icon: Truck },
+      { href: '/admin/inventory/receive', label: 'Receive stock', icon: PackagePlus },
     ],
   },
   {

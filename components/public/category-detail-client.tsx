@@ -35,6 +35,7 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
         .from('parts')
         .select('*, categories(*), part_photos(*), part_compatibility(*)')
         .eq('is_published', true)
+        .eq('stock_status', 'available')
         .eq('category_id', cat.id)
         .order('created_at', { ascending: false });
 

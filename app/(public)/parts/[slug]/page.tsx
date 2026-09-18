@@ -55,6 +55,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
         .select('*, categories(*), part_photos(*), part_compatibility(*)')
         .eq('slug', slug)
         .eq('is_published', true)
+        .eq('stock_status', 'available')
         .maybeSingle();
 
       if (error || !data) {
@@ -76,6 +77,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           .from('parts')
           .select('*, categories(*), part_photos(*), part_compatibility(*)')
           .eq('is_published', true)
+          .eq('stock_status', 'available')
           .eq('category_id', typedData.category_id)
           .neq('id', typedData.id)
           .limit(4);

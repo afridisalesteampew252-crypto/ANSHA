@@ -60,7 +60,8 @@ function PartsCatalog() {
     let request = supabase
       .from('parts')
       .select('*, categories(*), part_photos(*), part_compatibility(*)', { count: 'exact' })
-      .eq('is_published', true);
+      .eq('is_published', true)
+      .eq('stock_status', 'available');
 
     const safeQuery = query.trim().replace(/[,%()]/g, ' ');
     if (safeQuery) request = request.or(`name.ilike.%${safeQuery}%,part_code.ilike.%${safeQuery}%,oem_number.ilike.%${safeQuery}%,part_number.ilike.%${safeQuery}%`);
