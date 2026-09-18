@@ -96,7 +96,7 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 
 ### Cron: `/api/cron/request-dues`
 
-- Vercel Cron hourly (`0 * * * *` in `vercel.json`)
+- Vercel Cron daily at 04:00 UTC (`0 4 * * *` in `vercel.json`; Hobby plan rejects hourly schedules)
 - Auth: same `CRON_SECRET` (Vercel env); platform sends `Authorization: Bearer <CRON_SECRET>`
 - Proxies to `remind-request-dues` using only the publishable key + cron secret (no service role on Next.js)
 

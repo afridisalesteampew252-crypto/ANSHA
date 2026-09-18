@@ -37,7 +37,7 @@ Done (Phase 21): private ticket files on `/admin/requests/[id]` via `workspace_r
 
 Later: tighter due-date reminders.
 
-Done (Phase 26): hourly due-soon (24h) and overdue in-app notifications for active assignees. Ledger `workspace_request_due_reminders`, RPC `process_workspace_request_due_reminders`, Edge Function `remind-request-dues`, Vercel Cron `/api/cron/request-dues`. No outbound email in this slice.
+Done (Phase 26): due-soon (24h) and overdue in-app notifications for active assignees. Ledger `workspace_request_due_reminders`, RPC `process_workspace_request_due_reminders`, Edge Function `remind-request-dues`, Vercel Cron `/api/cron/request-dues` once daily at 04:00 UTC (Hobby plan cannot use hourly crons). No outbound email in this slice.
 
 ## 5. Chat linking
 
