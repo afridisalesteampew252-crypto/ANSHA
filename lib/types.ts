@@ -1307,6 +1307,7 @@ export interface Database {
       landed_cost_charges: TableDef<LandedCostCharge>;
       landed_cost_packs: TableDef<LandedCostPack>;
       leave_requests: TableDef<LeaveRequest>;
+      outbound_email_log: TableDef<OutboundEmailLog>;
       part_compatibility: TableDef<PartCompatibility>;
       part_photos: TableDef<PartPhoto>;
       part_requests: TableDef<PartRequest>;
