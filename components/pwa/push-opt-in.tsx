@@ -101,8 +101,9 @@ export function PushOptIn() {
   return (
     <div
       className={cn(
-        'fixed inset-x-3 z-40 rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur-md',
-        'bottom-[calc(8.5rem+env(safe-area-inset-bottom))] lg:bottom-24 lg:left-auto lg:right-4 lg:w-[22rem]'
+        'fixed inset-x-3 z-40 rounded-xl border border-border/80 bg-background/95 p-3.5 shadow-lg backdrop-blur-md',
+        'bottom-[calc(8.5rem+env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-6 sm:right-4 sm:w-[22rem]',
+        'lg:bottom-24'
       )}
       role="dialog"
       aria-label="Enable notifications"
@@ -112,15 +113,15 @@ export function PushOptIn() {
           <Bell className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Alerts for insights and deals</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="text-sm font-semibold leading-snug">Alerts for insights and deals</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             Get a push when ANSHA publishes a new insight or export offer.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" type="button" disabled={busy} onClick={() => void enable()}>
-              Enable alerts
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <Button size="sm" type="button" className="w-full sm:w-auto" disabled={busy} onClick={() => void enable()}>
+              {busy ? 'Enabling…' : 'Enable alerts'}
             </Button>
-            <Button size="sm" type="button" variant="ghost" onClick={dismiss}>
+            <Button size="sm" type="button" variant="ghost" className="w-full sm:w-auto" onClick={dismiss}>
               <BellOff className="h-4 w-4" />
               Not now
             </Button>
@@ -128,7 +129,7 @@ export function PushOptIn() {
         </div>
         <button
           type="button"
-          className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
           aria-label="Dismiss notification prompt"
           onClick={dismiss}
         >
