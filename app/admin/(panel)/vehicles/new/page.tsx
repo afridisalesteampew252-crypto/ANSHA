@@ -99,6 +99,7 @@ export default function AddVehiclePage() {
         chassis_number: chassisNumber.trim() || null,
         stock_origin: stockOrigin,
         stock_status: 'available',
+        lifecycle_stage: 'unassigned',
         chassis_code: chassisCode.trim() || null,
         engine_code: engineCode.trim() || null,
         transmission: transmission.trim() || null,

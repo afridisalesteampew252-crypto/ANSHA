@@ -8,7 +8,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 |---|---|---|---|
 | Dashboard | no | `/admin/dashboard` | counts, charts over invoices/remittances/stock/chat |
 | Parts catalog | `/parts` | `/admin/parts` | `parts`, photos, compatibility |
-| Vehicles catalog | `/vehicles` | `/admin/vehicles` | `vehicles`, photos |
+| Vehicles catalog | `/vehicles` | `/admin/vehicles`, `/admin/vehicles/[id]` lifecycle | `vehicles`, photos, `vehicle_lifecycle_events` |
 | Categories | `/categories` | `/admin/categories` | `categories` |
 | Blog | `/blog` | `/admin/blog` | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
@@ -28,6 +28,6 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 ## Not implemented
 
-Suppliers master, purchases orders, yard, auction, shipments, BL/export certificates, generic request tickets with assignment/due dates, customer portal, audit-log module, outbound email, WhatsApp API, PWA, Android/iOS, AI automation.
+Suppliers master, purchases orders, shipments beyond lifecycle events, generic request tickets with assignment/due dates, customer portal, audit-log module, outbound email, WhatsApp API, PWA, Android/iOS, AI automation.
 
-Part requests and inquiries are intake records, not the full request-workflow design in the master prompt.
+Vehicle lifecycle stages and workflow events exist. Part requests and inquiries are intake records, not the full request-workflow design in the master prompt.

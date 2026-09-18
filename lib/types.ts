@@ -3,6 +3,26 @@ export type InquiryStatus = 'new' | 'read' | 'responded' | 'closed';
 export type AdminRole = 'admin' | 'staff';
 export type StockOrigin = 'japan' | 'dubai' | 'singapore' | 'china' | 'thailand' | 'taiwan';
 export type StockStatus = 'available' | 'reserved' | 'sold';
+export type LifecycleStage = 'unassigned' | 'auction' | 'yard' | 'port' | 'sold';
+export type LifecycleEventType =
+  | 'stage_change'
+  | 'reauction'
+  | 'yard_transfer'
+  | 'export_request'
+  | 'inspection'
+  | 'export_certificate'
+  | 'bl'
+  | 'original_bl'
+  | 'surrender_bl'
+  | 'bl_amendment'
+  | 'courier'
+  | 'roro'
+  | 'container_20ft'
+  | 'container_40ft'
+  | 'parts_shipping'
+  | 'meter_reverse'
+  | 'yard_images'
+  | 'note';
 
 export type Json =
   | string
@@ -119,6 +139,7 @@ export interface Vehicle {
   stock_status: StockStatus;
   sold_at: string | null;
   sold_by: string | null;
+  lifecycle_stage: LifecycleStage;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -126,6 +147,19 @@ export interface Vehicle {
   shipping_methods: string[];
   created_at: string;
   updated_at: string;
+}
+
+export interface VehicleLifecycleEvent {
+  id: string;
+  vehicle_id: string;
+  event_type: LifecycleEventType;
+  from_stage: LifecycleStage | null;
+  to_stage: LifecycleStage | null;
+  title: string | null;
+  notes: string | null;
+  metadata: Json;
+  created_by: string;
+  created_at: string;
 }
 
 export interface VehiclePhoto {
@@ -554,6 +588,7 @@ export interface Database {
       remittances: TableDef<Remittance>;
       supplier_invoices: TableDef<SupplierInvoice>;
       vehicle_photos: TableDef<VehiclePhoto>;
+      vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;
     };
   };

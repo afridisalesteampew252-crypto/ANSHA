@@ -25,7 +25,9 @@ Inactive Supabase project `kmngigxpqhiilcavmcmm` is already `INACTIVE`. Pause AP
 
 ## 3. Vehicle operational lifecycle (additive)
 
-Keep `stock_origin` and `stock_status`. Add workflow states/history (auction, yard, port, export documents) in new tables/columns. Do not replace `sold` with a free-text status field.
+Done (Phase 18): `lifecycle_stage` on `vehicles`; append-only `vehicle_lifecycle_events`; RPCs `transition_vehicle_lifecycle` and `record_vehicle_lifecycle_event`; admin detail page `/admin/vehicles/[id]` with stage transitions, workflow events, and history. Existing `stock_origin` / `stock_status` preserved. Sold commercial stock was backfilled to lifecycle `sold`.
+
+Later enhancements: document attachments on events, stricter transition rules, public stage display if needed.
 
 ## 4. Request workflows
 

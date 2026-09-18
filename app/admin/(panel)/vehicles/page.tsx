@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
+import { LIFECYCLE_STAGES, lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
 import { toast } from 'sonner';
 import type { StockOrigin, StockStatus, VehicleWithPhotos } from '@/lib/types';
 
@@ -18,10 +19,19 @@ const statusClass: Record<StockStatus, string> = {
   sold: 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900',
 };
 
+const stageClass: Record<LifecycleStage, string> = {
+  unassigned: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
+  auction: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300',
+  yard: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300',
+  port: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300',
+  sold: 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900',
+};
+
 export default function AdminVehiclesPage() {
   const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState<'all' | StockOrigin>('all');
+  const [stage, setStage] = useState<'all' | LifecycleStage>('all');
 
   const fetchVehicles = useCallback(async () => {
     setLoading(true);
@@ -33,7 +43,14 @@ export default function AdminVehiclesPage() {
 
   useEffect(() => { void fetchVehicles(); }, [fetchVehicles]);
 
-  const filtered = useMemo(() => origin === 'all' ? vehicles : vehicles.filter((vehicle) => vehicle.stock_origin === origin), [origin, vehicles]);
+  const filtered = useMemo(
+    () => vehicles.filter((vehicle) => {
+      const originMatch = origin === 'all' || vehicle.stock_origin === origin;
+      const stageMatch = stage === 'all' || (vehicle.lifecycle_stage || 'unassigned') === stage;
+      return originMatch && stageMatch;
+    }),
+    [origin, stage, vehicles]
+  );
 
   async function updateVehicle(id: string, changes: Record<string, unknown>, success: string) {
     const { error } = await supabase.from('vehicles').update(changes).eq('id', id);
@@ -52,13 +69,18 @@ export default function AdminVehiclesPage() {
 
   return <div className="space-y-6">
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><h1 className="text-2xl font-bold tracking-tight">Vehicle inventory</h1><p className="text-sm text-muted-foreground">Manage worldwide stock locations, availability, publishing, and sold records.</p></div>
+      <div><h1 className="text-2xl font-bold tracking-tight">Vehicle inventory</h1><p className="text-sm text-muted-foreground">Manage stock locations, availability, operational lifecycle, and publishing.</p></div>
       <Button asChild><Link href="/admin/vehicles/new"><Plus className="h-4 w-4" />Add vehicle</Link></Button>
     </div>
 
     <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Vehicle stock locations">
       <button onClick={() => setOrigin('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>All stock ({vehicles.length})</button>
       {STOCK_ORIGINS.map((item) => <button key={item.value} onClick={() => setOrigin(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>{item.label} ({vehicles.filter((vehicle) => vehicle.stock_origin === item.value).length})</button>)}
+    </nav>
+
+    <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Vehicle lifecycle stages">
+      <button onClick={() => setStage('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>All stages</button>
+      {LIFECYCLE_STAGES.map((item) => <button key={item.value} onClick={() => setStage(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>{item.label} ({vehicles.filter((vehicle) => (vehicle.lifecycle_stage || 'unassigned') === item.value).length})</button>)}
     </nav>
 
     {loading ? <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed py-16 text-center"><Car className="mx-auto h-10 w-10 text-muted-foreground/30" /><p className="mt-3 text-sm text-muted-foreground">No vehicles in this stock location.</p></div> :
@@ -68,7 +90,7 @@ export default function AdminVehiclesPage() {
         return <Card key={vehicle.id} className="overflow-hidden"><CardContent className="p-0">
           <div className="flex gap-4 p-4">
             <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg bg-secondary">{photoUrl ? <img src={photoUrl} alt={vehicle.title} className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center"><Car className="h-7 w-7 text-muted-foreground/30" /></span>}</div>
-            <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><Badge className={statusClass[vehicle.stock_status || 'available']}>{(vehicle.stock_status || 'available').replace('_', ' ')}</Badge>{vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}</div><h2 className="mt-2 truncate font-bold">{vehicle.title}</h2><p className="text-xs text-muted-foreground">{vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference'}</p><p className="mt-1 text-xs font-medium text-primary">{stockOriginLabel(vehicle.stock_origin)}</p></div>
+            <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><Badge className={stageClass[(vehicle.lifecycle_stage || 'unassigned') as LifecycleStage]}>{lifecycleStageLabel(vehicle.lifecycle_stage)}</Badge><Badge className={statusClass[vehicle.stock_status || 'available']}>{(vehicle.stock_status || 'available').replace('_', ' ')}</Badge>{vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}</div><h2 className="mt-2 truncate font-bold">{vehicle.title}</h2><p className="text-xs text-muted-foreground">{vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference'}</p><p className="mt-1 text-xs font-medium text-primary">{stockOriginLabel(vehicle.stock_origin)}</p></div>
           </div>
           <div className="grid gap-3 border-t p-4 sm:grid-cols-2">
             <label className="text-xs font-medium text-muted-foreground">Stock location<select value={vehicle.stock_origin || 'dubai'} onChange={(event) => void updateVehicle(vehicle.id, { stock_origin: event.target.value }, 'Stock location updated.')} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">{STOCK_ORIGINS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>

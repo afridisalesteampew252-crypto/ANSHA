@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260917180500_phase_17_advisor_indexes.sql`.
+Latest migration in the repository: `20260918060000_phase_18_vehicle_lifecycle.sql`.
 
 ## Entity groups
 
@@ -24,8 +24,9 @@ Latest migration in the repository: `20260917180500_phase_17_advisor_indexes.sql
 - `categories` — name/slug unique, `sort_order`, optional `image_url`
 - `parts` — unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`
 - `part_photos`, `part_compatibility`
-- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts
+- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`)
 - `vehicle_photos`
+- `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
 ### Public intake
 
@@ -66,9 +67,13 @@ Triggers recalculate invoice balances and sync remittance-linked payments. Do no
 
 `stock_status`: `available`, `reserved`, `sold`.
 
+`lifecycle_stage` (vehicles only): `unassigned`, `auction`, `yard`, `port`, `sold`.
+
+Recommended operational path: Auction → Yard → Port → Sold. Commercial `stock_status` remains independent. Moving lifecycle to `sold` via `transition_vehicle_lifecycle` also sets `stock_status = sold`. Workflow actions (BL, inspection, RORO, etc.) are rows in `vehicle_lifecycle_events`, not free-text status fields.
+
 `private.sync_catalog_sold_state` stamps `sold_at`/`sold_by` on transition to `sold` and clears them otherwise.
 
-This is not an auction/yard/port lifecycle. Any lifecycle addition must be additive.
+This is not an auction/yard/port rewrite of availability. Lifecycle was added beside stock.
 
 ## Indexes
 

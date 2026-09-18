@@ -34,6 +34,11 @@ Public RPC:
 
 Workspace RPCs (names in Phase 10–16 migrations) wrap conversation create, mail send, and guarded financial edits. Call those instead of mutating sequence tables directly.
 
+Vehicle lifecycle RPCs (Phase 18):
+
+- `transition_vehicle_lifecycle(p_vehicle_id, p_to_stage, p_notes?, p_sync_stock_sold?)` — moves `lifecycle_stage`, writes history, optionally sets `stock_status = sold`
+- `record_vehicle_lifecycle_event(p_vehicle_id, p_event_type, p_title?, p_notes?, p_metadata?)` — logs BL/inspection/shipping/etc. without changing stage
+
 ## Edge Functions
 
 Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowlist: `docs` canonical hosts, `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://*.vercel.app`. Unknown origins get no `Access-Control-Allow-Origin`.
