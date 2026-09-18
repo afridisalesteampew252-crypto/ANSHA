@@ -78,7 +78,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migrations include Phase 34 bank accounts (`supabase/migrations/20260918230000_phase_34_bank_accounts.sql`) and later concurrent ERP phases under `supabase/migrations/`.
+Latest migrations include Phase 40 WhatsApp (`supabase/migrations/20260918290000_phase_40_whatsapp.sql`) and earlier concurrent ERP phases under `supabase/migrations/`.
 
 ## Phase 4: global SEO and exporter schema
 

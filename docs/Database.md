@@ -74,6 +74,7 @@ Intake rows stay as submitted. One ticket per inquiry and per part request (uniq
 - `chat_conversations` (`direct`|`group`), `chat_participants`, `chat_messages`, `chat_attachments`
 - `chat_conversation_links` â€” optional links from a conversation to vehicle/customer/inquiry/invoice/request
 - `internal_mail`, `internal_mail_recipients`, `internal_mail_attachments`
+- `whatsapp_message_log` — Cloud API send log (E.164 phone, text/template, Meta message id, status); ops RLS; Edge Function `send-whatsapp` (Phase 40)
 - `admin_notifications`
 
 Chat stays one product. Links are additive metadata; mutations go through `link_chat_conversation` / `unlink_chat_conversation`.
