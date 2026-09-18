@@ -59,6 +59,8 @@ Also in this phase: public catalog image optimization (Next.js Image), category/
 
 Done (Phase 32): export shipments (`export_shipments` / `export_shipment_vehicles`, EXP- numbers), create/update/status/add/remove RPCs with soft lifecycle hooks (export_request / mode / BL events; optional move to port). Admin `/admin/export-shipments`; ops-only.
 
+Done (Phase 33): landed-cost packs (`landed_cost_packs` / `charges` / `allocations`, LC- numbers). Ops allocate freight/duty/etc., redistribute equal|purchase_value|manual, post to set stock `landed_cost = COALESCE(purchase_price,0) + allocated` (replace per pack). Admin `/admin/landed-cost`; ops-only.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached. Capacitor / native wrappers remain later.

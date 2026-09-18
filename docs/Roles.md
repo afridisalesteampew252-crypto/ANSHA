@@ -24,7 +24,7 @@ A Supabase Auth user without `admin_profiles` cannot use the ERP. Login signs th
 
 ## Purchase inventory (Phase 28)
 
-- Creating/editing suppliers, purchase orders, posting GRNs, supplier payments/SOA, and export shipments: **admin/staff only**
+- Creating/editing suppliers, purchase orders, posting GRNs, supplier payments/SOA, export shipments, and landed-cost packs: **admin/staff only**
 - Reserving / releasing vehicle stock and sales reservation + proforma: any workspace user (`sales` included)
 - Publishing vehicles: only when `stock_status = available` (`set_vehicle_public_listing`)
 - Applying sold status on tax/commercial invoice lines: runs inside invoice create RPC for workspace users who can create invoices

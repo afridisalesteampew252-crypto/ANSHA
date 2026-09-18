@@ -357,8 +357,9 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Or <Link href="/admin/inventory/receive" className="text-primary underline">receive stock (GRN)</Link> to set cost from a supplier invoice.
-            Ops can also open <Link href="/admin/export-shipments" className="text-primary underline">export shipments</Link> for booking/BL.
+            Or <Link href="/admin/inventory/receive" className="text-primary underline">receive stock (GRN)</Link> to set purchase cost from a supplier invoice.
+            Ops can roll freight/duty into landed cost via <Link href="/admin/landed-cost" className="text-primary underline">landed-cost packs</Link>,
+            or open <Link href="/admin/export-shipments" className="text-primary underline">export shipments</Link> for booking/BL.
           </p>
         </CardContent>
       </Card>

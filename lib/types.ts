@@ -853,6 +853,53 @@ export interface ExportShipmentVehicle {
   created_at: string;
 }
 
+/** Phase 33 — import landed-cost pack (freight/duty/charges rolled into stock). */
+export type LandedCostPackStatus = 'draft' | 'posted' | 'cancelled';
+export type LandedCostChargeType = 'freight' | 'duty' | 'insurance' | 'handling' | 'other';
+export type LandedCostAllocationMethod = 'equal' | 'purchase_value' | 'manual';
+
+export interface LandedCostPack {
+  id: string;
+  pack_number: string;
+  status: LandedCostPackStatus;
+  pack_date: string;
+  currency: string;
+  allocation_method: LandedCostAllocationMethod;
+  supplier_id: string | null;
+  purchase_order_id: string | null;
+  inventory_receipt_id: string | null;
+  supplier_invoice_id: string | null;
+  notes: string | null;
+  total_charges: number;
+  posted_at: string | null;
+  posted_by: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LandedCostCharge {
+  id: string;
+  pack_id: string;
+  charge_type: LandedCostChargeType;
+  description: string | null;
+  amount: number;
+  supplier_id: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface LandedCostAllocation {
+  id: string;
+  pack_id: string;
+  inventory_type: 'vehicle' | 'part';
+  vehicle_id: string | null;
+  part_id: string | null;
+  allocated_amount: number;
+  purchase_basis: number | null;
+  created_at: string;
+}
+
 type TableDef<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -889,6 +936,9 @@ export interface Database {
       invoice_payments: TableDef<InvoicePayment>;
       invoice_sequences: TableDef<InvoiceSequence>;
       invoices: TableDef<Invoice>;
+      landed_cost_allocations: TableDef<LandedCostAllocation>;
+      landed_cost_charges: TableDef<LandedCostCharge>;
+      landed_cost_packs: TableDef<LandedCostPack>;
       part_compatibility: TableDef<PartCompatibility>;
       part_photos: TableDef<PartPhoto>;
       part_requests: TableDef<PartRequest>;

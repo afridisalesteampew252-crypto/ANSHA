@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Save, Loader2, ArrowLeft, Plus, X, Image as ImageIcon, Trash2, Upload, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -489,6 +490,10 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               <div className="space-y-2"><Label>Landed cost</Label><Input type="number" min="0" step="0.01" value={landedCost} onChange={(e) => setLandedCost(e.target.value)} /></div>
               <div className="space-y-2 sm:col-span-2"><Label>Supplier</Label><select value={supplierId} onChange={(e) => setSupplierId(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="">No supplier</option>{suppliers.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}</select></div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Ops can allocate freight/duty via <Link href="/admin/landed-cost" className="text-primary underline">landed-cost packs</Link>
+              {' '}or <Link href="/admin/inventory/receive" className="text-primary underline">receive stock (GRN)</Link> for purchase cost.
+            </p>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2"><Label>Price</Label><Input type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} /></div>
               <div className="space-y-2">
