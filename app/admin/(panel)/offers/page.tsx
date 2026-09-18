@@ -113,6 +113,28 @@ export default function AdminOffersPage() {
         <p className="text-sm text-muted-foreground">Publish offers and optionally push them to PWA subscribers.</p>
       </div>
 
+      <Card className="border-accent/20 bg-accent/[0.04]">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bell className="h-4 w-4 text-accent" />
+            How PWA notifications work
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <ol className="list-decimal space-y-1 pl-5">
+            <li>Visitors install or open the public site and tap <strong className="text-foreground">Enable alerts</strong>.</li>
+            <li>Their browser stores a push endpoint in <code className="text-foreground">push_subscriptions</code>.</li>
+            <li>When you publish a deal here (or an Insight with “PWA push on publish”), staff invokes <code className="text-foreground">send-web-push</code>.</li>
+            <li>Subscribers get a notification; tapping it opens the offer or article URL.</li>
+          </ol>
+          <p>
+            Requires <code className="text-foreground">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code> on Vercel and Edge secrets
+            <code className="text-foreground"> VAPID_PUBLIC_KEY</code> + <code className="text-foreground">VAPID_PRIVATE_KEY</code>.
+            Notifications only fire when staff opts in — nothing is sent automatically from the database.
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">New offer</CardTitle>

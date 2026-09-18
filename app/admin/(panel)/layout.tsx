@@ -18,24 +18,58 @@ import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/parts', label: 'Parts', icon: Package },
-  { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
-  { href: '/admin/categories', label: 'Categories', icon: Tag },
-  { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
-  { href: '/admin/invoices/supplier', label: 'Supplier Invoices', icon: ReceiptText },
-  { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
-  { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
-  { href: '/admin/requests', label: 'Requests', icon: ClipboardList },
-  { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
-  { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
-  { href: '/admin/blog', label: 'Blog', icon: BookOpen },
-  { href: '/admin/offers', label: 'Deals & Offers', icon: Megaphone },
-  { href: '/admin/customers', label: 'Customers', icon: Users },
-  { href: '/admin/users', label: 'Users', icon: UserCog },
-  { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
+
+const navGroups: { label: string; items: NavItem[] }[] = [
+  {
+    label: 'Overview',
+    items: [
+      { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: 'Catalog',
+    items: [
+      { href: '/admin/parts', label: 'Parts', icon: Package },
+      { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
+      { href: '/admin/categories', label: 'Categories', icon: Tag },
+      { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
+    ],
+  },
+  {
+    label: 'Sales & customers',
+    items: [
+      { href: '/admin/customers', label: 'Customers & portal', icon: Users },
+      { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
+      { href: '/admin/invoices/supplier', label: 'Supplier Invoices', icon: ReceiptText },
+      { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
+    ],
+  },
+  {
+    label: 'Inbox',
+    items: [
+      { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
+      { href: '/admin/requests', label: 'Requests', icon: ClipboardList },
+      { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
+      { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
+    ],
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { href: '/admin/blog', label: 'Insights / Blog', icon: BookOpen },
+      { href: '/admin/offers', label: 'Deals & PWA push', icon: Megaphone },
+    ],
+  },
+  {
+    label: 'Team',
+    items: [
+      { href: '/admin/users', label: 'Users', icon: UserCog },
+    ],
+  },
 ];
+
+const navItems = navGroups.flatMap((group) => group.items);
 
 const isNavActive = (pathname: string, href: string) => pathname === href || (pathname.startsWith(`${href}/`) && !(href === '/admin/invoices' && pathname.startsWith('/admin/invoices/supplier')));
 
@@ -88,14 +122,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const activeItem = navItems.find((item) => isNavActive(pathname, item.href));
   const pageTitle = pathname === '/admin/profile' ? 'My profile' : activeItem?.label || 'Admin workspace';
 
-  const navigation = (mobile = false) => <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Admin navigation">
-    {navItems.map((item) => {
-      const active = isNavActive(pathname, item.href);
-      return <Link key={item.href} href={item.href} title={!mobile && collapsed ? item.label : undefined} className={cn('flex min-h-10 items-center rounded-md text-sm font-medium transition-colors', mobile || !collapsed ? 'gap-3 px-3 py-2.5' : 'justify-center px-2 py-2.5', active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground')}>
-        <item.icon className="h-5 w-5 shrink-0" /><span className={cn(!mobile && collapsed && 'sr-only')}>{item.label}</span>
-      </Link>;
-    })}
-  </nav>;
+  const navigation = (mobile = false) => (
+    <nav className="flex-1 space-y-4 overflow-y-auto p-3" aria-label="Admin navigation">
+      {navGroups.map((group) => (
+        <div key={group.label} className="space-y-1">
+          {(mobile || !collapsed) && (
+            <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">{group.label}</p>
+          )}
+          {group.items.map((item) => {
+            const active = isNavActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={!mobile && collapsed ? item.label : undefined}
+                className={cn(
+                  'flex min-h-10 items-center rounded-lg text-sm font-medium transition-colors',
+                  mobile || !collapsed ? 'gap-3 px-3 py-2.5' : 'justify-center px-2 py-2.5',
+                  active ? 'bg-accent/10 text-accent' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span className={cn(!mobile && collapsed && 'sr-only')}>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
+  );
 
   return (
     <div className="flex min-h-screen min-w-0 bg-secondary/20">
@@ -137,7 +192,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="hidden h-20 items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur md:flex xl:px-8">
           <div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ANSHA operations</p><h1 className="text-xl font-bold tracking-tight">{pageTitle}</h1></div>
           <div className="flex items-center gap-2">
-            <DropdownMenu><DropdownMenuTrigger asChild><Button><Plus className="h-4 w-4" />Quick add</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-52"><DropdownMenuLabel>Create or import</DropdownMenuLabel><DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+            <DropdownMenu><DropdownMenuTrigger asChild><Button variant="accent"><Plus className="h-4 w-4" />Quick add</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-56"><DropdownMenuLabel>Create or import</DropdownMenuLabel><DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/customers">Customer / enable portal</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/offers">Deal + PWA push</Link></DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu>
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
             <AdminNotificationCenter userId={profile.id} />
             <ThemeToggle /><AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />

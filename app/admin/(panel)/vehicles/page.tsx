@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
-import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
+import { STOCK_ORIGINS } from '@/lib/stock';
+import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { LIFECYCLE_STAGES, lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
 import { toast } from 'sonner';
 import type { StockOrigin, StockStatus, VehicleWithPhotos } from '@/lib/types';
@@ -90,7 +91,7 @@ export default function AdminVehiclesPage() {
         return <Card key={vehicle.id} className="overflow-hidden"><CardContent className="p-0">
           <div className="flex gap-4 p-4">
             <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg bg-secondary">{photoUrl ? <img src={photoUrl} alt={vehicle.title} className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center"><Car className="h-7 w-7 text-muted-foreground/30" /></span>}</div>
-            <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><Badge className={stageClass[(vehicle.lifecycle_stage || 'unassigned') as LifecycleStage]}>{lifecycleStageLabel(vehicle.lifecycle_stage)}</Badge><Badge className={statusClass[vehicle.stock_status || 'available']}>{(vehicle.stock_status || 'available').replace('_', ' ')}</Badge>{vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}</div><h2 className="mt-2 truncate font-bold">{vehicle.title}</h2><p className="text-xs text-muted-foreground">{vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference'}</p><p className="mt-1 text-xs font-medium text-primary">{stockOriginLabel(vehicle.stock_origin)}</p></div>
+            <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><Badge className={stageClass[(vehicle.lifecycle_stage || 'unassigned') as LifecycleStage]}>{lifecycleStageLabel(vehicle.lifecycle_stage)}</Badge><Badge className={statusClass[vehicle.stock_status || 'available']}>{(vehicle.stock_status || 'available').replace('_', ' ')}</Badge>{vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}</div><h2 className="mt-2 truncate font-bold">{vehicle.title}</h2><p className="text-xs text-muted-foreground">{vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference'}</p><p className="mt-1"><StockOriginBadge origin={vehicle.stock_origin} compact /></p></div>
           </div>
           <div className="grid gap-3 border-t p-4 sm:grid-cols-2">
             <label className="text-xs font-medium text-muted-foreground">Stock location<select value={vehicle.stock_origin || 'dubai'} onChange={(event) => void updateVehicle(vehicle.id, { stock_origin: event.target.value }, 'Stock location updated.')} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">{STOCK_ORIGINS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>

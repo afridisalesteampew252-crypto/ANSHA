@@ -42,8 +42,8 @@ export default function CategoriesPageClient() {
   return (
     <>
       <section className="relative overflow-hidden bg-[#101114] py-11 text-white sm:py-16">
-        <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(circle_at_80%_20%,rgba(220,38,38,.5),transparent_30%),linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:auto,42px_42px,42px_42px]" />
-        <div className="container-page relative"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-red-400">Catalog departments</span><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Browse parts by category</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">Explore ANSHA’s published inventory by automotive system and product family.</p></div>
+        <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(circle_at_80%_20%,hsla(345,42%,32%,.55),transparent_30%),linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:auto,42px_42px,42px_42px]" />
+        <div className="container-page relative"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Catalog departments</span><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Browse parts by category</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">Explore ANSHA’s published inventory by automotive system and product family.</p></div>
       </section>
 
       <div className="container-page py-8 sm:py-12">

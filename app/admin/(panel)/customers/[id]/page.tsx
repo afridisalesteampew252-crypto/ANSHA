@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Banknote, CheckCircle2, Loader2, ReceiptText, RotateCcw, ShoppingBag, WalletCards } from 'lucide-react';
+import { ArrowLeft, Banknote, CheckCircle2, KeyRound, Loader2, ReceiptText, RotateCcw, ShoppingBag, WalletCards } from 'lucide-react';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/lib/supabase/client';
@@ -148,21 +148,26 @@ export default function CustomerAccountPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div><Button asChild variant="ghost" size="sm" className="-ml-3 mb-2"><Link href="/admin/customers"><ArrowLeft className="h-4 w-4" />Customers</Link></Button><h1 className="text-2xl font-bold">{customer.company_name || customer.full_name}</h1><p className="text-sm text-muted-foreground">Statement of Account · {customer.customer_code} · {[customer.email, customer.phone, customer.country].filter(Boolean).join(' · ')}</p></div>
       <div className="flex flex-wrap gap-2">
-
         <Button asChild variant="outline"><Link href={`/admin/chat?customer=${customer.id}`}>Open linked chat</Link></Button>
         <Button asChild><Link href={`/admin/invoices/new?customer=${customer.id}`}><ReceiptText className="h-4 w-4" />Create invoice</Link></Button>
       </div>
     </div>
 
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Customer portal access</CardTitle>
+    <Card className="border-accent/25 bg-accent/[0.04]">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <KeyRound className="h-5 w-5 text-accent" />
+          Customer portal access
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          This creates a separate login for the customer at <Link href="/portal" className="font-semibold text-accent underline">/portal</Link> so they can view their own invoices. It never adds them as staff.
+        </p>
         {portalLink ? (
-          <p className="text-sm">
+          <p className="rounded-lg border bg-background p-3 text-sm">
             Portal login active for <strong>{portalLink.email}</strong>
-            {portalLink.is_active ? '' : ' (inactive)'}. Customers sign in at <Link href="/portal" className="text-primary underline">/portal</Link>.
+            {portalLink.is_active ? '' : ' (inactive)'}.
           </p>
         ) : (
           <form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]" onSubmit={(event) => void enablePortal(event)}>
@@ -172,15 +177,14 @@ export default function CustomerAccountPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="portal-password">Temporary password</Label>
-              <Input id="portal-password" type="text" required minLength={8} value={portalPassword} onChange={(event) => setPortalPassword(event.target.value)} />
+              <Input id="portal-password" type="text" required minLength={8} value={portalPassword} onChange={(event) => setPortalPassword(event.target.value)} placeholder="At least 8 characters" />
             </div>
             <div className="flex items-end">
-              <Button type="submit" disabled={portalBusy}>
-                {portalBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              <Button type="submit" variant="accent" disabled={portalBusy}>
+                {portalBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 Enable portal
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground sm:col-span-3">Admin only. Creates a separate Auth user linked to this CRM customer — never added to staff profiles.</p>
           </form>
         )}
       </CardContent>

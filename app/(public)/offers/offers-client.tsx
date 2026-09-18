@@ -33,7 +33,7 @@ export default function PublicOffersPage() {
     <>
       <section className="bg-[#101114] py-11 text-white sm:py-16">
         <div className="container-page">
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-red-400">Deals and offers</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Deals and offers</span>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Current export offers</h1>
           <p className="mt-3 max-w-2xl text-sm text-white/60 sm:text-base">Published promotions from ANSHA Trading. Enable PWA alerts to hear about new deals first.</p>
         </div>

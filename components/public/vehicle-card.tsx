@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { ArrowUpRight, Calendar, Car, Fuel, Gauge, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
+import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { siteConfig } from '@/lib/site-config';
-import { stockOriginLabel } from '@/lib/stock';
 import type { VehicleWithPhotos } from '@/lib/types';
 
 interface VehicleCardProps {
@@ -34,7 +34,8 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           <span className="flex h-full items-center justify-center"><Car className="h-14 w-14 text-muted-foreground/20" /></span>
         )}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute left-3 top-3 flex gap-2">
+        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+          <StockOriginBadge origin={vehicle.stock_origin} compact />
           {vehicle.stock_status === 'sold' ? <Badge className="border-0 bg-zinc-950 text-white">Sold</Badge> : vehicle.is_featured && <Badge className="border-0 bg-accent text-white">Featured</Badge>}
           <Badge className="border-0 bg-background/90 text-foreground">{vehicle.make}</Badge>
         </div>
@@ -42,7 +43,6 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
         {vehicle.stock_status === 'sold' && <span className="absolute inset-0 grid place-items-center bg-black/25 text-3xl font-black uppercase tracking-[0.2em] text-white">Sold</span>}
       </Link>
       <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-accent">{stockOriginLabel(vehicle.stock_origin)}</p>
         <Link href={`/vehicles/${vehicle.slug}`}><h3 className="line-clamp-2 text-base font-bold group-hover:text-accent">{vehicle.title}</h3></Link>
         <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-secondary/55 p-3 text-[11px] text-muted-foreground">
           {vehicle.year && <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-accent" />{vehicle.year}</span>}
@@ -57,7 +57,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
           </div>
           <a href={waHref} target="_blank" rel="noopener noreferrer" className="grid h-10 w-10 place-items-center rounded-full bg-[#25D366] text-white" aria-label={`Ask about ${vehicle.title} on WhatsApp`}><MessageCircle className="h-4 w-4" /></a>
         </div>
-        <Link href={`/vehicles/${vehicle.slug}`} className="mt-3 flex items-center justify-between rounded-xl bg-secondary/70 px-3 py-2.5 text-xs font-bold hover:bg-foreground hover:text-background">
+        <Link href={`/vehicles/${vehicle.slug}`} className="mt-3 flex items-center justify-between rounded-xl bg-accent px-3 py-2.5 text-xs font-bold text-accent-foreground shadow-sm hover:bg-accent/90">
           View vehicle <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
       </div>

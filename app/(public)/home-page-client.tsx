@@ -104,7 +104,7 @@ export default function HomePageClient() {
   return (
     <>
       <section className="relative overflow-hidden bg-[#101114] text-white">
-        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_78%_20%,rgba(220,38,38,.35),transparent_28%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
+        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_78%_20%,hsla(345,42%,32%,.4),transparent_28%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
         <div className="absolute -right-24 top-10 hidden h-[430px] w-[620px] rotate-[-8deg] rounded-[50%] border border-white/10 bg-gradient-to-br from-white/10 to-transparent blur-sm lg:block" />
         <div className="container-page relative grid min-h-[590px] items-center gap-10 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20">
           <div className="max-w-3xl">
@@ -268,7 +268,7 @@ export default function HomePageClient() {
       <section className="overflow-hidden bg-[#101114] py-14 text-white sm:py-20">
         <div className="container-page grid items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
           <div>
-            <span className="eyebrow text-red-400">Export showroom</span>
+            <span className="eyebrow">Export showroom</span>
             <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Vehicles sourced for your destination market.</h2>
             <p className="mt-4 max-w-xl leading-7 text-white/60">Browse published stock or send the make, model, year, and destination you need. ANSHA can coordinate inspection and export support from Dubai.</p>
             <div className="mt-7 flex flex-wrap gap-3">

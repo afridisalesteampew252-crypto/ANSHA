@@ -5,8 +5,8 @@ import { ArrowUpRight, Images, MessageCircle, PackageCheck, Wrench } from 'lucid
 import { Badge } from '@/components/ui/badge';
 import { BrandLogo } from '@/components/public/brand-logo';
 import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-image';
+import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
-import { stockOriginLabel } from '@/lib/stock';
 import type { PartWithRelations } from '@/lib/types';
 
 interface PartCardProps {
@@ -37,9 +37,12 @@ export function PartCard({ part }: PartCardProps) {
           <span className="flex h-full items-center justify-center"><Wrench className="h-12 w-12 text-muted-foreground/20" /></span>
         )}
         <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
-          <Badge className="border-0 bg-background/90 capitalize text-foreground shadow-sm backdrop-blur">
-            {conditionLabels[part.condition] || part.condition}
-          </Badge>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <StockOriginBadge origin={part.stock_origin} compact className="border border-border/60" />
+            <Badge className="border-0 bg-background/90 capitalize text-foreground shadow-sm backdrop-blur">
+              {conditionLabels[part.condition] || part.condition}
+            </Badge>
+          </div>
           {part.stock_status !== 'sold' && part.quantity > 0 && (
             <Badge className="gap-1 border-0 bg-emerald-600 text-white shadow-sm">
               <PackageCheck className="h-3 w-3" />In stock
@@ -57,7 +60,7 @@ export function PartCard({ part }: PartCardProps) {
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <div className="mb-2 flex items-center justify-between gap-2">
           <span className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-accent">
-            {stockOriginLabel(part.stock_origin)} · {part.categories?.name || 'Automotive part'}
+            {part.categories?.name || 'Automotive part'}
           </span>
           <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{part.part_code}</span>
         </div>
@@ -84,7 +87,7 @@ export function PartCard({ part }: PartCardProps) {
             <MessageCircle className="h-4 w-4" />
           </a>
         </div>
-        <Link href={`/parts/${part.slug}`} className="mt-3 flex items-center justify-between rounded-xl bg-secondary/70 px-3 py-2.5 text-xs font-bold transition-colors hover:bg-foreground hover:text-background">
+        <Link href={`/parts/${part.slug}`} className="mt-3 flex items-center justify-between rounded-xl bg-accent px-3 py-2.5 text-xs font-bold text-accent-foreground shadow-sm transition hover:bg-accent/90">
           View details <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
       </div>
