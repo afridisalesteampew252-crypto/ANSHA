@@ -7,7 +7,7 @@
 | Anonymous visitor | no row | Browse published **available** catalog/blog; submit inquiry and part request; verify invoice by UUID |
 | `staff` | `admin_profiles.role` default | Full operations workspace access via `is_admin()` / `is_ops_user()` RLS |
 | `admin` | `admin_profiles.role` | Same ops access, plus create/update staff Auth users |
-| `sales` | `admin_profiles.role` | Route-limited ERP (catalog, customers, **reservations**, **customer invoices**, inquiries, requests, chat/mail). **Cannot** open suppliers, GRN receive, remittances, supplier invoice archive. May reserve vehicles and create proformas. |
+| `sales` | `admin_profiles.role` | Route-limited ERP (catalog, customers, **reservations**, **customer invoices**, inquiries, requests, chat/mail, **dashboard/analytics**). **Cannot** open suppliers, GRN receive, remittances, supplier invoice archive. May reserve vehicles and create proformas. Analytics/RPC returns own-book receivables only. |
 
 There is no department role and no `domain.action` permission matrix in code. Customer portal uses `customer_profiles`, not `admin_profiles`.
 
@@ -24,7 +24,7 @@ A Supabase Auth user without `admin_profiles` cannot use the ERP. Login signs th
 
 ## Purchase inventory (Phase 28)
 
-- Creating/editing suppliers, purchase orders, posting GRNs, supplier payments/SOA, export shipments, landed-cost packs, bank accounts/reconciliation, operating expenses, VAT return packs, payroll/leave, general ledger journals, and financial reports: **admin/staff only**
+- Creating/editing suppliers, purchase orders, posting GRNs, supplier payments/SOA, export shipments, landed-cost packs, bank accounts/reconciliation, operating expenses, VAT return packs, payroll/leave, general ledger journals, financial reports, outbound email, and WhatsApp Cloud API sends: **admin/staff only**
 - Reserving / releasing vehicle stock and sales reservation + proforma: any workspace user (`sales` included)
 - Publishing vehicles: only when `stock_status = available` (`set_vehicle_public_listing`)
 - Applying sold status on tax/commercial invoice lines: runs inside invoice create RPC for workspace users who can create invoices

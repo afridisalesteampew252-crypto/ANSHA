@@ -71,7 +71,13 @@ Done (Phase 37): payroll / leave / EOS MVP â `employees`, `leave_requests`,
 
 Done (Phase 38): general ledger MVP â `gl_accounts`, `gl_journals` / `gl_journal_lines` (JE- numbers), balanced post/reverse RPCs, seeded default chart, report RPCs (`gl_trial_balance`, `gl_profit_and_loss`, `gl_balance_sheet`). Admin `/admin/ledger` + `/admin/reports`; ops-only. Manual journals only; auto-post from bank/expense/invoice modules deferred (TODOs in docs).
 
+Done (Phase 41): richer ops analytics — RPC `get_ops_analytics_summary(from,to)` (jsonb: tax/commercial sales by month, outstanding AR, stock by status/origin, open/overdue requests; ops also remittances + open POs + GRNs). Dashboard `/admin/dashboard` extended; optional `/admin/analytics` with date range. Sales get own-book safe subset (no remittances/PO/GRN). Recharts. Migration `20260918300000_phase_41_analytics.sql` applied live.
+
+Done (Phase 40): WhatsApp Business Cloud API MVP — `whatsapp_message_log` (ops RLS), Edge Function `send-whatsapp` (Meta Graph), admin `/admin/whatsapp` (customer phone or E.164 paste, text/template, send log). Secrets `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID`; UI shows setup when missing.
+
 Done (Phase 43): audit-log MVP  `audit_logs` (append-only; ops SELECT), `private.write_audit_log(...)`, triggers on `invoices.status`, `vehicles.stock_status`, and `remittance_allocations` insert/delete. Admin `/admin/audit-log` with entity/actor/date filters.
+
+Done (Phase 39): outbound email MVP — `outbound_email_log` (ops RLS, append-only), Edge Function `send-outbound-email` via Resend (`RESEND_API_KEY`), admin compose UI `/admin/email` with optional invoice verification-link stub. Not marketing campaigns.
 
 ## 7. Mobile / PWA
 
@@ -83,6 +89,6 @@ Done (Phase 44): Capacitor native shell MVP — `capacitor.config.ts` (`com.ansh
 
 ## 8. Later platform
 
-Outbound email, WhatsApp Business API, analytics beyond the current dashboard, AI automation â all against this PostgreSQL project.
+Outbound email, AI automation â all against this PostgreSQL project.
 
 Stop after the current module until the next one is approved.

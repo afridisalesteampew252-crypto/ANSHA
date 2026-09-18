@@ -38,9 +38,30 @@ Public catalog is installable (`app/manifest.ts`, `/sw.js`, `/icons/*`, `/offlin
 
 Web Push (Phase 24): set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel. Set Edge Function secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and optional `VAPID_SUBJECT` (mailto:) for `send-web-push`. Generate keys with `npx web-push generate-vapid-keys`. Never put the private key in `NEXT_PUBLIC_*` or git.
 
+Outbound email (Phase 39): set Edge Function secrets for `send-outbound-email` (not Vercel `NEXT_PUBLIC_*`, and not the Supabase service role in the Next.js app):
+
+| Secret | Required | Notes |
+|---|---|---|
+| `RESEND_API_KEY` | yes | Resend API key (`re_…`). Without it the function returns HTTP 503 with a clear error. |
+| `RESEND_FROM_EMAIL` | no | Default `ANSHA Trading <noreply@anshatradingco.com>`. Must be a verified Resend sender/domain. |
+
+Set with Supabase CLI against project `ydrnilquojvalhgifest`, e.g. `supabase secrets set RESEND_API_KEY=re_… RESEND_FROM_EMAIL="ANSHA Trading <noreply@anshatradingco.com>"`. Redeploy `send-outbound-email` after changing secrets. SMTP is not wired in this MVP — Resend only.
+
+
 ## Capacitor (native shell)
 
 Store builds are local: generate `android`/`ios` with `npx cap add …`, then `npx cap sync` and open Android Studio or Xcode. The shell loads the deployed public URL (`capacitor.config.ts` `server.url`), not a bundled Next.js `out/` folder. CI and Vercel remain web-only. Full steps: `docs/Mobile.md`.
+
+
+WhatsApp Business Cloud API (Phase 40): set Edge Function secrets for `send-whatsapp` (never `NEXT_PUBLIC_*`, never commit tokens):
+
+| Secret | Required | Notes |
+|---|---|---|
+| `WHATSAPP_ACCESS_TOKEN` | yes | Meta permanent Cloud API token (alias `WHATSAPP_CLOUD_API_TOKEN` also accepted). |
+| `WHATSAPP_PHONE_NUMBER_ID` | yes | WhatsApp Business phone number ID from Meta. |
+| `WHATSAPP_API_VERSION` | no | Graph API version; default `v21.0`. |
+
+Set with Supabase CLI against project `ydrnilquojvalhgifest`, e.g. `supabase secrets set WHATSAPP_ACCESS_TOKEN=… WHATSAPP_PHONE_NUMBER_ID=…`. Redeploy `send-whatsapp` after changing secrets. Admin UI `/admin/whatsapp` probes `action: status` and shows setup instructions when secrets are missing (no crash).
 
 ## Rollback
 
@@ -56,4 +77,4 @@ Supabase project backups are an infrastructure concern, not an in-repo script. D
 
 ## Edge Functions
 
-`admin-create-user` and `admin-update-user` deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy both functions together so they keep the same origin allowlist and anon-key caller verification.
+`admin-create-user`, `admin-update-user`, `send-outbound-email`, `send-whatsapp`, and related functions deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy both functions together so they keep the same origin allowlist and anon-key caller verification.

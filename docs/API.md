@@ -114,6 +114,28 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, optional `VAPID_SUBJECT`
 - Removes stale endpoints (HTTP 404/410)
 
+
+### `send-whatsapp`
+
+- POST, JWT required
+- Caller must be active ops (`admin_profiles.role` in `admin|staff`)
+- Body status probe: `{ action: 'status' }` → `{ configured: boolean }`
+- Body send: `{ to, message_type: 'text'|'template', body?, template_name?, template_language?, customer_id? }`
+- `to` must be E.164 (e.g. `+971501234567`); digits without `+` are normalized
+- Calls Meta Graph Cloud API; appends `whatsapp_message_log` via service role
+- Requires Edge secrets `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID`; optional `WHATSAPP_API_VERSION`
+- Missing credentials → HTTP 503 with `code: WHATSAPP_NOT_CONFIGURED` (admin UI shows setup steps)
+
+
+### `send-outbound-email`
+
+- POST, JWT required
+- Caller must be active ops (`admin_profiles.role` in `admin|staff`)
+- Body: `{ to_email, subject, body, related_invoice_id? }`
+- Sends plain-text mail via Resend; inserts `outbound_email_log` with caller JWT (no service role)
+- Requires Edge secret `RESEND_API_KEY`; optional `RESEND_FROM_EMAIL`
+- Missing API key → HTTP 503 with configuration error (no silent fail)
+
 ### `remind-request-dues`
 
 - GET or POST, no end-user JWT (`verify_jwt` off)

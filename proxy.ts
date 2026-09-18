@@ -109,6 +109,7 @@ export async function proxy(request: NextRequest) {
     if (profile.role === 'sales') {
       const allowed =
         pathname === '/admin/dashboard'
+        || pathname.startsWith('/admin/analytics')
         || pathname === '/admin/profile'
         || pathname.startsWith('/admin/parts')
         || pathname.startsWith('/admin/vehicles')

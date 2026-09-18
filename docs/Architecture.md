@@ -8,6 +8,8 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - Staff ERP: `app/admin/` — login plus operations workspace
 - Customer portal: `app/portal/` — login plus read-only invoices (Phase 23)
 - Web Push: `push_subscriptions` + Edge Function `send-web-push` (Phase 24)
+- Outbound email: `outbound_email_log` + Edge Function `send-outbound-email` / Resend (Phase 39)
+- WhatsApp Cloud API: `whatsapp_message_log` + Edge Function `send-whatsapp` (Phase 40)
 - Capacitor shell (Phase 44): iOS/Android WebView loading the production public URL; see `docs/Mobile.md`
 - Shared backend: Supabase Auth, PostgreSQL, Storage, Realtime, Edge Functions
 

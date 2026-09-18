@@ -874,7 +874,7 @@ export interface ExportShipmentVehicle {
   created_at: string;
 }
 
-/** Phase 36 — UAE VAT return pack (reporting-first). */
+/** Phase 36 â€" UAE VAT return pack (reporting-first). */
 export interface VatReturnLine {
   source: string;
   side: 'output' | 'input';
@@ -944,7 +944,7 @@ export interface VatReturnPeriod {
   created_at: string;
 }
 
-/** Phase 33 — import landed-cost pack (freight/duty/charges rolled into stock). */
+/** Phase 33 â€" import landed-cost pack (freight/duty/charges rolled into stock). */
 export type LandedCostPackStatus = 'draft' | 'posted' | 'cancelled';
 export type LandedCostChargeType = 'freight' | 'duty' | 'insurance' | 'handling' | 'other';
 export type LandedCostAllocationMethod = 'equal' | 'purchase_value' | 'manual';
@@ -991,7 +991,7 @@ export interface LandedCostAllocation {
   created_at: string;
 }
 
-/** Phase 34 — ops bank ledger (not the public /banking page). */
+/** Phase 34 â€" ops bank ledger (not the public /banking page). */
 export type BankTxnDirection = 'in' | 'out';
 
 export interface BankAccount {
@@ -1031,7 +1031,7 @@ export interface BankTransaction {
   updated_at: string;
 }
 
-/** Phase 35 — operating expenses (not payroll). */
+/** Phase 35 â€" operating expenses (not payroll). */
 export type ExpenseStatus = 'draft' | 'posted' | 'cancelled';
 export type ExpensePaymentMethod =
   | 'bank_transfer'
@@ -1073,7 +1073,7 @@ export interface Expense {
   updated_at: string;
 }
 
-/** Phase 37 — payroll / leave / EOS MVP (ops-only). */
+/** Phase 37 â€" payroll / leave / EOS MVP (ops-only). */
 export type EmployeeStatus = 'active' | 'inactive' | 'terminated';
 export type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other';
 export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected';
@@ -1142,7 +1142,7 @@ export interface PayrollLine {
   updated_at: string;
 }
 
-/** Phase 38 — general ledger chart, journals, financial statements. */
+/** Phase 38 â€" general ledger chart, journals, financial statements. */
 export type GlAccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 export type GlJournalStatus = 'draft' | 'posted' | 'reversed';
 export type GlSourceModule =
@@ -1227,7 +1227,7 @@ export interface GlBalanceSheetRow {
   amount: number;
 }
 
-/** Phase 42 — ops AI assistant chat history. */
+/** Phase 42 â€" ops AI assistant chat history. */
 export interface AiChatThread {
   id: string;
   title: string;
@@ -1252,7 +1252,7 @@ type TableDef<T> = {
 };
 
 
-/** Phase 43 � append-only ops audit trail. */
+/** Phase 43 - append-only ops audit trail. */
 export interface AuditLog {
   id: string;
   actor_id: string | null;

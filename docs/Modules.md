@@ -6,7 +6,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 | Module | Public | Staff | Data |
 |---|---|---|---|
-| Dashboard | no | `/admin/dashboard` | counts, charts over invoices/remittances/stock/chat |
+| Dashboard | no | `/admin/dashboard` | counts, charts; enriched via `get_ops_analytics_summary` |
+| Analytics | no | `/admin/analytics` | date-range KPIs (sales/stock/purchase/requests); sales get own-book subset |
 | Parts catalog | `/parts` | `/admin/parts` (+ purchase cost on edit) | `parts`, photos, compatibility, cost columns |
 | Vehicles catalog | `/vehicles` | `/admin/vehicles`, `/admin/vehicles/[id]` lifecycle + purchase/reserve | `vehicles`, photos, `vehicle_lifecycle_events`, cost columns |
 | Categories | `/categories` | `/admin/categories` | `categories` |
@@ -36,6 +37,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Bulk import | no | `/admin/imports` | `import_jobs`, `import_rows` |
 | Team chat | no | `/admin/chat` (+ entity filters) | `chat_*`, `chat_conversation_links`, Realtime |
 | Internal mail | no | `/admin/mail` | `internal_mail*` |
+| Outbound email | no | `/admin/email` (ops) | `outbound_email_log` + Edge `send-outbound-email` |
+| WhatsApp | no | `/admin/whatsapp` (ops) | `whatsapp_message_log` + Edge `send-whatsapp` |
 | Notifications | no | header center | `admin_notifications` |
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |
 | Company pages | `/`, `/about`, `/contact` | — | static + catalog queries |
@@ -46,6 +49,6 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 ## Not implemented
 
-outbound email, WhatsApp API, native admin rewrite, AI automation.
+Marketing email campaigns, native admin rewrite, AI automation.
 
 Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.

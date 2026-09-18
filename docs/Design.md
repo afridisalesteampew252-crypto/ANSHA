@@ -18,7 +18,7 @@ Do not replace the design system in one pass. Extend existing `components/ui` an
 
 - Collapsible desktop sidebar, mobile drawer, sticky titles
 - Quick add: part, vehicle, invoice, remittance, import
-- Dense tables and dialogs; charts on dashboard (recharts)
+- Dense tables and dialogs; charts on dashboard and `/admin/analytics` (recharts)
 - Print-oriented invoice layout with QR and banking blocks
 
 ## Consistency rules

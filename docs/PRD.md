@@ -24,7 +24,7 @@ Canonical public site: `https://www.anshatradingco.com`.
 
 ### Out of current product
 
-Native admin rewrite, AI automation, WhatsApp Business API, outbound email.
+Native admin rewrite, AI automation, outbound email.
 
 Customer portal first slice is live (Phase 23): login + own invoices only. Public catalog is installable as a PWA (Phase 22) with Web Push for insights and deals (Phase 24). Capacitor shell MVP wraps the public production URL for iOS/Android (Phase 44); see `docs/Mobile.md`. Staff ERP remains online-only and is not cached offline.
 
