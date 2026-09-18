@@ -8,6 +8,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 |---|---|---|---|
 | Dashboard | no | `/admin/dashboard` | counts, charts; enriched via `get_ops_analytics_summary` |
 | Analytics | no | `/admin/analytics` | date-range KPIs (sales/stock/purchase/requests); sales get own-book subset |
+| AI assistant | no | `/admin/ai` (ops) | `ai_chat_threads` / `ai_chat_messages` + `get_ai_ops_grounding` + `POST /api/ai/chat` |
 | Parts catalog | `/parts` | `/admin/parts` (+ purchase cost on edit) | `parts`, photos, compatibility, cost columns |
 | Vehicles catalog | `/vehicles` | `/admin/vehicles`, `/admin/vehicles/[id]` lifecycle + purchase/reserve | `vehicles`, photos, `vehicle_lifecycle_events`, cost columns |
 | Categories | `/categories` | `/admin/categories` | `categories` |
@@ -49,6 +50,6 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 ## Not implemented
 
-Marketing email campaigns, native admin rewrite, AI automation.
+Marketing email campaigns, native admin rewrite.
 
 Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.

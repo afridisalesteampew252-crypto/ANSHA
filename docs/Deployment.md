@@ -47,6 +47,13 @@ Outbound email (Phase 39): set Edge Function secrets for `send-outbound-email` (
 
 Set with Supabase CLI against project `ydrnilquojvalhgifest`, e.g. `supabase secrets set RESEND_API_KEY=re_… RESEND_FROM_EMAIL="ANSHA Trading <noreply@anshatradingco.com>"`. Redeploy `send-outbound-email` after changing secrets. SMTP is not wired in this MVP — Resend only.
 
+AI ops assistant (Phase 42): set on the **Vercel** project (and local `.env.local`), not as browser `NEXT_PUBLIC_*` values:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AI_GATEWAY_API_KEY` | preferred | Vercel AI Gateway; AI SDK default provider |
+| `OPENAI_API_KEY` | fallback | Direct OpenAI when gateway is unset |
+| `AI_MODEL` | no | Override model id |
 
 ## Capacitor (native shell)
 

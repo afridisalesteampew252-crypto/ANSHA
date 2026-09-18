@@ -12,6 +12,16 @@ The product is not a standalone REST/GraphQL backend. Clients talk to Supabase P
 - Returns `healthy` / `degraded` / `unhealthy` without secrets
 - Includes `VERCEL_ENV` and short `VERCEL_GIT_COMMIT_SHA` when present
 
+`POST /api/ai/chat`
+
+- Ops-only (`admin` / `staff` via cookie session + `admin_profiles`)
+- Streams answers with the Vercel AI SDK (`streamText` + UI message stream)
+- Grounds replies with RPC `get_ai_ops_grounding` (counts + recent/matched stock titles)
+- Optional tool `searchOpsCatalog` for a second retrieval pass
+- Persists messages when `threadId` is supplied (`ai_chat_threads` / `ai_chat_messages`)
+- Requires server env `AI_GATEWAY_API_KEY` (preferred) or `OPENAI_API_KEY`; never exposed to the browser
+- Optional `AI_MODEL` (default `openai/gpt-5-mini` via gateway)
+
 There are no Server Actions.
 
 ## Supabase Data API
