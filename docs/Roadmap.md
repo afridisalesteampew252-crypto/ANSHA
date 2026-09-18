@@ -69,6 +69,8 @@ Done (Phase 36): UAE VAT return pack — `get_vat_return_summary(from,to)` (outp
 
 Done (Phase 37): payroll / leave / EOS MVP — `employees`, `leave_requests`, `payroll_runs` / `payroll_lines` (PR- numbers). Create/post/cancel runs; leave approve/reject; `estimate_employee_eos` (basic × years, estimate only — not legal advice). Admin `/admin/payroll`; ops-only. Optional soft `bank_account_id`; no bank auto-pay.
 
+Done (Phase 38): general ledger MVP — `gl_accounts`, `gl_journals` / `gl_journal_lines` (JE- numbers), balanced post/reverse RPCs, seeded default chart, report RPCs (`gl_trial_balance`, `gl_profit_and_loss`, `gl_balance_sheet`). Admin `/admin/ledger` + `/admin/reports`; ops-only. Manual journals only; auto-post from bank/expense/invoice modules deferred (TODOs in docs).
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached. Capacitor / native wrappers remain later.

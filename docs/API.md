@@ -66,6 +66,18 @@ Payroll / leave RPCs (Phase 37, ops-only via `private.is_ops_user()`):
 - `post_payroll_run(p_run_id)` / `cancel_payroll_run(p_run_id)` — lock or cancel; no bank auto-pay
 - `estimate_employee_eos(p_employee_id, p_as_of_date?)` — rough `basic_salary * years` helper; **estimate only, not legal advice**
 
+General ledger RPCs (Phase 38, ops-only via `private.is_ops_user()`):
+
+- `upsert_gl_account(p_code, p_name, p_account_type, p_description?, p_is_active?, p_sort_order?, p_id?)` — create/update chart row
+- `create_gl_journal(p_entry_date, p_description, p_lines jsonb, p_currency?, p_source_module?, p_source_id?)` — draft JE- with ≥2 lines
+- `replace_gl_journal_lines` / `update_gl_journal_header` — draft edits only
+- `post_gl_journal(p_journal_id)` — requires balanced debit = credit
+- `reverse_gl_journal(p_journal_id, p_entry_date?, p_description?)` — posts reversing entry; marks original reversed
+- `delete_draft_gl_journal(p_journal_id)`
+- `gl_trial_balance(p_as_of?)` / `gl_profit_and_loss(p_from, p_to)` / `gl_balance_sheet(p_as_of?)` — statement views from posted journals only
+
+TODO: auto-post journals from bank/expense/invoice/remittance modules using `source_module` + `source_id` (manual MVP only today).
+
 ## Edge Functions
 
 Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowlist: `docs` canonical hosts, `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://*.vercel.app`. Unknown origins get no `Access-Control-Allow-Origin`.

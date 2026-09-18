@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository includes Phase 37 payroll (`20260918260000_phase_37_payroll.sql`); parallel Phase 34/35/36/38 migrations may also be present.
+Latest migration in the repository includes Phase 38 GL (`20260918270000_phase_38_general_ledger.sql`); parallel Phase 34–37 migrations may also be present.
 
 ## Entity groups
 
@@ -38,6 +38,7 @@ Latest migration in the repository includes Phase 37 payroll (`20260918260000_ph
 - `expense_categories` / `expenses` — operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
 - `vat_return_periods` — optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
 - `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` — HR-lite payroll (PR- numbers); leave pending/approved/rejected; optional soft `bank_account_id`; ops RLS; EOS estimate RPC is planning-only
+- `gl_accounts` / `gl_journals` / `gl_journal_lines` — chart of accounts + manual journals (JE- numbers); draft/posted/reversed; optional `source_module`/`source_id` for future auto-post; ops RLS; report RPCs `gl_trial_balance` / `gl_profit_and_loss` / `gl_balance_sheet`
 - `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
 ### Public marketing (Phase 24)
@@ -107,4 +108,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 37 (payroll) and other concurrent ERP phases as they land. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 38 (general ledger) and other concurrent ERP phases as they land. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
