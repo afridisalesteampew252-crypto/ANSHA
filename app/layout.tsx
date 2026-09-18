@@ -19,7 +19,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   twitter: { card: 'summary_large_image', title: siteConfig.name, description: siteConfig.description },
   robots: { index: true, follow: true },
-  alternates: { canonical: '/' },
   applicationName: siteConfig.shortName,
   appleWebApp: {
     capable: true,

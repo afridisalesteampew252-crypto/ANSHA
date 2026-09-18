@@ -77,7 +77,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migration: `supabase/migrations/20260918090000_phase_21_request_attachments.sql`.
+Latest migration: `supabase/migrations/20260918100000_phase_23_customer_portal.sql`.
 
 ## Phase 4: global SEO and exporter schema
 
@@ -309,3 +309,13 @@ Completed on 2026-09-18.
 - Added a dismissible install prompt on the public site and `/offline` fallback.
 - Extended `verify:deployment` to check `/manifest.webmanifest`, `/sw.js`, `/offline`, and `/icons/icon-192.png`.
 - No database migration.
+
+## Phase 23: customer portal + public catalog performance
+
+Completed on 2026-09-18.
+
+- Added `customer_profiles` and scoped RLS so portal users can read only their own non-draft invoices.
+- Added `/portal` login, `/portal/invoices`, proxy gating, and admin “Enable portal” via `portal-create-access`.
+- Turned on Next.js image optimization for catalog cards/categories; trimmed homepage full-catalog brand counting.
+- Added SEO metadata for home, categories, parts, and vehicles routes; disallowed `/portal` in robots.
+- Applied migration `20260918100000_phase_23_customer_portal`.

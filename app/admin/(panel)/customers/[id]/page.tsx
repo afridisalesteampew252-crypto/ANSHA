@@ -17,6 +17,7 @@ type Invoice = { id: string; invoice_number: string; document_type: string; issu
 type InvoiceItem = { id: string; invoice_id: string; description: string; quantity: number; line_total: number; inventory_type: string | null; inventory_reference: string | null };
 type Remittance = { id: string; remittance_number: string; received_date: string; amount: number; currency: string; status: string; method: string; bank_reference: string | null };
 type Allocation = { id: string; remittance_id: string; invoice_id: string; invoice_payment_id: string; amount: number; created_at: string };
+type PortalLink = { id: string; email: string; full_name: string | null; is_active: boolean };
 
 const money = (value: number, currency = 'AED') => new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value || 0));
 const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
@@ -29,6 +30,10 @@ export default function CustomerAccountPage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [portalLink, setPortalLink] = useState<PortalLink | null>(null);
+  const [portalEmail, setPortalEmail] = useState('');
+  const [portalPassword, setPortalPassword] = useState('');
+  const [portalBusy, setPortalBusy] = useState(false);
   const [remittanceId, setRemittanceId] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
   const [allocationAmount, setAllocationAmount] = useState('');
@@ -38,15 +43,18 @@ export default function CustomerAccountPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [customerResult, invoiceResult, remittanceResult] = await Promise.all([
+    const [customerResult, invoiceResult, remittanceResult, portalResult] = await Promise.all([
       supabase.from('customers').select('id,customer_code,full_name,company_name,email,phone,country').eq('id', customerId).single(),
       supabase.from('invoices').select('id,invoice_number,document_type,issue_date,currency,status,total_amount,amount_paid,balance_due').eq('customer_id', customerId).order('issue_date', { ascending: false }),
       supabase.from('remittances').select('id,remittance_number,received_date,amount,currency,status,method,bank_reference').eq('customer_id', customerId).order('received_date', { ascending: false }),
+      supabase.from('customer_profiles').select('id,email,full_name,is_active').eq('customer_id', customerId).maybeSingle(),
     ]);
     if (customerResult.error) setNotice(customerResult.error.message);
     const invoiceRows = (invoiceResult.data || []) as Invoice[];
     const remittanceRows = (remittanceResult.data || []) as Remittance[];
     setCustomer(customerResult.data as Customer | null);
+    setPortalLink((portalResult.data || null) as PortalLink | null);
+    setPortalEmail(customerResult.data?.email || '');
     setInvoices(invoiceRows);
     setRemittances(remittanceRows);
     const [itemResult, allocationResult] = await Promise.all([
@@ -110,6 +118,29 @@ export default function CustomerAccountPage() {
     setNotice('Allocation reversed and balances restored.'); await load();
   };
 
+  const enablePortal = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!customer) return;
+    setPortalBusy(true);
+    setNotice('Creating portal access…');
+    const { data, error } = await supabase.functions.invoke('portal-create-access', {
+      body: {
+        customer_id: customer.id,
+        email: portalEmail.trim(),
+        password: portalPassword,
+        full_name: customer.full_name,
+      },
+    });
+    setPortalBusy(false);
+    if (error || data?.error) {
+      setNotice(data?.error || error?.message || 'Could not enable portal access.');
+      return;
+    }
+    setPortalPassword('');
+    setNotice(`Portal access created for ${data.email}. Share the temporary password securely.`);
+    await load();
+  };
+
   if (loading) return <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!customer) return <Card><CardContent className="p-10 text-center">Customer account not found.</CardContent></Card>;
 
@@ -117,10 +148,43 @@ export default function CustomerAccountPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div><Button asChild variant="ghost" size="sm" className="-ml-3 mb-2"><Link href="/admin/customers"><ArrowLeft className="h-4 w-4" />Customers</Link></Button><h1 className="text-2xl font-bold">{customer.company_name || customer.full_name}</h1><p className="text-sm text-muted-foreground">Statement of Account · {customer.customer_code} · {[customer.email, customer.phone, customer.country].filter(Boolean).join(' · ')}</p></div>
       <div className="flex flex-wrap gap-2">
+
         <Button asChild variant="outline"><Link href={`/admin/chat?customer=${customer.id}`}>Open linked chat</Link></Button>
         <Button asChild><Link href={`/admin/invoices/new?customer=${customer.id}`}><ReceiptText className="h-4 w-4" />Create invoice</Link></Button>
       </div>
     </div>
+
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Customer portal access</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {portalLink ? (
+          <p className="text-sm">
+            Portal login active for <strong>{portalLink.email}</strong>
+            {portalLink.is_active ? '' : ' (inactive)'}. Customers sign in at <Link href="/portal" className="text-primary underline">/portal</Link>.
+          </p>
+        ) : (
+          <form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]" onSubmit={(event) => void enablePortal(event)}>
+            <div className="space-y-1.5">
+              <Label htmlFor="portal-email">Portal email</Label>
+              <Input id="portal-email" type="email" required value={portalEmail} onChange={(event) => setPortalEmail(event.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="portal-password">Temporary password</Label>
+              <Input id="portal-password" type="text" required minLength={8} value={portalPassword} onChange={(event) => setPortalPassword(event.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" disabled={portalBusy}>
+                {portalBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Enable portal
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground sm:col-span-3">Admin only. Creates a separate Auth user linked to this CRM customer — never added to staff profiles.</p>
+          </form>
+        )}
+      </CardContent>
+    </Card>
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {[['Receivable invoices', money(totalInvoiced, currency), ReceiptText], ['Payments allocated', money(totalAllocated, currency), CheckCircle2], ['Outstanding balance', money(balanceDue, currency), WalletCards], ['Available remittance', money(availableFunds, currency), Banknote]].map(([label, value, Icon]) => <Card key={String(label)}><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">{String(label)}</p><p className="mt-1 text-2xl font-bold">{String(value)}</p></div><span className="rounded-xl bg-primary/10 p-3 text-primary"><Icon className="h-5 w-5" /></span></CardContent></Card>)}

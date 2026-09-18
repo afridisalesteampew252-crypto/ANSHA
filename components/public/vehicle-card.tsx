@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowUpRight, Calendar, Car, Fuel, Gauge, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { siteConfig } from '@/lib/site-config';
 import { stockOriginLabel } from '@/lib/stock';
 import type { VehicleWithPhotos } from '@/lib/types';
@@ -13,9 +14,7 @@ interface VehicleCardProps {
 
 export function VehicleCard({ vehicle }: VehicleCardProps) {
   const coverPhoto = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
-  const photoUrl = coverPhoto
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${coverPhoto.storage_path}`
-    : null;
+  const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
   const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`)}`;
 
@@ -23,8 +22,14 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_4px_18px_rgba(15,23,42,0.04)] transition duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-[0_18px_45px_rgba(15,23,42,0.1)]">
       <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-secondary">
         {photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt={vehicle.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <CatalogImage
+            src={photoUrl}
+            alt={vehicle.title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="transition-transform duration-500 group-hover:scale-105"
+            objectFit="cover"
+          />
         ) : (
           <span className="flex h-full items-center justify-center"><Car className="h-14 w-14 text-muted-foreground/20" /></span>
         )}

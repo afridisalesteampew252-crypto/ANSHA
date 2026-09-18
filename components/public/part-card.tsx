@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowUpRight, Images, MessageCircle, PackageCheck, Wrench } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { BrandLogo } from '@/components/public/brand-logo';
+import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-image';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
 import { stockOriginLabel } from '@/lib/stock';
 import type { PartWithRelations } from '@/lib/types';
@@ -15,9 +16,7 @@ interface PartCardProps {
 export function PartCard({ part }: PartCardProps) {
   const coverPhoto = part.part_photos?.find((photo) => photo.is_cover) || part.part_photos?.[0];
   const compatibility = part.part_compatibility?.[0];
-  const photoUrl = coverPhoto
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${coverPhoto.storage_path}`
-    : null;
+  const photoUrl = coverPhoto ? publicPartImageUrl(coverPhoto.storage_path) : null;
   const hasPrice = Boolean(part.show_price && part.price && part.price > 0);
   const waMessage = `Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
@@ -26,8 +25,14 @@ export function PartCard({ part }: PartCardProps) {
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_4px_18px_rgba(15,23,42,0.04)] transition duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-[0_18px_45px_rgba(15,23,42,0.1)]">
       <Link href={`/parts/${part.slug}`} className="relative block aspect-[1.08/1] overflow-hidden bg-[radial-gradient(circle_at_50%_35%,hsl(var(--background)),hsl(var(--secondary)))]">
         {photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={photoUrl} alt={part.name} loading="lazy" className="h-full w-full object-contain p-5 transition-transform duration-500 group-hover:scale-[1.055]" />
+          <CatalogImage
+            src={photoUrl}
+            alt={part.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="p-5 transition-transform duration-500 group-hover:scale-[1.055]"
+            objectFit="contain"
+          />
         ) : (
           <span className="flex h-full items-center justify-center"><Wrench className="h-12 w-12 text-muted-foreground/20" /></span>
         )}

@@ -42,8 +42,11 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/50"><span className="h-0.5 w-4 rounded-full bg-accent" />Staff Access</h3>
-            <Link href="/admin" className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white">Admin Login<ArrowRight className="h-3 w-3" /></Link>
+            <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/50"><span className="h-0.5 w-4 rounded-full bg-accent" />Access</h3>
+            <div className="space-y-2 text-sm">
+              <Link href="/portal" className="flex items-center gap-1.5 text-white/70 hover:text-white">Customer portal<ArrowRight className="h-3 w-3" /></Link>
+              <Link href="/admin" className="flex items-center gap-1.5 text-white/70 hover:text-white">Staff login<ArrowRight className="h-3 w-3" /></Link>
+            </div>
           </div>
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/15 pt-6 text-center text-sm text-white/50 sm:flex-row sm:text-left">

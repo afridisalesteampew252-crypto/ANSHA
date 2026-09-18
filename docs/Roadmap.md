@@ -41,9 +41,9 @@ Later: tighter due-date reminders.
 
 Done (Phase 20): `chat_conversation_links` attaches existing conversations to vehicle/customer/inquiry/invoice/request IDs. RPCs `link_chat_conversation` / `unlink_chat_conversation`. Team Chat UI can link/unlink and filter via query params. No second chat product.
 
-## 6. Customer portal
+Done (Phase 23): customer portal first slice on the same database. `customer_profiles` links Auth users to CRM `customers` (never `admin_profiles`). Customers can sign in at `/portal` and read their own non-draft invoices. Admin enables access from the customer SOA page via Edge Function `portal-create-access`. Remittances, chat, and staff ERP stay staff-only.
 
-Same database. New auth role distinct from `admin_profiles`. RLS must prevent customers from reading other customers' finance or staff chat.
+Also in this phase: public catalog image optimization (Next.js Image), category/home SEO metadata, faster homepage category counts, footer portal link.
 
 ## 7. Mobile / PWA
 

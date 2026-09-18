@@ -11,13 +11,15 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918090000_phase_21_request_attachments.sql`.
+Latest migration in the repository: `20260918100000_phase_23_customer_portal.sql`.
 
 ## Entity groups
 
 ### Identity
 
 `admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`), `email`, `avatar_url`, `created_at`.
+
+`customer_profiles` — PK `id` = `auth.users.id`, unique `customer_id` → `customers`. Portal identity only; never place portal users in `admin_profiles`.
 
 ### Catalog
 
@@ -90,4 +92,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 21. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 23. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.

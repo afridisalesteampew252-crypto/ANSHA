@@ -19,6 +19,9 @@ function getSupabaseConfig() {
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
   const { url, key } = getSupabaseConfig();
+  const pathname = request.nextUrl.pathname;
+  const isAdminArea = pathname === '/admin' || pathname.startsWith('/admin/');
+  const isPortalArea = pathname === '/portal' || pathname.startsWith('/portal/');
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -63,46 +66,80 @@ export async function proxy(request: NextRequest) {
   const { data: claimsData } = await supabase.auth.getClaims();
   const claims = claimsData?.claims;
 
-  const isLoginPage = request.nextUrl.pathname === '/admin';
+  if (isAdminArea) {
+    const isLoginPage = pathname === '/admin';
 
-  if (!claims?.sub) {
-    if (isLoginPage) {
-      return supabaseResponse;
+    if (!claims?.sub) {
+      if (isLoginPage) return supabaseResponse;
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/admin';
+      loginUrl.search = '';
+      return redirectWithSession(loginUrl);
     }
 
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/admin';
-    loginUrl.search = '';
-    return redirectWithSession(loginUrl);
-  }
+    const { data: profile } = await supabase
+      .from('admin_profiles')
+      .select('id')
+      .eq('id', claims.sub)
+      .maybeSingle();
 
-  const { data: profile } = await supabase
-    .from('admin_profiles')
-    .select('id')
-    .eq('id', claims.sub)
-    .maybeSingle();
-
-  if (!profile) {
-    if (isLoginPage) {
-      return supabaseResponse;
+    if (!profile) {
+      if (isLoginPage) return supabaseResponse;
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/admin';
+      loginUrl.searchParams.set('error', 'unauthorized');
+      return redirectWithSession(loginUrl);
     }
 
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/admin';
-    loginUrl.searchParams.set('error', 'unauthorized');
-    return redirectWithSession(loginUrl);
+    if (isLoginPage) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = '/admin/dashboard';
+      dashboardUrl.search = '';
+      return redirectWithSession(dashboardUrl);
+    }
+
+    return supabaseResponse;
   }
 
-  if (isLoginPage) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = '/admin/dashboard';
-    dashboardUrl.search = '';
-    return redirectWithSession(dashboardUrl);
+  if (isPortalArea) {
+    const isLoginPage = pathname === '/portal';
+
+    if (!claims?.sub) {
+      if (isLoginPage) return supabaseResponse;
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/portal';
+      loginUrl.search = '';
+      return redirectWithSession(loginUrl);
+    }
+
+    const { data: portalProfile } = await supabase
+      .from('customer_profiles')
+      .select('id, is_active')
+      .eq('id', claims.sub)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!portalProfile) {
+      if (isLoginPage) return supabaseResponse;
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/portal';
+      loginUrl.searchParams.set('error', 'unauthorized');
+      return redirectWithSession(loginUrl);
+    }
+
+    if (isLoginPage) {
+      const invoicesUrl = request.nextUrl.clone();
+      invoicesUrl.pathname = '/portal/invoices';
+      invoicesUrl.search = '';
+      return redirectWithSession(invoicesUrl);
+    }
+
+    return supabaseResponse;
   }
 
   return supabaseResponse;
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/portal', '/portal/:path*'],
 };

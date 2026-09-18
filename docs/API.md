@@ -70,6 +70,13 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - Validates user id (UUID), email, full name, role; optional password ≥ 8
 - Uses anon client for `getUser()` and service-role client for Auth admin + profile update
 
+### `portal-create-access`
+
+- POST, JWT required
+- Caller must be `role = 'admin'`
+- Creates an Auth user + `customer_profiles` row for an existing CRM customer
+- Never inserts into `admin_profiles`
+
 Service-role keys exist only as Edge Function secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). They must not be added as `NEXT_PUBLIC_*` variables.
 
 ## Storage API

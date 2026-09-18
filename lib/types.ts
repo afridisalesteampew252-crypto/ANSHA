@@ -261,6 +261,16 @@ export interface Customer {
   updated_at: string;
 }
 
+export interface CustomerProfile {
+  id: string;
+  customer_id: string;
+  email: string;
+  full_name: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ImportJob {
   id: string;
   import_type: 'parts_excel' | 'vehicles_excel' | 'parts_images_zip' | 'vehicles_images_zip';
@@ -638,6 +648,7 @@ export interface Database {
       chat_messages: TableDef<ChatMessage>;
       chat_participants: TableDef<ChatParticipant>;
       customers: TableDef<Customer>;
+      customer_profiles: TableDef<CustomerProfile>;
       import_jobs: TableDef<ImportJob>;
       import_rows: TableDef<ImportRow>;
       inquiries: TableDef<Inquiry>;
