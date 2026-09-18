@@ -330,3 +330,4 @@ Completed on 2026-09-18.
 - Edge Function `send-web-push` (staff JWT + VAPID) topics: `insights` | `deals` | `all`.
 - Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel and `VAPID_*` secrets on the function.
 - Applied migration `20260918110000_phase_24_pwa_push`.
+- Applied migration `20260918320000_phase_43_audit_log` — append-only `audit_logs`, `private.write_audit_log`, invoice/vehicle/remittance hooks, admin `/admin/audit-log`.

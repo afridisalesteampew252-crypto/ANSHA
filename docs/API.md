@@ -78,6 +78,8 @@ General ledger RPCs (Phase 38, ops-only via `private.is_ops_user()`):
 
 TODO: auto-post journals from bank/expense/invoice/remittance modules using `source_module` + `source_id` (manual MVP only today).
 
+Audit log (Phase 43): no public RPCs. Writes go through `private.write_audit_log(action, entity_type, entity_id, metadata?, actor_id?)` (SECURITY DEFINER; not granted to `authenticated`). Ops read `audit_logs` via Data API SELECT. Automatic hooks: invoice status updates, vehicle `stock_status` updates, remittance allocation insert/delete.
+
 ## Edge Functions
 
 Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowlist: `docs` canonical hosts, `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://*.vercel.app`. Unknown origins get no `Access-Control-Allow-Origin`.

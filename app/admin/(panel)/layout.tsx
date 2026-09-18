@@ -5,8 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  Banknote, BookMarked, BookOpen, BookmarkPlus, Building2, Calculator, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileBarChart, FileSpreadsheet, Inbox, LayoutDashboard,
-  Loader2, Mail, Megaphone, Menu, MessageCircle, Package, PackagePlus, Plus, Receipt, ReceiptText, Ship, Tag, Truck,
+  Banknote, BarChart3, BookMarked, BookOpen, BookmarkPlus, Building2, Calculator, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileBarChart, FileSpreadsheet, Inbox, LayoutDashboard,
+  Loader2, Mail, MailPlus, Megaphone, Menu, MessageCircle, Package, PackagePlus, Phone, Plus, Receipt, ReceiptText, ScrollText, Ship, Sparkles, Tag, Truck,
   Upload, WalletCards, UserCog, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,9 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'Overview',
     items: [
       { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+      { href: '/admin/ai', label: 'AI assistant', icon: Sparkles },
+      { href: '/admin/audit-log', label: 'Audit log', icon: ScrollText },
     ],
   },
   {
@@ -68,6 +71,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: '/admin/requests', label: 'Requests', icon: ClipboardList },
       { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
       { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
+      { href: '/admin/email', label: 'Outbound email', icon: MailPlus },
+      { href: '/admin/whatsapp', label: 'WhatsApp', icon: Phone },
     ],
   },
   {
@@ -88,6 +93,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 
 const SALES_ALLOWED_HREFS = new Set([
   '/admin/dashboard',
+  '/admin/analytics',
   '/admin/parts',
   '/admin/vehicles',
   '/admin/customers',

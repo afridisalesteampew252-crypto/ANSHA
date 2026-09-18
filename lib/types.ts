@@ -364,6 +364,27 @@ export interface SiteOffer {
   updated_at: string;
 }
 
+
+export type WhatsAppMessageDirection = 'outbound' | 'inbound';
+export type WhatsAppMessageKind = 'text' | 'template';
+export type WhatsAppMessageStatus = 'pending' | 'sent' | 'failed' | 'delivered' | 'read';
+
+export interface WhatsAppMessageLog {
+  id: string;
+  direction: WhatsAppMessageDirection;
+  message_type: WhatsAppMessageKind;
+  to_phone: string;
+  customer_id: string | null;
+  template_name: string | null;
+  body: string | null;
+  wa_message_id: string | null;
+  status: WhatsAppMessageStatus;
+  error_message: string | null;
+  raw_response: Record<string, unknown> | null;
+  sent_by: string | null;
+  created_at: string;
+}
+
 export interface PartRequest {
   id: string;
   customer_name: string;
@@ -1206,17 +1227,49 @@ export interface GlBalanceSheetRow {
   amount: number;
 }
 
+/** Phase 42 â€” ops AI assistant chat history. */
+export interface AiChatThread {
+  id: string;
+  title: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AiChatMessage {
+  id: string;
+  thread_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_by: string | null;
+  created_at: string;
+}
+
 type TableDef<T> = {
   Row: T;
   Insert: Partial<T>;
   Update: Partial<T>;
 };
 
+
+/** Phase 43 — append-only ops audit trail. */
+export interface AuditLog {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
 export interface Database {
   public: {
     Tables: {
       admin_notifications: TableDef<AdminNotification>;
       admin_profiles: TableDef<AdminProfile>;
+      audit_logs: TableDef<AuditLog>;
+      ai_chat_messages: TableDef<AiChatMessage>;
+      ai_chat_threads: TableDef<AiChatThread>;
       bank_accounts: TableDef<BankAccount>;
       bank_transactions: TableDef<BankTransaction>;
       blog_categories: TableDef<BlogCategory>;
@@ -1276,6 +1329,7 @@ export interface Database {
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;
       vat_return_periods: TableDef<VatReturnPeriod>;
+      whatsapp_message_log: TableDef<WhatsAppMessageLog>;
       workspace_request_attachments: TableDef<WorkspaceRequestAttachment>;
       workspace_request_due_reminders: TableDef<WorkspaceRequestDueReminder>;
       workspace_request_events: TableDef<WorkspaceRequestEvent>;

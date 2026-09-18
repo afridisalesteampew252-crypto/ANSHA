@@ -39,6 +39,7 @@ Latest migration in the repository includes Phase 38 GL (`20260918270000_phase_3
 - `vat_return_periods` — optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
 - `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` — HR-lite payroll (PR- numbers); leave pending/approved/rejected; optional soft `bank_account_id`; ops RLS; EOS estimate RPC is planning-only
 - `gl_accounts` / `gl_journals` / `gl_journal_lines` — chart of accounts + manual journals (JE- numbers); draft/posted/reversed; optional `source_module`/`source_id` for future auto-post; ops RLS; report RPCs `gl_trial_balance` / `gl_profit_and_loss` / `gl_balance_sheet`
+- `audit_logs` � append-only ops activity log (actor, action, entity_type, entity_id, metadata); writes via `private.write_audit_log`; triggers on invoice status, vehicle stock_status, remittance allocations; ops SELECT only
 - `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
 ### Public marketing (Phase 24)
@@ -108,4 +109,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 38 (general ledger) and other concurrent ERP phases as they land. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 43 (audit log) and other concurrent ERP phases as they land
