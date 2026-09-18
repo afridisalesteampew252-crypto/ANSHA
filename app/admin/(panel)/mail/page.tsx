@@ -233,7 +233,19 @@ export default function InternalMailPage() {
   }
 
   async function sendMail() {
-    if (sending || !subject.trim() || !messageBody.trim() || !toIds.length) return;
+    if (sending) return;
+    if (!subject.trim()) {
+      setNotice('Add a subject before sending.');
+      return;
+    }
+    if (!messageBody.trim()) {
+      setNotice('Write a message body before sending.');
+      return;
+    }
+    if (!toIds.length) {
+      setNotice('Choose at least one To recipient.');
+      return;
+    }
     const invalidFile = files.find((file) => file.size > MAX_ATTACHMENT_BYTES);
     if (invalidFile) {
       setNotice(`${invalidFile.name} is larger than 25 MB.`);
@@ -243,13 +255,18 @@ export default function InternalMailPage() {
     setNotice('');
     try {
       const { data, error } = await supabase.rpc('send_internal_mail', {
-        mail_subject: subject,
+        mail_subject: subject.trim(),
         mail_body: messageBody,
         to_ids: toIds,
         cc_ids: ccIds,
         bcc_ids: bccIds,
       });
-      if (error) throw error;
+      if (error) {
+        const detail = [error.message, (error as { details?: string }).details, (error as { hint?: string }).hint]
+          .filter(Boolean)
+          .join(' — ');
+        throw new Error(detail || 'Unable to send mail.');
+      }
       const mailId = data as string;
       for (const file of files) {
         const path = `mail/${mailId}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
@@ -270,6 +287,7 @@ export default function InternalMailPage() {
       setFolder('sent');
       await loadMail(currentUserId);
       setActiveId(mailId);
+      setNotice('Mail sent.');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Unable to send mail.');
     } finally {
@@ -304,7 +322,7 @@ export default function InternalMailPage() {
 
   if (loading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div>;
 
-  const colleagues = Object.values(profiles).filter((profile) => profile.id !== currentUserId);
+  const colleagues = Object.values(profiles).filter((profile) => profile.id !== currentUserId && profile.is_active !== false);
   const folders: { id: Folder; label: string; icon: typeof Inbox; count?: number }[] = [
     { id: 'inbox', label: 'Inbox', icon: Inbox, count: unreadCount },
     { id: 'sent', label: 'Sent', icon: Send },
@@ -346,7 +364,7 @@ export default function InternalMailPage() {
             <div className="space-y-1.5"><Label htmlFor="mail-body">Message</Label><Textarea id="mail-body" value={messageBody} onChange={(event) => setMessageBody(event.target.value)} rows={10} maxLength={50000} /></div>
             <div className="space-y-2"><Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent"><Paperclip className="h-4 w-4" />Attach files<Input type="file" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files || []))} /></Label>{files.length ? <div className="flex flex-wrap gap-2">{files.map((file, index) => <Badge key={`${file.name}-${index}`} variant="secondary" className="gap-1 py-1">{file.name}<button type="button" onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))}><X className="h-3 w-3" /></button></Badge>)}</div> : null}</div>
           </div>
-          {notice ? <p className="text-sm text-destructive">{notice}</p> : null}
+          {notice ? <p className={cn('text-sm', notice === 'Mail sent.' ? 'text-emerald-600' : 'text-destructive')}>{notice}</p> : null}
           <DialogFooter><Button variant="outline" onClick={() => setComposeOpen(false)}>Cancel</Button><Button disabled={sending || !toIds.length || !subject.trim() || !messageBody.trim()} onClick={() => void sendMail()}>{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}Send mail</Button></DialogFooter>
         </DialogContent>
       </Dialog>

@@ -52,14 +52,16 @@ export default function AdminLoginPage() {
 
     const { data: profile } = await supabase
       .from('admin_profiles')
-      .select('id, role')
+      .select('id, role, is_active')
       .eq('id', data.user.id)
       .maybeSingle();
 
-    if (!profile) {
+    if (!profile || profile.is_active === false) {
       await supabase.auth.signOut();
       setLoading(false);
-      toast.error('You do not have admin access. Contact an administrator.');
+      toast.error(profile?.is_active === false
+        ? 'This account has been deactivated. Contact an administrator.'
+        : 'You do not have admin access. Contact an administrator.');
       return;
     }
 

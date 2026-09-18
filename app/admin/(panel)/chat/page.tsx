@@ -63,6 +63,8 @@ type Conversation = {
   created_by: string;
   created_at: string;
   updated_at: string;
+  last_message_at: string | null;
+  last_message_preview: string | null;
 };
 
 type Participant = {
@@ -284,16 +286,28 @@ function ChatPageInner() {
       const unread = conversationMessages.filter((message) =>
         message.sender_id !== userId && (!ownMembership?.last_read_at || message.created_at > ownMembership.last_read_at)
       ).length;
+      const latest = conversationMessages[0] || null;
+      const previewBody = conversation.last_message_preview
+        ?? (latest?.deleted_at ? 'Message removed' : latest?.body || (latest ? 'Attachment' : null));
       return {
         ...conversation,
         participants: allParticipants.filter((row) => row.conversation_id === conversation.id),
-        lastMessage: conversationMessages[0] || null,
+        lastMessage: latest || (previewBody ? {
+          id: `${conversation.id}-preview`,
+          conversation_id: conversation.id,
+          sender_id: '',
+          body: previewBody,
+          reply_to_id: null,
+          created_at: conversation.last_message_at || conversation.updated_at,
+          edited_at: null,
+          deleted_at: null,
+        } : null),
         unread,
         links: links.filter((link) => link.conversation_id === conversation.id),
       };
     }).sort((a, b) => {
-      const aTime = a.lastMessage?.created_at || a.updated_at;
-      const bTime = b.lastMessage?.created_at || b.updated_at;
+      const aTime = a.last_message_at || a.lastMessage?.created_at || a.updated_at;
+      const bTime = b.last_message_at || b.lastMessage?.created_at || b.updated_at;
       return new Date(bTime).getTime() - new Date(aTime).getTime();
     });
     setConversations(summaries);
@@ -646,12 +660,18 @@ function ChatPageInner() {
           {filteredConversations.length ? filteredConversations.map((conversation) => {
             const other = conversation.participants.find((participant) => participant.user_id !== currentUserId);
             const profile = other ? profiles[other.user_id] : undefined;
+            const mine = conversation.lastMessage?.sender_id === currentUserId;
+            const previewText = conversation.last_message_preview
+              || (conversation.lastMessage?.deleted_at ? 'Message removed' : conversation.lastMessage?.body)
+              || (conversation.lastMessage ? 'Attachment' : 'Start the conversation');
+            const preview = mine && conversation.lastMessage ? `You: ${previewText}` : previewText;
+            const previewTime = conversation.last_message_at || conversation.lastMessage?.created_at;
             return (
-              <button key={conversation.id} type="button" onClick={() => setActiveId(conversation.id)} className={cn('flex w-full items-center gap-3 border-b p-4 text-left transition-colors hover:bg-accent', activeId === conversation.id && 'bg-primary/5')}>
+              <button key={conversation.id} type="button" onClick={() => setActiveId(conversation.id)} className={cn('flex w-full items-center gap-3 border-b p-4 text-left transition-colors hover:bg-accent', activeId === conversation.id && 'bg-primary/5', conversation.unread > 0 && 'bg-accent/5')}>
                 <span className="shrink-0">{conversation.conversation_type === 'group' ? <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-5 w-5" /></span> : <ProfileAvatar profile={profile} url={profile ? avatarUrls[profile.id] : ''} className="h-11 w-11" />}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center justify-between gap-2"><span className="truncate text-sm font-semibold">{activeTitle(conversation)}</span>{conversation.lastMessage ? <span className="shrink-0 text-[10px] text-muted-foreground">{formatMessageTime(conversation.lastMessage.created_at)}</span> : null}</span>
-                  <span className="mt-1 flex items-center justify-between gap-2"><span className="truncate text-xs text-muted-foreground">{conversation.lastMessage?.deleted_at ? 'Message removed' : conversation.lastMessage?.body || (conversation.lastMessage ? 'Attachment' : 'Start the conversation')}</span>{conversation.unread ? <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5">{conversation.unread}</Badge> : null}</span>
+                  <span className="flex items-center justify-between gap-2"><span className={cn('truncate text-sm', conversation.unread ? 'font-bold' : 'font-semibold')}>{activeTitle(conversation)}</span>{previewTime ? <span className={cn('shrink-0 text-[10px]', conversation.unread ? 'font-semibold text-accent' : 'text-muted-foreground')}>{formatMessageTime(previewTime)}</span> : null}</span>
+                  <span className="mt-1 flex items-center justify-between gap-2"><span className={cn('truncate text-xs', conversation.unread ? 'font-medium text-foreground' : 'text-muted-foreground')}>{preview}</span>{conversation.unread ? <Badge className="h-5 min-w-5 justify-center rounded-full bg-accent px-1.5 text-white">{conversation.unread}</Badge> : null}</span>
                   {conversation.links.length ? <span className="mt-1 flex flex-wrap gap-1">{conversation.links.slice(0, 2).map((link) => <Badge key={link.id} variant="outline" className="text-[10px]">{chatLinkEntityLabel(link.entity_type)}</Badge>)}{conversation.links.length > 2 ? <Badge variant="outline" className="text-[10px]">+{conversation.links.length - 2}</Badge> : null}</span> : null}
                 </span>
               </button>
@@ -695,9 +715,9 @@ function ChatPageInner() {
                 </div>
               ) : null}
             </header>
-            <ScrollArea className="flex-1 bg-secondary/10 p-4">
+            <ScrollArea className="flex-1 bg-[radial-gradient(circle_at_1px_1px,hsl(var(--border))_1px,transparent_0)] [background-size:18px_18px] p-4">
               {loadingMessages ? <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : (
-                <div className="mx-auto max-w-3xl space-y-3 pb-4">
+                <div className="mx-auto max-w-3xl space-y-2.5 pb-4">
                   {messages.map((message) => {
                     const mine = message.sender_id === currentUserId;
                     const sender = profiles[message.sender_id];
@@ -706,16 +726,16 @@ function ChatPageInner() {
                     return (
                       <div key={message.id} className={cn('group flex gap-2', mine ? 'justify-end' : 'justify-start')}>
                         {!mine ? <ProfileAvatar profile={sender} url={sender ? avatarUrls[sender.id] : ''} className="mt-1 h-8 w-8 text-xs" /> : null}
-                        <div className={cn('max-w-[84%] rounded-2xl px-4 py-2.5 shadow-sm', mine ? 'rounded-br-md bg-primary text-primary-foreground' : 'rounded-bl-md border bg-card')}>
-                          {!mine ? <p className="mb-1 text-xs font-semibold text-primary">{personName(sender)}</p> : null}
-                          {quoted ? <div className={cn('mb-2 rounded-lg border-l-2 px-2 py-1 text-xs', mine ? 'border-primary-foreground/50 bg-black/10' : 'border-primary bg-secondary')}>{quoted.deleted_at ? 'Removed message' : quoted.body || 'Attachment'}</div> : null}
+                        <div className={cn('max-w-[84%] rounded-2xl px-3.5 py-2 shadow-sm', mine ? 'rounded-br-md bg-accent text-white' : 'rounded-bl-md border bg-card')}>
+                          {!mine ? <p className="mb-1 text-xs font-semibold text-accent">{personName(sender)}</p> : null}
+                          {quoted ? <div className={cn('mb-2 rounded-lg border-l-2 px-2 py-1 text-xs', mine ? 'border-white/50 bg-black/10' : 'border-accent bg-secondary')}>{quoted.deleted_at ? 'Removed message' : quoted.body || 'Attachment'}</div> : null}
                           {message.deleted_at ? <p className="text-sm italic opacity-70">Message removed</p> : <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>}
                           {!message.deleted_at && message.attachments.map((attachment) => (
                             <button type="button" key={attachment.id} onClick={() => void openAttachment(attachment)} className={cn('mt-2 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs', mine ? 'border-white/20 bg-black/10 hover:bg-black/20' : 'bg-secondary hover:bg-accent')}>
                               <FileText className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1 truncate">{attachment.file_name}</span><span className="opacity-70">{formatBytes(attachment.size_bytes)}</span><Download className="h-3.5 w-3.5" />
                             </button>
                           ))}
-                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80"><span>{formatMessageTime(message.created_at)}</span>{message.edited_at ? <span>edited</span> : null}{receipt?.state === 'sent' ? <Check className="h-3 w-3" aria-label={receipt.label} /> : receipt ? <CheckCheck className={cn('h-3.5 w-3.5', receipt.state === 'read' && 'text-sky-300')} aria-label={receipt.label} /> : null}</div>
+                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80"><span>{formatMessageTime(message.created_at)}</span>{message.edited_at ? <span>edited</span> : null}{receipt?.state === 'sent' ? <Check className="h-3 w-3" aria-label={receipt.label} /> : receipt ? <CheckCheck className={cn('h-3.5 w-3.5', receipt.state === 'read' && 'text-sky-200')} aria-label={receipt.label} /> : null}</div>
                         </div>
                         {!message.deleted_at ? (
                           <DropdownMenu>
@@ -740,10 +760,10 @@ function ChatPageInner() {
                 </div>
               )}
             </ScrollArea>
-            <footer className="shrink-0 border-t bg-card p-3 sm:p-4">
+            <footer className="shrink-0 border-t bg-card/95 p-3 backdrop-blur sm:p-4">
               <div className="mx-auto max-w-3xl space-y-2">
                 {replyMessage ? (
-                  <div className="flex items-center justify-between rounded-lg border-l-4 border-primary bg-secondary px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between rounded-lg border-l-4 border-accent bg-secondary px-3 py-2 text-xs">
                     <span className="min-w-0"><strong>{editing ? 'Editing message' : `Replying to ${personName(profiles[replyMessage.sender_id])}`}</strong><span className="ml-2 truncate text-muted-foreground">{replyMessage.body || 'Attachment'}</span></span>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setReplyTo(null); setEditing(null); setBody(''); }}><X className="h-3.5 w-3.5" /></Button>
                   </div>
@@ -758,9 +778,9 @@ function ChatPageInner() {
                     ))}
                   </div>
                 ) : null}
-                <div className="flex items-end gap-2">
+                <div className="flex items-end gap-2 rounded-full border bg-secondary/40 p-1.5">
                   {!editing ? (
-                    <Label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border hover:bg-accent" aria-label="Attach files">
+                    <Label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-accent" aria-label="Attach files">
                       <Paperclip className="h-4 w-4" />
                       <Input type="file" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files || []))} />
                     </Label>
@@ -768,8 +788,8 @@ function ChatPageInner() {
                   <Textarea
                     value={body}
                     onChange={(event) => setBody(event.target.value)}
-                    placeholder={editing ? 'Edit your message' : 'Write a message…'}
-                    className="min-h-10 resize-none"
+                    placeholder={editing ? 'Edit your message' : 'Message'}
+                    className="min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
                     rows={1}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' && !event.shiftKey) {
@@ -778,7 +798,7 @@ function ChatPageInner() {
                       }
                     }}
                   />
-                  <Button size="icon" className="h-10 w-10 shrink-0" disabled={sending || (!body.trim() && !files.length)} onClick={() => void sendMessage()} aria-label={editing ? 'Save message' : 'Send message'}>
+                  <Button size="icon" className="h-10 w-10 shrink-0 rounded-full bg-accent text-white hover:bg-accent/90" disabled={sending || (!body.trim() && !files.length)} onClick={() => void sendMessage()} aria-label={editing ? 'Save message' : 'Send message'}>
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>

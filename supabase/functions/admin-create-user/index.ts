@@ -26,11 +26,13 @@ Deno.serve(async (request) => {
 
     const { data: callerProfile, error: profileReadError } = await serviceClient
       .from('admin_profiles')
-      .select('role')
+      .select('role, is_active')
       .eq('id', user.id)
       .maybeSingle();
     if (profileReadError) return json(request, { error: 'Could not verify administrator access.' }, 500);
-    if (callerProfile?.role !== 'admin') return json(request, { error: 'Only an administrator can create users.' }, 403);
+    if (callerProfile?.role !== 'admin' || callerProfile?.is_active === false) {
+      return json(request, { error: 'Only an active administrator can create users.' }, 403);
+    }
 
     const payload = await request.json();
     const email = String(payload.email || '').trim().toLowerCase();
@@ -40,7 +42,7 @@ Deno.serve(async (request) => {
     if (!email || !email.includes('@')) return json(request, { error: 'Enter a valid email address.' }, 422);
     if (password.length < 8) return json(request, { error: 'Temporary password must be at least 8 characters.' }, 422);
     if (!fullName) return json(request, { error: 'Full name is required.' }, 422);
-    if (!['admin', 'staff'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
+    if (!['admin', 'staff', 'sales'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
 
     const { data: created, error: createError } = await serviceClient.auth.admin.createUser({
       email,
@@ -59,6 +61,7 @@ Deno.serve(async (request) => {
       full_name: fullName,
       role,
       avatar_url: payload.avatar_url || null,
+      is_active: true,
     }, { onConflict: 'id' });
 
     if (profileError) {

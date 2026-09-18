@@ -28,11 +28,13 @@ Deno.serve(async (request) => {
 
     const { data: callerProfile, error: profileReadError } = await serviceClient
       .from('admin_profiles')
-      .select('role')
+      .select('role, is_active')
       .eq('id', user.id)
       .maybeSingle();
     if (profileReadError) return json(request, { error: 'Could not verify administrator access.' }, 500);
-    if (callerProfile?.role !== 'admin') return json(request, { error: 'Only an administrator can update users.' }, 403);
+    if (callerProfile?.role !== 'admin' || callerProfile?.is_active === false) {
+      return json(request, { error: 'Only an active administrator can update users.' }, 403);
+    }
 
     const payload = await request.json();
     const id = String(payload.id || '').trim();
@@ -40,24 +42,31 @@ Deno.serve(async (request) => {
     const password = String(payload.password || '');
     const fullName = String(payload.full_name || '').trim();
     const role = String(payload.role || '');
+    const isActive = payload.is_active === undefined ? true : Boolean(payload.is_active);
     if (!UUID_RE.test(id)) return json(request, { error: 'Invalid user details.' }, 422);
     if (!email || !email.includes('@')) return json(request, { error: 'Enter a valid email address.' }, 422);
     if (!fullName) return json(request, { error: 'Full name is required.' }, 422);
-    if (!['admin', 'staff'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
+    if (!['admin', 'staff', 'sales'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
     if (password && password.length < 8) return json(request, { error: 'Password must contain at least 8 characters.' }, 422);
+    if (id === user.id && !isActive) return json(request, { error: 'You cannot deactivate your own account.' }, 422);
 
-    const authUpdate: { email: string; password?: string; email_confirm: boolean } = { email, email_confirm: true };
+    const authUpdate: { email: string; password?: string; email_confirm: boolean; ban_duration?: string } = {
+      email,
+      email_confirm: true,
+    };
     if (password) authUpdate.password = password;
+    // Ban inactive users from Auth sign-in (0s clears ban)
+    authUpdate.ban_duration = isActive ? '0' : '876000h';
     const { error: updateError } = await serviceClient.auth.admin.updateUserById(id, authUpdate);
     if (updateError) return json(request, { error: updateError.message }, 400);
 
     const { error: profileError } = await serviceClient
       .from('admin_profiles')
-      .update({ email, full_name: fullName, role, avatar_url: payload.avatar_url || null })
+      .update({ email, full_name: fullName, role, avatar_url: payload.avatar_url || null, is_active: isActive })
       .eq('id', id);
     if (profileError) return json(request, { error: profileError.message }, 500);
 
-    return json(request, { id });
+    return json(request, { id, is_active: isActive });
   } catch (error) {
     return json(request, { error: error instanceof Error ? error.message : 'Unknown user update error.' }, 500);
   }

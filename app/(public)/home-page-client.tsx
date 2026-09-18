@@ -46,7 +46,6 @@ export default function HomePageClient() {
   const [finderBrand, setFinderBrand] = useState('all');
   const [finderCategory, setFinderCategory] = useState('all');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>([]);
   const [latestParts, setLatestParts] = useState<PartWithRelations[]>([]);
   const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>([]);
@@ -56,13 +55,12 @@ export default function HomePageClient() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const [catRes, featuredRes, latestRes, vehiclesRes, postsRes, countRes] = await Promise.all([
+      const [catRes, featuredRes, latestRes, vehiclesRes, postsRes] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order').limit(12),
         supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).eq('is_featured', true).order('created_at', { ascending: false }).limit(8),
         supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).order('created_at', { ascending: false }).limit(8),
         supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true).eq('is_featured', true).order('created_at', { ascending: false }).limit(4),
         supabase.from('blog_posts').select('*, blog_categories(*)').eq('status', 'published').order('published_at', { ascending: false, nullsFirst: false }).limit(3),
-        supabase.from('parts').select('category_id').eq('is_published', true).not('category_id', 'is', null),
       ]);
       if (!active) return;
 
@@ -71,12 +69,6 @@ export default function HomePageClient() {
       setLatestParts((latestRes.data || []) as unknown as PartWithRelations[]);
       setFeaturedVehicles((vehiclesRes.data || []) as unknown as VehicleWithPhotos[]);
       setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
-
-      const nextCategoryCounts: Record<string, number> = {};
-      for (const row of countRes.data || []) {
-        if (row.category_id) nextCategoryCounts[row.category_id] = (nextCategoryCounts[row.category_id] || 0) + 1;
-      }
-      setCategoryCounts(nextCategoryCounts);
       setLoading(false);
     })();
 
@@ -85,7 +77,7 @@ export default function HomePageClient() {
     };
   }, []);
 
-  const displayMakes = useMemo<MakeStat[]>(() => SUPPORTED_MANUFACTURERS.map((make) => ({
+  const displayMakes = useMemo<MakeStat[]>(() => SUPPORTED_MANUFACTURERS.slice(0, 12).map((make) => ({
     make,
     count: 0,
   })), []);
@@ -104,13 +96,14 @@ export default function HomePageClient() {
   return (
     <>
       <section className="relative overflow-hidden bg-[#101114] text-white">
-        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_78%_20%,hsla(345,42%,32%,.4),transparent_28%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
+        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_78%_20%,hsla(345,40%,44%,.4),transparent_28%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
         <div className="absolute -right-24 top-10 hidden h-[430px] w-[620px] rotate-[-8deg] rounded-[50%] border border-white/10 bg-gradient-to-br from-white/10 to-transparent blur-sm lg:block" />
         <div className="container-page relative grid min-h-[590px] items-center gap-10 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20">
           <div className="max-w-3xl">
             <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/75 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-accent" />Vehicle and parts sourcing from Dubai
             </span>
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em] text-accent">ANSHA Trading Co.</p>
             <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-[-0.045em] sm:text-5xl lg:text-6xl xl:text-7xl">
               The right automotive stock, <span className="text-accent">ready to export.</span>
             </h1>
@@ -120,18 +113,6 @@ export default function HomePageClient() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="accent" size="lg" className="h-12 rounded-full px-6"><Link href="/parts">Explore parts <ArrowRight className="h-4 w-4" /></Link></Button>
               <Button asChild size="lg" className="h-12 rounded-full border border-white/20 bg-white/5 px-6 text-white hover:bg-white/10"><Link href="/vehicles">Browse vehicles</Link></Button>
-            </div>
-            <div className="mt-9 grid max-w-xl grid-cols-3 gap-3 border-t border-white/10 pt-6">
-              {[
-                ['55+', 'Supported brands'],
-                ['Worldwide', 'Export service'],
-                ['Dubai', 'Operations base'],
-              ].map(([value, label]) => (
-                <div key={label}>
-                  <strong className="block text-lg font-extrabold sm:text-xl">{value}</strong>
-                  <span className="text-[10px] uppercase tracking-wider text-white/45 sm:text-xs">{label}</span>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -220,7 +201,7 @@ export default function HomePageClient() {
                   <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
                   <span className="absolute inset-x-0 bottom-0 p-4 text-white">
                     <strong className="block text-sm">{category.name}</strong>
-                    <span className="mt-1 block text-[11px] text-white/65">{categoryCounts[category.id] || 0} available</span>
+                    <span className="mt-1 block text-[11px] text-white/65">Browse parts</span>
                   </span>
                   <ChevronRight className="absolute right-3 top-3 h-7 w-7 rounded-full bg-white/90 p-1.5 text-black opacity-0 transition group-hover:opacity-100" />
                 </Link>
@@ -250,13 +231,13 @@ export default function HomePageClient() {
       <section className="py-14 sm:py-20">
         <div className="container-page">
           <div className="section-heading">
-            <div><span className="eyebrow">Manufacturer directory</span><h2>Parts for 55 automotive brands</h2><p>Choose a marque to open its filtered catalog.</p></div>
-            <Link href="/parts" className="section-link">All inventory <ArrowRight className="h-4 w-4" /></Link>
+            <div><span className="eyebrow">Manufacturer directory</span><h2>Popular brands we supply</h2><p>Open a marque to browse published parts.</p></div>
+            <Link href="/parts" className="section-link">All brands <ArrowRight className="h-4 w-4" /></Link>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 xl:grid-cols-11">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
             {displayMakes.map(({ make, count }) => (
               <Link key={make} href={`/parts?brand=${encodeURIComponent(make)}`} className="group flex min-h-24 flex-col items-center justify-center rounded-xl border border-border bg-card p-2 text-center transition hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-md">
-                <Image src={getManufacturerLogo(make)} alt={`${make} logo`} width={52} height={52} className="h-9 w-12 object-contain transition group-hover:scale-105" />
+                <Image src={getManufacturerLogo(make)} alt={`${make} logo`} width={52} height={52} loading="lazy" className="h-9 w-12 object-contain transition group-hover:scale-105" />
                 <strong className="mt-2 line-clamp-1 text-[10px] sm:text-[11px]">{make}</strong>
                 {count > 0 && <span className="mt-0.5 text-[9px] font-semibold text-accent">{count} in stock</span>}
               </Link>
@@ -277,7 +258,7 @@ export default function HomePageClient() {
             </div>
           </div>
           {featuredVehicles.length ? (
-            <div className="grid gap-4 sm:grid-cols-2">{featuredVehicles.map((vehicle) => <VehicleCard key={vehicle.id} vehicle={vehicle} />)}</div>
+            <div className="grid gap-4 sm:grid-cols-2">{featuredVehicles.map((vehicle, index) => <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} />)}</div>
           ) : (
             <div className="relative min-h-72 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] p-8">
               <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-accent/20 blur-3xl" />

@@ -1,5 +1,5 @@
-const DEFAULT_MAX_EDGE = 1920;
-const DEFAULT_QUALITY = 0.82;
+const DEFAULT_MAX_EDGE = 1400;
+const DEFAULT_QUALITY = 0.74;
 
 export type CompressedCatalogImage = {
   file: File;

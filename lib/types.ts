@@ -1,6 +1,6 @@
 export type PartCondition = 'new' | 'used' | 'refurbished' | 'for-parts';
 export type InquiryStatus = 'new' | 'read' | 'responded' | 'closed';
-export type AdminRole = 'admin' | 'staff';
+export type AdminRole = 'admin' | 'staff' | 'sales';
 export type StockOrigin = 'japan' | 'dubai' | 'singapore' | 'china' | 'thailand' | 'taiwan';
 export type StockStatus = 'available' | 'reserved' | 'sold';
 export type LifecycleStage = 'unassigned' | 'auction' | 'yard' | 'port' | 'sold';
@@ -240,6 +240,7 @@ export interface AdminProfile {
   full_name: string | null;
   role: AdminRole;
   avatar_url: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -257,6 +258,7 @@ export interface Customer {
   avatar_url: string | null;
   tax_registration_number: string | null;
   is_active: boolean;
+  owner_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -384,6 +386,8 @@ export interface ChatConversation {
   created_by: string;
   created_at: string;
   updated_at: string;
+  last_message_at: string | null;
+  last_message_preview: string | null;
 }
 
 export type ChatLinkEntityType = 'vehicle' | 'customer' | 'inquiry' | 'invoice' | 'request';

@@ -79,15 +79,23 @@ export async function proxy(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('admin_profiles')
-      .select('id')
+      .select('id, is_active, role')
       .eq('id', claims.sub)
       .maybeSingle();
 
-    if (!profile) {
-      if (isLoginPage) return supabaseResponse;
+    if (!profile || profile.is_active === false) {
+      if (isLoginPage) {
+        if (profile?.is_active === false) {
+          const loginUrl = request.nextUrl.clone();
+          loginUrl.pathname = '/admin';
+          loginUrl.searchParams.set('error', 'inactive');
+          return redirectWithSession(loginUrl);
+        }
+        return supabaseResponse;
+      }
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/admin';
-      loginUrl.searchParams.set('error', 'unauthorized');
+      loginUrl.searchParams.set('error', profile?.is_active === false ? 'inactive' : 'unauthorized');
       return redirectWithSession(loginUrl);
     }
 
@@ -96,6 +104,25 @@ export async function proxy(request: NextRequest) {
       dashboardUrl.pathname = '/admin/dashboard';
       dashboardUrl.search = '';
       return redirectWithSession(dashboardUrl);
+    }
+
+    if (profile.role === 'sales') {
+      const allowed =
+        pathname === '/admin/dashboard'
+        || pathname === '/admin/profile'
+        || pathname.startsWith('/admin/parts')
+        || pathname.startsWith('/admin/vehicles')
+        || pathname.startsWith('/admin/customers')
+        || pathname.startsWith('/admin/inquiries')
+        || pathname.startsWith('/admin/requests')
+        || pathname.startsWith('/admin/chat')
+        || pathname.startsWith('/admin/mail');
+      if (!allowed) {
+        const dashboardUrl = request.nextUrl.clone();
+        dashboardUrl.pathname = '/admin/dashboard';
+        dashboardUrl.search = '';
+        return redirectWithSession(dashboardUrl);
+      }
     }
 
     return supabaseResponse;

@@ -69,7 +69,16 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-const navItems = navGroups.flatMap((group) => group.items);
+const SALES_ALLOWED_HREFS = new Set([
+  '/admin/dashboard',
+  '/admin/parts',
+  '/admin/vehicles',
+  '/admin/customers',
+  '/admin/inquiries',
+  '/admin/requests',
+  '/admin/chat',
+  '/admin/mail',
+]);
 
 const isNavActive = (pathname: string, href: string) => pathname === href || (pathname.startsWith(`${href}/`) && !(href === '/admin/invoices' && pathname.startsWith('/admin/invoices/supplier')));
 
@@ -81,6 +90,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem('ansha-admin-sidebar') === 'collapsed');
@@ -88,14 +98,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return router.replace('/admin');
       const { data: prof } = await supabase.from('admin_profiles').select('*').eq('id', session.user.id).maybeSingle();
-      if (!prof) {
+      if (!prof || prof.is_active === false) {
         await supabase.auth.signOut();
-        return router.replace('/admin');
+        return router.replace(prof?.is_active === false ? '/admin?error=inactive' : '/admin');
       }
       setProfile(prof as AdminProfile);
       if (prof.avatar_url) {
         const { data } = await supabase.storage.from('profile-images').createSignedUrl(prof.avatar_url, 3600);
         setAvatarUrl(data?.signedUrl || '');
+      }
+      const { data: memberships } = await supabase.from('chat_participants').select('conversation_id,last_read_at').eq('user_id', session.user.id);
+      if (memberships?.length) {
+        const { data: recent } = await supabase
+          .from('chat_messages')
+          .select('conversation_id,sender_id,created_at')
+          .in('conversation_id', memberships.map((row) => row.conversation_id))
+          .neq('sender_id', session.user.id)
+          .order('created_at', { ascending: false })
+          .limit(200);
+        const readAt = new Map(memberships.map((row) => [row.conversation_id, row.last_read_at]));
+        setChatUnread((recent || []).filter((message) => {
+          const lastRead = readAt.get(message.conversation_id);
+          return !lastRead || message.created_at > lastRead;
+        }).length);
       }
       setLoading(false);
     })();
@@ -119,12 +144,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-secondary/30"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!profile) return null;
 
-  const activeItem = navItems.find((item) => isNavActive(pathname, item.href));
+  const isSales = profile.role === 'sales';
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !isSales || SALES_ALLOWED_HREFS.has(item.href)),
+    }))
+    .filter((group) => group.items.length > 0);
+  const visibleItems = visibleGroups.flatMap((group) => group.items);
+  const activeItem = visibleItems.find((item) => isNavActive(pathname, item.href));
   const pageTitle = pathname === '/admin/profile' ? 'My profile' : activeItem?.label || 'Admin workspace';
 
   const navigation = (mobile = false) => (
     <nav className="flex-1 space-y-4 overflow-y-auto p-3" aria-label="Admin navigation">
-      {navGroups.map((group) => (
+      {visibleGroups.map((group) => (
         <div key={group.label} className="space-y-1">
           {(mobile || !collapsed) && (
             <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">{group.label}</p>
@@ -143,7 +176,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 )}
               >
                 <item.icon className="h-5 w-5 shrink-0" />
-                <span className={cn(!mobile && collapsed && 'sr-only')}>{item.label}</span>
+                <span className={cn('flex min-w-0 flex-1 items-center justify-between gap-2', !mobile && collapsed && 'sr-only')}>
+                  <span className="truncate">{item.label}</span>
+                  {item.href === '/admin/chat' && chatUnread > 0 ? (
+                    <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white">{chatUnread > 99 ? '99+' : chatUnread}</span>
+                  ) : null}
+                </span>
               </Link>
             );
           })}

@@ -10,9 +10,10 @@ import type { VehicleWithPhotos } from '@/lib/types';
 
 interface VehicleCardProps {
   vehicle: VehicleWithPhotos;
+  priority?: boolean;
 }
 
-export function VehicleCard({ vehicle }: VehicleCardProps) {
+export function VehicleCard({ vehicle, priority = false }: VehicleCardProps) {
   const coverPhoto = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
   const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
   const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
@@ -26,6 +27,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             src={photoUrl}
             alt={vehicle.title}
             fill
+            priority={priority}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="transition-transform duration-500 group-hover:scale-105"
             objectFit="cover"

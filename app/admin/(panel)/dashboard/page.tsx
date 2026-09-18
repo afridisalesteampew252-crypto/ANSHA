@@ -15,7 +15,7 @@ type Invoice = { id: string; issue_date: string; currency: string; document_type
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
 type InventoryRow = { stock_status: string | null; stock_origin: string | null };
 
-const WINE = 'hsl(345 42% 32%)';
+const WINE = 'hsl(345 40% 44%)';
 const COLORS = [WINE, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
 const money = (value: number, currency = 'AED') => new Intl.NumberFormat('en-AE', { style: 'currency', currency, notation: value >= 1_000_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(Number(value || 0));
 const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice'].includes(invoice.document_type) && invoice.status !== 'cancelled';
@@ -117,6 +117,7 @@ export default function AdminDashboardPage() {
           <p className="text-sm text-muted-foreground">Finance, inventory origin mix, portal access, and inquiry performance.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline"><Link href="/admin/customers">Customer SOA</Link></Button>
           <Button asChild variant="outline"><Link href="/admin/customers"><KeyRound className="h-4 w-4" />Enable portal</Link></Button>
           <Button asChild variant="outline"><Link href="/admin/offers"><Megaphone className="h-4 w-4" />PWA deals</Link></Button>
           <Button asChild variant="outline"><Link href="/admin/remittances"><WalletCards className="h-4 w-4" />Record funds</Link></Button>

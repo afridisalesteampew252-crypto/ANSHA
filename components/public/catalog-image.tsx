@@ -36,7 +36,7 @@ export function CatalogImage({
       height={fill ? undefined : height}
       sizes={sizes}
       priority={priority}
-      quality={72}
+      quality={65}
       className={cn(objectFit === 'cover' ? 'object-cover' : 'object-contain', className)}
     />
   );

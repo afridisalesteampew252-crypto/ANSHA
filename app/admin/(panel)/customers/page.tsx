@@ -26,11 +26,21 @@ export default function CustomersPage() {
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState('');
 
+  const [selfId, setSelfId] = useState('');
+  const [selfRole, setSelfRole] = useState<string>('staff');
+
   const load = useCallback(async () => {
-    const [{ data }, { data: portals }] = await Promise.all([
+    const [{ data }, { data: portals }, { data: auth }] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
       supabase.from('customer_profiles').select('customer_id,email,is_active'),
+      supabase.auth.getUser(),
     ]);
+    const userId = auth.user?.id || '';
+    setSelfId(userId);
+    if (userId) {
+      const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', userId).maybeSingle();
+      setSelfRole(profile?.role || 'staff');
+    }
     const records = (data || []) as Customer[];
     setCustomers(records);
     const map: PortalMap = {};
@@ -72,12 +82,16 @@ export default function CustomersPage() {
     if (!form.customer_code.trim() || !form.full_name.trim()) return setMessage('Customer code and name are required.');
     try {
       const wasEditing = Boolean(editingId);
-      const ownerId = editingId || crypto.randomUUID();
-      const avatarUrl = avatarFile ? await uploadAvatar(avatarFile, ownerId) : form.avatar_url || null;
-      const payload = { ...Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim() || null])), avatar_url: avatarUrl };
+      const customerId = editingId || crypto.randomUUID();
+      const avatarUrl = avatarFile ? await uploadAvatar(avatarFile, customerId) : form.avatar_url || null;
+      const payload = {
+        ...Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim() || null])),
+        avatar_url: avatarUrl,
+        ...(editingId || !selfId ? {} : { owner_id: selfId }),
+      };
       const operation = editingId
         ? supabase.from('customers').update(payload).eq('id', editingId)
-        : supabase.from('customers').insert({ id: ownerId, ...payload });
+        : supabase.from('customers').insert({ id: customerId, ...payload });
       const { error } = await operation;
       if (error) throw error;
       reset();
@@ -124,7 +138,7 @@ export default function CustomersPage() {
         <div>
           <h1 className="text-2xl font-bold">Customers</h1>
           <p className="text-sm text-muted-foreground">
-            Manage CRM profiles. Enable customer portal login from each customer&apos;s account page.
+            Manage CRM profiles{selfRole === 'sales' ? ' assigned to you' : ''}. Enable customer portal login from each customer&apos;s account page.
           </p>
         </div>
         <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-muted-foreground">
@@ -211,8 +225,13 @@ export default function CustomersPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button asChild variant="accent" size="sm">
                       <Link href={`/admin/customers/${item.id}`}>
+                        Statement (SOA)
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/admin/customers/${item.id}`}>
                         <KeyRound className="h-4 w-4" />
-                        {portal ? 'Account & portal' : 'Enable portal'}
+                        {portal ? 'Portal' : 'Enable portal'}
                       </Link>
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => edit(item)}>
