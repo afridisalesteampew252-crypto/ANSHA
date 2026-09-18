@@ -36,7 +36,18 @@ Release gate locally: `npm run verify:release`.
 
 Public catalog is installable (`app/manifest.ts`, `/sw.js`, `/icons/*`, `/offline`). Service worker intentionally bypasses `/admin`, `/api`, and cross-origin requests. `verify:deployment` checks the manifest, service worker, offline page, and icon.
 
-Web Push (Phase 24): set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel. Set Edge Function secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and optional `VAPID_SUBJECT` (mailto:) for `send-web-push`. Generate keys with `npx web-push generate-vapid-keys`. Never put the private key in `NEXT_PUBLIC_*` or git.
+Web Push (Phase 24) — generate once, then split public vs private:
+
+1. From the repo root: `npx web-push generate-vapid-keys` (prints Public Key + Private Key).
+2. **Next.js (browser subscribe):** set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the Public Key in local `.env.local` and on the Vercel project for **Production** and **Preview**. Redeploy Next after changing it.
+3. **Edge Function `send-web-push` (staff send):** set secrets on Supabase project `ydrnilquojvalhgifest` — never `NEXT_PUBLIC_*`, never git:
+
+```
+supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT="mailto:info@anshatrading.com" --project-ref ydrnilquojvalhgifest
+supabase functions deploy send-web-push --project-ref ydrnilquojvalhgifest
+```
+
+`VAPID_SUBJECT` is optional (defaults to that mailto). Notifications only fire when staff opts in (offers checkbox, blog “PWA push on publish”, or campaigns Send now) — nothing auto-sends from the database.
 
 Outbound email (Phase 39): set Edge Function secrets for `send-outbound-email` (not Vercel `NEXT_PUBLIC_*`, and not the Supabase service role in the Next.js app):
 
