@@ -10,7 +10,12 @@
     "typecheck": "tsc --noEmit",
     "verify:deployment": "node scripts/verify-deployment.mjs",
     "verify:brands": "node scripts/verify-brand-assets.mjs",
-    "verify:release": "npm run lint && npm run typecheck && npm run verify:brands && npm run build"
+    "verify:release": "npm run lint && npm run typecheck && npm run verify:brands && npm run build",
+    "cap:sync": "npx cap sync",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap open ios"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -74,6 +79,10 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@types/react": "19.1.16",
     "@types/react-dom": "19.1.9",
     "eslint": "9.35.0",

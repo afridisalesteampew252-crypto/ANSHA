@@ -38,6 +38,10 @@ Public catalog is installable (`app/manifest.ts`, `/sw.js`, `/icons/*`, `/offlin
 
 Web Push (Phase 24): set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel. Set Edge Function secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and optional `VAPID_SUBJECT` (mailto:) for `send-web-push`. Generate keys with `npx web-push generate-vapid-keys`. Never put the private key in `NEXT_PUBLIC_*` or git.
 
+## Capacitor (native shell)
+
+Store builds are local: generate `android`/`ios` with `npx cap add …`, then `npx cap sync` and open Android Studio or Xcode. The shell loads the deployed public URL (`capacitor.config.ts` `server.url`), not a bundled Next.js `out/` folder. CI and Vercel remain web-only. Full steps: `docs/Mobile.md`.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.

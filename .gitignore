@@ -34,3 +34,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor native projects (generate locally — see docs/Mobile.md)
+/android
+/ios
+.capacitor
+*.keystore
+*.jks

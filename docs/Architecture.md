@@ -8,15 +8,16 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - Staff ERP: `app/admin/` — login plus operations workspace
 - Customer portal: `app/portal/` — login plus read-only invoices (Phase 23)
 - Web Push: `push_subscriptions` + Edge Function `send-web-push` (Phase 24)
+- Capacitor shell (Phase 44): iOS/Android WebView loading the production public URL; see `docs/Mobile.md`
 - Shared backend: Supabase Auth, PostgreSQL, Storage, Realtime, Edge Functions
 
-Native Capacitor apps are not implemented. The public site is an installable PWA (Phase 22) on this same database. Portal and native wrappers must keep using this same database.
+The public site is an installable PWA (Phase 22) on this same database. Capacitor is an additive native wrapper around that URL, not a second frontend. Portal and native shells must keep using this same database.
 
 ## Request path
 
 ```
-Browser
-  → Next.js (Vercel)
+Browser or Capacitor WebView
+  → Next.js (Vercel)  [Capacitor: server.url → https://www.anshatradingco.com]
     → proxy.ts for /admin/:path*
     → RSC / Client Components / GET /api/health
     → Supabase JS (publishable/anon key) or Edge Function (service role, admin-only)

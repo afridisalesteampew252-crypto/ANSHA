@@ -8,6 +8,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 - Supabase Database, Auth, and Storage
 - Vercel hosting
 - GitHub source control and CI
+- Optional Capacitor iOS/Android shell for the public catalog (see `docs/Mobile.md`)
 
 ## Project status
 
@@ -204,7 +205,7 @@ Completed on 2026-09-16.
 - No database migration is required because the existing photo records and Storage buckets continue to store the optimized asset paths.
 
 
-## Phase 10 — Internal communications UI and self-service profiles
+## Phase 10 â Internal communications UI and self-service profiles
 
 - Added production-ready direct and group Chat screens with realtime delivery, replies, edits, soft deletion, read state, unread counts, and private 25 MB attachments.
 - Added Internal Mail with Inbox, Sent, Archive, search, To/CC/BCC, read/unread controls, replies, and private attachments.
@@ -215,7 +216,7 @@ Completed on 2026-09-16.
 - Applied Supabase migrations `phase_10_communications_ui_support` and `phase_10_policy_and_index_cleanup`.
 
 
-## Phase 11 — Responsive operations and invoicing
+## Phase 11 â Responsive operations and invoicing
 
 - Optimized public and admin layouts for phones, tablets, laptops, and wide desktop screens.
 - Replaced boxed JPEG branding with the supplied transparent ANSHA logo, enlarged in the public header, admin shell, footer, and invoices.
@@ -230,7 +231,7 @@ Completed on 2026-09-16.
 - Upgraded `admin-create-user` to version 4 with separated caller/service clients, robust CORS, direct administrator account creation, duplicate detection, and reliable profile creation.
 
 
-## Phase 12 — Canonical domain and banking information
+## Phase 12 â Canonical domain and banking information
 
 - Set `https://www.anshatradingco.com` as the canonical production origin across metadata, structured data, robots, sitemap, and generated public URLs.
 - Reversed legacy-domain redirects so `anshatrading.com`, `www.anshatrading.com`, and `anshatradingco.com` permanently redirect to `www.anshatradingco.com`.
@@ -315,7 +316,7 @@ Completed on 2026-09-18.
 Completed on 2026-09-18.
 
 - Added `customer_profiles` and scoped RLS so portal users can read only their own non-draft invoices.
-- Added `/portal` login, `/portal/invoices`, proxy gating, and admin “Enable portal” via `portal-create-access`.
+- Added `/portal` login, `/portal/invoices`, proxy gating, and admin âEnable portalâ via `portal-create-access`.
 - Turned on Next.js image optimization for catalog cards/categories; trimmed homepage full-catalog brand counting.
 - Added SEO metadata for home, categories, parts, and vehicles routes; disallowed `/portal` in robots.
 - Applied migration `20260918100000_phase_23_customer_portal`.
@@ -326,8 +327,8 @@ Completed on 2026-09-18.
 
 - Added `push_subscriptions` and `site_offers` with RLS (public INSERT/DELETE on subscriptions; published offers readable anonymously).
 - Service worker handles `push` + `notificationclick`; public opt-in banner registers the endpoint.
-- Public `/offers` page; admin `/admin/offers` with optional push; blog form “PWA push on publish”.
+- Public `/offers` page; admin `/admin/offers` with optional push; blog form âPWA push on publishâ.
 - Edge Function `send-web-push` (staff JWT + VAPID) topics: `insights` | `deals` | `all`.
 - Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel and `VAPID_*` secrets on the function.
 - Applied migration `20260918110000_phase_24_pwa_push`.
-- Applied migration `20260918320000_phase_43_audit_log` � append-only `audit_logs`, `private.write_audit_log`, invoice/vehicle/remittance hooks, admin `/admin/audit-log`.
+- Applied migration `20260918320000_phase_43_audit_log`  append-only `audit_logs`, `private.write_audit_log`, invoice/vehicle/remittance hooks, admin `/admin/audit-log`.

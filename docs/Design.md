@@ -34,4 +34,4 @@ Phase 13 called for reduced-motion and keyboard-focus support on the public cata
 
 ## Future
 
-Public site and ERP may diverge in density while sharing tokens. PWA chrome (install prompt + push opt-in + standalone display) is live for the public catalog (Phases 22–24). Customer portal chrome is a light `/portal` shell (Phase 23). Capacitor wrapping remains later.
+Public site and ERP may diverge in density while sharing tokens. PWA chrome (install prompt + push opt-in + standalone display) is live for the public catalog (Phases 22–24). Customer portal chrome is a light `/portal` shell (Phase 23). Capacitor shell MVP loads the public URL in a native WebView (Phase 44); see `docs/Mobile.md`.

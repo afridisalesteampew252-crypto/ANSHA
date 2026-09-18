@@ -28,8 +28,11 @@ Do not put `SUPABASE_SERVICE_ROLE_KEY` in Next.js env. Service role belongs on E
 | `npm run verify:brands` | Manufacturer SVG coverage |
 | `npm run verify:release` | lint + typecheck + brands + build |
 | `npm run verify:deployment -- https://…` | HTTP checks against a deployed URL |
+| `npm run cap:sync` | Sync Capacitor config into local `android`/`ios` |
+| `npm run cap:add:android` / `cap:add:ios` | Generate native projects (once; gitignored) |
+| `npm run cap:android` / `cap:ios` | Open Android Studio / Xcode |
 
-There is no `test` script.
+There is no `test` script. Native mobile steps: `docs/Mobile.md`.
 
 ## Conventions
 
@@ -40,6 +43,7 @@ There is no `test` script.
 - Path alias: `@/*` → project root (`tsconfig.json`)
 - PWA assets: `app/manifest.ts`, `public/sw.js`, `public/icons/`; do not cache admin or auth in the service worker
 - Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in app env; private VAPID key only as Edge Function secret
+- Capacitor: `capacitor.config.ts` + `native/www`; do not commit generated `android/` or `ios/` (see `docs/Mobile.md`)
 
 ## Next.js 16 notes
 

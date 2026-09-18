@@ -41,10 +41,11 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Company pages | `/`, `/about`, `/contact` | — | static + catalog queries |
 | Health | `/api/health` | — | REST ping |
 | PWA | installable public shell + Web Push | admin offers / blog notify | `push_subscriptions`, `site_offers`, `/sw.js`, `send-web-push` |
+| Capacitor shell | store-ready WebView wrapper (public URL) | generate `android`/`ios` locally | `capacitor.config.ts`, `native/www`, `docs/Mobile.md` |
 | Offers | `/offers` | `/admin/offers` | `site_offers` |
 
 ## Not implemented
 
-outbound email, WhatsApp API, Capacitor/native apps, AI automation.
+outbound email, WhatsApp API, native admin rewrite, AI automation.
 
 Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.
