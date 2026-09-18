@@ -10,15 +10,8 @@ export function SiteFooter() {
       <div className="container-page py-12 sm:py-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Link href="/" className="inline-flex max-w-full items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Ansha Trading home">
-              <Image
-                src="/images/ansha-logo-transparent.webp"
-                alt="Ansha Trading Co. LLC-FZ"
-                width={1012}
-                height={496}
-                priority
-                className="h-[4.75rem] w-auto max-w-[min(100%,17.5rem)] object-contain object-left drop-shadow-[0_8px_18px_rgba(0,0,0,0.35)] sm:h-24 sm:max-w-[20rem]"
-              />
+            <Link href="/" className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white" aria-label="Ansha Trading home">
+              <Image src="/images/ansha-logo-transparent.webp" alt="Ansha Trading Co. LLC-FZ" width={1000} height={497} className="h-24 w-auto max-w-full object-contain sm:h-28" />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/70">{siteConfig.description}</p>
             <a href={`https://wa.me/${siteConfig.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md bg-[#25D366] px-4 py-2 text-sm font-medium text-white hover:opacity-90">
