@@ -68,13 +68,14 @@ VAT return RPCs (Phase 36, ops-only via `private.is_ops_user()`):
 - `get_vat_return_summary(p_from date, p_to date)` — jsonb KPIs, per-currency rollups, output/input lines (reporting-first; no GL)
 - `save_vat_return_period(p_from, p_to, p_label?, p_notes?, p_currency_focus?)` — persist snapshot into `vat_return_periods`
 
-Payroll / leave RPCs (Phase 37, ops-only via `private.is_ops_user()`):
+Payroll / leave RPCs (Phase 37 + Phase 48, ops-only via `private.is_ops_user()`):
 
-- `decide_leave_request(p_leave_id, p_status, p_notes?)` — approve or reject a pending leave request
-- `create_payroll_run(p_period_start, p_period_end, p_currency?, p_employee_ids?, p_notes?, p_bank_account_id?)` — draft PR- run with lines for active employees
-- `update_payroll_line(p_line_id, p_basic_salary, p_allowances, p_deductions, p_notes?)` — edit draft line; refreshes run totals
-- `post_payroll_run(p_run_id)` / `cancel_payroll_run(p_run_id)` — lock or cancel; no bank auto-pay
-- `estimate_employee_eos(p_employee_id, p_as_of_date?)` — rough `basic_salary * years` helper; **estimate only, not legal advice**
+- `decide_leave_request(p_leave_id, p_status, p_notes?, p_deduct_balance?)` - approve or reject; optional deduct of inclusive days from `employees.leave_balance_days` on annual leave approve (default true)
+- `create_payroll_run(p_period_start, p_period_end, p_currency?, p_employee_ids?, p_notes?, p_bank_account_id?)` - draft PR- run with lines for active employees
+- `update_payroll_line(p_line_id, p_basic_salary, p_allowances, p_deductions, p_notes?)` - edit draft line; refreshes run totals
+- `post_payroll_run(p_run_id)` / `cancel_payroll_run(p_run_id)` - lock or cancel; no bank auto-pay
+- `estimate_employee_eos(p_employee_id, p_as_of_date?, p_separation_type?, p_basic_salary?, p_persist?)` - UAE-oriented **indicative** EOS (21/30 day-wage bands, resignation/termination multipliers); optionally persists to `eos_estimate_logs`. **Not legal advice; not labour-law compliance.**
+
 
 General ledger RPCs (Phase 38, ops-only via `private.is_ops_user()`):
 

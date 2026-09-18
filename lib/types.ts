@@ -1125,6 +1125,7 @@ export type EmployeeStatus = 'active' | 'inactive' | 'terminated';
 export type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other';
 export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected';
 export type PayrollRunStatus = 'draft' | 'posted' | 'cancelled';
+export type EosSeparationType = 'resignation' | 'termination';
 
 export interface Employee {
   id: string;
@@ -1135,6 +1136,7 @@ export interface Employee {
   currency: string;
   status: EmployeeStatus;
   bank_account_id: string | null;
+  leave_balance_days: number;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -1147,13 +1149,37 @@ export interface LeaveRequest {
   leave_type: LeaveType;
   start_date: string;
   end_date: string;
+  days: number | null;
   status: LeaveRequestStatus;
   notes: string | null;
+  deducted_from_balance: boolean;
   decided_by: string | null;
   decided_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Persisted indicative EOS calculator run (Phase 48). Not legal advice. */
+export interface EosEstimateLog {
+  id: string;
+  employee_id: string;
+  as_of_date: string;
+  separation_type: EosSeparationType;
+  basic_salary: number;
+  currency: string;
+  days_of_service: number;
+  years_of_service: number;
+  daily_wage: number;
+  entitlement_days: number;
+  mode_multiplier: number;
+  estimate_amount: number;
+  formula: string;
+  inputs: Record<string, unknown>;
+  result: Record<string, unknown>;
+  disclaimer: string;
+  created_by: string | null;
+  created_at: string;
 }
 
 export interface PayrollRun {
@@ -1349,6 +1375,7 @@ export interface Database {
       customers: TableDef<Customer>;
       customer_profiles: TableDef<CustomerProfile>;
       employees: TableDef<Employee>;
+      eos_estimate_logs: TableDef<EosEstimateLog>;
       expense_categories: TableDef<ExpenseCategory>;
       expenses: TableDef<Expense>;
       export_shipment_vehicles: TableDef<ExportShipmentVehicle>;

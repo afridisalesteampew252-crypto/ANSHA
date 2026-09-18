@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository includes Phase 48 payroll/EOS (20260918360000_phase_48_payroll_eos.sql) and later stubs (e.g. Phase 50 bank feeds); parallel earlier ERP phases may also be present.
+Latest migration in the repository includes Phase 48 payroll/EOS (`20260918360000_phase_48_payroll_eos.sql`) and later stubs (e.g. Phase 50 bank feeds); parallel earlier ERP phases may also be present.
 
 ## Entity groups
 
@@ -38,7 +38,7 @@ Latest migration in the repository includes Phase 48 payroll/EOS (20260918360000
 - `bank_feed_connections` - Phase 50 feed placeholders (`manual`|`pending_provider`); not live Open Banking; ops RLS
 - `expense_categories` / `expenses` �?? operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
 - `vat_return_periods` �?? optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
-- employees / leave_requests / payroll_runs / payroll_lines / eos_estimate_logs ? HR-lite payroll (PR- numbers); leave balance days + optional deduct on annual approve; UAE-oriented indicative EOS calculator (ops RLS). EOS is planning-only ? not legal advice / not labour-law compliance.
+- `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` / `eos_estimate_logs` — HR-lite payroll (PR- numbers); leave balance days + optional deduct on annual approve; UAE-oriented indicative EOS calculator (ops RLS). EOS is planning-only — not legal advice / not labour-law compliance.
 - `gl_accounts` / `gl_journals` / `gl_journal_lines` — chart of accounts + journals (JE- numbers); draft/posted/reversed; `source_module`/`source_id` for auto-post idempotency (Phase 46); ops RLS; report RPCs `gl_trial_balance` / `gl_profit_and_loss` / `gl_balance_sheet`
 - `ai_chat_threads` / `ai_chat_messages` ? ops AI assistant history; owner-scoped RLS; grounding via `get_ai_ops_grounding`
 - `get_ops_analytics_summary(from,to)` ? Phase 41 jsonb KPIs (sales/AR, stock, requests; ops also remittances + open POs + GRNs). Workspace-executable; sales scoped to own book

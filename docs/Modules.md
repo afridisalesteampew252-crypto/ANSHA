@@ -22,7 +22,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | General ledger | no | `/admin/ledger` (ops) | `gl_accounts`, `gl_journals`, `gl_journal_lines` (Phase 46 auto-post from remittance/expense/invoice/supplier payment) |
 | Financial reports | no | `/admin/reports` (ops) | trial balance / P&L / balance sheet RPCs |
 | VAT return | no | `/admin/vat-return` (ops) | `vat_return_periods` + `get_vat_return_summary` |
-| Payroll | no | /admin/payroll (ops) | employees, leave_requests, payroll_runs, payroll_lines |
+| Payroll | no | /admin/payroll (ops) | employees, leave_requests, payroll_runs, payroll_lines, eos_estimate_logs |
 | Audit log | no | `/admin/audit-log` (ops) | `audit_logs` (append-only; invoice status, vehicle stock, remittance allocate) |
 | Blog | `/blog` | `/admin/blog` | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |

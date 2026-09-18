@@ -15,6 +15,8 @@ import type {
   AdminProfile,
   Employee,
   EmployeeStatus,
+  EosEstimateLog,
+  EosSeparationType,
   LeaveRequest,
   LeaveRequestStatus,
   LeaveType,
@@ -28,12 +30,23 @@ type EosEstimate = {
   full_name: string;
   join_date: string;
   as_of_date: string;
+  separation_type: EosSeparationType;
   basic_salary: number;
   currency: string;
+  days_of_service: number;
   years_of_service: number;
+  daily_wage: number;
+  years_first5: number;
+  years_after5: number;
+  entitlement_days: number;
+  uncapped_amount: number;
+  cap_amount: number;
+  full_amount_before_multiplier: number;
+  mode_multiplier: number;
   estimate_amount: number;
   formula: string;
   disclaimer: string;
+  log_id?: string;
 };
 
 const money = (value: number, currency = 'AED') =>
@@ -83,6 +96,7 @@ export default function PayrollPage() {
   const [empStatus, setEmpStatus] = useState<EmployeeStatus>('active');
   const [empProfileId, setEmpProfileId] = useState('');
   const [empNotes, setEmpNotes] = useState('');
+  const [empLeaveBalance, setEmpLeaveBalance] = useState('30');
   const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
 
   const [leaveEmployeeId, setLeaveEmployeeId] = useState('');
@@ -90,6 +104,7 @@ export default function PayrollPage() {
   const [leaveStart, setLeaveStart] = useState(() => new Date().toISOString().slice(0, 10));
   const [leaveEnd, setLeaveEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [leaveNotes, setLeaveNotes] = useState('');
+  const [leaveDeductBalance, setLeaveDeductBalance] = useState(true);
 
   const [periodStart, setPeriodStart] = useState(() => {
     const d = new Date();
@@ -101,23 +116,30 @@ export default function PayrollPage() {
 
   const [eosEmployeeId, setEosEmployeeId] = useState('');
   const [eosAsOf, setEosAsOf] = useState(() => new Date().toISOString().slice(0, 10));
+  const [eosSeparation, setEosSeparation] = useState<EosSeparationType>('termination');
+  const [eosBasicOverride, setEosBasicOverride] = useState('');
+  const [eosPersist, setEosPersist] = useState(true);
   const [eosResult, setEosResult] = useState<EosEstimate | null>(null);
+  const [eosLogs, setEosLogs] = useState<EosEstimateLog[]>([]);
 
   const load = useCallback(async () => {
-    const [empRes, profRes, leaveRes, runRes, sessionRes] = await Promise.all([
+    const [empRes, profRes, leaveRes, runRes, eosLogRes, sessionRes] = await Promise.all([
       supabase.from('employees').select('*').order('full_name').limit(200),
       supabase.from('admin_profiles').select('*').eq('is_active', true).order('full_name'),
       supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('payroll_runs').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.from('eos_estimate_logs').select('*').order('created_at', { ascending: false }).limit(40),
       supabase.auth.getSession(),
     ]);
     if (empRes.error) toast.error(empRes.error.message);
     if (leaveRes.error) toast.error(leaveRes.error.message);
     if (runRes.error) toast.error(runRes.error.message);
+    if (eosLogRes.error) toast.error(eosLogRes.error.message);
     setEmployees((empRes.data || []) as Employee[]);
     setProfiles((profRes.data || []) as AdminProfile[]);
     setLeaveRequests((leaveRes.data || []) as LeaveRequest[]);
     setRuns((runRes.data || []) as PayrollRun[]);
+    setEosLogs((eosLogRes.data || []) as EosEstimateLog[]);
     const uid = sessionRes.data.session?.user?.id;
     if (uid) {
       const self = (profRes.data || []).find((row) => row.id === uid);
@@ -189,6 +211,7 @@ export default function PayrollPage() {
     setEmpStatus('active');
     setEmpProfileId('');
     setEmpNotes('');
+    setEmpLeaveBalance('30');
   };
 
   const startEditEmployee = (row: Employee) => {
@@ -200,12 +223,15 @@ export default function PayrollPage() {
     setEmpStatus(row.status);
     setEmpProfileId(row.admin_profile_id || '');
     setEmpNotes(row.notes || '');
+    setEmpLeaveBalance(String(row.leave_balance_days ?? 30));
   };
 
   const saveEmployee = async () => {
     if (!empName.trim()) return toast.error('Name is required');
     const salary = Number(empSalary);
     if (!Number.isFinite(salary) || salary < 0) return toast.error('Valid basic salary required');
+    const leaveBal = Number(empLeaveBalance);
+    if (!Number.isFinite(leaveBal) || leaveBal < 0) return toast.error('Leave balance must be >= 0');
     setBusy(true);
     const payload = {
       full_name: empName.trim(),
@@ -214,6 +240,7 @@ export default function PayrollPage() {
       currency: empCurrency.trim().toUpperCase() || 'AED',
       status: empStatus,
       admin_profile_id: empProfileId || null,
+      leave_balance_days: leaveBal,
       notes: empNotes.trim() || null,
     };
     const res = editingEmployeeId
@@ -229,12 +256,16 @@ export default function PayrollPage() {
   const submitLeave = async () => {
     if (!leaveEmployeeId) return toast.error('Select an employee');
     if (leaveEnd < leaveStart) return toast.error('End date must be on or after start date');
+    const start = new Date(`${leaveStart}T00:00:00`);
+    const end = new Date(`${leaveEnd}T00:00:00`);
+    const days = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
     setBusy(true);
     const { error } = await supabase.from('leave_requests').insert({
       employee_id: leaveEmployeeId,
       leave_type: leaveType,
       start_date: leaveStart,
       end_date: leaveEnd,
+      days,
       notes: leaveNotes.trim() || null,
     });
     setBusy(false);
@@ -249,6 +280,7 @@ export default function PayrollPage() {
     const { error } = await supabase.rpc('decide_leave_request', {
       p_leave_id: id,
       p_status: status,
+      p_deduct_balance: status === 'approved' ? leaveDeductBalance : false,
     });
     setBusy(false);
     if (error) return toast.error(error.message);
@@ -314,14 +346,25 @@ export default function PayrollPage() {
 
   const estimateEos = async () => {
     if (!eosEmployeeId) return toast.error('Select an employee');
+    let basicOverride: number | null = null;
+    if (eosBasicOverride.trim()) {
+      const n = Number(eosBasicOverride);
+      if (!Number.isFinite(n) || n < 0) return toast.error('Basic salary override must be >= 0');
+      basicOverride = n;
+    }
     setBusy(true);
     const { data, error } = await supabase.rpc('estimate_employee_eos', {
       p_employee_id: eosEmployeeId,
       p_as_of_date: eosAsOf,
+      p_separation_type: eosSeparation,
+      p_basic_salary: basicOverride,
+      p_persist: eosPersist,
     });
     setBusy(false);
     if (error) return toast.error(error.message);
     setEosResult(data as EosEstimate);
+    toast.success(eosPersist ? 'EOS estimate saved to log' : 'EOS estimate calculated');
+    await load();
   };
 
   return (
@@ -330,7 +373,8 @@ export default function PayrollPage() {
         <div>
           <h1 className="text-2xl font-bold">Payroll / leave / EOS</h1>
           <p className="text-sm text-muted-foreground">
-            Ops MVP for employees, leave approvals, and payroll runs. EOS helper is a rough estimate only — not legal advice.
+            Ops MVP for employees, leave balances, payroll runs, and a UAE-oriented EOS calculator. Estimates are
+            indicative only — not legal advice and not a claim of labour-law compliance.
           </p>
         </div>
         <div className="relative w-full sm:w-72">
@@ -397,6 +441,16 @@ export default function PayrollPage() {
                   ))}
                 </select>
               </div>
+              <div className="space-y-1.5">
+                <Label>Leave balance (days)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={empLeaveBalance}
+                  onChange={(e) => setEmpLeaveBalance(e.target.value)}
+                />
+              </div>
               <div className="space-y-1.5 md:col-span-2 lg:col-span-3">
                 <Label>Notes</Label>
                 <Textarea value={empNotes} onChange={(e) => setEmpNotes(e.target.value)} rows={2} />
@@ -429,7 +483,8 @@ export default function PayrollPage() {
                       <Badge className={empStatusBadge[row.status]}>{row.status}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Joined {row.join_date} · {money(row.basic_salary, row.currency)}
+                      Joined {row.join_date} · {money(row.basic_salary, row.currency)} · leave{' '}
+                      {Number(row.leave_balance_days ?? 0)} days
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => startEditEmployee(row)}>
@@ -445,6 +500,9 @@ export default function PayrollPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">New leave request</CardTitle>
+              <CardDescription>
+                Approving annual leave can optionally deduct inclusive calendar days from the employee leave balance.
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-1.5">
@@ -457,7 +515,7 @@ export default function PayrollPage() {
                   <option value="">Select…</option>
                   {employees.filter((e) => e.status === 'active').map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.full_name}
+                      {e.full_name} ({Number(e.leave_balance_days ?? 0)}d)
                     </option>
                   ))}
                 </select>
@@ -488,6 +546,14 @@ export default function PayrollPage() {
                 <Label>Notes</Label>
                 <Input value={leaveNotes} onChange={(e) => setLeaveNotes(e.target.value)} />
               </div>
+              <label className="flex items-center gap-2 text-sm md:col-span-2 lg:col-span-3">
+                <input
+                  type="checkbox"
+                  checked={leaveDeductBalance}
+                  onChange={(e) => setLeaveDeductBalance(e.target.checked)}
+                />
+                On approve, deduct days from leave balance (annual leave only)
+              </label>
               <div className="md:col-span-2 lg:col-span-3">
                 <Button onClick={() => void submitLeave()} disabled={busy}>
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -507,9 +573,13 @@ export default function PayrollPage() {
                       <p className="font-semibold">{employeeName(row.employee_id)}</p>
                       <Badge className={leaveStatusBadge[row.status]}>{row.status}</Badge>
                       <span className="text-xs uppercase text-muted-foreground">{row.leave_type}</span>
+                      {row.deducted_from_balance ? (
+                        <Badge className="bg-sky-100 text-sky-800">balance deducted</Badge>
+                      ) : null}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {row.start_date} → {row.end_date}
+                      {row.days != null ? ` · ${row.days} day(s)` : ''}
                       {row.notes ? ` · ${row.notes}` : ''}
                     </p>
                   </div>
@@ -647,19 +717,22 @@ export default function PayrollPage() {
         <TabsContent value="eos" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">End-of-service estimate</CardTitle>
+              <CardTitle className="text-lg">UAE-oriented EOS calculator</CardTitle>
               <CardDescription>
-                Rough helper: basic salary × years of service (days ÷ 365.25). Not legal advice and not a UAE labour-law
-                gratuity calculation.
+                Indicative planning helper using day-wage bands (21/30), a 2× annual basic cap, and resignation vs
+                termination multipliers. Not legal advice — not a certified labour-law gratuity calculation.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-3">
+            <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-1.5">
                 <Label>Employee</Label>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                   value={eosEmployeeId}
-                  onChange={(e) => setEosEmployeeId(e.target.value)}
+                  onChange={(e) => {
+                    setEosEmployeeId(e.target.value);
+                    setEosBasicOverride('');
+                  }}
                 >
                   <option value="">Select…</option>
                   {employees.map((e) => (
@@ -673,6 +746,36 @@ export default function PayrollPage() {
                 <Label>As of</Label>
                 <Input type="date" value={eosAsOf} onChange={(e) => setEosAsOf(e.target.value)} />
               </div>
+              <div className="space-y-1.5">
+                <Label>Separation</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={eosSeparation}
+                  onChange={(e) => setEosSeparation(e.target.value as EosSeparationType)}
+                >
+                  <option value="termination">Termination (employer)</option>
+                  <option value="resignation">Resignation</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Basic salary override (optional)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={
+                    eosEmployeeId
+                      ? String(employees.find((e) => e.id === eosEmployeeId)?.basic_salary ?? '')
+                      : 'Uses employee basic'
+                  }
+                  value={eosBasicOverride}
+                  onChange={(e) => setEosBasicOverride(e.target.value)}
+                />
+              </div>
+              <label className="flex items-end gap-2 pb-2 text-sm">
+                <input type="checkbox" checked={eosPersist} onChange={(e) => setEosPersist(e.target.checked)} />
+                Save this run to estimate log
+              </label>
               <div className="flex items-end">
                 <Button onClick={() => void estimateEos()} disabled={busy}>
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -684,13 +787,20 @@ export default function PayrollPage() {
 
           {eosResult && (
             <Card>
-              <CardContent className="space-y-2 p-4">
+              <CardContent className="space-y-3 p-4">
                 <p className="font-semibold">
                   {eosResult.full_name}: {money(eosResult.estimate_amount, eosResult.currency)}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {eosResult.years_of_service} years · basic {money(eosResult.basic_salary, eosResult.currency)} · joined{' '}
+                  {eosResult.days_of_service} days ({eosResult.years_of_service} years) · {eosResult.separation_type} ×
+                  {eosResult.mode_multiplier} · daily {money(eosResult.daily_wage, eosResult.currency)} · entitlement{' '}
+                  {eosResult.entitlement_days} days · basic {money(eosResult.basic_salary, eosResult.currency)} · joined{' '}
                   {eosResult.join_date} · as of {eosResult.as_of_date}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Full before multiplier {money(eosResult.full_amount_before_multiplier, eosResult.currency)} (uncapped{' '}
+                  {money(eosResult.uncapped_amount, eosResult.currency)}, cap{' '}
+                  {money(eosResult.cap_amount, eosResult.currency)})
                 </p>
                 <p className="text-xs text-muted-foreground">{eosResult.formula}</p>
                 <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -699,6 +809,30 @@ export default function PayrollPage() {
               </CardContent>
             </Card>
           )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Recent estimate log</CardTitle>
+              <CardDescription>Stored calculator inputs/outputs for ops review. Still indicative only.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {eosLogs.length === 0 && <p className="text-sm text-muted-foreground">No saved estimates yet.</p>}
+              {eosLogs.map((row) => (
+                <div key={row.id} className="rounded-md border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium">
+                      {employeeName(row.employee_id)} · {money(row.estimate_amount, row.currency)}
+                    </p>
+                    <Badge className="bg-slate-100 text-slate-700">{row.separation_type}</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {row.days_of_service}d / {row.years_of_service}y · multiplier {row.mode_multiplier} · as of{' '}
+                    {row.as_of_date} · {new Date(row.created_at).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
