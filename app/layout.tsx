@@ -9,6 +9,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JsonLd } from '@/components/seo/json-ld';
 import { ThemeProvider } from '@/components/theme-provider';
 import { RegisterServiceWorker } from '@/components/pwa/register-service-worker';
+import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     ]} />
     <TooltipProvider delayDuration={200}>{children}<Toaster /></TooltipProvider>
     <RegisterServiceWorker />
+    <GoogleAnalytics />
     <Analytics /><SpeedInsights />
   </ThemeProvider></body></html>;
 }

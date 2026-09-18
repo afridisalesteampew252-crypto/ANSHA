@@ -52,7 +52,10 @@ export function SiteFooter() {
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/15 pt-6 text-center text-sm text-white/50 sm:flex-row sm:text-left">
           <p>&copy; {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
-          <p>TRN {siteConfig.taxRegistrationNumber}</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <Link href="/cookie-policy" className="hover:text-white">Cookie Policy</Link>
+            <p>TRN {siteConfig.taxRegistrationNumber}</p>
+          </div>
         </div>
       </div>
     </footer>
