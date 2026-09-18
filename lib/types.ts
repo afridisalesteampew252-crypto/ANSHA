@@ -1142,6 +1142,24 @@ export interface PayrollLine {
   updated_at: string;
 }
 
+
+/** Phase 39 — outbound transactional email send log. */
+export type OutboundEmailStatus = 'sent' | 'failed';
+
+export interface OutboundEmailLog {
+  id: string;
+  to_email: string;
+  subject: string;
+  body_preview: string;
+  status: OutboundEmailStatus;
+  provider: string;
+  provider_message_id: string | null;
+  error_message: string | null;
+  related_invoice_id: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
 /** Phase 38 Ã¢â‚¬" general ledger chart, journals, financial statements. */
 export type GlAccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 export type GlJournalStatus = 'draft' | 'posted' | 'reversed';
