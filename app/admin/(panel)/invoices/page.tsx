@@ -3,15 +3,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { FileText, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
+type InvoiceItemRef = {
+  description: string | null;
+  inventory_reference: string | null;
+};
+
 type Invoice = {
-  id: string; invoice_number: string; customer_name: string; customer_company: string | null;
-  issue_date: string; due_date: string; currency: string; status: string; document_type: string;
-  total_amount: number; balance_due: number; created_at: string;
+  id: string;
+  invoice_number: string;
+  customer_name: string;
+  customer_company: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  customer_address: string | null;
+  customer_tax_registration_number: string | null;
+  issue_date: string;
+  due_date: string;
+  currency: string;
+  status: string;
+  document_type: string;
+  reference: string | null;
+  notes: string | null;
+  terms: string | null;
+  verification_code: string | null;
+  total_amount: number;
+  balance_due: number;
+  created_at: string;
+  invoice_items?: InvoiceItemRef[] | null;
 };
 
 const money = (value: number, currency: string) => new Intl.NumberFormat('en-AE', { style: 'currency', currency }).format(value || 0);
@@ -39,7 +63,13 @@ export default function InvoicesPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('invoices').select('id,invoice_number,customer_name,customer_company,issue_date,due_date,currency,status,document_type,total_amount,balance_due,created_at').order('issue_date', { ascending: false }).order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('invoices')
+      .select(
+        'id,invoice_number,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,status,document_type,reference,notes,terms,verification_code,total_amount,balance_due,created_at,invoice_items(description,inventory_reference)'
+      )
+      .order('issue_date', { ascending: false })
+      .order('created_at', { ascending: false });
     setLoading(false);
     if (error) return setMessage(error.message);
     setInvoices((data || []) as Invoice[]);
@@ -48,8 +78,34 @@ export default function InvoicesPage() {
   useEffect(() => { void load(); }, [load]);
 
   const filtered = useMemo(() => invoices.filter((invoice) => {
-    const haystack = `${invoice.invoice_number} ${invoice.customer_name} ${invoice.customer_company || ''}`.toLowerCase();
-    return haystack.includes(query.toLowerCase()) && (status === 'all' || effectiveStatus(invoice) === status) && (documentType === 'all' || invoice.document_type === documentType);
+    const currentStatus = effectiveStatus(invoice);
+    if (status !== 'all' && currentStatus !== status) return false;
+    if (documentType !== 'all' && invoice.document_type !== documentType) return false;
+    const itemFields = (invoice.invoice_items || []).flatMap((item) => [item.description, item.inventory_reference]);
+    return matchesQuery(query, [
+      invoice.invoice_number,
+      invoice.document_type,
+      invoice.document_type.replaceAll('_', ' '),
+      invoice.customer_name,
+      invoice.customer_company,
+      invoice.customer_email,
+      invoice.customer_phone,
+      invoice.customer_address,
+      invoice.customer_tax_registration_number,
+      invoice.status,
+      currentStatus,
+      currentStatus.replaceAll('_', ' '),
+      invoice.currency,
+      invoice.reference,
+      invoice.notes,
+      invoice.terms,
+      invoice.verification_code,
+      invoice.issue_date,
+      invoice.due_date,
+      invoice.total_amount,
+      invoice.balance_due,
+      ...itemFields,
+    ]);
   }), [documentType, invoices, query, status]);
 
   const totals = useMemo(() => ({
@@ -74,7 +130,7 @@ export default function InvoicesPage() {
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Overdue (AED)</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold text-destructive">{money(totals.overdue, 'AED')}</p></CardContent></Card>
     </div>
 
-    <Card><CardContent className="p-4"><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search invoice or customer" className="pl-10" /></div><select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All document types</option><option value="delivery_note">Delivery notes</option><option value="quotation">Quotations</option><option value="proforma_invoice">Proforma invoices</option><option value="tax_invoice">Tax invoices</option><option value="purchase_invoice">Purchase invoices</option><option value="commercial_invoice">Commercial invoices</option></select><select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option><option value="draft">Draft</option><option value="sent">Sent</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="overdue">Overdue</option><option value="cancelled">Cancelled</option></select></div></CardContent></Card>
+    <Card><CardContent className="p-4"><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search invoice, customer, reference, notes, VIN/stock…" className="pl-10" /></div><select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All document types</option><option value="delivery_note">Delivery notes</option><option value="quotation">Quotations</option><option value="proforma_invoice">Proforma invoices</option><option value="tax_invoice">Tax invoices</option><option value="purchase_invoice">Purchase invoices</option><option value="commercial_invoice">Commercial invoices</option></select><select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option><option value="draft">Draft</option><option value="sent">Sent</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="overdue">Overdue</option><option value="cancelled">Cancelled</option></select></div></CardContent></Card>
 
     {message && <div role="status" className="rounded-lg border bg-secondary/30 p-3 text-sm">{message}</div>}
     {loading ? <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : filtered.length === 0 ? <Card><CardContent className="flex flex-col items-center gap-3 py-14 text-center"><FileText className="h-10 w-10 text-muted-foreground" /><div><p className="font-semibold">No invoices found</p><p className="text-sm text-muted-foreground">Create the first invoice or change the filters.</p></div></CardContent></Card> : <>

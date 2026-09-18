@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { KeyRound, Pencil, Plus, Search, Trash2, Upload, X } from 'lucide-react';
+import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import type { Customer } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -128,9 +129,22 @@ export default function CustomersPage() {
     await load();
   };
 
-  const visible = customers.filter((item) =>
-    `${item.customer_code} ${item.full_name} ${item.company_name || ''} ${item.phone || ''}`.toLowerCase().includes(query.toLowerCase())
-  );
+  const visible = customers.filter((item) => {
+    const portal = portalByCustomer[item.id];
+    return matchesQuery(query, [
+      item.customer_code,
+      item.full_name,
+      item.company_name,
+      item.email,
+      item.phone,
+      item.whatsapp,
+      item.country,
+      item.address,
+      item.notes,
+      item.tax_registration_number,
+      portal?.email,
+    ]);
+  });
 
   return (
     <div className="space-y-6">
@@ -189,7 +203,12 @@ export default function CustomersPage() {
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customers" className="pl-9" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search code, name, email, phone, address, notes…"
+          className="pl-9"
+        />
       </div>
 
       <Card>

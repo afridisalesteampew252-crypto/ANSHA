@@ -3,12 +3,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Car, CheckCircle2, Edit, Eye, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Car, CheckCircle2, Edit, Eye, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
-import { STOCK_ORIGINS } from '@/lib/stock';
+import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { LIFECYCLE_STAGES, lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
 import { toast } from 'sonner';
@@ -31,6 +33,7 @@ const stageClass: Record<LifecycleStage, string> = {
 export default function AdminVehiclesPage() {
   const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
   const [origin, setOrigin] = useState<'all' | StockOrigin>('all');
   const [stage, setStage] = useState<'all' | LifecycleStage>('all');
 
@@ -48,9 +51,41 @@ export default function AdminVehiclesPage() {
     () => vehicles.filter((vehicle) => {
       const originMatch = origin === 'all' || vehicle.stock_origin === origin;
       const stageMatch = stage === 'all' || (vehicle.lifecycle_stage || 'unassigned') === stage;
-      return originMatch && stageMatch;
+      if (!originMatch || !stageMatch) return false;
+      return matchesQuery(query, [
+        vehicle.title,
+        vehicle.make,
+        vehicle.model,
+        vehicle.variant,
+        vehicle.year,
+        vehicle.stock_number,
+        vehicle.chassis_number,
+        vehicle.chassis_code,
+        vehicle.engine_code,
+        vehicle.transmission,
+        vehicle.fuel_type,
+        vehicle.color,
+        vehicle.location,
+        vehicle.slug,
+        vehicle.description,
+        vehicle.stock_origin,
+        stockOriginLabel(vehicle.stock_origin),
+        vehicle.stock_status,
+        vehicle.lifecycle_stage,
+        lifecycleStageLabel(vehicle.lifecycle_stage),
+        vehicle.purchase_price,
+        vehicle.purchase_currency,
+        vehicle.purchase_date,
+        vehicle.landed_cost,
+        vehicle.currency,
+        vehicle.price,
+        vehicle.mileage,
+        ...(vehicle.search_keywords || []),
+        ...(vehicle.destination_markets || []),
+        ...(vehicle.shipping_methods || []),
+      ]);
     }),
-    [origin, stage, vehicles]
+    [origin, query, stage, vehicles]
   );
 
   async function updateVehicle(id: string, changes: Record<string, unknown>, success: string) {
@@ -84,6 +119,16 @@ export default function AdminVehiclesPage() {
       <Button asChild><Link href="/admin/vehicles/new"><Plus className="h-4 w-4" />Add vehicle</Link></Button>
     </div>
 
+    <div className="relative max-w-md">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search title, VIN, stock #, make, model, location…"
+        className="pl-9"
+      />
+    </div>
+
     <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Vehicle stock locations">
       <button onClick={() => setOrigin('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>All stock ({vehicles.length})</button>
       {STOCK_ORIGINS.map((item) => <button key={item.value} onClick={() => setOrigin(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>{item.label} ({vehicles.filter((vehicle) => vehicle.stock_origin === item.value).length})</button>)}
@@ -94,7 +139,7 @@ export default function AdminVehiclesPage() {
       {LIFECYCLE_STAGES.map((item) => <button key={item.value} onClick={() => setStage(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>{item.label} ({vehicles.filter((vehicle) => (vehicle.lifecycle_stage || 'unassigned') === item.value).length})</button>)}
     </nav>
 
-    {loading ? <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed py-16 text-center"><Car className="mx-auto h-10 w-10 text-muted-foreground/30" /><p className="mt-3 text-sm text-muted-foreground">No vehicles in this stock location.</p></div> :
+    {loading ? <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed py-16 text-center"><Car className="mx-auto h-10 w-10 text-muted-foreground/30" /><p className="mt-3 text-sm text-muted-foreground">{query.trim() ? 'No vehicles match this search.' : 'No vehicles in this stock location.'}</p></div> :
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">{filtered.map((vehicle) => {
         const cover = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
         const photoUrl = cover ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${cover.storage_path}` : '';
