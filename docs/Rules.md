@@ -42,7 +42,7 @@ Public website, staff ERP, and any future customer portal or mobile wrap share o
 
 ## Vehicle and requests
 
-Current vehicle/part commercial state is `stock_status` (`available`|`reserved`|`sold`). Vehicle operational stage is `lifecycle_stage`. Staff request tickets (`workspace_requests`) are additive and must not replace intake tables or vehicle lifecycle events. Purchase cost lives on the same stock rows (no second catalog); public listings require `is_published` and `stock_status = available`. See `docs/Database.md` and `docs/Modules.md`.
+Current vehicle/part commercial state is `stock_status` (`available`|`reserved`|`sold`). Vehicle operational stage is `lifecycle_stage` with recommended path Auction → Yard → Port → Sold; staff cannot skip stages without an account-admin force override. Staff request tickets (`workspace_requests`) are additive and must not replace intake tables or vehicle lifecycle events. Purchase cost lives on the same stock rows (no second catalog); public listings require `is_published` and `stock_status = available`. See `docs/Database.md` and `docs/Modules.md`.
 
 ## Chat
 

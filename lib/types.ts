@@ -176,6 +176,19 @@ export interface VehicleLifecycleEvent {
   created_at: string;
 }
 
+
+export interface VehicleLifecycleEventAttachment {
+  id: string;
+  event_id: string;
+  vehicle_id: string;
+  uploaded_by: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+}
+
 export type WorkspaceRequestType =
   | 'inquiry'
   | 'part_request'
@@ -1421,6 +1434,7 @@ export interface Database {
       supplier_payments: TableDef<SupplierPayment>;
       suppliers: TableDef<Supplier>;
       vehicle_photos: TableDef<VehiclePhoto>;
+      vehicle_lifecycle_event_attachments: TableDef<VehicleLifecycleEventAttachment>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;
       vat_return_periods: TableDef<VatReturnPeriod>;

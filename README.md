@@ -78,7 +78,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migrations include Phase 40 WhatsApp (`supabase/migrations/20260918290000_phase_40_whatsapp.sql`) and earlier concurrent ERP phases under `supabase/migrations/`.
+Latest migrations include Phase 47 lifecycle hardening (`supabase/migrations/20260918350000_phase_47_lifecycle_hardening.sql`), Phase 50 bank feed stub, and earlier concurrent ERP phases under `supabase/migrations/`.
 
 ## Phase 4: global SEO and exporter schema
 
@@ -331,4 +331,13 @@ Completed on 2026-09-18.
 - Edge Function `send-web-push` (staff JWT + VAPID) topics: `insights` | `deals` | `all`.
 - Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel and `VAPID_*` secrets on the function.
 - Applied migration `20260918110000_phase_24_pwa_push`.
-- Applied migration `20260918320000_phase_43_audit_log`  append-only `audit_logs`, `private.write_audit_log`, invoice/vehicle/remittance hooks, admin `/admin/audit-log`.
+- Applied migration `20260918320000_phase_43_audit_log` — append-only `audit_logs`, `private.write_audit_log`, invoice/vehicle/remittance hooks, admin `/admin/audit-log`.
+
+## Phase 47: Vehicle lifecycle hardening
+
+Completed on 2026-09-18.
+
+- Stricter `transition_vehicle_lifecycle`: recommended path only unless account-admin `p_force` + reason notes.
+- Private event attachments (`vehicle_lifecycle_event_attachments`) on `internal-files` under `vehicles/{vehicle_id}/lifecycle/{event_id}/`.
+- Admin vehicle detail UI: soft-block staff skips, admin force override, upload/list/remove per event.
+- Applied migration `20260918350000_phase_47_lifecycle_hardening`.

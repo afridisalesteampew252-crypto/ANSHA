@@ -27,7 +27,7 @@ Inactive Supabase project `kmngigxpqhiilcavmcmm` is already `INACTIVE`. Pause AP
 
 Done (Phase 18): `lifecycle_stage` on `vehicles`; append-only `vehicle_lifecycle_events`; RPCs `transition_vehicle_lifecycle` and `record_vehicle_lifecycle_event`; admin detail page `/admin/vehicles/[id]` with stage transitions, workflow events, and history. Existing `stock_origin` / `stock_status` preserved. Sold commercial stock was backfilled to lifecycle `sold`.
 
-Later enhancements: document attachments on events, stricter transition rules, public stage display if needed.
+Done (Phase 47): lifecycle hardening — private event attachments (`vehicle_lifecycle_event_attachments`, `internal-files` prefix `vehicles/{vehicle_id}/lifecycle/{event_id}/`); stricter transitions (recommended hop only unless account-admin `p_force` + reason notes); UI upload/list/remove per event on `/admin/vehicles/[id]`. Public stage display still deferred.
 
 ## 4. Request workflows
 

@@ -35,6 +35,7 @@ There is no department role and no `domain.action` permission matrix in code. Cu
 | Create / delete bank accounts | RPC `create_bank_account` + RLS INSERT/DELETE on `bank_accounts` |
 | Post payroll; cancel **posted** payroll | RPC `post_payroll_run`; `cancel_payroll_run` when status = posted |
 | Hard-delete suppliers | RLS DELETE on `suppliers` (soft deactivate via UPDATE stays ops) |
+| Force vehicle lifecycle stage jump | RPC `transition_vehicle_lifecycle` with `p_force` + reason notes (Phase 47) |
 | Audit log purge | **None** — `audit_logs` is append-only; no purge RPC |
 
 ### Staff + admin (ops)
@@ -62,7 +63,8 @@ A Supabase Auth user without `admin_profiles` cannot use the ERP. Login signs th
 - Reserving / releasing vehicle stock and sales reservation + proforma: any workspace user (`sales` included)
 - Publishing vehicles: only when `stock_status = available` (`set_vehicle_public_listing`)
 - Applying sold status on tax/commercial invoice lines: runs inside invoice create RPC for workspace users who can create invoices
-- Export shipment status changes may log lifecycle events and attempt a soft move to `port` (ignored if already past)
+- Export shipment status changes may log lifecycle events and attempt a soft move to `port` (ignored if already past or blocked by Phase 47 recommended-path rules)
+- Vehicle lifecycle stage transitions: any workspace user for the **recommended** next hop; skipping stages requires account-admin `p_force` + reason notes. Lifecycle event attachments use the same workspace access as today.
 
 ## Future RBAC
 

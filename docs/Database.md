@@ -44,6 +44,7 @@ Latest migration in the repository includes Phase 48 payroll/EOS (`2026091836000
 - `get_ops_analytics_summary(from,to)` ? Phase 41 jsonb KPIs (sales/AR, stock, requests; ops also remittances + open POs + GRNs). Workspace-executable; sales scoped to own book
 - `audit_logs` ? append-only ops activity log (actor, action, entity_type, entity_id, metadata); writes via `private.write_audit_log`; triggers on invoice status, vehicle stock_status, remittance allocations; ops SELECT only
 - `vehicle_lifecycle_events` �?? append-only stage changes and workflow events (BL, inspection, RORO, etc.)
+- `vehicle_lifecycle_event_attachments` — private file metadata for lifecycle event documents (storage prefix `vehicles/{vehicle_id}/lifecycle/{event_id}/` in `internal-files`)
 
 ### Public marketing (Phase 24)
 
@@ -106,7 +107,7 @@ Triggers recalculate invoice balances and sync remittance-linked payments. Do no
 
 `lifecycle_stage` (vehicles only): `unassigned`, `auction`, `yard`, `port`, `sold`.
 
-Recommended operational path: Auction �?? Yard �?? Port �?? Sold. Commercial `stock_status` remains independent. Moving lifecycle to `sold` via `transition_vehicle_lifecycle` also sets `stock_status = sold`. Workflow actions (BL, inspection, RORO, etc.) are rows in `vehicle_lifecycle_events`, not free-text status fields.
+Recommended operational path: Auction → Yard → Port → Sold. Commercial `stock_status` remains independent. Moving lifecycle to `sold` via `transition_vehicle_lifecycle` also sets `stock_status = sold`. Non-recommended stage jumps are blocked unless an account admin passes `p_force` with a reason in notes (Phase 47). Workflow actions (BL, inspection, RORO, etc.) are rows in `vehicle_lifecycle_events`, not free-text status fields. Event documents live in `vehicle_lifecycle_event_attachments`.
 
 `private.sync_catalog_sold_state` stamps `sold_at`/`sold_by` on transition to `sold` and clears them otherwise.
 

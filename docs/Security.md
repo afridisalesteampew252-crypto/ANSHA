@@ -37,7 +37,7 @@ Advisor warnings (2026-09-17): leaked-password protection disabled; `is_admin()`
 
 ## Storage
 
-Public media buckets serve catalog/blog images. Private buckets (`profile-images`, `internal-files`, `remittance-documents`, `supplier-invoices`) must stay non-public. Path prefixes in policies bind chat/mail folders to membership and request files to `requests/{request_id}/` for workspace users.
+Public media buckets serve catalog/blog images. Private buckets (`profile-images`, `internal-files`, `remittance-documents`, `supplier-invoices`) must stay non-public. Path prefixes in policies bind chat/mail folders to membership, request files to `requests/{request_id}/`, and vehicle lifecycle attachments to `vehicles/{vehicle_id}/…` for workspace users.
 
 ## Edge Functions
 

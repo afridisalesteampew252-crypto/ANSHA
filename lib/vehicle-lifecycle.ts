@@ -30,13 +30,21 @@ export const LIFECYCLE_EVENT_TYPES = [
 
 export type LifecycleEventType = (typeof LIFECYCLE_EVENT_TYPES)[number]['value'] | 'stage_change';
 
-/** Recommended forward path. Any stage may still be selected in admin for operational recovery. */
+/** Recommended forward path. Non-recommended hops need admin p_force + reason (Phase 47). */
 export const RECOMMENDED_NEXT_STAGE: Partial<Record<LifecycleStage, LifecycleStage>> = {
   unassigned: 'auction',
   auction: 'yard',
   yard: 'port',
   port: 'sold',
 };
+
+export function isRecommendedLifecycleTransition(
+  from: LifecycleStage | null | undefined,
+  to: LifecycleStage | null | undefined
+) {
+  if (!from || !to) return false;
+  return RECOMMENDED_NEXT_STAGE[from] === to;
+}
 
 export function lifecycleStageLabel(value: string | null | undefined) {
   return LIFECYCLE_STAGES.find((stage) => stage.value === value)?.label || 'Unassigned';
@@ -45,4 +53,19 @@ export function lifecycleStageLabel(value: string | null | undefined) {
 export function lifecycleEventLabel(value: string | null | undefined) {
   if (value === 'stage_change') return 'Stage change';
   return LIFECYCLE_EVENT_TYPES.find((event) => event.value === value)?.label || value || 'Event';
+}
+
+export const LIFECYCLE_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
+
+export function safeLifecycleFileName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'attachment';
+}
+
+/** Private path under internal-files: vehicles/{vehicleId}/lifecycle/{eventId}/… */
+export function lifecycleEventAttachmentStoragePath(
+  vehicleId: string,
+  eventId: string,
+  fileName: string
+) {
+  return `vehicles/${vehicleId}/lifecycle/${eventId}/${crypto.randomUUID()}-${safeLifecycleFileName(fileName)}`;
 }

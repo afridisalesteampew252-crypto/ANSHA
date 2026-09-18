@@ -45,10 +45,12 @@ Public RPC:
 
 Workspace RPCs (names in Phase 10–16 migrations) wrap conversation create, mail send, and guarded financial edits. Call those instead of mutating sequence tables directly.
 
-Vehicle lifecycle RPCs (Phase 18):
+Vehicle lifecycle RPCs (Phase 18 + Phase 47 hardening):
 
-- `transition_vehicle_lifecycle(p_vehicle_id, p_to_stage, p_notes?, p_sync_stock_sold?)` — moves `lifecycle_stage`, writes history, optionally sets `stock_status = sold`
+- `transition_vehicle_lifecycle(p_vehicle_id, p_to_stage, p_notes?, p_sync_stock_sold?, p_force?)` — moves `lifecycle_stage` along the recommended path (`unassigned→auction→yard→port→sold`). Non-recommended hops require `p_force = true`, `private.is_account_admin()`, and a non-empty reason in `p_notes`. Writes history (forced jumps set `metadata.forced`). Optionally sets `stock_status = sold`.
 - `record_vehicle_lifecycle_event(p_vehicle_id, p_event_type, p_title?, p_notes?, p_metadata?)` — logs BL/inspection/shipping/etc. without changing stage
+- `register_vehicle_lifecycle_event_attachment(p_event_id, p_storage_path, p_file_name, p_mime_type?, p_size_bytes?)` — metadata after a private upload; path must be `vehicles/{vehicle_id}/lifecycle/{event_id}/...`
+- `delete_vehicle_lifecycle_event_attachment(p_attachment_id)` — remove metadata; UI deletes the Storage object first
 
 Request workflow RPCs (Phase 19):
 

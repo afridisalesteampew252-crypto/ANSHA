@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, Loader2, Save, Ship } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Paperclip, Save, Ship, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
@@ -16,14 +16,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import {
+  LIFECYCLE_ATTACHMENT_MAX_BYTES,
   LIFECYCLE_EVENT_TYPES,
   LIFECYCLE_STAGES,
   RECOMMENDED_NEXT_STAGE,
+  isRecommendedLifecycleTransition,
+  lifecycleEventAttachmentStoragePath,
   lifecycleEventLabel,
   lifecycleStageLabel,
   type LifecycleStage,
 } from '@/lib/vehicle-lifecycle';
-import type { LifecycleEventType, StockStatus, Vehicle, VehicleLifecycleEvent } from '@/lib/types';
+import type {
+  LifecycleEventType,
+  StockStatus,
+  Vehicle,
+  VehicleLifecycleEvent,
+  VehicleLifecycleEventAttachment,
+} from '@/lib/types';
 
 const statusClass: Record<StockStatus, string> = {
   available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -46,10 +55,17 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [events, setEvents] = useState<VehicleLifecycleEvent[]>([]);
+  const [attachmentsByEvent, setAttachmentsByEvent] = useState<
+    Record<string, VehicleLifecycleEventAttachment[]>
+  >({});
+  const [isAccountAdmin, setIsAccountAdmin] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [forceOverride, setForceOverride] = useState(false);
+  const [uploadingEventId, setUploadingEventId] = useState<string | null>(null);
+  const [removingAttachmentId, setRemovingAttachmentId] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [make, setMake] = useState('');
@@ -81,7 +97,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
   const load = useCallback(async () => {
     setFetching(true);
-    const [vehicleRes, eventsRes] = await Promise.all([
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const [vehicleRes, eventsRes, attachmentsRes, profileRes] = await Promise.all([
       supabase.from('vehicles').select('*').eq('id', id).maybeSingle(),
       supabase
         .from('vehicle_lifecycle_events')
@@ -89,6 +108,14 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         .eq('vehicle_id', id)
         .order('created_at', { ascending: false })
         .limit(100),
+      supabase
+        .from('vehicle_lifecycle_event_attachments')
+        .select('*')
+        .eq('vehicle_id', id)
+        .order('created_at', { ascending: false }),
+      user
+        ? supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
     if (vehicleRes.error || !vehicleRes.data) {
@@ -116,7 +143,15 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setSupplierId(row.supplier_id || '');
     setReserveCustomerId(row.reserved_customer_id || '');
     setNextStage(RECOMMENDED_NEXT_STAGE[row.lifecycle_stage || 'unassigned'] || 'auction');
+    setForceOverride(false);
+    setIsAccountAdmin(profileRes.data?.role === 'admin');
     setEvents((eventsRes.data || []) as VehicleLifecycleEvent[]);
+    const grouped: Record<string, VehicleLifecycleEventAttachment[]> = {};
+    for (const attachment of (attachmentsRes.data || []) as VehicleLifecycleEventAttachment[]) {
+      grouped[attachment.event_id] = grouped[attachment.event_id] || [];
+      grouped[attachment.event_id].push(attachment);
+    }
+    setAttachmentsByEvent(grouped);
     setFetching(false);
 
     const [supRes, custRes] = await Promise.all([
@@ -131,11 +166,21 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     void load();
   }, [load]);
 
+  const currentStage = (vehicle?.lifecycle_stage || 'unassigned') as LifecycleStage;
+  const recommendedNext = RECOMMENDED_NEXT_STAGE[currentStage];
+  const jumpNeedsForce = !isRecommendedLifecycleTransition(currentStage, nextStage);
   const stageOptions = useMemo(
-    () => LIFECYCLE_STAGES.filter((stage) => stage.value !== (vehicle?.lifecycle_stage || 'unassigned')),
-    [vehicle?.lifecycle_stage]
+    () => LIFECYCLE_STAGES.filter((stage) => stage.value !== currentStage),
+    [currentStage]
   );
   const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
+
+  const formatBytes = (value: number | null) => {
+    if (!value) return '';
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   const saveBasics = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -173,17 +218,103 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
   const transitionStage = async () => {
     if (!vehicle) return;
+    const needsForce = !isRecommendedLifecycleTransition(currentStage, nextStage);
+    if (needsForce) {
+      if (!isAccountAdmin) {
+        toast.error(
+          `Staff can only move to the next recommended stage (${lifecycleStageLabel(recommendedNext) || 'none'}). Ask an account admin to force a jump.`
+        );
+        return;
+      }
+      if (!forceOverride) {
+        toast.error('Enable force override and enter a reason to skip stages.');
+        return;
+      }
+      if (!stageNotes.trim()) {
+        toast.error('Forced lifecycle jumps require a reason in notes.');
+        return;
+      }
+    }
     setTransitioning(true);
     const { error } = await supabase.rpc('transition_vehicle_lifecycle', {
       p_vehicle_id: id,
       p_to_stage: nextStage,
       p_notes: stageNotes.trim() || null,
       p_sync_stock_sold: true,
+      p_force: needsForce,
     });
     setTransitioning(false);
     if (error) return toast.error(error.message);
     toast.success(`Moved to ${lifecycleStageLabel(nextStage)}.`);
     setStageNotes('');
+    setForceOverride(false);
+    await load();
+  };
+
+  const uploadEventFiles = async (eventId: string, fileList: FileList | null) => {
+    if (!fileList?.length || !vehicle) return;
+    const files = Array.from(fileList);
+    const tooLarge = files.find((file) => file.size > LIFECYCLE_ATTACHMENT_MAX_BYTES);
+    if (tooLarge) {
+      toast.error(`${tooLarge.name} is larger than 25 MB.`);
+      return;
+    }
+    setUploadingEventId(eventId);
+    try {
+      for (const file of files) {
+        const path = lifecycleEventAttachmentStoragePath(id, eventId, file.name);
+        const { error: uploadError } = await supabase.storage
+          .from('internal-files')
+          .upload(path, file, { cacheControl: '3600' });
+        if (uploadError) throw uploadError;
+        const { error: registerError } = await supabase.rpc('register_vehicle_lifecycle_event_attachment', {
+          p_event_id: eventId,
+          p_storage_path: path,
+          p_file_name: file.name,
+          p_mime_type: file.type || null,
+          p_size_bytes: file.size,
+        });
+        if (registerError) {
+          await supabase.storage.from('internal-files').remove([path]);
+          throw registerError;
+        }
+      }
+      toast.success(files.length === 1 ? 'File attached.' : `${files.length} files attached.`);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to attach file.');
+    } finally {
+      setUploadingEventId(null);
+    }
+  };
+
+  const openAttachment = async (attachment: VehicleLifecycleEventAttachment) => {
+    const { data, error } = await supabase.storage
+      .from('internal-files')
+      .createSignedUrl(attachment.storage_path, 60);
+    if (error || !data?.signedUrl) {
+      toast.error(error?.message || 'Unable to open attachment.');
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const removeAttachment = async (attachment: VehicleLifecycleEventAttachment) => {
+    setRemovingAttachmentId(attachment.id);
+    const { error: storageError } = await supabase.storage
+      .from('internal-files')
+      .remove([attachment.storage_path]);
+    if (storageError) {
+      setRemovingAttachmentId(null);
+      toast.error(storageError.message);
+      return;
+    }
+    const { error } = await supabase.rpc('delete_vehicle_lifecycle_event_attachment', {
+      p_attachment_id: attachment.id,
+    });
+    setRemovingAttachmentId(null);
+    if (error) return toast.error(error.message);
+    toast.success('Attachment removed.');
     await load();
   };
 
@@ -376,35 +507,85 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             Operational lifecycle
           </CardTitle>
           <CardDescription>
-            Recommended path: Auction → Yard → Port → Sold. Commercial availability (`available` / `reserved` / `sold`) stays separate and is only auto-synced when you move into Sold.
+            Recommended path: Auction → Yard → Port → Sold. Staff may only take the next recommended hop.
+            Account admins can force a jump with a reason. Commercial availability stays separate and syncs to sold when you move into Sold.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {recommendedNext ? (
+            <p className="text-sm text-muted-foreground">
+              Next recommended: <span className="font-medium text-foreground">{lifecycleStageLabel(recommendedNext)}</span>
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">No further recommended stage from Sold — any move needs an admin force override.</p>
+          )}
           <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
             <label className="space-y-1.5 text-sm">
               <span className="font-medium">Move to stage</span>
               <select
                 className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={nextStage}
-                onChange={(event) => setNextStage(event.target.value as LifecycleStage)}
+                onChange={(event) => {
+                  const value = event.target.value as LifecycleStage;
+                  setNextStage(value);
+                  if (isRecommendedLifecycleTransition(currentStage, value)) setForceOverride(false);
+                }}
               >
-                {stageOptions.map((stage) => (
-                  <option key={stage.value} value={stage.value}>
-                    {stage.label}
-                  </option>
-                ))}
+                {stageOptions.map((stage) => {
+                  const recommended = isRecommendedLifecycleTransition(currentStage, stage.value);
+                  return (
+                    <option key={stage.value} value={stage.value}>
+                      {stage.label}
+                      {recommended ? ' (recommended)' : isAccountAdmin ? ' (admin force)' : ' (blocked for staff)'}
+                    </option>
+                  );
+                })}
               </select>
             </label>
             <div className="flex items-end">
-              <Button onClick={() => void transitionStage()} disabled={transitioning || stageOptions.length === 0}>
+              <Button
+                onClick={() => void transitionStage()}
+                disabled={
+                  transitioning ||
+                  stageOptions.length === 0 ||
+                  (jumpNeedsForce && (!isAccountAdmin || !forceOverride || !stageNotes.trim()))
+                }
+              >
                 {transitioning ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Transition
               </Button>
             </div>
           </div>
+          {jumpNeedsForce ? (
+            <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900 dark:bg-amber-950/40">
+              {isAccountAdmin ? (
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={forceOverride}
+                    onChange={(event) => setForceOverride(event.target.checked)}
+                  />
+                  <span>
+                    Force override (admin). Skips the recommended path. A reason in notes is required.
+                  </span>
+                </label>
+              ) : (
+                <p className="text-amber-900 dark:text-amber-100">
+                  This jump is blocked for staff. Choose {lifecycleStageLabel(recommendedNext) || 'no further stage'} or ask an account admin to force with a reason.
+                </p>
+              )}
+            </div>
+          ) : null}
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium">Transition notes</span>
-            <Textarea value={stageNotes} onChange={(event) => setStageNotes(event.target.value)} rows={2} placeholder="Optional reason or reference" />
+            <span className="font-medium">{jumpNeedsForce ? 'Override reason' : 'Transition notes'}</span>
+            <Textarea
+              value={stageNotes}
+              onChange={(event) => setStageNotes(event.target.value)}
+              rows={2}
+              placeholder={jumpNeedsForce ? 'Required reason for skipping stages' : 'Optional reason or reference'}
+              required={jumpNeedsForce}
+            />
           </label>
         </CardContent>
       </Card>
@@ -466,31 +647,108 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Activity history</CardTitle>
-          <CardDescription>Newest first. Stage changes and workflow events are append-only.</CardDescription>
+          <CardDescription>
+            Newest first. Stage changes and workflow events are append-only. Attach private documents per event (internal-files).
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {events.length === 0 ? (
             <p className="text-sm text-muted-foreground">No lifecycle events yet.</p>
           ) : (
             <ol className="space-y-3">
-              {events.map((event) => (
-                <li key={event.id} className="rounded-lg border p-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{lifecycleEventLabel(event.event_type)}</Badge>
-                    {event.event_type === 'stage_change' ? (
-                      <span className="text-sm font-medium">
-                        {lifecycleStageLabel(event.from_stage)} → {lifecycleStageLabel(event.to_stage)}
+              {events.map((event) => {
+                const files = attachmentsByEvent[event.id] || [];
+                const forced =
+                  event.metadata &&
+                  typeof event.metadata === 'object' &&
+                  !Array.isArray(event.metadata) &&
+                  (event.metadata as { forced?: boolean }).forced === true;
+                return (
+                  <li key={event.id} className="rounded-lg border p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{lifecycleEventLabel(event.event_type)}</Badge>
+                      {forced ? <Badge variant="secondary">Forced</Badge> : null}
+                      {event.event_type === 'stage_change' ? (
+                        <span className="text-sm font-medium">
+                          {lifecycleStageLabel(event.from_stage)} → {lifecycleStageLabel(event.to_stage)}
+                        </span>
+                      ) : event.title ? (
+                        <span className="text-sm font-medium">{event.title}</span>
+                      ) : null}
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {format(new Date(event.created_at), 'dd MMM yyyy HH:mm')}
                       </span>
-                    ) : event.title ? (
-                      <span className="text-sm font-medium">{event.title}</span>
+                    </div>
+                    {event.notes ? (
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{event.notes}</p>
                     ) : null}
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {format(new Date(event.created_at), 'dd MMM yyyy HH:mm')}
-                    </span>
-                  </div>
-                  {event.notes ? <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{event.notes}</p> : null}
-                </li>
-              ))}
+                    <div className="mt-3 space-y-2 border-t pt-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">Attachments</span>
+                        <Label htmlFor={`lifecycle-files-${event.id}`} className="sr-only">
+                          Attach files to event
+                        </Label>
+                        <Input
+                          id={`lifecycle-files-${event.id}`}
+                          type="file"
+                          multiple
+                          className="h-8 max-w-xs text-xs"
+                          disabled={uploadingEventId === event.id}
+                          onChange={(changeEvent) => {
+                            void uploadEventFiles(event.id, changeEvent.target.files);
+                            changeEvent.currentTarget.value = '';
+                          }}
+                        />
+                        {uploadingEventId === event.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        ) : null}
+                      </div>
+                      {files.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">No files on this event.</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {files.map((attachment) => (
+                            <li
+                              key={attachment.id}
+                              className="flex flex-wrap items-center gap-2 text-sm"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                              <button
+                                type="button"
+                                className="text-left text-primary underline-offset-2 hover:underline"
+                                onClick={() => void openAttachment(attachment)}
+                              >
+                                {attachment.file_name}
+                              </button>
+                              {attachment.size_bytes ? (
+                                <span className="text-xs text-muted-foreground">
+                                  {formatBytes(attachment.size_bytes)}
+                                </span>
+                              ) : null}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="ml-auto h-7 px-2"
+                                disabled={removingAttachmentId === attachment.id}
+                                onClick={() => void removeAttachment(attachment)}
+                              >
+                                {removingAttachmentId === attachment.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                )}
+                                <span className="sr-only">Remove</span>
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </CardContent>
