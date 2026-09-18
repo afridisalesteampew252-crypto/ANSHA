@@ -153,6 +153,11 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
             Back to requests
           </Link>
         </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/chat?request=${row.id}`}>Open linked chat</Link>
+          </Button>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">{row.title}</h1>
           <Badge variant="outline">{requestTypeLabel(row.request_type)}</Badge>

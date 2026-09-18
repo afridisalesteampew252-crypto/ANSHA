@@ -17,7 +17,7 @@ Still needs your action or approval:
 
 ## 2. Housekeeping
 
-Done: README latest-migration points at Phase 19; `lib/types.ts` covers public tables through Phase 19; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
+Done: README latest-migration points at Phase 20; `lib/types.ts` covers public tables through Phase 20; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
 
 Not deleted: both `001_initial_schema` files — production `schema_migrations` records `20260909192712` and `20260909194958`. Removing either file would desync git from the live database.
 
@@ -37,7 +37,7 @@ Later: attachments on tickets, tighter due-date reminders.
 
 ## 5. Chat linking
 
-Attach existing conversations to vehicle/customer/inquiry/invoice/request IDs. Do not fork a second chat product.
+Done (Phase 20): `chat_conversation_links` attaches existing conversations to vehicle/customer/inquiry/invoice/request IDs. RPCs `link_chat_conversation` / `unlink_chat_conversation`. Team Chat UI can link/unlink and filter via query params. No second chat product.
 
 ## 6. Customer portal
 

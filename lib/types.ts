@@ -339,6 +339,17 @@ export interface ChatConversation {
   updated_at: string;
 }
 
+export type ChatLinkEntityType = 'vehicle' | 'customer' | 'inquiry' | 'invoice' | 'request';
+
+export interface ChatConversationLink {
+  id: string;
+  conversation_id: string;
+  entity_type: ChatLinkEntityType;
+  entity_id: string;
+  created_by: string;
+  created_at: string;
+}
+
 export interface ChatParticipant {
   conversation_id: string;
   user_id: string;
@@ -609,6 +620,7 @@ export interface Database {
       blog_posts: TableDef<BlogPost>;
       categories: TableDef<Category>;
       chat_attachments: TableDef<ChatAttachment>;
+      chat_conversation_links: TableDef<ChatConversationLink>;
       chat_conversations: TableDef<ChatConversation>;
       chat_messages: TableDef<ChatMessage>;
       chat_participants: TableDef<ChatParticipant>;

@@ -45,6 +45,11 @@ Request workflow RPCs (Phase 19):
 - `update_workspace_request(...)` — status, assignee, due date, title, notes; writes history
 - `record_workspace_request_event(p_request_id, p_notes)` — append-only note
 
+Chat linking RPCs (Phase 20):
+
+- `link_chat_conversation(p_conversation_id, p_entity_type, p_entity_id)` — attach conversation to vehicle/customer/inquiry/invoice/request
+- `unlink_chat_conversation(p_link_id)` — remove a link; membership required
+
 ## Edge Functions
 
 Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowlist: `docs` canonical hosts, `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://*.vercel.app`. Unknown origins get no `Access-Control-Allow-Origin`.

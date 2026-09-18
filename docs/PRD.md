@@ -19,6 +19,7 @@ Canonical public site: `https://www.anshatradingco.com`.
 - Manage catalog, customers, invoices, remittances, imports
 - Internal chat, mail, and notifications
 - Assign request tickets (intake, BL, inspection, shipping) with due dates
+- Link team chat conversations to vehicles, customers, invoices, and requests
 - Provision staff users (admin role)
 
 ### Out of current product

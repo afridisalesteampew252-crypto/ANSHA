@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918070000_phase_19_request_workflows.sql`.
+Latest migration in the repository: `20260918080000_phase_20_chat_linking.sql`.
 
 ## Entity groups
 
@@ -52,10 +52,11 @@ Intake rows stay as submitted. One ticket per inquiry and per part request (uniq
 ### Communications
 
 - `chat_conversations` (`direct`|`group`), `chat_participants`, `chat_messages`, `chat_attachments`
+- `chat_conversation_links` — optional links from a conversation to vehicle/customer/inquiry/invoice/request
 - `internal_mail`, `internal_mail_recipients`, `internal_mail_attachments`
 - `admin_notifications`
 
-Chat rows are not foreign-keyed to vehicles, invoices, or customers.
+Chat stays one product. Links are additive metadata; mutations go through `link_chat_conversation` / `unlink_chat_conversation`.
 
 ### Finance
 
@@ -88,4 +89,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 19. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 20. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.

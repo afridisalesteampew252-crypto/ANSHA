@@ -20,7 +20,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Remittances | no | `/admin/remittances` | `remittances*` |
 | Users | `/admin` login | `/admin/users`, `/admin/profile` | Auth + `admin_profiles` |
 | Bulk import | no | `/admin/imports` | `import_jobs`, `import_rows` |
-| Team chat | no | `/admin/chat` | `chat_*`, Realtime |
+| Team chat | no | `/admin/chat` (+ entity filters) | `chat_*`, `chat_conversation_links`, Realtime |
 | Internal mail | no | `/admin/mail` | `internal_mail*` |
 | Notifications | no | header center | `admin_notifications` |
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |

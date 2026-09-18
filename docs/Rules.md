@@ -46,7 +46,7 @@ Current vehicle/part commercial state is `stock_status` (`available`|`reserved`|
 
 ## Chat
 
-Internal chat and mail already exist. Do not rebuild them. Entity linking is not present; add it without isolating a second messaging system.
+Internal chat and mail already exist. Do not rebuild them. Entity linking is additive via `chat_conversation_links` (Phase 20).
 
 ## Documentation
 

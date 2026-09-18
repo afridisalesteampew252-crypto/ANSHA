@@ -298,9 +298,12 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             Lifecycle events stay on this vehicle. Open a BL, inspection, or shipping ticket when work needs an owner and due date.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
             <Link href={`/admin/requests?vehicle=${id}`}>Open requests for this vehicle</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={`/admin/chat?vehicle=${id}`}>Open linked chat</Link>
           </Button>
         </CardContent>
       </Card>

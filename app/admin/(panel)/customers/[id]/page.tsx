@@ -114,9 +114,12 @@ export default function CustomerAccountPage() {
   if (!customer) return <Card><CardContent className="p-10 text-center">Customer account not found.</CardContent></Card>;
 
   return <div className="mx-auto max-w-7xl space-y-6">
-    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div><Button asChild variant="ghost" size="sm" className="-ml-3 mb-2"><Link href="/admin/customers"><ArrowLeft className="h-4 w-4" />Customers</Link></Button><h1 className="text-2xl font-bold">{customer.company_name || customer.full_name}</h1><p className="text-sm text-muted-foreground">Statement of Account · {customer.customer_code} · {[customer.email, customer.phone, customer.country].filter(Boolean).join(' · ')}</p></div>
-      <Button asChild><Link href={`/admin/invoices/new?customer=${customer.id}`}><ReceiptText className="h-4 w-4" />Create invoice</Link></Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline"><Link href={`/admin/chat?customer=${customer.id}`}>Open linked chat</Link></Button>
+        <Button asChild><Link href={`/admin/invoices/new?customer=${customer.id}`}><ReceiptText className="h-4 w-4" />Create invoice</Link></Button>
+      </div>
     </div>
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
