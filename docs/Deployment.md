@@ -36,6 +36,8 @@ Release gate locally: `npm run verify:release`.
 
 Public catalog is installable (`app/manifest.ts`, `/sw.js`, `/icons/*`, `/offline`). Service worker intentionally bypasses `/admin`, `/api`, and cross-origin requests. `verify:deployment` checks the manifest, service worker, offline page, and icon.
 
+Web Push (Phase 24): set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel. Set Edge Function secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and optional `VAPID_SUBJECT` (mailto:) for `send-web-push`. Generate keys with `npx web-push generate-vapid-keys`. Never put the private key in `NEXT_PUBLIC_*` or git.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   BookOpen, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, Inbox, LayoutDashboard,
-  Loader2, Mail, Menu, MessageCircle, Package, Plus, ReceiptText, Tag, Upload, WalletCards,
+  Loader2, Mail, Megaphone, Menu, MessageCircle, Package, Plus, ReceiptText, Tag, Upload, WalletCards,
   UserCog, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ const navItems = [
   { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
   { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },
+  { href: '/admin/offers', label: 'Deals & Offers', icon: Megaphone },
   { href: '/admin/customers', label: 'Customers', icon: Users },
   { href: '/admin/users', label: 'Users', icon: UserCog },
   { href: '/admin/imports', label: 'Bulk Import', icon: Upload },

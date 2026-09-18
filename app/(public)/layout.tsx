@@ -1,4 +1,5 @@
 import { InstallPrompt } from '@/components/pwa/install-prompt';
+import { PushOptIn } from '@/components/pwa/push-opt-in';
 import { SiteHeader } from '@/components/public/site-header';
 import { SiteFooter } from '@/components/public/site-footer';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
@@ -15,6 +16,7 @@ export default function PublicLayout({
       <SiteFooter />
       <MobileBottomNav />
       <InstallPrompt />
+      <PushOptIn />
     </div>
   );
 }

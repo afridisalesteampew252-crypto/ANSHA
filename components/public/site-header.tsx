@@ -31,6 +31,7 @@ const navLinks = [
   { href: '/categories', label: 'Categories' },
   { href: '/about', label: 'About' },
   { href: '/blog', label: 'Insights' },
+  { href: '/offers', label: 'Offers' },
   { href: '/contact', label: 'Contact' },
 ];
 

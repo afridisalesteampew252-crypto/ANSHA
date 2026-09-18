@@ -324,6 +324,30 @@ export interface BlogPostWithCategory extends BlogPost {
   blog_categories: BlogCategory | null;
 }
 
+export interface PushSubscriptionRow {
+  id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  notify_insights: boolean;
+  notify_deals: boolean;
+  user_agent: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SiteOffer {
+  id: string;
+  title: string;
+  summary: string | null;
+  href: string;
+  is_published: boolean;
+  published_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PartRequest {
   id: string;
   customer_name: string;
@@ -664,10 +688,12 @@ export interface Database {
       part_photos: TableDef<PartPhoto>;
       part_requests: TableDef<PartRequest>;
       parts: TableDef<Part>;
+      push_subscriptions: TableDef<PushSubscriptionRow>;
       remittance_allocations: TableDef<RemittanceAllocation>;
       remittance_documents: TableDef<RemittanceDocument>;
       remittance_sequences: TableDef<RemittanceSequence>;
       remittances: TableDef<Remittance>;
+      site_offers: TableDef<SiteOffer>;
       supplier_invoices: TableDef<SupplierInvoice>;
       vehicle_photos: TableDef<VehiclePhoto>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;

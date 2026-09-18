@@ -32,6 +32,7 @@ Do not treat a green lint as proof of hook correctness.
 - Chat/mail Storage paths deny non-members
 - Request attachments only under `requests/{request_id}/` for workspace users
 - PWA service worker must not cache `/admin`, `/api`, or cross-origin Supabase responses
+- Web Push: only staff JWT may invoke `send-web-push`; visitors only INSERT/DELETE own subscription endpoints
 
 Do not invent passing test counts.
 

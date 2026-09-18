@@ -39,6 +39,7 @@ There is no `test` script.
 - Types: extend `lib/types.ts` when tables change
 - Path alias: `@/*` → project root (`tsconfig.json`)
 - PWA assets: `app/manifest.ts`, `public/sw.js`, `public/icons/`; do not cache admin or auth in the service worker
+- Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in app env; private VAPID key only as Edge Function secret
 
 ## Next.js 16 notes
 

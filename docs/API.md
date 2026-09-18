@@ -77,6 +77,15 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - Creates an Auth user + `customer_profiles` row for an existing CRM customer
 - Never inserts into `admin_profiles`
 
+### `send-web-push`
+
+- POST, JWT required
+- Caller must exist in `admin_profiles` (admin or staff)
+- Body: `{ topic: 'insights'|'deals'|'all', title, body, url }`
+- Sends Web Push to rows in `push_subscriptions` filtered by topic flags
+- Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, optional `VAPID_SUBJECT`
+- Removes stale endpoints (HTTP 404/410)
+
 Service-role keys exist only as Edge Function secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). They must not be added as `NEXT_PUBLIC_*` variables.
 
 ## Storage API

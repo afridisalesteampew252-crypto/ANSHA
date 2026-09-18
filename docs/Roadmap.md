@@ -49,6 +49,8 @@ Also in this phase: public catalog image optimization (Next.js Image), category/
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached. Capacitor / native wrappers remain later.
 
+Done (Phase 24): Web Push for new insights and deals/offers. `push_subscriptions` + `site_offers`, public opt-in prompt, `/offers`, admin Deals & Offers with optional push, blog “PWA push on publish”, Edge Function `send-web-push` (VAPID). Staff must opt in per publish — no silent DB webhook.
+
 ## 8. Later platform
 
 Outbound email, WhatsApp Business API, analytics beyond the current dashboard, AI automation — all against this PostgreSQL project.

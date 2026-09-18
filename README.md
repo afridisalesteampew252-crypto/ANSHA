@@ -77,7 +77,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migration: `supabase/migrations/20260918100000_phase_23_customer_portal.sql`.
+Latest migration: `supabase/migrations/20260918110000_phase_24_pwa_push.sql`.
 
 ## Phase 4: global SEO and exporter schema
 
@@ -319,3 +319,14 @@ Completed on 2026-09-18.
 - Turned on Next.js image optimization for catalog cards/categories; trimmed homepage full-catalog brand counting.
 - Added SEO metadata for home, categories, parts, and vehicles routes; disallowed `/portal` in robots.
 - Applied migration `20260918100000_phase_23_customer_portal`.
+
+## Phase 24: PWA push for insights and deals
+
+Completed on 2026-09-18.
+
+- Added `push_subscriptions` and `site_offers` with RLS (public INSERT/DELETE on subscriptions; published offers readable anonymously).
+- Service worker handles `push` + `notificationclick`; public opt-in banner registers the endpoint.
+- Public `/offers` page; admin `/admin/offers` with optional push; blog form “PWA push on publish”.
+- Edge Function `send-web-push` (staff JWT + VAPID) topics: `insights` | `deals` | `all`.
+- Requires `NEXT_PUBLIC_VAPID_PUBLIC_KEY` on Vercel and `VAPID_*` secrets on the function.
+- Applied migration `20260918110000_phase_24_pwa_push`.

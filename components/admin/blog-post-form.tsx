@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase/client';
+import { sendWebPush } from '@/lib/web-push';
 import { toast } from 'sonner';
 import type { BlogCategory, BlogPost } from '@/lib/types';
 
@@ -47,6 +48,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
   const [metaDesc, setMetaDesc] = useState(initialPost?.meta_description || '');
   const [newCatName, setNewCatName] = useState('');
   const [addingCat, setAddingCat] = useState(false);
+  const [notifyPush, setNotifyPush] = useState(false);
 
   useEffect(() => {
     supabase.from('blog_categories').select('*').order('name').then(({ data }) => {
@@ -133,13 +135,34 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
       ({ error } = await supabase.from('blog_posts').insert(payload));
     }
 
-    setSaving(false);
     if (error) {
+      setSaving(false);
       if (error.code === '23505') { toast.error('A post with this slug already exists. Use a different slug.'); }
       else { toast.error('Failed to save. Please try again.'); }
       return;
     }
-    toast.success(initialPost ? 'Article updated.' : 'Article created.');
+
+    if (notifyPush && finalStatus === 'published') {
+      try {
+        const result = await sendWebPush({
+          topic: 'insights',
+          title: title.trim().slice(0, 120),
+          body: (excerpt.trim() || 'New insight from ANSHA Trading.').slice(0, 300),
+          url: `/blog/${slug.trim()}`,
+        });
+        toast.success(`Article published. Push sent to ${result.sent} devices.`);
+      } catch (pushError) {
+        toast.error(
+          pushError instanceof Error
+            ? pushError.message
+            : 'Article saved, but push failed. Check VAPID secrets.'
+        );
+      }
+    } else {
+      toast.success(initialPost ? 'Article updated.' : 'Article created.');
+    }
+
+    setSaving(false);
     router.push('/admin/blog');
   };
 
@@ -259,6 +282,15 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
               <Label htmlFor="is-featured" className="cursor-pointer">Featured Article</Label>
               <Switch id="is-featured" checked={isFeatured} onCheckedChange={setIsFeatured} />
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="notify-push" className="cursor-pointer text-sm leading-snug">
+                PWA push on publish
+              </Label>
+              <Switch id="notify-push" checked={notifyPush} onCheckedChange={setNotifyPush} />
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Sends to visitors who opted in for insights alerts.
+            </p>
             <div className="flex flex-col gap-2 pt-1">
               <Button onClick={() => handleSave()} disabled={saving} className="w-full">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

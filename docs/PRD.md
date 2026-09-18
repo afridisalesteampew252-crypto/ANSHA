@@ -26,7 +26,7 @@ Canonical public site: `https://www.anshatradingco.com`.
 
 Capacitor/native apps, AI automation, WhatsApp Business API, outbound email.
 
-Customer portal first slice is live (Phase 23): login + own invoices only. Public catalog is installable as a PWA (Phase 22). Staff ERP remains online-only and is not cached offline.
+Customer portal first slice is live (Phase 23): login + own invoices only. Public catalog is installable as a PWA (Phase 22) with Web Push for insights and deals (Phase 24). Staff ERP remains online-only and is not cached offline.
 
 ## Users
 

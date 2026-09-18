@@ -27,7 +27,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |
 | Company pages | `/`, `/about`, `/contact` | — | static + catalog queries |
 | Health | `/api/health` | — | REST ping |
-| PWA | installable public shell | — | `app/manifest.ts`, `/sw.js`, `/offline`, `/icons/*` |
+| PWA | installable public shell + Web Push | admin offers / blog notify | `push_subscriptions`, `site_offers`, `/sw.js`, `send-web-push` |
+| Offers | `/offers` | `/admin/offers` | `site_offers` |
 
 ## Not implemented
 

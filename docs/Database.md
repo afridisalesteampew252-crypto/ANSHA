@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918100000_phase_23_customer_portal.sql`.
+Latest migration in the repository: `20260918110000_phase_24_pwa_push.sql`.
 
 ## Entity groups
 
@@ -30,6 +30,10 @@ Latest migration in the repository: `20260918100000_phase_23_customer_portal.sql
 - `vehicle_photos`
 - `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
+### Public marketing (Phase 24)
+
+- `push_subscriptions` — Web Push endpoints (`endpoint` unique), `notify_insights` / `notify_deals`
+- `site_offers` — published deals/offers with `href`, `summary`, `published_at`
 ### Public intake
 
 - `inquiries` — optional `part_id`, status `new|read|responded|closed`
@@ -92,4 +96,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 23. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 24. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
