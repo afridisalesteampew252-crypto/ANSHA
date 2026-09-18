@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Building2, CheckCircle2, Loader2, Plus, Search, Wallet,
+  Building2, CheckCircle2, Download, Loader2, Plus, Search, Upload, Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -11,8 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { bankCsvTemplate, parseBankTransactionsCsv } from '@/lib/bank-csv';
 import { supabase } from '@/lib/supabase/client';
-import type { BankAccount, BankTransaction, BankTxnDirection } from '@/lib/types';
+import type {
+  BankAccount,
+  BankFeedConnection,
+  BankFeedStatus,
+  BankTransaction,
+  BankTxnDirection,
+} from '@/lib/types';
 
 const money = (value: number, currency = 'AED') =>
   new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value || 0));
@@ -51,6 +58,12 @@ export default function BankAccountsPage() {
   const [showTxnForm, setShowTxnForm] = useState(false);
   const [txnForm, setTxnForm] = useState(emptyTxnForm);
   const [isAccountAdmin, setIsAccountAdmin] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
+  const [feedConnections, setFeedConnections] = useState<BankFeedConnection[]>([]);
+  const [feedLabel, setFeedLabel] = useState('');
+  const [feedStatus, setFeedStatus] = useState<BankFeedStatus>('manual');
+  const [feedNotes, setFeedNotes] = useState('');
+  const csvInputRef = useRef<HTMLInputElement>(null);
 
   const loadAccounts = useCallback(async () => {
     const [{ data, error }, sessionRes] = await Promise.all([
@@ -92,9 +105,22 @@ export default function BankAccountsPage() {
     setTransactions((data || []) as BankTransaction[]);
   }, []);
 
+  const loadFeedConnections = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('bank_feed_connections')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setFeedConnections((data || []) as BankFeedConnection[]);
+  }, []);
+
   useEffect(() => {
     void loadAccounts();
-  }, [loadAccounts]);
+    void loadFeedConnections();
+  }, [loadAccounts, loadFeedConnections]);
 
   useEffect(() => {
     if (selectedId) void loadTransactions(selectedId);
@@ -252,13 +278,102 @@ export default function BankAccountsPage() {
     }
   };
 
+  const downloadCsvTemplate = () => {
+    const blob = new Blob([bankCsvTemplate()], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'bank-transactions-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvFile = async (file: File | null) => {
+    if (!file || !selectedId) return;
+    setBusy(true);
+    try {
+      const text = await file.text();
+      const parsed = parseBankTransactionsCsv(text);
+      if (parsed.errors.length && parsed.rows.length === 0) {
+        toast.error(parsed.errors[0]);
+        return;
+      }
+      if (parsed.rows.length === 0) {
+        toast.error('No valid rows found in CSV.');
+        return;
+      }
+      const payload = parsed.rows.map((row) => ({
+        txn_date: row.txn_date,
+        amount: row.amount,
+        direction: row.direction,
+        description: row.description,
+        reference: row.reference,
+      }));
+      const { data, error } = await supabase.rpc('import_bank_transactions_stub', {
+        p_bank_account_id: selectedId,
+        p_rows: payload,
+      });
+      if (error) throw error;
+      const inserted = Number(data || 0);
+      if (parsed.errors.length) {
+        toast.warning(`Imported ${inserted} row(s); ${parsed.errors.length} row(s) skipped.`);
+      } else {
+        toast.success(`Imported ${inserted} transaction(s).`);
+      }
+      setShowCsvImport(false);
+      await Promise.all([loadTransactions(selectedId), loadAccounts()]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'CSV import failed.');
+    } finally {
+      setBusy(false);
+      if (csvInputRef.current) csvInputRef.current.value = '';
+    }
+  };
+
+  const addFeedPlaceholder = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!feedLabel.trim()) {
+      toast.error('Label is required.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase.from('bank_feed_connections').insert({
+        label: feedLabel.trim(),
+        status: feedStatus,
+        bank_account_id: selectedId,
+        provider: null,
+        notes: feedNotes.trim() || null,
+        created_by: userData.user?.id ?? null,
+      });
+      if (error) throw error;
+      toast.success('Feed placeholder saved (not a live bank link).');
+      setFeedLabel('');
+      setFeedNotes('');
+      setFeedStatus('manual');
+      await loadFeedConnections();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save feed placeholder.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const accountNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const row of accounts) map[row.id] = row.name;
+    return map;
+  }, [accounts]);
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h1 className="text-2xl font-bold">Bank accounts</h1>
           <p className="text-sm text-muted-foreground">
-            Ops ledger for company accounts, manual movements, and reconciliation flags. Public banking details stay on{' '}
+            Ops ledger for company accounts, manual movements, CSV import, and reconciliation.
+            Not live Open Banking (see docs/Banking-Integrations.md). Public remittance details stay on{' '}
             <a href="/banking" className="text-primary underline-offset-2 hover:underline">/banking</a>.
           </p>
         </div>
@@ -269,6 +384,75 @@ export default function BankAccountsPage() {
           </Button>
         ) : null}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Bank feeds (coming)</CardTitle>
+          <CardDescription>
+            Placeholders only (manual or pending_provider). No OAuth or live bank sync until a licensed provider is contracted.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form onSubmit={addFeedPlaceholder} className="grid gap-3 md:grid-cols-4">
+            <div className="space-y-1.5 md:col-span-2">
+              <Label htmlFor="feed-label">Label</Label>
+              <Input
+                id="feed-label"
+                placeholder="e.g. Emirates NBD operating — CSV for now"
+                value={feedLabel}
+                onChange={(e) => setFeedLabel(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="feed-status">Status</Label>
+              <select
+                id="feed-status"
+                value={feedStatus}
+                onChange={(e) => setFeedStatus(e.target.value as BankFeedStatus)}
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="manual">manual</option>
+                <option value="pending_provider">pending_provider</option>
+              </select>
+            </div>
+            <div className="space-y-1.5 flex items-end">
+              <Button type="submit" variant="outline" disabled={busy} className="w-full">
+                Add placeholder
+              </Button>
+            </div>
+            <div className="space-y-1.5 md:col-span-4">
+              <Label htmlFor="feed-notes">Notes</Label>
+              <Input
+                id="feed-notes"
+                placeholder="Optional — linked to selected account when one is selected"
+                value={feedNotes}
+                onChange={(e) => setFeedNotes(e.target.value)}
+              />
+            </div>
+          </form>
+          <div className="space-y-2">
+            {feedConnections.map((feed) => (
+              <div key={feed.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+                <div>
+                  <p className="font-medium">{feed.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {feed.bank_account_id
+                      ? accountNameById[feed.bank_account_id] || feed.bank_account_id
+                      : 'No account linked'}
+                    {feed.notes ? ` · ${feed.notes}` : ''}
+                  </p>
+                </div>
+                <Badge variant="secondary" className={feed.status === 'manual' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'}>
+                  {feed.status}
+                </Badge>
+              </div>
+            ))}
+            {feedConnections.length === 0 && (
+              <p className="text-sm text-muted-foreground">No feed placeholders yet. Use CSV import on an account for real data today.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -460,7 +644,18 @@ export default function BankAccountsPage() {
                     <Button variant="outline" size="sm" onClick={() => startEditAccount(selected)}>
                       Edit account
                     </Button>
-                    <Button size="sm" onClick={() => { setTxnForm(emptyTxnForm); setShowTxnForm(true); }}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowCsvImport((v) => !v);
+                        setShowTxnForm(false);
+                      }}
+                    >
+                      <Upload className="h-4 w-4" />
+                      Import CSV
+                    </Button>
+                    <Button size="sm" onClick={() => { setTxnForm(emptyTxnForm); setShowTxnForm(true); setShowCsvImport(false); }}>
                       <Plus className="h-4 w-4" />
                       Add transaction
                     </Button>
@@ -477,6 +672,42 @@ export default function BankAccountsPage() {
                   </p>
                 </CardContent>
               </Card>
+
+              {showCsvImport && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Import CSV</CardTitle>
+                    <CardDescription>
+                      Columns: date, amount, description, reference. Positive amount = in; negative = out.
+                      Uses import_bank_transactions_stub — not a live bank feed.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex flex-wrap items-center gap-3">
+                    <input
+                      ref={csvInputRef}
+                      type="file"
+                      accept=".csv,text/csv"
+                      className="hidden"
+                      onChange={(e) => void handleCsvFile(e.target.files?.[0] ?? null)}
+                    />
+                    <Button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => csvInputRef.current?.click()}
+                    >
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      Choose CSV file
+                    </Button>
+                    <Button type="button" variant="outline" onClick={downloadCsvTemplate}>
+                      <Download className="h-4 w-4" />
+                      Download template
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => setShowCsvImport(false)}>
+                      Cancel
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
 
               {showTxnForm && (
                 <Card>

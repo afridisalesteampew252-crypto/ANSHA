@@ -63,6 +63,8 @@ Done (Phase 33): landed-cost packs (`landed_cost_packs` / `charges` / `allocatio
 
 Done (Phase 34): bank account master (`bank_accounts` / `bank_transactions`, BNK-/BTXN- numbers). Manual in/out ledger, reconcile toggle, opening balance, optional remittance/supplier_payment/expense links. Admin `/admin/bank-accounts`; ops-only. Not Open Banking.
 
+Done (Phase 50): bank feed readiness — `bank_feed_connections` (`manual`|`pending_provider` placeholders), CSV import UI wired to `import_bank_transactions_stub` (date,amount,description,reference), docs `Banking-Integrations.md`. No fake live bank OAuth.
+
 Done (Phase 35): operating expenses (`expense_categories` / `expenses`, OPEX- numbers). Create/update/post/cancel RPCs; optional soft `bank_account_id`; admin `/admin/expenses`; ops-only. No payroll.
 
 Done (Phase 36): UAE VAT return pack ? `get_vat_return_summary(from,to)` (output VAT from tax/commercial invoices, input VAT from purchase invoices + supplier invoices at PO/default 5% gross-inclusive), optional `vat_return_periods` snapshots via `save_vat_return_period`. Admin `/admin/vat-return` with CSV export; ops-only; reporting-first (no GL).

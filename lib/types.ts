@@ -1023,7 +1023,7 @@ export interface LandedCostAllocation {
   created_at: string;
 }
 
-/** Phase 34 Ã¢â‚¬" ops bank ledger (not the public /banking page). */
+/** Phase 34 - ops bank ledger (not the public /banking page). */
 export type BankTxnDirection = 'in' | 'out';
 
 export interface BankAccount {
@@ -1058,6 +1058,21 @@ export interface BankTransaction {
   remittance_id: string | null;
   supplier_payment_id: string | null;
   expense_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Phase 50 - feed readiness placeholders (not live Open Banking). */
+export type BankFeedStatus = 'manual' | 'pending_provider';
+
+export interface BankFeedConnection {
+  id: string;
+  bank_account_id: string | null;
+  label: string;
+  provider: string | null;
+  status: BankFeedStatus;
+  notes: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -1321,6 +1336,7 @@ export interface Database {
       ai_chat_messages: TableDef<AiChatMessage>;
       ai_chat_threads: TableDef<AiChatThread>;
       bank_accounts: TableDef<BankAccount>;
+      bank_feed_connections: TableDef<BankFeedConnection>;
       bank_transactions: TableDef<BankTransaction>;
       blog_categories: TableDef<BlogCategory>;
       blog_posts: TableDef<BlogPost>;
