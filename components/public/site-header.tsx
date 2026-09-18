@@ -88,7 +88,7 @@ export function SiteHeader() {
         'border-b border-border bg-background transition-shadow',
         scrolled && 'shadow-[0_8px_28px_rgba(15,23,42,0.08)]'
       )}>
-        <div className="container-page flex h-[64px] items-center gap-2 sm:h-[76px] sm:gap-4 lg:h-[88px]">
+        <div className="container-page flex h-[64px] items-center gap-2 sm:h-[72px] sm:gap-4 lg:h-[80px]">
           <Link href="/" className="flex min-w-0 shrink items-center" aria-label="Ansha Trading home">
             <Image
               src="/images/ansha-logo-transparent.webp"
@@ -96,12 +96,12 @@ export function SiteHeader() {
               width={1000}
               height={497}
               priority
-              className="h-11 w-auto max-w-[min(42vw,160px)] object-contain sm:h-[58px] sm:max-w-[210px] lg:h-[76px] lg:max-w-[290px]"
+              className="h-10 w-auto max-w-[min(42vw,150px)] object-contain sm:h-[52px] sm:max-w-[200px] lg:h-[68px] lg:max-w-[260px]"
             />
           </Link>
 
           <form onSubmit={handleSearch} className="mx-auto hidden max-w-xl flex-1 md:block">
-            <div className="relative flex h-12 items-center overflow-hidden rounded-full border border-border bg-secondary/45 shadow-inner">
+            <div className="relative flex h-11 items-center overflow-hidden rounded-full border border-border bg-secondary/45 shadow-inner lg:h-12">
               <Search className="absolute left-4 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
@@ -125,9 +125,9 @@ export function SiteHeader() {
             <ThemeToggle />
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0 xl:hidden">
-            <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 md:ml-0 xl:hidden">
+            <ThemeToggle className="h-11 w-11" />
+            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
@@ -176,7 +176,7 @@ export function SiteHeader() {
           <button className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
           <div
             id="mobile-site-menu"
-            className="fixed inset-x-0 top-[64px] z-50 max-h-[calc(100dvh-64px-4rem)] w-full max-w-[100vw] overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[76px] sm:max-h-[calc(100dvh-76px-4rem)] lg:hidden"
+            className="fixed inset-x-0 top-[64px] z-50 max-h-[calc(100dvh-64px-4rem)] w-full max-w-[100vw] overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[72px] sm:max-h-[calc(100dvh-72px-4rem)] lg:hidden"
           >
             <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch} className="md:hidden">
@@ -199,16 +199,16 @@ export function SiteHeader() {
                 })}
                 <div className="rounded-xl border border-border p-2">
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vehicle stock locations</p>
-                  <div className="grid grid-cols-2 gap-1">{STOCK_ORIGINS.map((origin) => <a key={origin.value} href={`/vehicles?stock=${origin.value}`} className="rounded-lg px-2 py-2 text-xs font-semibold hover:bg-secondary">{origin.label}</a>)}</div>
+                  <div className="grid grid-cols-2 gap-1">{STOCK_ORIGINS.map((origin) => <a key={origin.value} href={`/vehicles?stock=${origin.value}`} className="flex min-h-11 items-center rounded-lg px-2 py-2.5 text-xs font-semibold hover:bg-secondary">{origin.label}</a>)}</div>
                 </div>
               </nav>
               <div className="grid grid-cols-2 gap-2">
-                <Button asChild variant="accent"><Link href="/parts">Find parts</Link></Button>
-                <Button asChild variant="outline"><Link href="/contact">Get a quote</Link></Button>
+                <Button asChild variant="accent" className="h-12"><Link href="/parts">Find parts</Link></Button>
+                <Button asChild variant="outline" className="h-12"><Link href="/contact">Get a quote</Link></Button>
               </div>
-              <div className="space-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
-                <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-accent" />{siteConfig.phone}</a>
-                <a href={`mailto:${siteConfig.email}`} className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-accent" />{siteConfig.email}</a>
+              <div className="space-y-1 border-t border-border pt-4 text-sm text-muted-foreground">
+                <a href={`tel:${siteConfig.phone}`} className="flex min-h-11 items-center gap-2"><Phone className="h-4 w-4 text-accent" />{siteConfig.phone}</a>
+                <a href={`mailto:${siteConfig.email}`} className="flex min-h-11 items-center gap-2 break-all"><Mail className="h-4 w-4 shrink-0 text-accent" />{siteConfig.email}</a>
               </div>
             </div>
           </div>

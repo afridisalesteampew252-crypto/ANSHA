@@ -19,7 +19,6 @@ import {
   Send,
   ShieldCheck,
   Ship,
-  Sparkles,
   Wrench,
 } from 'lucide-react';
 import { CatalogImage } from '@/components/public/catalog-image';
@@ -98,33 +97,31 @@ export default function HomePageClient() {
       <section className="relative overflow-hidden bg-[#101114] text-white">
         <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_78%_20%,rgba(220,38,38,.35),transparent_28%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
         <div className="absolute -right-24 top-10 hidden h-[430px] w-[620px] rotate-[-8deg] rounded-[50%] border border-white/10 bg-gradient-to-br from-white/10 to-transparent blur-sm lg:block" />
-        <div className="container-page relative grid min-h-[590px] items-center gap-10 py-14 lg:grid-cols-[1.05fr_.95fr] lg:py-20">
+        <div className="container-page relative grid items-center gap-8 py-10 sm:gap-10 sm:py-14 lg:min-h-[560px] lg:grid-cols-[1.05fr_.95fr] lg:py-16">
           <div className="max-w-3xl">
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/75 backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5 text-accent" />Vehicle and parts sourcing from Dubai
-            </span>
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.22em] text-accent">ANSHA Trading Co.</p>
-            <h1 className="max-w-3xl text-4xl font-black leading-[1.04] tracking-[-0.045em] sm:text-5xl lg:text-6xl xl:text-7xl">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-accent sm:text-base">ANSHA Trading Co.</p>
+            <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Dubai · Vehicles &amp; parts export</p>
+            <h1 className="mt-4 max-w-3xl text-[2.15rem] font-black leading-[1.05] tracking-[-0.045em] sm:mt-5 sm:text-5xl lg:text-6xl xl:text-7xl">
               The right automotive stock, <span className="text-accent">ready to export.</span>
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-white/65 sm:text-lg">
-              Search verified parts by OEM number, chassis, make or model. Source inspected vehicles and export worldwide with one experienced team.
+            <p className="mt-4 max-w-xl text-[15px] leading-6 text-white/70 sm:mt-5 sm:text-lg sm:leading-7">
+              Search by OEM, chassis, make or model — then export with one Dubai-based team.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild variant="accent" size="lg" className="h-12 rounded-full px-6"><Link href="/parts">Explore parts <ArrowRight className="h-4 w-4" /></Link></Button>
-              <Button asChild size="lg" className="h-12 rounded-full border border-white/20 bg-white/5 px-6 text-white hover:bg-white/10"><Link href="/vehicles">Browse vehicles</Link></Button>
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+              <Button asChild variant="accent" size="lg" className="h-12 w-full rounded-full px-6 sm:w-auto"><Link href="/parts">Explore parts <ArrowRight className="h-4 w-4" /></Link></Button>
+              <Button asChild size="lg" className="h-12 w-full rounded-full border border-white/20 bg-white/5 px-6 text-white hover:bg-white/10 sm:w-auto"><Link href="/vehicles">Browse vehicles</Link></Button>
             </div>
           </div>
 
           <div className="relative lg:pl-6">
-            <div className="rounded-[28px] border border-white/15 bg-white/[0.07] p-3 shadow-2xl backdrop-blur-xl sm:p-5">
-              <form onSubmit={goToParts} className="rounded-2xl bg-background p-5 text-foreground sm:p-7">
-                <div className="mb-6 flex items-start justify-between gap-4">
+            <div className="rounded-[24px] border border-white/15 bg-white/[0.07] p-2.5 shadow-2xl backdrop-blur-xl sm:rounded-[28px] sm:p-5">
+              <form onSubmit={goToParts} className="rounded-2xl bg-background p-4 text-foreground sm:p-7">
+                <div className="mb-4 flex items-start justify-between gap-3 sm:mb-6 sm:gap-4">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Smart catalog finder</span>
-                    <h2 className="mt-1 text-xl font-extrabold sm:text-2xl">Find the right part faster</h2>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Catalog finder</span>
+                    <h2 className="mt-1 text-lg font-extrabold sm:text-2xl">Find the right part faster</h2>
                   </div>
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent text-white"><PackageSearch className="h-5 w-5" /></span>
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent text-white sm:h-11 sm:w-11"><PackageSearch className="h-5 w-5" /></span>
                 </div>
                 <label className="block">
                   <span className="mb-2 block text-xs font-bold">Part, OEM or chassis number</span>
@@ -133,7 +130,7 @@ export default function HomePageClient() {
                     <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. 81110-52J30, NHP10, headlight" className="h-12 rounded-xl bg-secondary/50 pl-10" />
                   </span>
                 </label>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 sm:grid-cols-2">
                   <label>
                     <span className="mb-2 block text-xs font-bold">Manufacturer</span>
                     <select value={finderBrand} onChange={(event) => setFinderBrand(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm">
@@ -149,8 +146,8 @@ export default function HomePageClient() {
                     </select>
                   </label>
                 </div>
-                <Button type="submit" variant="accent" className="mt-5 h-12 w-full rounded-xl text-sm font-bold">Search available inventory <ArrowRight className="h-4 w-4" /></Button>
-                <p className="mt-4 flex items-center gap-2 text-[11px] text-muted-foreground"><ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />Searches only published ANSHA inventory.</p>
+                <Button type="submit" variant="accent" className="mt-4 h-12 w-full rounded-xl text-sm font-bold sm:mt-5">Search inventory <ArrowRight className="h-4 w-4" /></Button>
+                <p className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground sm:mt-4"><ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />Published ANSHA inventory only.</p>
               </form>
             </div>
           </div>
@@ -158,16 +155,16 @@ export default function HomePageClient() {
       </section>
 
       <section className="border-b border-border bg-card">
-        <div className="container-page grid grid-cols-2 divide-x divide-y divide-border py-2 lg:grid-cols-4 lg:divide-y-0">
+        <div className="container-page grid grid-cols-2 divide-x divide-y divide-border py-1 lg:grid-cols-4 lg:divide-y-0">
           {[
             { icon: BadgeCheck, title: 'Verified Stock', text: 'Accurate listings and condition' },
             { icon: Ship, title: 'Global Export', text: 'Shipping coordination worldwide' },
             { icon: ClipboardCheck, title: 'Fitment Support', text: 'OEM and chassis matching' },
             { icon: Headphones, title: 'Human Service', text: 'Direct help on WhatsApp' },
           ].map((item) => (
-            <div key={item.title} className="flex min-h-24 items-center gap-3 px-3 py-4 sm:px-5">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"><item.icon className="h-5 w-5" /></span>
-              <div><h3 className="text-xs font-extrabold sm:text-sm">{item.title}</h3><p className="mt-1 text-[10px] leading-4 text-muted-foreground sm:text-xs">{item.text}</p></div>
+            <div key={item.title} className="flex min-h-[4.5rem] items-center gap-3 px-3 py-3.5 sm:min-h-24 sm:px-5 sm:py-4">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent/10 text-accent sm:h-10 sm:w-10"><item.icon className="h-4 w-4 sm:h-5 sm:w-5" /></span>
+              <div><h3 className="text-[13px] font-extrabold leading-tight sm:text-sm">{item.title}</h3><p className="mt-0.5 text-[11px] leading-4 text-muted-foreground sm:mt-1 sm:text-xs">{item.text}</p></div>
             </div>
           ))}
         </div>
@@ -299,15 +296,15 @@ export default function HomePageClient() {
         </section>
       )}
 
-      <section className="border-t border-border bg-card py-10">
-        <div className="container-page flex flex-col items-center justify-between gap-5 text-center md:flex-row md:text-left">
+      <section className="border-t border-border bg-card py-8 sm:py-10">
+        <div className="container-page flex flex-col items-center justify-between gap-4 text-center md:flex-row md:gap-5 md:text-left">
           <div className="flex items-center gap-4">
-            <span className="grid h-12 w-12 place-items-center rounded-full bg-accent/10 text-accent"><Globe2 className="h-6 w-6" /></span>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"><Globe2 className="h-6 w-6" /></span>
             <div><h2 className="text-lg font-extrabold">Ready to source or export?</h2><p className="text-sm text-muted-foreground">Speak directly with the ANSHA team in Dubai.</p></div>
           </div>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
             <WhatsAppButton message="Hello ANSHA TRADING, I would like help sourcing a vehicle or automotive part." />
-            <Button asChild variant="outline"><Link href="/contact"><Send className="h-4 w-4" />Contact team</Link></Button>
+            <Button asChild variant="outline" className="h-11"><Link href="/contact"><Send className="h-4 w-4" />Contact team</Link></Button>
           </div>
         </div>
       </section>

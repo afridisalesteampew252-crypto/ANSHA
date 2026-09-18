@@ -24,7 +24,7 @@ export function MobileBottomNav() {
           const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
             <Link key={item.href} href={item.href} className={cn(
-              'flex min-w-0 flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors',
+              'flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors',
               active ? 'text-accent' : 'text-muted-foreground'
             )}>
               <item.icon className="h-5 w-5" />
@@ -32,7 +32,7 @@ export function MobileBottomNav() {
             </Link>
           );
         })}
-        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-[#199c4b]">
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold text-[#199c4b]">
           <span className="grid h-8 w-8 place-items-center rounded-full bg-[#25D366] text-white shadow-lg"><MessageCircle className="h-4 w-4" /></span>
           <span>WhatsApp</span>
         </a>
