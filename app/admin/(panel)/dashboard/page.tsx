@@ -15,8 +15,8 @@ type Invoice = { id: string; issue_date: string; currency: string; document_type
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
 type InventoryRow = { stock_status: string | null; stock_origin: string | null };
 
-const WINE = 'hsl(345 40% 44%)';
-const COLORS = [WINE, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
+const ACCENT = 'hsl(0 75% 47%)';
+const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
 const money = (value: number, currency = 'AED') => new Intl.NumberFormat('en-AE', { style: 'currency', currency, notation: value >= 1_000_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(Number(value || 0));
 const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice'].includes(invoice.document_type) && invoice.status !== 'cancelled';
 
@@ -174,7 +174,7 @@ export default function AdminDashboardPage() {
                 <YAxis tickLine={false} axisLine={false} />
                 <Tooltip formatter={(value) => money(Number(value), currency)} />
                 <Legend />
-                <Bar dataKey="invoiced" name="Invoiced" fill={WINE} radius={[5, 5, 0, 0]} />
+                <Bar dataKey="invoiced" name="Invoiced" fill={ACCENT} radius={[5, 5, 0, 0]} />
                 <Bar dataKey="received" name="Received" fill="#10b981" radius={[5, 5, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -211,7 +211,7 @@ export default function AdminDashboardPage() {
               <XAxis dataKey="name" tickLine={false} axisLine={false} />
               <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
               <Tooltip />
-              <Bar dataKey="value" name="Units" fill={WINE} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" name="Units" fill={ACCENT} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
