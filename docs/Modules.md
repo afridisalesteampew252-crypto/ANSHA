@@ -15,6 +15,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Receive stock (GRN) | no | `/admin/inventory/receive` (ops) | `inventory_receipts`, `inventory_receipt_lines` |
 | Export shipments | no | `/admin/export-shipments` (ops) | `export_shipments`, `export_shipment_vehicles` |
 | Landed cost | no | `/admin/landed-cost` (ops) | `landed_cost_packs`, `landed_cost_charges`, `landed_cost_allocations` |
+| Bank accounts | no | `/admin/bank-accounts` (ops) | `bank_accounts`, `bank_transactions` |
 | Expenses | no | `/admin/expenses` (ops) | `expense_categories`, `expenses` |
 | VAT return | no | `/admin/vat-return` (ops) | `vat_return_periods` + `get_vat_return_summary` |
 | Payroll | no | `/admin/payroll` (ops) | `employees`, `leave_requests`, `payroll_runs`, `payroll_lines` |

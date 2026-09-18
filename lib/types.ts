@@ -1121,6 +1121,91 @@ export interface PayrollLine {
   updated_at: string;
 }
 
+/** Phase 38 — general ledger chart, journals, financial statements. */
+export type GlAccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+export type GlJournalStatus = 'draft' | 'posted' | 'reversed';
+export type GlSourceModule =
+  | 'manual'
+  | 'invoice'
+  | 'remittance'
+  | 'supplier_payment'
+  | 'bank'
+  | 'expense'
+  | 'landed_cost'
+  | 'other';
+
+export interface GlAccount {
+  id: string;
+  code: string;
+  name: string;
+  account_type: GlAccountType;
+  is_active: boolean;
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GlJournal {
+  id: string;
+  journal_number: string;
+  status: GlJournalStatus;
+  entry_date: string;
+  description: string | null;
+  currency: string;
+  total_debit: number;
+  total_credit: number;
+  posted_at: string | null;
+  posted_by: string | null;
+  reversed_at: string | null;
+  reversed_by: string | null;
+  reverses_journal_id: string | null;
+  reversed_by_journal_id: string | null;
+  source_module: GlSourceModule | null;
+  source_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GlJournalLine {
+  id: string;
+  journal_id: string;
+  account_id: string;
+  line_no: number;
+  description: string | null;
+  debit: number;
+  credit: number;
+  created_at: string;
+}
+
+export interface GlTrialBalanceRow {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_type: GlAccountType;
+  total_debit: number;
+  total_credit: number;
+  balance: number;
+}
+
+export interface GlProfitAndLossRow {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_type: 'revenue' | 'expense';
+  amount: number;
+}
+
+export interface GlBalanceSheetRow {
+  section: 'assets' | 'liabilities' | 'equity';
+  account_id: string | null;
+  account_code: string;
+  account_name: string;
+  account_type: GlAccountType;
+  amount: number;
+}
+
 type TableDef<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -1149,6 +1234,9 @@ export interface Database {
       expenses: TableDef<Expense>;
       export_shipment_vehicles: TableDef<ExportShipmentVehicle>;
       export_shipments: TableDef<ExportShipment>;
+      gl_accounts: TableDef<GlAccount>;
+      gl_journal_lines: TableDef<GlJournalLine>;
+      gl_journals: TableDef<GlJournal>;
       import_jobs: TableDef<ImportJob>;
       import_rows: TableDef<ImportRow>;
       inquiries: TableDef<Inquiry>;

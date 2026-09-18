@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  BookOpen, BookmarkPlus, Calculator, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileSpreadsheet, Inbox, LayoutDashboard,
+  Banknote, BookOpen, BookmarkPlus, Calculator, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileSpreadsheet, Inbox, LayoutDashboard,
   Loader2, Mail, Megaphone, Menu, MessageCircle, Package, PackagePlus, Plus, Receipt, ReceiptText, Ship, Tag, Truck,
   Upload, WalletCards, UserCog, Users, X,
 } from 'lucide-react';
@@ -77,6 +77,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: 'Team',
     items: [
+      { href: '/admin/payroll', label: 'Payroll', icon: Banknote },
       { href: '/admin/users', label: 'Users', icon: UserCog },
     ],
   },

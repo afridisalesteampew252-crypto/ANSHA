@@ -34,6 +34,7 @@ Latest migration in the repository includes Phase 37 payroll (`20260918260000_ph
 - `inventory_receipts` / `inventory_receipt_lines` — GRN into existing vehicle/part rows; optional `supplier_invoice_id` and `purchase_order_id`
 - `export_shipments` / `export_shipment_vehicles` — booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events
 - `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` — import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
+- `bank_accounts` / `bank_transactions` — ops bank ledger (BNK-/BTXN-); reconcile flags; ops RLS
 - `expense_categories` / `expenses` — operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
 - `vat_return_periods` — optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
 - `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` — HR-lite payroll (PR- numbers); leave pending/approved/rejected; optional soft `bank_account_id`; ops RLS; EOS estimate RPC is planning-only
