@@ -53,6 +53,19 @@ Chat linking RPCs (Phase 20):
 - `link_chat_conversation(p_conversation_id, p_entity_type, p_entity_id)` — attach conversation to vehicle/customer/inquiry/invoice/request
 - `unlink_chat_conversation(p_link_id)` — remove a link; membership required
 
+VAT return RPCs (Phase 36, ops-only via `private.is_ops_user()`):
+
+- `get_vat_return_summary(p_from date, p_to date)` — jsonb KPIs, per-currency rollups, output/input lines (reporting-first; no GL)
+- `save_vat_return_period(p_from, p_to, p_label?, p_notes?, p_currency_focus?)` — persist snapshot into `vat_return_periods`
+
+Payroll / leave RPCs (Phase 37, ops-only via `private.is_ops_user()`):
+
+- `decide_leave_request(p_leave_id, p_status, p_notes?)` — approve or reject a pending leave request
+- `create_payroll_run(p_period_start, p_period_end, p_currency?, p_employee_ids?, p_notes?, p_bank_account_id?)` — draft PR- run with lines for active employees
+- `update_payroll_line(p_line_id, p_basic_salary, p_allowances, p_deductions, p_notes?)` — edit draft line; refreshes run totals
+- `post_payroll_run(p_run_id)` / `cancel_payroll_run(p_run_id)` — lock or cancel; no bank auto-pay
+- `estimate_employee_eos(p_employee_id, p_as_of_date?)` — rough `basic_salary * years` helper; **estimate only, not legal advice**
+
 ## Edge Functions
 
 Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowlist: `docs` canonical hosts, `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://*.vercel.app`. Unknown origins get no `Access-Control-Allow-Origin`.

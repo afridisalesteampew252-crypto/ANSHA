@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918220000_phase_33_landed_cost.sql`.
+Latest migration in the repository includes Phase 37 payroll (`20260918260000_phase_37_payroll.sql`); parallel Phase 34/35/36/38 migrations may also be present.
 
 ## Entity groups
 
@@ -34,6 +34,9 @@ Latest migration in the repository: `20260918220000_phase_33_landed_cost.sql`.
 - `inventory_receipts` / `inventory_receipt_lines` — GRN into existing vehicle/part rows; optional `supplier_invoice_id` and `purchase_order_id`
 - `export_shipments` / `export_shipment_vehicles` — booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events
 - `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` — import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
+- `expense_categories` / `expenses` — operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
+- `vat_return_periods` — optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
+- `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` — HR-lite payroll (PR- numbers); leave pending/approved/rejected; optional soft `bank_account_id`; ops RLS; EOS estimate RPC is planning-only
 - `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
 ### Public marketing (Phase 24)
@@ -79,6 +82,7 @@ Chat stays one product. Links are additive metadata; mutations go through `link_
 - `invoice_payments`
 - `remittance_sequences`, `remittances`, `remittance_documents`, `remittance_allocations`
 - `supplier_invoices` — private file metadata
+- `bank_accounts` / `bank_transactions` — ops bank ledger (BNK-/BTXN-); opening balance + manual in/out; reconcile flags; optional remittance/supplier_payment/expense links; ops RLS
 
 Triggers recalculate invoice balances and sync remittance-linked payments. Do not bypass them with ad-hoc SQL in the app.
 
@@ -102,4 +106,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 33. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 37 (payroll) and other concurrent ERP phases as they land. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.

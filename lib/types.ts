@@ -853,6 +853,76 @@ export interface ExportShipmentVehicle {
   created_at: string;
 }
 
+/** Phase 36 — UAE VAT return pack (reporting-first). */
+export interface VatReturnLine {
+  source: string;
+  side: 'output' | 'input';
+  id: string;
+  reference: string;
+  document_type: string;
+  party: string;
+  trn: string | null;
+  doc_date: string;
+  currency: string;
+  taxable_amount: number;
+  vat_amount: number;
+  gross_amount: number;
+  vat_rate: number;
+  status: string | null;
+  purchase_order_id?: string | null;
+}
+
+export interface VatReturnCurrencyRollup {
+  currency: string;
+  output_taxable: number;
+  output_vat: number;
+  input_taxable: number;
+  input_vat: number;
+  net_payable: number;
+  output_line_count: number;
+  input_line_count: number;
+}
+
+export interface VatReturnSummary {
+  period: { from: string; to: string };
+  assumptions: {
+    default_vat_rate: number;
+    output_document_types: string[];
+    input_customer_document_types: string[];
+    supplier_vat_basis: string;
+    supplier_rate_source: string;
+    excluded_statuses: string[];
+    excluded_document_types: string[];
+    fx: string;
+    gl_postings: boolean;
+  };
+  by_currency: VatReturnCurrencyRollup[];
+  kpis: {
+    currency: string;
+    output_taxable: number;
+    output_vat: number;
+    input_taxable: number;
+    input_vat: number;
+    net_payable: number;
+    output_line_count: number;
+    input_line_count: number;
+  };
+  output_lines: VatReturnLine[];
+  input_lines: VatReturnLine[];
+}
+
+export interface VatReturnPeriod {
+  id: string;
+  period_from: string;
+  period_to: string;
+  label: string | null;
+  notes: string | null;
+  currency_focus: string;
+  snapshot: VatReturnSummary | Json;
+  created_by: string | null;
+  created_at: string;
+}
+
 /** Phase 33 — import landed-cost pack (freight/duty/charges rolled into stock). */
 export type LandedCostPackStatus = 'draft' | 'posted' | 'cancelled';
 export type LandedCostChargeType = 'freight' | 'duty' | 'insurance' | 'handling' | 'other';
@@ -900,6 +970,157 @@ export interface LandedCostAllocation {
   created_at: string;
 }
 
+/** Phase 34 — ops bank ledger (not the public /banking page). */
+export type BankTxnDirection = 'in' | 'out';
+
+export interface BankAccount {
+  id: string;
+  account_code: string;
+  name: string;
+  bank_name: string;
+  currency: string;
+  iban: string | null;
+  account_number: string | null;
+  opening_balance: number;
+  opening_balance_date: string | null;
+  is_active: boolean;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BankTransaction {
+  id: string;
+  txn_number: string;
+  bank_account_id: string;
+  txn_date: string;
+  amount: number;
+  direction: BankTxnDirection;
+  description: string | null;
+  reference: string | null;
+  is_reconciled: boolean;
+  reconciled_at: string | null;
+  reconciled_by: string | null;
+  remittance_id: string | null;
+  supplier_payment_id: string | null;
+  expense_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Phase 35 — operating expenses (not payroll). */
+export type ExpenseStatus = 'draft' | 'posted' | 'cancelled';
+export type ExpensePaymentMethod =
+  | 'bank_transfer'
+  | 'cash'
+  | 'card'
+  | 'cheque'
+  | 'remittance_company'
+  | 'other';
+
+export interface ExpenseCategory {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  gl_account_hint: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Expense {
+  id: string;
+  expense_number: string;
+  expense_date: string;
+  amount: number;
+  currency: string;
+  category_id: string;
+  payee: string | null;
+  payment_method: ExpensePaymentMethod;
+  bank_account_id: string | null;
+  bank_reference: string | null;
+  notes: string | null;
+  status: ExpenseStatus;
+  posted_at: string | null;
+  posted_by: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Phase 37 — payroll / leave / EOS MVP (ops-only). */
+export type EmployeeStatus = 'active' | 'inactive' | 'terminated';
+export type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other';
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected';
+export type PayrollRunStatus = 'draft' | 'posted' | 'cancelled';
+
+export interface Employee {
+  id: string;
+  admin_profile_id: string | null;
+  full_name: string;
+  join_date: string;
+  basic_salary: number;
+  currency: string;
+  status: EmployeeStatus;
+  bank_account_id: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  employee_id: string;
+  leave_type: LeaveType;
+  start_date: string;
+  end_date: string;
+  status: LeaveRequestStatus;
+  notes: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollRun {
+  id: string;
+  run_number: string;
+  status: PayrollRunStatus;
+  period_start: string;
+  period_end: string;
+  currency: string;
+  notes: string | null;
+  bank_account_id: string | null;
+  total_basic: number;
+  total_allowances: number;
+  total_deductions: number;
+  total_net: number;
+  posted_at: string | null;
+  posted_by: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollLine {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  basic_salary: number;
+  allowances: number;
+  deductions: number;
+  net_pay: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 type TableDef<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -911,6 +1132,8 @@ export interface Database {
     Tables: {
       admin_notifications: TableDef<AdminNotification>;
       admin_profiles: TableDef<AdminProfile>;
+      bank_accounts: TableDef<BankAccount>;
+      bank_transactions: TableDef<BankTransaction>;
       blog_categories: TableDef<BlogCategory>;
       blog_posts: TableDef<BlogPost>;
       categories: TableDef<Category>;
@@ -921,6 +1144,9 @@ export interface Database {
       chat_participants: TableDef<ChatParticipant>;
       customers: TableDef<Customer>;
       customer_profiles: TableDef<CustomerProfile>;
+      employees: TableDef<Employee>;
+      expense_categories: TableDef<ExpenseCategory>;
+      expenses: TableDef<Expense>;
       export_shipment_vehicles: TableDef<ExportShipmentVehicle>;
       export_shipments: TableDef<ExportShipment>;
       import_jobs: TableDef<ImportJob>;
@@ -939,10 +1165,13 @@ export interface Database {
       landed_cost_allocations: TableDef<LandedCostAllocation>;
       landed_cost_charges: TableDef<LandedCostCharge>;
       landed_cost_packs: TableDef<LandedCostPack>;
+      leave_requests: TableDef<LeaveRequest>;
       part_compatibility: TableDef<PartCompatibility>;
       part_photos: TableDef<PartPhoto>;
       part_requests: TableDef<PartRequest>;
       parts: TableDef<Part>;
+      payroll_lines: TableDef<PayrollLine>;
+      payroll_runs: TableDef<PayrollRun>;
       purchase_order_lines: TableDef<PurchaseOrderLine>;
       purchase_orders: TableDef<PurchaseOrder>;
       push_subscriptions: TableDef<PushSubscriptionRow>;
@@ -958,6 +1187,7 @@ export interface Database {
       vehicle_photos: TableDef<VehiclePhoto>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;
+      vat_return_periods: TableDef<VatReturnPeriod>;
       workspace_request_attachments: TableDef<WorkspaceRequestAttachment>;
       workspace_request_due_reminders: TableDef<WorkspaceRequestDueReminder>;
       workspace_request_events: TableDef<WorkspaceRequestEvent>;

@@ -61,6 +61,14 @@ Done (Phase 32): export shipments (`export_shipments` / `export_shipment_vehicle
 
 Done (Phase 33): landed-cost packs (`landed_cost_packs` / `charges` / `allocations`, LC- numbers). Ops allocate freight/duty/etc., redistribute equal|purchase_value|manual, post to set stock `landed_cost = COALESCE(purchase_price,0) + allocated` (replace per pack). Admin `/admin/landed-cost`; ops-only.
 
+Done (Phase 34): bank account master (`bank_accounts` / `bank_transactions`, BNK-/BTXN- numbers). Manual in/out ledger, reconcile toggle, opening balance, optional remittance/supplier_payment/expense links. Admin `/admin/bank-accounts`; ops-only. Not Open Banking.
+
+Done (Phase 35): operating expenses (`expense_categories` / `expenses`, OPEX- numbers). Create/update/post/cancel RPCs; optional soft `bank_account_id`; admin `/admin/expenses`; ops-only. No payroll.
+
+Done (Phase 36): UAE VAT return pack — `get_vat_return_summary(from,to)` (output VAT from tax/commercial invoices, input VAT from purchase invoices + supplier invoices at PO/default 5% gross-inclusive), optional `vat_return_periods` snapshots via `save_vat_return_period`. Admin `/admin/vat-return` with CSV export; ops-only; reporting-first (no GL).
+
+Done (Phase 37): payroll / leave / EOS MVP — `employees`, `leave_requests`, `payroll_runs` / `payroll_lines` (PR- numbers). Create/post/cancel runs; leave approve/reject; `estimate_employee_eos` (basic × years, estimate only — not legal advice). Admin `/admin/payroll`; ops-only. Optional soft `bank_account_id`; no bank auto-pay.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached. Capacitor / native wrappers remain later.

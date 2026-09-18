@@ -77,7 +77,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migration: `supabase/migrations/20260918220000_phase_33_landed_cost.sql`.
+Latest migration: `supabase/migrations/20260918250000_phase_36_vat_return.sql` (Phase 36 VAT return; other concurrent phase migrations may also exist under `supabase/migrations/`).
 
 ## Phase 4: global SEO and exporter schema
 
