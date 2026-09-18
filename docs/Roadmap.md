@@ -6,12 +6,14 @@ Nothing below is scheduled until a module is chosen. Items are ordered from safe
 
 Audit and process docs under `docs/` (including Development, Deployment, Testing, Rules, Roadmap).
 
-## 1. Safety (approval for Auth/CORS/RBAC)
+## 1. Safety
 
-- Enable leaked-password protection in Supabase Auth
-- Align `admin-update-user` caller verification with `admin-create-user`
-- Narrow Edge Function CORS from `*`
-- Decide whether staff RLS should stay equal to admin for catalog/finance
+Done in code and deployed to project `ydrnilquojvalhgifest`: `admin-update-user` verifies the caller with the anon JWT (same as create-user); Edge Function CORS is origin-allowlisted, not `*`. Function versions: `admin-create-user` v6, `admin-update-user` v4.
+
+Still needs your action or approval:
+
+- Enable leaked-password protection in Supabase Auth (Authentication → Providers → Email → leaked password protection)
+- Decide whether staff RLS should stay equal to admin for catalog/finance (not changed)
 
 ## 2. Housekeeping (some items need approval)
 

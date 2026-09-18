@@ -26,7 +26,7 @@ Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLIS
 - Sequence tables: deny direct access
 - `verify_invoice`: SECURITY DEFINER, callable by anon; must remain field-limited
 
-Advisor warnings (2026-09-17): leaked-password protection disabled; `is_admin()` and `verify_invoice` SECURITY DEFINER executability. Fixing Auth settings and revoking unnecessary EXECUTE needs approval and a regression test of login and QR verify.
+Advisor warnings (2026-09-17): leaked-password protection disabled; `is_admin()` and `verify_invoice` SECURITY DEFINER executability. Enabling HaveIBeenPwned on Auth still requires a dashboard action. Revoking `is_admin()` EXECUTE needs a login/RLS regression test.
 
 ## Storage
 
@@ -34,7 +34,9 @@ Public media buckets serve catalog/blog images. Private buckets (`profile-images
 
 ## Edge Functions
 
-Must verify the caller JWT before using the service-role client. Create-user does this with the anon key. Update-user currently attaches the user JWT to a service-role client. CORS is `*`.
+Must verify the caller JWT with the anon key before using the service-role client. `admin-create-user` and `admin-update-user` both do this. CORS reflects an allowlist (canonical ANSHA hosts, localhost:3000, `https://*.vercel.app`) and does not use `*`.
+
+Staff RLS is unchanged: `is_admin()` still means any `admin_profiles` row. Tightening staff write access needs a separate approval.
 
 ## XSS / HTML
 

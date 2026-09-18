@@ -36,7 +36,7 @@ Workspace RPCs (names in Phase 10–16 migrations) wrap conversation create, mai
 
 ## Edge Functions
 
-Invoked from `/admin/users` via `supabase.functions.invoke`.
+Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowlist: `docs` canonical hosts, `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://*.vercel.app`. Unknown origins get no `Access-Control-Allow-Origin`.
 
 ### `admin-create-user`
 
@@ -44,14 +44,13 @@ Invoked from `/admin/users` via `supabase.functions.invoke`.
 - Caller must have `admin_profiles.role = 'admin'`
 - Validates email, password length ≥ 8, full name, role `admin|staff`
 - Uses anon client for `getUser()` and service-role client for Auth admin + profile upsert
-- CORS currently `Access-Control-Allow-Origin: *`
 
 ### `admin-update-user`
 
 - POST, JWT required
 - Caller must be `role = 'admin'`
-- Updates Auth email/password and `admin_profiles`
-- Caller client is constructed with the service-role key (inconsistent with create-user)
+- Validates user id (UUID), email, full name, role; optional password ≥ 8
+- Uses anon client for `getUser()` and service-role client for Auth admin + profile update
 
 Service-role keys exist only as Edge Function secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). They must not be added as `NEXT_PUBLIC_*` variables.
 

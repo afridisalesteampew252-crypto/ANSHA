@@ -47,4 +47,4 @@ Supabase project backups are an infrastructure concern, not an in-repo script. D
 
 ## Edge Functions
 
-`admin-create-user` and `admin-update-user` deploy with the Supabase project, not with the Next.js Vercel build. Deploy function changes separately and keep caller JWT checks intact.
+`admin-create-user` and `admin-update-user` deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy both functions together so they keep the same origin allowlist and anon-key caller verification.
