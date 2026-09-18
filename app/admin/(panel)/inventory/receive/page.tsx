@@ -10,13 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
-import type { InventoryReceipt, Supplier, SupplierInvoice } from '@/lib/types';
+import type { InventoryReceipt, PurchaseOrder, Supplier, SupplierInvoice } from '@/lib/types';
 
 type StockOption = { id: string; label: string };
 
 export default function InventoryReceivePage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [supplierInvoices, setSupplierInvoices] = useState<SupplierInvoice[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [parts, setParts] = useState<StockOption[]>([]);
   const [vehicles, setVehicles] = useState<StockOption[]>([]);
   const [receipts, setReceipts] = useState<InventoryReceipt[]>([]);
@@ -24,6 +25,7 @@ export default function InventoryReceivePage() {
 
   const [receivedDate, setReceivedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [supplierId, setSupplierId] = useState('');
+  const [purchaseOrderId, setPurchaseOrderId] = useState('');
   const [supplierInvoiceId, setSupplierInvoiceId] = useState('');
   const [currency, setCurrency] = useState('AED');
   const [notes, setNotes] = useState('');
@@ -34,9 +36,10 @@ export default function InventoryReceivePage() {
   const [unitCost, setUnitCost] = useState('');
 
   const load = useCallback(async () => {
-    const [supRes, invRes, partRes, vehRes, recRes] = await Promise.all([
+    const [supRes, invRes, poRes, partRes, vehRes, recRes] = await Promise.all([
       supabase.from('suppliers').select('*').eq('is_active', true).order('name'),
       supabase.from('supplier_invoices').select('*').order('invoice_date', { ascending: false }).limit(100),
+      supabase.from('purchase_orders').select('*').eq('status', 'ordered').order('order_date', { ascending: false }).limit(100),
       supabase.from('parts').select('id,part_code,name').order('part_code').limit(500),
       supabase.from('vehicles').select('id,title,stock_number,chassis_number').neq('stock_status', 'sold').order('created_at', { ascending: false }).limit(500),
       supabase.from('inventory_receipts').select('*').order('received_date', { ascending: false }).limit(30),
@@ -44,6 +47,7 @@ export default function InventoryReceivePage() {
     if (supRes.error) toast.error(supRes.error.message);
     setSuppliers((supRes.data || []) as Supplier[]);
     setSupplierInvoices((invRes.data || []) as SupplierInvoice[]);
+    setPurchaseOrders((poRes.data || []) as PurchaseOrder[]);
     setParts((partRes.data || []).map((row) => ({ id: row.id, label: `${row.part_code} — ${row.name}` })));
     setVehicles((vehRes.data || []).map((row) => ({
       id: row.id,
@@ -54,7 +58,16 @@ export default function InventoryReceivePage() {
 
   useEffect(() => {
     void load();
+    const fromQuery = new URLSearchParams(window.location.search).get('po');
+    if (fromQuery) setPurchaseOrderId(fromQuery);
   }, [load]);
+
+  useEffect(() => {
+    const po = purchaseOrders.find((row) => row.id === purchaseOrderId);
+    if (!po) return;
+    setSupplierId(po.supplier_id);
+    setCurrency(po.currency || 'AED');
+  }, [purchaseOrderId, purchaseOrders]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -84,6 +97,7 @@ export default function InventoryReceivePage() {
       p_currency: currency,
       p_notes: notes || null,
       p_lines: [line],
+      p_purchase_order_id: purchaseOrderId || null,
     });
     setBusy(false);
     if (error) {
@@ -109,7 +123,8 @@ export default function InventoryReceivePage() {
         <CardHeader>
           <CardTitle className="text-lg">New receipt</CardTitle>
           <CardDescription>
-            Link an optional <Link href="/admin/invoices/supplier" className="text-primary underline">supplier invoice file</Link> and supplier master.
+            Optional link to a confirmed <Link href="/admin/purchase-orders" className="text-primary underline">purchase order</Link> and{' '}
+            <Link href="/admin/invoices/supplier" className="text-primary underline">supplier invoice file</Link>.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -121,6 +136,15 @@ export default function InventoryReceivePage() {
             <div className="space-y-1.5">
               <Label htmlFor="grn-currency">Currency</Label>
               <Input id="grn-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} required />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="grn-po">Purchase order</Label>
+              <select id="grn-po" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={purchaseOrderId} onChange={(e) => setPurchaseOrderId(e.target.value)}>
+                <option value="">No PO</option>
+                {purchaseOrders.map((row) => (
+                  <option key={row.id} value={row.id}>{row.po_number} · {row.currency} · {row.match_status.replaceAll('_', ' ')}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="grn-supplier">Supplier</Label>

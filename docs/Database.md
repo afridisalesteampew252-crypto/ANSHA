@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918150000_phase_28_purchase_inventory.sql`.
+Latest migration in the repository: `20260918190000_phase_32_export_shipments.sql`.
 
 ## Entity groups
 
@@ -29,7 +29,10 @@ Latest migration in the repository: `20260918150000_phase_28_purchase_inventory.
 - `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts
 - `vehicle_photos`
 - `suppliers` — master (`supplier_code`, TRN, country, currency, …); ops RLS
-- `inventory_receipts` / `inventory_receipt_lines` — GRN into existing vehicle/part rows; optional `supplier_invoice_id`
+- `purchase_orders` / `purchase_order_lines` — PO number, VAT, terms; match snapshot vs GRN/supplier invoices/payments
+- `supplier_payments` / `supplier_payment_allocations` — AP payments allocated to PO or supplier invoice file
+- `inventory_receipts` / `inventory_receipt_lines` — GRN into existing vehicle/part rows; optional `supplier_invoice_id` and `purchase_order_id`
+- `export_shipments` / `export_shipment_vehicles` — booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events
 - `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
 ### Public marketing (Phase 24)

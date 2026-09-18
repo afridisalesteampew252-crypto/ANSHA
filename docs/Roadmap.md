@@ -49,7 +49,15 @@ Done (Phase 27): portal account statement at `/portal/account` via sanitized RPC
 
 Done (Phase 28): purchase-costed inventory on the existing `vehicles` / `parts` master — `suppliers`, cost columns, GRN (`inventory_receipts` + `create_inventory_receipt`), reserve/release RPCs, tax/commercial invoice stock apply via `create_invoice_v3`, public catalog filters `stock_status = available`. Ops-only purchase UI; sales can still reserve vehicles.
 
+Done (Phase 29): purchase orders (`purchase_orders` / lines), confirm/cancel RPCs, GRN + supplier invoice PO links, match snapshot (ordered vs received vs invoiced; paid deferred). Admin `/admin/purchase-orders`; ops-only.
+
+Done (Phase 30): supplier payments (`supplier_payments` / allocations), allocate to PO or supplier invoice file, PO `amount_paid` + paid match states, supplier SOA at `/admin/suppliers/[id]` with CSV/print export.
+
+Done (Phase 31): `set_vehicle_public_listing` (publish only when available), sales `/admin/reservations` (reserve + proforma via `create_vehicle_reservation_proforma`), release-with-republish; sales may open customer invoices (not supplier invoice archive).
+
 Also in this phase: public catalog image optimization (Next.js Image), category/home SEO metadata, faster homepage category counts, footer portal link.
+
+Done (Phase 32): export shipments (`export_shipments` / `export_shipment_vehicles`, EXP- numbers), create/update/status/add/remove RPCs with soft lifecycle hooks (export_request / mode / BL events; optional move to port). Admin `/admin/export-shipments`; ops-only.
 
 ## 7. Mobile / PWA
 

@@ -113,6 +113,8 @@ export async function proxy(request: NextRequest) {
         || pathname.startsWith('/admin/parts')
         || pathname.startsWith('/admin/vehicles')
         || pathname.startsWith('/admin/customers')
+        || pathname.startsWith('/admin/reservations')
+        || (pathname.startsWith('/admin/invoices') && !pathname.startsWith('/admin/invoices/supplier'))
         || pathname.startsWith('/admin/inquiries')
         || pathname.startsWith('/admin/requests')
         || pathname.startsWith('/admin/chat')

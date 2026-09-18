@@ -10,15 +10,18 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Parts catalog | `/parts` | `/admin/parts` (+ purchase cost on edit) | `parts`, photos, compatibility, cost columns |
 | Vehicles catalog | `/vehicles` | `/admin/vehicles`, `/admin/vehicles/[id]` lifecycle + purchase/reserve | `vehicles`, photos, `vehicle_lifecycle_events`, cost columns |
 | Categories | `/categories` | `/admin/categories` | `categories` |
-| Suppliers | no | `/admin/suppliers` (ops: admin/staff) | `suppliers` |
+| Suppliers | no | `/admin/suppliers`, SOA `/admin/suppliers/[id]` (ops) | `suppliers`, payments, allocations |
+| Purchase orders | no | `/admin/purchase-orders` (ops) | `purchase_orders`, `purchase_order_lines` |
 | Receive stock (GRN) | no | `/admin/inventory/receive` (ops) | `inventory_receipts`, `inventory_receipt_lines` |
+| Export shipments | no | `/admin/export-shipments` (ops) | `export_shipments`, `export_shipment_vehicles` |
 | Blog | `/blog` | `/admin/blog` | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
 | Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
 | Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments, due reminders |
 | Customer portal | `/portal` | `/portal/invoices`, `/portal/account` | `customer_profiles` + own invoices + sanitized SOA RPC |
 | Customers | no | `/admin/customers`, SOA `[id]` (+ enable portal) | `customers`, invoices, remittances, allocations |
-| Invoices | `/verify/invoice/[code]` | `/admin/invoices` | `invoices*` |
+| Reserve vehicle | no | `/admin/reservations` (sales + ops) | reserve + proforma RPC |
+| Invoices | `/verify/invoice/[code]` | `/admin/invoices` (sales: customer invoices only) | `invoices*` |
 | Supplier invoices | no | `/admin/invoices/supplier` | `supplier_invoices` |
 | Remittances | no | `/admin/remittances` | `remittances*` |
 | Users | `/admin` login | `/admin/users`, `/admin/profile` | Auth + `admin_profiles` |
@@ -34,6 +37,6 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 ## Not implemented
 
-Purchase orders / 3-way match, supplier AP SOA & payments, shipments beyond lifecycle events, audit-log module, outbound email, WhatsApp API, Capacitor/native apps, AI automation.
+Audit-log module, outbound email, WhatsApp API, Capacitor/native apps, AI automation.
 
-Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`.
+Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.

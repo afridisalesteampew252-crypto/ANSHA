@@ -60,6 +60,16 @@ export default function AdminVehiclesPage() {
     await fetchVehicles();
   }
 
+  async function setListing(vehicle: VehicleWithPhotos, publish: boolean) {
+    const { error } = await supabase.rpc('set_vehicle_public_listing', {
+      p_vehicle_id: vehicle.id,
+      p_publish: publish,
+    });
+    if (error) return toast.error(error.message);
+    toast.success(publish ? 'Published (available stock only).' : 'Unpublished from website.');
+    await fetchVehicles();
+  }
+
   async function removeVehicle(vehicle: VehicleWithPhotos) {
     if (!window.confirm(`Delete "${vehicle.title}" permanently?`)) return;
     const { error } = await supabase.from('vehicles').delete().eq('id', vehicle.id);
@@ -98,7 +108,15 @@ export default function AdminVehiclesPage() {
             <label className="text-xs font-medium text-muted-foreground">Availability<select value={vehicle.stock_status || 'available'} onChange={(event) => void updateVehicle(vehicle.id, { stock_status: event.target.value }, event.target.value === 'sold' ? 'Vehicle marked sold.' : 'Availability updated.')} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"><option value="available">Available</option><option value="reserved">Reserved</option><option value="sold">Sold</option></select></label>
           </div>
           <div className="flex flex-wrap items-center gap-2 border-t p-3">
-            <Button variant="outline" size="sm" onClick={() => void updateVehicle(vehicle.id, { is_published: !vehicle.is_published }, vehicle.is_published ? 'Vehicle removed from public stock.' : 'Vehicle published.')}><CheckCircle2 className="h-4 w-4" />{vehicle.is_published ? 'Unpublish' : 'Publish'}</Button>
+            {(vehicle.stock_status || 'available') === 'available' && !vehicle.is_published ? (
+              <Button variant="outline" size="sm" onClick={() => void setListing(vehicle, true)}><CheckCircle2 className="h-4 w-4" />Publish when available</Button>
+            ) : null}
+            {vehicle.is_published ? (
+              <Button variant="outline" size="sm" onClick={() => void setListing(vehicle, false)}><CheckCircle2 className="h-4 w-4" />Unpublish</Button>
+            ) : null}
+            {(vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold') && vehicle.is_published ? (
+              <Button variant="outline" size="sm" onClick={() => void setListing(vehicle, false)}>Unpublish when reserved</Button>
+            ) : null}
             <Button asChild variant="ghost" size="sm"><Link href={`/vehicles/${vehicle.slug}`} target="_blank"><Eye className="h-4 w-4" />View</Link></Button>
             <Button asChild variant="ghost" size="sm"><Link href={`/admin/vehicles/${vehicle.id}`}><Edit className="h-4 w-4" />Edit</Link></Button>
             <Button variant="ghost" size="icon" className="ml-auto text-destructive" onClick={() => void removeVehicle(vehicle)} aria-label={`Delete ${vehicle.title}`}><Trash2 className="h-4 w-4" /></Button>

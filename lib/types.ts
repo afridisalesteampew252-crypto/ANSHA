@@ -667,6 +667,7 @@ export interface RemittanceAllocation {
 export interface SupplierInvoice {
   id: string;
   supplier_id: string | null;
+  purchase_order_id: string | null;
   supplier_name: string;
   invoice_number: string | null;
   invoice_date: string;
@@ -706,6 +707,7 @@ export interface InventoryReceipt {
   received_date: string;
   supplier_id: string | null;
   supplier_invoice_id: string | null;
+  purchase_order_id: string | null;
   currency: string;
   notes: string | null;
   created_by: string | null;
@@ -721,6 +723,132 @@ export interface InventoryReceiptLine {
   vehicle_id: string | null;
   quantity: number;
   unit_cost: number;
+  notes: string | null;
+  purchase_order_line_id: string | null;
+  created_at: string;
+}
+
+export type PurchaseOrderStatus = 'draft' | 'ordered' | 'cancelled';
+export type PurchaseOrderMatchStatus =
+  | 'open'
+  | 'partially_received'
+  | 'received'
+  | 'invoiced'
+  | 'matched'
+  | 'partially_paid'
+  | 'paid'
+  | 'cancelled';
+
+export interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  supplier_id: string;
+  order_date: string;
+  currency: string;
+  vat_rate: number;
+  terms: string | null;
+  notes: string | null;
+  status: PurchaseOrderStatus;
+  amount_ordered: number;
+  amount_received: number;
+  amount_invoiced: number;
+  amount_paid: number;
+  qty_ordered: number;
+  qty_received: number;
+  match_status: PurchaseOrderMatchStatus;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseOrderLine {
+  id: string;
+  purchase_order_id: string;
+  description: string;
+  inventory_type: 'part' | 'vehicle' | null;
+  part_id: string | null;
+  vehicle_id: string | null;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export type SupplierPaymentStatus = 'pending' | 'confirmed' | 'rejected' | 'reversed';
+export type SupplierPaymentMethod =
+  | 'bank_transfer'
+  | 'cash'
+  | 'card'
+  | 'cheque'
+  | 'remittance_company'
+  | 'other';
+
+export interface SupplierPayment {
+  id: string;
+  payment_number: string;
+  supplier_id: string;
+  paid_date: string;
+  amount: number;
+  currency: string;
+  method: SupplierPaymentMethod;
+  bank_reference: string | null;
+  status: SupplierPaymentStatus;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupplierPaymentAllocation {
+  id: string;
+  payment_id: string;
+  purchase_order_id: string | null;
+  supplier_invoice_id: string | null;
+  amount: number;
+  created_by: string | null;
+  created_at: string;
+}
+
+export type ExportShipmentStatus =
+  | 'draft'
+  | 'booked'
+  | 'loaded'
+  | 'sailed'
+  | 'arrived'
+  | 'completed'
+  | 'cancelled';
+
+export type ExportShipmentMode = 'roro' | 'container_20ft' | 'container_40ft' | 'other';
+
+export interface ExportShipment {
+  id: string;
+  shipment_number: string;
+  status: ExportShipmentStatus;
+  mode: ExportShipmentMode;
+  customer_id: string | null;
+  destination_country: string | null;
+  loading_port: string | null;
+  destination_port: string | null;
+  bl_number: string | null;
+  vessel_name: string | null;
+  voyage_no: string | null;
+  booking_ref: string | null;
+  etd: string | null;
+  eta: string | null;
+  notes: string | null;
+  workspace_request_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExportShipmentVehicle {
+  id: string;
+  export_shipment_id: string;
+  vehicle_id: string;
+  sort_order: number;
   notes: string | null;
   created_at: string;
 }
@@ -746,6 +874,8 @@ export interface Database {
       chat_participants: TableDef<ChatParticipant>;
       customers: TableDef<Customer>;
       customer_profiles: TableDef<CustomerProfile>;
+      export_shipment_vehicles: TableDef<ExportShipmentVehicle>;
+      export_shipments: TableDef<ExportShipment>;
       import_jobs: TableDef<ImportJob>;
       import_rows: TableDef<ImportRow>;
       inquiries: TableDef<Inquiry>;
@@ -763,6 +893,8 @@ export interface Database {
       part_photos: TableDef<PartPhoto>;
       part_requests: TableDef<PartRequest>;
       parts: TableDef<Part>;
+      purchase_order_lines: TableDef<PurchaseOrderLine>;
+      purchase_orders: TableDef<PurchaseOrder>;
       push_subscriptions: TableDef<PushSubscriptionRow>;
       remittance_allocations: TableDef<RemittanceAllocation>;
       remittance_documents: TableDef<RemittanceDocument>;
@@ -770,6 +902,8 @@ export interface Database {
       remittances: TableDef<Remittance>;
       site_offers: TableDef<SiteOffer>;
       supplier_invoices: TableDef<SupplierInvoice>;
+      supplier_payment_allocations: TableDef<SupplierPaymentAllocation>;
+      supplier_payments: TableDef<SupplierPayment>;
       suppliers: TableDef<Supplier>;
       vehicle_photos: TableDef<VehiclePhoto>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;

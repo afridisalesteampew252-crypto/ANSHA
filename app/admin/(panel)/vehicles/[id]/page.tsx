@@ -218,12 +218,27 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     await load();
   };
 
-  const releaseReservation = async () => {
+  const releaseReservation = async (republish = false) => {
     setReserveBusy(true);
-    const { error } = await supabase.rpc('release_vehicle_reservation', { p_vehicle_id: id });
+    const { error } = await supabase.rpc('release_vehicle_reservation', {
+      p_vehicle_id: id,
+      p_republish: republish,
+    });
     setReserveBusy(false);
     if (error) return toast.error(error.message);
-    toast.success('Reservation released. Set public listing when ready.');
+    toast.success(republish ? 'Reservation released and published.' : 'Reservation released.');
+    await load();
+  };
+
+  const setListing = async (publish: boolean) => {
+    setReserveBusy(true);
+    const { error } = await supabase.rpc('set_vehicle_public_listing', {
+      p_vehicle_id: id,
+      p_publish: publish,
+    });
+    setReserveBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(publish ? 'Published to website.' : 'Unpublished from website.');
     await load();
   };
 
@@ -319,13 +334,30 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
               </Button>
             </div>
             <div className="flex items-end">
-              <Button type="button" variant="outline" disabled={reserveBusy || vehicle.stock_status !== 'reserved'} onClick={() => void releaseReservation()}>
+              <Button type="button" variant="outline" disabled={reserveBusy || vehicle.stock_status !== 'reserved'} onClick={() => void releaseReservation(false)}>
                 Release
               </Button>
             </div>
+            <div className="flex items-end">
+              <Button type="button" variant="outline" disabled={reserveBusy || vehicle.stock_status !== 'reserved'} onClick={() => void releaseReservation(true)}>
+                Release + publish
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 border-t pt-4">
+            <Button type="button" variant="outline" size="sm" disabled={reserveBusy || vehicle.stock_status !== 'available' || vehicle.is_published} onClick={() => void setListing(true)}>
+              Publish when available
+            </Button>
+            <Button type="button" variant="outline" size="sm" disabled={reserveBusy || !vehicle.is_published} onClick={() => void setListing(false)}>
+              Unpublish
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/admin/reservations">Sales reservation screen</Link>
+            </Button>
           </div>
           <p className="text-xs text-muted-foreground">
             Or <Link href="/admin/inventory/receive" className="text-primary underline">receive stock (GRN)</Link> to set cost from a supplier invoice.
+            Ops can also open <Link href="/admin/export-shipments" className="text-primary underline">export shipments</Link> for booking/BL.
           </p>
         </CardContent>
       </Card>

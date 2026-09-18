@@ -5,8 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  BookOpen, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, Inbox, LayoutDashboard,
-  Loader2, Mail, Megaphone, Menu, MessageCircle, Package, PackagePlus, Plus, ReceiptText, Tag, Truck,
+  BookOpen, BookmarkPlus, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, Inbox, LayoutDashboard,
+  Loader2, Mail, Megaphone, Menu, MessageCircle, Package, PackagePlus, Plus, ReceiptText, Ship, Tag, Truck,
   Upload, WalletCards, UserCog, Users, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,13 +35,16 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: '/admin/categories', label: 'Categories', icon: Tag },
       { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
       { href: '/admin/suppliers', label: 'Suppliers', icon: Truck },
+      { href: '/admin/purchase-orders', label: 'Purchase orders', icon: ClipboardList },
       { href: '/admin/inventory/receive', label: 'Receive stock', icon: PackagePlus },
+      { href: '/admin/export-shipments', label: 'Export shipments', icon: Ship },
     ],
   },
   {
     label: 'Sales & customers',
     items: [
       { href: '/admin/customers', label: 'Customers & portal', icon: Users },
+      { href: '/admin/reservations', label: 'Reserve vehicle', icon: BookmarkPlus },
       { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
       { href: '/admin/invoices/supplier', label: 'Supplier Invoices', icon: ReceiptText },
       { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
@@ -76,6 +79,8 @@ const SALES_ALLOWED_HREFS = new Set([
   '/admin/parts',
   '/admin/vehicles',
   '/admin/customers',
+  '/admin/reservations',
+  '/admin/invoices',
   '/admin/inquiries',
   '/admin/requests',
   '/admin/chat',
