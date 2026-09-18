@@ -45,6 +45,8 @@ Done (Phase 20): `chat_conversation_links` attaches existing conversations to ve
 
 Done (Phase 23): customer portal first slice on the same database. `customer_profiles` links Auth users to CRM `customers` (never `admin_profiles`). Customers can sign in at `/portal` and read their own non-draft invoices. Admin enables access from the customer SOA page via Edge Function `portal-create-access`. Remittances, chat, and staff ERP stay staff-only.
 
+Done (Phase 27): portal account statement at `/portal/account` via sanitized RPC `get_my_customer_soa` (confirmed remittances, allocations, outstanding KPIs). No remittance notes, documents, drafts, or allocate/reverse RPCs for customers.
+
 Also in this phase: public catalog image optimization (Next.js Image), category/home SEO metadata, faster homepage category counts, footer portal link.
 
 ## 7. Mobile / PWA

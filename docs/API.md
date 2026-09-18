@@ -31,6 +31,7 @@ Staff (`admin_profiles` membership) may `SELECT`/`INSERT`/`UPDATE`/`DELETE` acco
 Public RPC:
 
 - `verify_invoice(p_verification_code uuid)` — returns document-facing fields only; used by `/verify/invoice/[code]`
+- `get_my_customer_soa()` — portal-only sanitized statement (confirmed remittances, allocations, invoice KPIs); no notes, documents, or write RPCs
 
 Workspace RPCs (names in Phase 10–16 migrations) wrap conversation create, mail send, and guarded financial edits. Call those instead of mutating sequence tables directly.
 

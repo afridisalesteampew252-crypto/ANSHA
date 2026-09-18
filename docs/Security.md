@@ -22,6 +22,7 @@ Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLIS
 - Inquiries and part requests: public insert, staff read/update
 - `workspace_requests` / events / attachments: staff SELECT only; create/update/notes/file register-delete via SECURITY DEFINER RPCs that require `private.is_workspace_user()`
 - `customer_profiles`: own row SELECT for portal users; staff can manage; customers never receive `is_admin` / workspace write policies
+- Portal SOA: `get_my_customer_soa()` is SECURITY DEFINER and returns only confirmed remittance fields + own non-draft invoices; remittance tables stay workspace-RLS (no direct customer SELECT)
 - Customer invoice SELECT: own non-draft, non-cancelled invoices and their line items only
 - `chat_conversation_links`: members SELECT; link/unlink via SECURITY DEFINER RPCs that require chat membership
 - Finance, customers, imports, chat, mail, notifications: authenticated workspace members

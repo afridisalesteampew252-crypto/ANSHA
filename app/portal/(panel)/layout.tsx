@@ -1,14 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LogOut, ReceiptText } from 'lucide-react';
+import { LogOut, ReceiptText, WalletCards } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase/client';
+
+const nav = [
+  { href: '/portal/invoices', label: 'Invoices', icon: ReceiptText },
+  { href: '/portal/account', label: 'Account', icon: WalletCards },
+] as const;
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [name, setName] = useState('Customer');
 
   useEffect(() => {
@@ -32,13 +39,33 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   return (
     <div className="min-h-screen bg-secondary/25">
       <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/portal/invoices" className="flex items-center gap-2 font-bold">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent text-white">
-              <ReceiptText className="h-4 w-4" />
-            </span>
-            ANSHA Portal
-          </Link>
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            <Link href="/portal/invoices" className="flex items-center gap-2 font-bold">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent text-white">
+                <ReceiptText className="h-4 w-4" />
+              </span>
+              ANSHA Portal
+            </Link>
+            <nav className="flex items-center gap-1">
+              {nav.map(({ href, label, icon: Icon }) => {
+                const active = pathname === href || pathname.startsWith(`${href}/`);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                      active ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:bg-secondary/70 hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
           <div className="flex items-center gap-2">
             <span className="hidden text-sm text-muted-foreground sm:inline">{name}</span>
             <Button type="button" variant="outline" size="sm" onClick={() => void signOut()}>
