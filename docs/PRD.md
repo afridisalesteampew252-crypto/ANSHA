@@ -18,13 +18,15 @@ Canonical public site: `https://www.anshatradingco.com`.
 
 - Manage catalog, customers, invoices, remittances, imports
 - Internal chat, mail, and notifications
-- Assign request tickets (intake, BL, inspection, shipping) with due dates
+- Assign request tickets (intake, BL, inspection, shipping) with due dates and private ticket files
 - Link team chat conversations to vehicles, customers, invoices, and requests
 - Provision staff users (admin role)
 
 ### Out of current product
 
-Customer self-service portal, mobile apps, PWA, AI automation, WhatsApp Business API, outbound email.
+Customer self-service portal, Capacitor/native apps, AI automation, WhatsApp Business API, outbound email.
+
+Public catalog is installable as a PWA (Phase 22). Staff ERP remains online-only and is not cached offline.
 
 ## Users
 

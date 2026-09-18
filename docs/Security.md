@@ -20,7 +20,7 @@ Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLIS
 
 - Public catalog: published rows only (Phase 1 hardened vehicles that were previously fully readable)
 - Inquiries and part requests: public insert, staff read/update
-- `workspace_requests` / events: staff SELECT only; create/update/notes via SECURITY DEFINER RPCs that require `private.is_workspace_user()`
+- `workspace_requests` / events / attachments: staff SELECT only; create/update/notes/file register-delete via SECURITY DEFINER RPCs that require `private.is_workspace_user()`
 - `chat_conversation_links`: members SELECT; link/unlink via SECURITY DEFINER RPCs that require chat membership
 - Finance, customers, imports, chat, mail, notifications: authenticated workspace members
 - Sequence tables: deny direct access
@@ -30,7 +30,7 @@ Advisor warnings (2026-09-17): leaked-password protection disabled; `is_admin()`
 
 ## Storage
 
-Public media buckets serve catalog/blog images. Private buckets (`profile-images`, `internal-files`, `remittance-documents`, `supplier-invoices`) must stay non-public. Path prefixes in policies bind chat/mail folders to membership.
+Public media buckets serve catalog/blog images. Private buckets (`profile-images`, `internal-files`, `remittance-documents`, `supplier-invoices`) must stay non-public. Path prefixes in policies bind chat/mail folders to membership and request files to `requests/{request_id}/` for workspace users.
 
 ## Edge Functions
 

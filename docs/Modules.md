@@ -13,7 +13,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Blog | `/blog` | `/admin/blog` | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
 | Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
-| Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, `workspace_request_events` |
+| Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments (`internal-files`) |
 | Customers | no | `/admin/customers`, SOA `[id]` | `customers`, invoices, remittances, allocations |
 | Invoices | `/verify/invoice/[code]` | `/admin/invoices` | `invoices*` |
 | Supplier invoices | no | `/admin/invoices/supplier` | `supplier_invoices` |
@@ -26,9 +26,10 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |
 | Company pages | `/`, `/about`, `/contact` | — | static + catalog queries |
 | Health | `/api/health` | — | REST ping |
+| PWA | installable public shell | — | `app/manifest.ts`, `/sw.js`, `/offline`, `/icons/*` |
 
 ## Not implemented
 
-Suppliers master, purchase orders, shipments beyond lifecycle events, request attachments, customer portal, audit-log module, outbound email, WhatsApp API, PWA, Android/iOS, AI automation.
+Suppliers master, purchase orders, shipments beyond lifecycle events, customer portal, audit-log module, outbound email, WhatsApp API, Capacitor/native apps, AI automation.
 
 Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables.

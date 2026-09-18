@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Paperclip, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,15 +14,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 import {
+  REQUEST_ATTACHMENT_MAX_BYTES,
   REQUEST_STATUSES,
   isRequestOverdue,
+  requestAttachmentStoragePath,
   requestEventLabel,
   requestStatusClass,
   requestStatusLabel,
   requestTypeLabel,
   type RequestStatus,
 } from '@/lib/workspace-requests';
-import type { AdminProfile, Inquiry, PartRequest, WorkspaceRequest, WorkspaceRequestEvent } from '@/lib/types';
+import type {
+  AdminProfile,
+  Inquiry,
+  PartRequest,
+  WorkspaceRequest,
+  WorkspaceRequestAttachment,
+  WorkspaceRequestEvent,
+} from '@/lib/types';
 
 function toLocalInput(iso: string | null) {
   if (!iso) return '';
@@ -48,10 +57,13 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
 
   const [row, setRow] = useState<RequestDetail | null>(null);
   const [events, setEvents] = useState<WorkspaceRequestEvent[]>([]);
+  const [attachments, setAttachments] = useState<WorkspaceRequestAttachment[]>([]);
   const [staff, setStaff] = useState<Pick<AdminProfile, 'id' | 'full_name' | 'email'>[]>([]);
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
   const [noting, setNoting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -62,7 +74,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
 
   const load = useCallback(async () => {
     setFetching(true);
-    const [requestRes, eventsRes, staffRes] = await Promise.all([
+    const [requestRes, eventsRes, attachmentsRes, staffRes] = await Promise.all([
       supabase
         .from('workspace_requests')
         .select(
@@ -71,6 +83,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
         .eq('id', id)
         .maybeSingle(),
       supabase.from('workspace_request_events').select('*').eq('request_id', id).order('created_at', { ascending: false }).limit(100),
+      supabase.from('workspace_request_attachments').select('*').eq('request_id', id).order('created_at', { ascending: false }),
       supabase.from('admin_profiles').select('id, full_name, email').order('full_name'),
     ]);
 
@@ -88,6 +101,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
     setAssignedTo(next.assigned_to || '');
     setDueAt(toLocalInput(next.due_at));
     setEvents((eventsRes.data || []) as WorkspaceRequestEvent[]);
+    setAttachments((attachmentsRes.data || []) as WorkspaceRequestAttachment[]);
     setStaff((staffRes.data || []) as Pick<AdminProfile, 'id' | 'full_name' | 'email'>[]);
     setFetching(false);
   }, [id, router]);
@@ -131,6 +145,74 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
     setActivity('');
     toast.success('Note added.');
     await load();
+  };
+
+  const uploadFiles = async (fileList: FileList | null) => {
+    if (!fileList?.length) return;
+    const files = Array.from(fileList);
+    const tooLarge = files.find((file) => file.size > REQUEST_ATTACHMENT_MAX_BYTES);
+    if (tooLarge) {
+      toast.error(`${tooLarge.name} is larger than 25 MB.`);
+      return;
+    }
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const path = requestAttachmentStoragePath(id, file.name);
+        const { error: uploadError } = await supabase.storage.from('internal-files').upload(path, file, { cacheControl: '3600' });
+        if (uploadError) throw uploadError;
+        const { error: registerError } = await supabase.rpc('register_workspace_request_attachment', {
+          p_request_id: id,
+          p_storage_path: path,
+          p_file_name: file.name,
+          p_mime_type: file.type || null,
+          p_size_bytes: file.size,
+        });
+        if (registerError) {
+          await supabase.storage.from('internal-files').remove([path]);
+          throw registerError;
+        }
+      }
+      toast.success(files.length === 1 ? 'File attached.' : `${files.length} files attached.`);
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to attach file.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const openAttachment = async (attachment: WorkspaceRequestAttachment) => {
+    const { data, error } = await supabase.storage.from('internal-files').createSignedUrl(attachment.storage_path, 60);
+    if (error || !data?.signedUrl) {
+      toast.error(error?.message || 'Unable to open attachment.');
+      return;
+    }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const removeAttachment = async (attachment: WorkspaceRequestAttachment) => {
+    setRemovingId(attachment.id);
+    const { error: storageError } = await supabase.storage.from('internal-files').remove([attachment.storage_path]);
+    if (storageError) {
+      setRemovingId(null);
+      toast.error(storageError.message);
+      return;
+    }
+    const { error } = await supabase.rpc('delete_workspace_request_attachment', {
+      p_attachment_id: attachment.id,
+    });
+    setRemovingId(null);
+    if (error) return toast.error(error.message);
+    toast.success('Attachment removed.');
+    await load();
+  };
+
+  const formatBytes = (value: number | null) => {
+    if (!value) return '';
+    if (value < 1024) return `${value} B`;
+    if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   if (fetching || !row) {
@@ -267,6 +349,63 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Attachments</CardTitle>
+          <CardDescription>Private files on this ticket. Chat and mail stay on their own conversations.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="request-files" className="sr-only">
+              Attach files
+            </Label>
+            <Input
+              id="request-files"
+              type="file"
+              multiple
+              disabled={uploading}
+              onChange={(event) => {
+                void uploadFiles(event.target.files);
+                event.currentTarget.value = '';
+              }}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">PDF, images, Office, ZIP, or text. 25 MB each.</p>
+          </div>
+          {uploading ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading...
+            </p>
+          ) : null}
+          {attachments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No files yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {attachments.map((attachment) => (
+                <li key={attachment.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                  <button type="button" className="text-left text-sm font-medium underline-offset-2 hover:underline" onClick={() => void openAttachment(attachment)}>
+                    {attachment.file_name}
+                  </button>
+                  <span className="text-xs text-muted-foreground">{formatBytes(attachment.size_bytes)}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">{format(new Date(attachment.created_at), 'dd MMM yyyy HH:mm')}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={removingId === attachment.id}
+                    onClick={() => void removeAttachment(attachment)}
+                  >
+                    {removingId === attachment.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 

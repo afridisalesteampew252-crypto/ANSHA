@@ -13,6 +13,10 @@ const checks = [
   { path: '/robots.txt', expected: [200], includes: 'https://www.anshatradingco.com/sitemap.xml' },
   { path: '/sitemap.xml', expected: [200], includes: '<urlset' },
   { path: '/api/health', expected: [200], includes: '"status":"healthy"' },
+  { path: '/manifest.webmanifest', expected: [200], includes: '"display":"standalone"' },
+  { path: '/sw.js', expected: [200], includes: 'ansha-pwa-v1' },
+  { path: '/offline', expected: [200], includes: 'You are offline' },
+  { path: '/icons/icon-192.png', expected: [200] },
   { path: '/admin/dashboard', expected: [307, 308], location: '/admin' },
 ];
 

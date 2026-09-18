@@ -8,7 +8,7 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - Staff ERP: `app/admin/` — login plus operations workspace
 - Shared backend: Supabase Auth, PostgreSQL, Storage, Realtime, Edge Functions
 
-A customer portal, PWA, and native apps are not implemented. If added, they must use this same database.
+A customer portal and native Capacitor apps are not implemented. The public site is an installable PWA (Phase 22) on this same database. If portal or native wrappers are added, they must use this same database.
 
 ## Request path
 

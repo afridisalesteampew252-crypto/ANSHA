@@ -77,7 +77,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migration: `supabase/migrations/20260918080000_phase_20_chat_linking.sql`.
+Latest migration: `supabase/migrations/20260918090000_phase_21_request_attachments.sql`.
 
 ## Phase 4: global SEO and exporter schema
 
@@ -289,3 +289,23 @@ Completed on 2026-09-17.
 - Backfilled existing linked remittance payments into the allocation ledger without changing production financial values.
 - Added six-month invoiced-versus-received charts, customer collection charts, inventory-status charts, financial KPIs, operational counts, and unread-chat totals.
 - Applied migrations `20260917180000_phase_17_notifications_customer_soa` and `20260917180500_phase_17_advisor_indexes` with explicit grants, RLS, realtime publication, and covering foreign-key indexes.
+
+## Phase 21: request ticket attachments
+
+Completed on 2026-09-18.
+
+- Added private files on staff request tickets at `/admin/requests/[id]` without changing `inquiries` or `part_requests`.
+- Stored metadata in `workspace_request_attachments` and files under `internal-files` prefix `requests/{request_id}/`.
+- Recorded add/remove activity as `workspace_request_events` of type `attachment`.
+- Applied migration `20260918090000_phase_21_request_attachments` (production history `20260918011729`).
+
+## Phase 22: public catalog PWA
+
+Completed on 2026-09-18.
+
+- Added web app manifest, theme/viewport metadata, and ANSHA icon set under `/icons`.
+- Added a conservative service worker that precaches the offline page and static brand assets only.
+- Admin, API, invoice verify, and cross-origin Supabase traffic are never cached.
+- Added a dismissible install prompt on the public site and `/offline` fallback.
+- Extended `verify:deployment` to check `/manifest.webmanifest`, `/sw.js`, `/offline`, and `/icons/icon-192.png`.
+- No database migration.

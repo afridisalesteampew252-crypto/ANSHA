@@ -44,6 +44,8 @@ Request workflow RPCs (Phase 19):
 - `create_workspace_request(...)` — staff-created BL/inspection/shipping/other tickets (intake types must link an existing inquiry or part request)
 - `update_workspace_request(...)` — status, assignee, due date, title, notes; writes history
 - `record_workspace_request_event(p_request_id, p_notes)` — append-only note
+- `register_workspace_request_attachment(p_request_id, p_storage_path, p_file_name, p_mime_type?, p_size_bytes?)` — metadata after a private upload; path must be `requests/{request_id}/...`
+- `delete_workspace_request_attachment(p_attachment_id)` — remove metadata and write an activity row; UI deletes the Storage object first
 
 Chat linking RPCs (Phase 20):
 

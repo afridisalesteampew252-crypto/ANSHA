@@ -38,6 +38,7 @@ There is no `test` script.
 - Schema changes: new file under `supabase/migrations/` only
 - Types: extend `lib/types.ts` when tables change
 - Path alias: `@/*` → project root (`tsconfig.json`)
+- PWA assets: `app/manifest.ts`, `public/sw.js`, `public/icons/`; do not cache admin or auth in the service worker
 
 ## Next.js 16 notes
 

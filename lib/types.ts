@@ -178,7 +178,8 @@ export type WorkspaceRequestEventType =
   | 'assignment'
   | 'due_date'
   | 'note'
-  | 'title_change';
+  | 'title_change'
+  | 'attachment';
 
 export interface WorkspaceRequest {
   id: string;
@@ -205,6 +206,18 @@ export interface WorkspaceRequestEvent {
   to_status: WorkspaceRequestStatus | null;
   notes: string | null;
   created_by: string | null;
+  created_at: string;
+}
+
+export interface WorkspaceRequestAttachment {
+  id: string;
+  request_id: string;
+  event_id: string | null;
+  uploaded_by: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
   created_at: string;
 }
 
@@ -648,6 +661,7 @@ export interface Database {
       vehicle_photos: TableDef<VehiclePhoto>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;
+      workspace_request_attachments: TableDef<WorkspaceRequestAttachment>;
       workspace_request_events: TableDef<WorkspaceRequestEvent>;
       workspace_requests: TableDef<WorkspaceRequest>;
     };

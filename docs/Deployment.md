@@ -32,6 +32,10 @@ Preferred: feature branch → Preview URL → `npm run verify:deployment -- <pre
 
 Release gate locally: `npm run verify:release`.
 
+## PWA
+
+Public catalog is installable (`app/manifest.ts`, `/sw.js`, `/icons/*`, `/offline`). Service worker intentionally bypasses `/admin`, `/api`, and cross-origin requests. `verify:deployment` checks the manifest, service worker, offline page, and icon.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.

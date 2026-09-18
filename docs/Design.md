@@ -34,4 +34,4 @@ Phase 13 called for reduced-motion and keyboard-focus support on the public cata
 
 ## Future
 
-Public site and ERP may diverge in density while sharing tokens. PWA chrome is out of scope until responsive gaps on existing pages are accepted as closed.
+Public site and ERP may diverge in density while sharing tokens. PWA chrome (install prompt + standalone display) is live for the public catalog (Phase 22). Capacitor wrapping remains later.

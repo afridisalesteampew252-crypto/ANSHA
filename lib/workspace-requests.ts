@@ -52,6 +52,8 @@ export function requestEventLabel(value: string | null | undefined) {
       return 'Note';
     case 'title_change':
       return 'Title';
+    case 'attachment':
+      return 'Attachment';
     default:
       return value || 'Event';
   }
@@ -60,4 +62,14 @@ export function requestEventLabel(value: string | null | undefined) {
 export function isRequestOverdue(dueAt: string | null | undefined, status: string | null | undefined) {
   if (!dueAt || status === 'done' || status === 'cancelled') return false;
   return new Date(dueAt).getTime() < Date.now();
+}
+
+export const REQUEST_ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
+
+export function safeRequestFileName(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'attachment';
+}
+
+export function requestAttachmentStoragePath(requestId: string, fileName: string) {
+  return `requests/${requestId}/${crypto.randomUUID()}-${safeRequestFileName(fileName)}`;
 }

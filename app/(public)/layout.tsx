@@ -1,6 +1,7 @@
 import { SiteHeader } from '@/components/public/site-header';
 import { SiteFooter } from '@/components/public/site-footer';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
+import { InstallPrompt } from '@/components/pwa/install-prompt';
 
 export default function PublicLayout({
   children,
@@ -13,6 +14,7 @@ export default function PublicLayout({
       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
       <SiteFooter />
       <MobileBottomNav />
+      <InstallPrompt />
     </div>
   );
 }

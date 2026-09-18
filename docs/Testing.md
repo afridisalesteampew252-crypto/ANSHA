@@ -30,6 +30,8 @@ Do not treat a green lint as proof of hook correctness.
 - Remittance allocation does not over-allocate
 - Stock `sold` trigger stamps/clears `sold_at`
 - Chat/mail Storage paths deny non-members
+- Request attachments only under `requests/{request_id}/` for workspace users
+- PWA service worker must not cache `/admin`, `/api`, or cross-origin Supabase responses
 
 Do not invent passing test counts.
 

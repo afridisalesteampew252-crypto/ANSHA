@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918080000_phase_20_chat_linking.sql`.
+Latest migration in the repository: `20260918090000_phase_21_request_attachments.sql`.
 
 ## Entity groups
 
@@ -36,9 +36,10 @@ Latest migration in the repository: `20260918080000_phase_20_chat_linking.sql`.
 ### Staff requests
 
 - `workspace_requests` — assignable tickets (`inquiry`|`part_request`|`bl`|`inspection`|`shipping`|`other`) with status `open|in_progress|waiting|done|cancelled`, optional assignee/due date, optional links to intake/vehicle/customer
-- `workspace_request_events` — append-only opened/status/assignment/due/note/title history
+- `workspace_request_events` — append-only opened/status/assignment/due/note/title/attachment history
+- `workspace_request_attachments` — private file metadata for ticket documents (storage prefix `requests/{request_id}/` in `internal-files`)
 
-Intake rows stay as submitted. One ticket per inquiry and per part request (unique indexes). Mutations go through RPCs `create_workspace_request`, `update_workspace_request`, and `record_workspace_request_event`.
+Intake rows stay as submitted. One ticket per inquiry and per part request (unique indexes). Mutations go through RPCs `create_workspace_request`, `update_workspace_request`, `record_workspace_request_event`, `register_workspace_request_attachment`, and `delete_workspace_request_attachment`.
 
 ### Content
 
@@ -89,4 +90,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 20. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 21. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.

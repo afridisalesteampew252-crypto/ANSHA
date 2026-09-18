@@ -17,7 +17,7 @@ Still needs your action or approval:
 
 ## 2. Housekeeping
 
-Done: README latest-migration points at Phase 20; `lib/types.ts` covers public tables through Phase 20; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
+Done: README latest-migration points at Phase 21; `lib/types.ts` covers public tables through Phase 21; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
 
 Not deleted: both `001_initial_schema` files — production `schema_migrations` records `20260909192712` and `20260909194958`. Removing either file would desync git from the live database.
 
@@ -33,7 +33,9 @@ Later enhancements: document attachments on events, stricter transition rules, p
 
 Done (Phase 19): `inquiries` and `part_requests` remain intake. Staff tickets live in `workspace_requests` with assignment, due dates, and `workspace_request_events`. Admin queue is `/admin/requests`. Existing intake was backfilled. New website submissions open a ticket automatically.
 
-Later: attachments on tickets, tighter due-date reminders.
+Done (Phase 21): private ticket files on `/admin/requests/[id]` via `workspace_request_attachments` and `internal-files` prefix `requests/{request_id}/`. Intake tables unchanged. Chat/mail attachments stay in their modules.
+
+Later: tighter due-date reminders.
 
 ## 5. Chat linking
 
@@ -43,9 +45,9 @@ Done (Phase 20): `chat_conversation_links` attaches existing conversations to ve
 
 Same database. New auth role distinct from `admin_profiles`. RLS must prevent customers from reading other customers' finance or staff chat.
 
-## 7. Mobile
+## 7. Mobile / PWA
 
-First: keep public and admin responsive. Then PWA. Later Capacitor wrapping the same backend. No duplicate business logic.
+Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached. Capacitor / native wrappers remain later.
 
 ## 8. Later platform
 
