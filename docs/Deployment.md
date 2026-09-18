@@ -20,11 +20,11 @@ Default branch is `main`. There is no `master` workflow in `.github/workflows/ci
 - Admin routes: `Cache-Control: private, no-store` and `X-Robots-Tag: noindex`
 - Health: `GET /api/health` (no-store)
 
-`vercel.json` currently inlines `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for builds. Changing that to env-only requires approval.
+`vercel.json` only sets `installCommand`. Public Supabase URL and publishable key come from Vercel Environment Variables (and local `.env.local`), not from git. GitHub Actions injects placeholders for CI builds.
 
 ## CI
 
-`.github/workflows/ci.yml` runs Node 24: `npm ci --legacy-peer-deps`, `lint`, `typecheck`, `build`. Placeholder public Supabase env is injected so the build can compile. CI does **not** run `verify:brands` or `verify:deployment`.
+`.github/workflows/ci.yml` runs Node 24: `npm ci --legacy-peer-deps`, `lint`, `typecheck`, `verify:brands`, `build`. Placeholder public Supabase env is injected so the build can compile. CI does **not** run `verify:deployment`.
 
 ## Preview before production
 
@@ -42,8 +42,7 @@ Supabase project backups are an infrastructure concern, not an in-repo script. D
 
 ## Leftovers
 
-- `netlify.toml` is not the documented host. Deleting it needs approval.
-- Inactive Supabase project `kmngigxpqhiilcavmcmm` must not be used. Archiving it needs approval.
+- Inactive Supabase project `kmngigxpqhiilcavmcmm` is already `INACTIVE` (cannot pause again). Permanent delete is a dashboard action if still required.
 
 ## Edge Functions
 

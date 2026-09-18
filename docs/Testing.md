@@ -7,7 +7,7 @@
 - `npm run build` — App Router production compile
 - `npm run verify:brands` — mapped manufacturer SVGs present and named
 - `npm run verify:deployment -- <https-url>` — public pages 200, canonical strings, `/api/health` healthy, unauthenticated `/admin/dashboard` redirects to `/admin`, security headers
-- GitHub Actions: lint, typecheck, build on `main` and pull requests
+- GitHub Actions: lint, typecheck, `verify:brands`, build on `main` and pull requests
 
 There are no Vitest, Jest, Playwright, or database test files.
 
@@ -37,7 +37,7 @@ Do not invent passing test counts.
 
 1. `npm run lint`
 2. `npm run typecheck`
-3. `npm run verify:brands` (CI currently skips this)
+3. `npm run verify:brands`
 4. `npm run build` when the change can affect routes or bundles
 5. Preview + `verify:deployment` for user-visible or auth/header changes
 

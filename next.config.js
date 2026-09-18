@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
-const { env: publicEnvironment } = require('./vercel.json');
-
 const nextConfig = {
-  env: publicEnvironment,
   async redirects() {
     return [
       {

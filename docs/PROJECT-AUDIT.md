@@ -192,9 +192,7 @@ Relationships (simplified):
 
 Triggers exist for invoice totals, remittance/payment sync, sold-state stamps, and notification inserts.
 
-Duplicate historical files: `supabase/migrations/20260909192712_001_initial_schema.sql` and `20260909194958_001_initial_schema.sql`. Latest applied migration in repo: `20260917180500_phase_17_advisor_indexes.sql`. README still names a Phase 14 file as “latest”.
-
-`lib/types.ts` `Database` map does not include invoices, remittances, chat, notifications, or later tables.
+Duplicate historical files `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` are **both applied** on production. They stay in git so migration history matches. Latest migration file: `20260917180500_phase_17_advisor_indexes.sql`.
 
 ---
 
@@ -324,12 +322,9 @@ Admin: collapsible desktop sidebar, mobile drawer, sticky mobile header, notific
 - Supabase advisor: leaked-password protection disabled (Auth setting)
 - `public.is_admin()` is SECURITY DEFINER and executable by `authenticated`
 - `public.verify_invoice` is SECURITY DEFINER and executable by `anon` (needed for public QR; must stay narrow)
-- Edge Function CORS `Access-Control-Allow-Origin: *`
-- `admin-update-user` builds the caller client with the service-role key (create-user uses anon + user JWT)
 - Staff role can mutate catalog, invoices, customers, chat (by design today)
 - Blog HTML rendered with `dangerouslySetInnerHTML` (stored XSS if a staff account posts script)
-- Publishable URL/key are committed in `vercel.json` (browser-safe, but environment coupling)
-- `netlify.toml` leftover (not evidence of live Netlify hosting)
+- Publishable URL/key belong in Vercel env / `.env.local`, not `vercel.json`
 
 No service-role key, database password, or `.env.local` values are documented here.
 
@@ -357,13 +352,9 @@ No service-role key, database password, or `.env.local` values are documented he
 
 **Fact**
 
-- Duplicate `001_initial_schema` migration files
-- README “latest migration” stale vs Phase 15–17
-- Incomplete generated/hand-written `Database` types
-- Leftover `netlify.toml`
+- Duplicate `001_initial_schema` files both applied on production (must remain in git)
 - ESLint disables `react-hooks/exhaustive-deps` and `set-state-in-effect`
 - No automated product tests
-- CI omits `verify:brands`
 - Dual public keys (`PUBLISHABLE_KEY` with `ANON_KEY` fallback)
 - `is_admin()` name vs `role = admin` confusion
 
@@ -420,7 +411,7 @@ Stop after this documentation pass until a module is chosen.
 
 Representative set (not every SVG):
 
-- `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.js`, `vercel.json`, `proxy.ts`, `eslint.config.mjs`, `.env.example`, `netlify.toml`, `README.md`
+- `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.js`, `vercel.json`, `proxy.ts`, `eslint.config.mjs`, `.env.example`, `README.md`
 - `.github/workflows/ci.yml`, `.git/config`
 - `app/layout.tsx`, `app/robots.ts`, `app/sitemap.ts`, `app/api/health/route.ts`
 - `app/(public)/**`, `app/admin/**`
@@ -449,10 +440,6 @@ Documentation-only pass. From `ANSHA/` after `npm ci --legacy-peer-deps`: `npm r
 ## 23. Things Requiring My Approval
 
 - Enable leaked-password protection in Supabase Auth
-- Archive/delete inactive project `kmngigxpqhiilcavmcmm`
-- Move publishable keys out of `vercel.json` into Vercel env only
+- Permanently delete inactive project `kmngigxpqhiilcavmcmm` from the Supabase dashboard (already INACTIVE; pause API rejected)
 - Tighten staff RLS so staff ≠ full ERP write
-- Vehicle lifecycle schema
-- Delete `netlify.toml` or duplicate initial migrations
-- Replace browser PostgREST access with a server API
 - Any DROP TABLE, production env change, domain change, or auth replacement

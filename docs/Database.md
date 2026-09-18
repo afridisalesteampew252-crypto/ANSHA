@@ -9,7 +9,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Do not reset production
 - RLS must remain enabled on exposed tables
 - Test migrations off production before apply
-- Duplicate `001_initial_schema` files exist historically; do not add a third copy
+- Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
 Latest migration in the repository: `20260917180500_phase_17_advisor_indexes.sql`.
 
@@ -76,4 +76,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` is incomplete versus live tables. Generated types are not checked in. New modules must extend types to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 17. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.

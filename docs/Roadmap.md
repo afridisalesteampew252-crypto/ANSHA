@@ -15,14 +15,13 @@ Still needs your action or approval:
 - Enable leaked-password protection in Supabase Auth (Authentication → Providers → Email → leaked password protection)
 - Decide whether staff RLS should stay equal to admin for catalog/finance (not changed)
 
-## 2. Housekeeping (some items need approval)
+## 2. Housekeeping
 
-- Point README latest-migration at Phase 17
-- Complete `lib/types.ts` against live tables
-- CI: add `verify:brands` if desired
-- Approve before deleting `netlify.toml` or duplicate `001_initial_schema`
-- Approve before moving publishable keys out of `vercel.json`
-- Approve before archiving inactive Supabase project `kmngigxpqhiilcavmcmm`
+Done: README latest-migration points at Phase 17; `lib/types.ts` covers public tables through Phase 17; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
+
+Not deleted: both `001_initial_schema` files — production `schema_migrations` records `20260909192712` and `20260909194958`. Removing either file would desync git from the live database.
+
+Inactive Supabase project `kmngigxpqhiilcavmcmm` is already `INACTIVE`. Pause API rejected that status. Permanent delete remains a dashboard action.
 
 ## 3. Vehicle operational lifecycle (additive)
 

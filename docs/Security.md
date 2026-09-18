@@ -12,11 +12,9 @@ Treat every browser query as hostile. Policies are the API.
 
 ## Secrets
 
-Never commit `.env.local`. Never put service-role keys, database passwords, or private tokens in frontend code, `vercel.json` `NEXT_PUBLIC_*` beyond the publishable key, docs, or chat.
+Never commit `.env.local`. Never put service-role keys, database passwords, or private tokens in frontend code, git-tracked `vercel.json`, docs, or chat.
 
-Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or legacy anon key).
-
-`vercel.json` currently inlines the publishable URL and key for builds. That key is not a service-role secret; moving it to Vercel env-only still requires approval.
+Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or legacy anon key). Those names belong in Vercel env and `.env.local` only.
 
 ## RLS posture
 

@@ -48,4 +48,4 @@ GitHub `main` deploys to Vercel. Preview deployments follow the GitHub integrati
 
 - Not a microservices split
 - Not a separate admin SPA repo
-- Not Netlify as the documented production host (`netlify.toml` is leftover)
+- Not Netlify-hosted
