@@ -67,15 +67,22 @@ AS $$
   );
 $$;
 
--- Keep legacy helper aligned with active users
-CREATE OR REPLACE FUNCTION private.is_workspace_user()
+-- Keep legacy helper aligned with active users.
+-- Must REPLACE the Phase 9 uuid DEFAULT signature — a zero-arg overload
+-- makes private.is_workspace_user() ambiguous (breaks create_invoice_v3).
+CREATE OR REPLACE FUNCTION private.is_workspace_user(check_user_id uuid DEFAULT auth.uid())
 RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = ''
 AS $$
-  SELECT private.is_active_workspace_user();
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.admin_profiles
+    WHERE id = check_user_id
+      AND is_active = true
+  );
 $$;
 
 -- Customers: keep portal read policy; replace staff manage policies
