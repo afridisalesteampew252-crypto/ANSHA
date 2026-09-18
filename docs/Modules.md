@@ -1,5 +1,7 @@
 # Modules
 
+End-user how-to: [User Manual](./User-Manual.md).
+
 Only modules that exist in the repository are listed as implemented. Later ERP ideas are marked not built.
 
 ## Implemented
