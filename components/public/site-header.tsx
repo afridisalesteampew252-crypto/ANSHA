@@ -66,7 +66,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full">
+    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip">
       <div className="hidden bg-[#101114] text-white lg:block">
         <div className="container-page flex h-9 items-center justify-between text-[11px]">
           <p className="flex items-center gap-2 font-semibold uppercase tracking-[0.14em] text-white/65">
@@ -87,7 +87,7 @@ export function SiteHeader() {
         'border-b border-border bg-background transition-shadow',
         scrolled && 'shadow-[0_8px_28px_rgba(15,23,42,0.08)]'
       )}>
-        <div className="container-page flex h-[76px] items-center gap-4 lg:h-[88px]">
+        <div className="container-page flex h-[64px] items-center gap-2 sm:h-[76px] sm:gap-4 lg:h-[88px]">
           <Link href="/" className="flex min-w-0 shrink items-center" aria-label="Ansha Trading home">
             <Image
               src="/images/ansha-logo-transparent.webp"
@@ -95,7 +95,7 @@ export function SiteHeader() {
               width={1000}
               height={497}
               priority
-              className="h-[58px] w-auto max-w-[210px] object-contain sm:h-16 sm:max-w-[250px] lg:h-[76px] lg:max-w-[290px]"
+              className="h-11 w-auto max-w-[min(42vw,160px)] object-contain sm:h-[58px] sm:max-w-[210px] lg:h-[76px] lg:max-w-[290px]"
             />
           </Link>
 
@@ -124,7 +124,7 @@ export function SiteHeader() {
             <ThemeToggle />
           </div>
 
-          <div className="ml-auto flex items-center gap-1 md:ml-0 xl:hidden">
+          <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0 xl:hidden">
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -133,15 +133,15 @@ export function SiteHeader() {
         </div>
 
         <div className="hidden border-t border-border/70 lg:block">
-          <div className="container-page flex h-12 items-center">
-            <Link href="/categories" className="mr-5 flex h-full items-center gap-2 border-r border-border pr-6 text-sm font-bold">
+          <div className="container-page flex h-12 items-center gap-2 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Link href="/categories" className="mr-3 flex h-full shrink-0 items-center gap-2 border-r border-border pr-5 text-sm font-bold">
               <PackageSearch className="h-4 w-4 text-accent" />Browse categories
             </Link>
-            <nav className="flex h-full items-center gap-1">
+            <nav className="flex h-full min-w-0 flex-1 items-center gap-1">
               {navLinks.map((link) => {
                 const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                 if (link.href === '/vehicles') return (
-                  <div key={link.href} className="group relative flex h-full items-center">
+                  <div key={link.href} className="group relative flex h-full shrink-0 items-center">
                     <Link href="/vehicles" className={cn('relative flex h-full items-center gap-1 px-3 text-sm font-semibold transition-colors', active ? 'text-accent' : 'text-muted-foreground hover:text-foreground')}>
                       {link.label}<ChevronDown className="h-3.5 w-3.5" />
                       {active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent" />}
@@ -154,7 +154,7 @@ export function SiteHeader() {
                 );
                 return (
                   <Link key={link.href} href={link.href} className={cn(
-                    'relative flex h-full items-center px-3 text-sm font-semibold transition-colors',
+                    'relative flex h-full shrink-0 items-center px-3 text-sm font-semibold transition-colors',
                     active ? 'text-accent' : 'text-muted-foreground hover:text-foreground'
                   )}>
                     {link.label}
@@ -163,7 +163,7 @@ export function SiteHeader() {
                 );
               })}
             </nav>
-            <Button asChild variant="accent" size="sm" className="ml-auto rounded-full px-5">
+            <Button asChild variant="accent" size="sm" className="ml-auto shrink-0 rounded-full px-5">
               <Link href="/contact">Request a quote</Link>
             </Button>
           </div>
@@ -172,16 +172,19 @@ export function SiteHeader() {
 
       {mobileOpen && (
         <>
-          <button className="fixed inset-0 top-[76px] z-40 bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
-          <div id="mobile-site-menu" className="absolute inset-x-0 z-50 max-h-[calc(100dvh-76px)] overflow-y-auto border-b border-border bg-background shadow-2xl lg:hidden">
-            <div className="container-page space-y-5 py-5">
+          <button className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
+          <div
+            id="mobile-site-menu"
+            className="fixed inset-x-0 top-[64px] z-50 max-h-[calc(100dvh-64px-4rem)] w-full max-w-[100vw] overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[76px] sm:max-h-[calc(100dvh-76px-4rem)] lg:hidden"
+          >
+            <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch} className="md:hidden">
                 <div className="relative">
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input type="search" placeholder="OEM, part number, chassis..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="h-12 rounded-xl bg-secondary/50 pl-10" />
                 </div>
               </form>
-              <nav className="grid gap-1 sm:grid-cols-2">
+              <nav className="grid gap-1">
                 {navLinks.map((link) => {
                   const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                   return (
@@ -193,7 +196,7 @@ export function SiteHeader() {
                     </Link>
                   );
                 })}
-                <div className="rounded-xl border border-border p-2 sm:col-span-2">
+                <div className="rounded-xl border border-border p-2">
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vehicle stock locations</p>
                   <div className="grid grid-cols-2 gap-1">{STOCK_ORIGINS.map((origin) => <a key={origin.value} href={`/vehicles?stock=${origin.value}`} className="rounded-lg px-2 py-2 text-xs font-semibold hover:bg-secondary">{origin.label}</a>)}</div>
                 </div>

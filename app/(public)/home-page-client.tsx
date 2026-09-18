@@ -23,6 +23,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { CatalogImage } from '@/components/public/catalog-image';
+import { resolveCategoryImage } from '@/lib/category-images';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PartCard } from '@/components/public/part-card';
@@ -201,14 +202,17 @@ export default function HomePageClient() {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />)}</div>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-              {categories.map((category) => (
+              {categories.map((category, index) => {
+                const imageSrc = resolveCategoryImage(category.slug, category.image_url);
+                return (
                 <Link key={category.id} href={`/categories/${category.slug}`} className="group relative block aspect-[4/3] min-h-[9rem] overflow-hidden rounded-2xl border border-border bg-secondary">
-                  {category.image_url ? (
+                  {imageSrc ? (
                     <CatalogImage
-                      src={category.image_url}
+                      src={imageSrc}
                       alt={category.name}
                       fill
                       sizes="(max-width: 768px) 50vw, 16vw"
+                      priority={index < 4}
                       className="transition duration-500 group-hover:scale-105"
                       objectFit="cover"
                     />
@@ -220,7 +224,8 @@ export default function HomePageClient() {
                   </span>
                   <ChevronRight className="absolute right-3 top-3 h-7 w-7 rounded-full bg-white/90 p-1.5 text-black opacity-0 transition group-hover:opacity-100" />
                 </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

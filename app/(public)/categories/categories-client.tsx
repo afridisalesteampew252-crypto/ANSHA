@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Boxes, Package, Search } from 'lucide-react';
 import { CatalogImage } from '@/components/public/catalog-image';
+import { resolveCategoryImage } from '@/lib/category-images';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/lib/supabase/client';
@@ -55,14 +56,17 @@ export default function CategoriesPageClient() {
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="aspect-[1.15] rounded-2xl" />)}</div>
         ) : filtered.length ? (
           <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-            {filtered.map((category) => (
+            {filtered.map((category, index) => {
+              const imageSrc = resolveCategoryImage(category.slug, category.image_url);
+              return (
               <Link key={category.id} href={`/categories/${category.slug}`} className="group relative block aspect-[1.15] min-h-[11rem] overflow-hidden rounded-2xl border border-border bg-secondary shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-                {category.image_url ? (
+                {imageSrc ? (
                   <CatalogImage
-                    src={category.image_url}
+                    src={imageSrc}
                     alt={category.name}
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    priority={index < 4}
                     className="transition duration-500 group-hover:scale-105"
                     objectFit="cover"
                   />
@@ -74,7 +78,8 @@ export default function CategoriesPageClient() {
                   <span className="mt-3 hidden items-center gap-2 text-xs font-bold text-white/80 sm:flex">Open category <ArrowRight className="h-3.5 w-3.5 text-accent" /></span>
                 </span>
               </Link>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="rounded-3xl border border-dashed border-border py-20 text-center"><Boxes className="mx-auto h-10 w-10 text-muted-foreground/25" /><h2 className="mt-4 text-xl font-extrabold">No category matches that search</h2><button onClick={() => setQuery('')} className="mt-3 text-sm font-bold text-accent">Clear search</button></div>
