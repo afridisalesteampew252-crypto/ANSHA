@@ -16,6 +16,8 @@ Never commit `.env.local`. Never put service-role keys, database passwords, or p
 
 Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or legacy anon key). Those names belong in Vercel env and `.env.local` only.
 
+AI keys (`AI_GATEWAY_API_KEY`, `OPENAI_API_KEY`) are server-only for `POST /api/ai/chat`. Never expose them via `NEXT_PUBLIC_*`.
+
 ## RLS posture
 
 - Public catalog: published rows only (Phase 1 hardened vehicles that were previously fully readable)
@@ -26,6 +28,7 @@ Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLIS
 - Customer invoice SELECT: own non-draft, non-cancelled invoices and their line items only
 - `chat_conversation_links`: members SELECT; link/unlink via SECURITY DEFINER RPCs that require chat membership
 - Finance, customers, imports, chat, mail, notifications: authenticated workspace members
+- `ai_chat_threads` / `ai_chat_messages`: ops-only; each user only manages their own threads
 - Sequence tables: deny direct access
 - `verify_invoice`: SECURITY DEFINER, callable by anon; must remain field-limited
 

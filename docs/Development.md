@@ -16,6 +16,14 @@ Required names:
 
 Do not put `SUPABASE_SERVICE_ROLE_KEY` in Next.js env. Service role belongs on Edge Functions only.
 
+AI ops assistant (Phase 42) — server-only on Vercel / `.env.local` (never `NEXT_PUBLIC_*`):
+
+| Variable | Required | Notes |
+|---|---|---|
+| `AI_GATEWAY_API_KEY` | preferred | Vercel AI Gateway key used by the AI SDK |
+| `OPENAI_API_KEY` | fallback | Used when gateway key is unset |
+| `AI_MODEL` | no | Default `openai/gpt-5-mini` (gateway) or `gpt-5-mini` (direct OpenAI) |
+
 ## Scripts (from `package.json`)
 
 | Command | Purpose |

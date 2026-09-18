@@ -17,46 +17,47 @@ Latest migration in the repository includes Phase 41 analytics (`20260918300000_
 
 ### Identity
 
-`admin_profiles` â€” PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`), `email`, `avatar_url`, `is_active`, `created_at`.
+`admin_profiles` �?? PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`), `email`, `avatar_url`, `is_active`, `created_at`.
 
-`customer_profiles` â€” PK `id` = `auth.users.id`, unique `customer_id` â†’ `customers`. Portal identity only; never place portal users in `admin_profiles`.
+`customer_profiles` �?? PK `id` = `auth.users.id`, unique `customer_id` �?? `customers`. Portal identity only; never place portal users in `admin_profiles`.
 
 ### Catalog
 
-- `categories` â€” name/slug unique, `sort_order`, optional `image_url`
-- `parts` â€” unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`
+- `categories` �?? name/slug unique, `sort_order`, optional `image_url`
+- `parts` �?? unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`
 - `part_photos`, `part_compatibility`
-- `vehicles` â€” unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts
+- `vehicles` �?? unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts
 - `vehicle_photos`
-- `suppliers` â€” master (`supplier_code`, TRN, country, currency, â€¦); ops RLS
-- `purchase_orders` / `purchase_order_lines` â€” PO number, VAT, terms; match snapshot vs GRN/supplier invoices/payments
-- `supplier_payments` / `supplier_payment_allocations` â€” AP payments allocated to PO or supplier invoice file
-- `inventory_receipts` / `inventory_receipt_lines` â€” GRN into existing vehicle/part rows; optional `supplier_invoice_id` and `purchase_order_id`
-- `export_shipments` / `export_shipment_vehicles` â€” booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events
-- `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` â€” import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
-- `bank_accounts` / `bank_transactions` â€” ops bank ledger (BNK-/BTXN-); reconcile flags; ops RLS
-- `expense_categories` / `expenses` â€” operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
-- `vat_return_periods` â€” optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
-- `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` â€” HR-lite payroll (PR- numbers); leave pending/approved/rejected; optional soft `bank_account_id`; ops RLS; EOS estimate RPC is planning-only
-- `gl_accounts` / `gl_journals` / `gl_journal_lines` â€” chart of accounts + manual journals (JE- numbers); draft/posted/reversed; optional `source_module`/`source_id` for future auto-post; ops RLS; report RPCs `gl_trial_balance` / `gl_profit_and_loss` / `gl_balance_sheet`
-- `get_ops_analytics_summary(from,to)` — Phase 41 jsonb KPIs (sales/AR, stock, requests; ops also remittances + open POs + GRNs). Workspace-executable; sales scoped to own book
-- `audit_logs` — append-only ops activity log (actor, action, entity_type, entity_id, metadata); writes via `private.write_audit_log`; triggers on invoice status, vehicle stock_status, remittance allocations; ops SELECT only
-- `vehicle_lifecycle_events` â€” append-only stage changes and workflow events (BL, inspection, RORO, etc.)
+- `suppliers` �?? master (`supplier_code`, TRN, country, currency, �?�); ops RLS
+- `purchase_orders` / `purchase_order_lines` �?? PO number, VAT, terms; match snapshot vs GRN/supplier invoices/payments
+- `supplier_payments` / `supplier_payment_allocations` �?? AP payments allocated to PO or supplier invoice file
+- `inventory_receipts` / `inventory_receipt_lines` �?? GRN into existing vehicle/part rows; optional `supplier_invoice_id` and `purchase_order_id`
+- `export_shipments` / `export_shipment_vehicles` �?? booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events
+- `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` �?? import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
+- `bank_accounts` / `bank_transactions` �?? ops bank ledger (BNK-/BTXN-); reconcile flags; ops RLS
+- `expense_categories` / `expenses` �?? operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
+- `vat_return_periods` �?? optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
+- `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` �?? HR-lite payroll (PR- numbers); leave pending/approved/rejected; optional soft `bank_account_id`; ops RLS; EOS estimate RPC is planning-only
+- `gl_accounts` / `gl_journals` / `gl_journal_lines` �?? chart of accounts + manual journals (JE- numbers); draft/posted/reversed; optional `source_module`/`source_id` for future auto-post; ops RLS; report RPCs `gl_trial_balance` / `gl_profit_and_loss` / `gl_balance_sheet`
+- `ai_chat_threads` / `ai_chat_messages` ? ops AI assistant history; owner-scoped RLS; grounding via `get_ai_ops_grounding`
+- `get_ops_analytics_summary(from,to)` ? Phase 41 jsonb KPIs (sales/AR, stock, requests; ops also remittances + open POs + GRNs). Workspace-executable; sales scoped to own book
+- `audit_logs` ? append-only ops activity log (actor, action, entity_type, entity_id, metadata); writes via `private.write_audit_log`; triggers on invoice status, vehicle stock_status, remittance allocations; ops SELECT only
+- `vehicle_lifecycle_events` �?? append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 
 ### Public marketing (Phase 24)
 
-- `push_subscriptions` â€” Web Push endpoints (`endpoint` unique), `notify_insights` / `notify_deals`
-- `site_offers` â€” published deals/offers with `href`, `summary`, `published_at`
+- `push_subscriptions` �?? Web Push endpoints (`endpoint` unique), `notify_insights` / `notify_deals`
+- `site_offers` �?? published deals/offers with `href`, `summary`, `published_at`
 ### Public intake
 
-- `inquiries` â€” optional `part_id`, status `new|read|responded|closed`
-- `part_requests` â€” sourcing request, status `new|reviewed|fulfilled|closed`
+- `inquiries` �?? optional `part_id`, status `new|read|responded|closed`
+- `part_requests` �?? sourcing request, status `new|reviewed|fulfilled|closed`
 
 ### Staff requests
 
-- `workspace_requests` â€” assignable tickets (`inquiry`|`part_request`|`bl`|`inspection`|`shipping`|`other`) with status `open|in_progress|waiting|done|cancelled`, optional assignee/due date, optional links to intake/vehicle/customer
-- `workspace_request_events` â€” append-only opened/status/assignment/due/note/title/attachment history
-- `workspace_request_attachments` â€” private file metadata for ticket documents (storage prefix `requests/{request_id}/` in `internal-files`)
+- `workspace_requests` �?? assignable tickets (`inquiry`|`part_request`|`bl`|`inspection`|`shipping`|`other`) with status `open|in_progress|waiting|done|cancelled`, optional assignee/due date, optional links to intake/vehicle/customer
+- `workspace_request_events` �?? append-only opened/status/assignment/due/note/title/attachment history
+- `workspace_request_attachments` �?? private file metadata for ticket documents (storage prefix `requests/{request_id}/` in `internal-files`)
 
 Intake rows stay as submitted. One ticket per inquiry and per part request (unique indexes). Mutations go through RPCs `create_workspace_request`, `update_workspace_request`, `record_workspace_request_event`, `register_workspace_request_attachment`, and `delete_workspace_request_attachment`.
 
@@ -66,15 +67,15 @@ Intake rows stay as submitted. One ticket per inquiry and per part request (uniq
 
 ### CRM and imports
 
-- `customers` â€” `customer_code`, contact fields, `is_active`, optional `avatar_url`
-- `import_jobs`, `import_rows` â€” Excel/ZIP audit
+- `customers` �?? `customer_code`, contact fields, `is_active`, optional `avatar_url`
+- `import_jobs`, `import_rows` �?? Excel/ZIP audit
 
 ### Communications
 
 - `chat_conversations` (`direct`|`group`), `chat_participants`, `chat_messages`, `chat_attachments`
-- `chat_conversation_links` â€” optional links from a conversation to vehicle/customer/inquiry/invoice/request
+- `chat_conversation_links` �?? optional links from a conversation to vehicle/customer/inquiry/invoice/request
 - `internal_mail`, `internal_mail_recipients`, `internal_mail_attachments`
-- `whatsapp_message_log` — Cloud API send log (E.164 phone, text/template, Meta message id, status); ops RLS; Edge Function `send-whatsapp` (Phase 40)
+- `whatsapp_message_log` ? Cloud API send log (E.164 phone, text/template, Meta message id, status); ops RLS; Edge Function `send-whatsapp` (Phase 40)
 - `admin_notifications`
 
 Chat stays one product. Links are additive metadata; mutations go through `link_chat_conversation` / `unlink_chat_conversation`.
@@ -82,12 +83,12 @@ Chat stays one product. Links are additive metadata; mutations go through `link_
 ### Finance
 
 - `invoice_company_settings`, `invoice_sequences`
-- `invoices` â€” sequential `invoice_number`, document types, tax/payment totals, QR verification fields (Phase 14), provider submission fields
-- `invoice_items` â€” optional `part_id` / `vehicle_id` / `inventory_reference`
+- `invoices` �?? sequential `invoice_number`, document types, tax/payment totals, QR verification fields (Phase 14), provider submission fields
+- `invoice_items` �?? optional `part_id` / `vehicle_id` / `inventory_reference`
 - `invoice_payments`
 - `remittance_sequences`, `remittances`, `remittance_documents`, `remittance_allocations`
-- `supplier_invoices` â€” private file metadata
-- `bank_accounts` / `bank_transactions` â€” ops bank ledger (BNK-/BTXN-); opening balance + manual in/out; reconcile flags; optional remittance/supplier_payment/expense links; ops RLS
+- `supplier_invoices` �?? private file metadata
+- `bank_accounts` / `bank_transactions` �?? ops bank ledger (BNK-/BTXN-); opening balance + manual in/out; reconcile flags; optional remittance/supplier_payment/expense links; ops RLS
 
 Triggers recalculate invoice balances and sync remittance-linked payments. Do not bypass them with ad-hoc SQL in the app.
 
@@ -99,7 +100,7 @@ Triggers recalculate invoice balances and sync remittance-linked payments. Do no
 
 `lifecycle_stage` (vehicles only): `unassigned`, `auction`, `yard`, `port`, `sold`.
 
-Recommended operational path: Auction â†’ Yard â†’ Port â†’ Sold. Commercial `stock_status` remains independent. Moving lifecycle to `sold` via `transition_vehicle_lifecycle` also sets `stock_status = sold`. Workflow actions (BL, inspection, RORO, etc.) are rows in `vehicle_lifecycle_events`, not free-text status fields.
+Recommended operational path: Auction �?? Yard �?? Port �?? Sold. Commercial `stock_status` remains independent. Moving lifecycle to `sold` via `transition_vehicle_lifecycle` also sets `stock_status = sold`. Workflow actions (BL, inspection, RORO, etc.) are rows in `vehicle_lifecycle_events`, not free-text status fields.
 
 `private.sync_catalog_sold_state` stamps `sold_at`/`sold_by` on transition to `sold` and clears them otherwise.
 

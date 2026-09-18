@@ -75,6 +75,8 @@ Done (Phase 41): richer ops analytics — RPC `get_ops_analytics_summary(from,to
 
 Done (Phase 40): WhatsApp Business Cloud API MVP — `whatsapp_message_log` (ops RLS), Edge Function `send-whatsapp` (Meta Graph), admin `/admin/whatsapp` (customer phone or E.164 paste, text/template, send log). Secrets `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID`; UI shows setup when missing.
 
+Done (Phase 42): AI ops assistant MVP — /admin/ai chat UI, POST /api/ai/chat (Vercel AI SDK + AI Gateway / OpenAI), grounding RPC get_ai_ops_grounding, optional history tables i_chat_threads / i_chat_messages (ops RLS). Never invents chassis/VIN numbers. Server env: AI_GATEWAY_API_KEY or OPENAI_API_KEY (+ optional AI_MODEL).
+
 Done (Phase 43): audit-log MVP  `audit_logs` (append-only; ops SELECT), `private.write_audit_log(...)`, triggers on `invoices.status`, `vehicles.stock_status`, and `remittance_allocations` insert/delete. Admin `/admin/audit-log` with entity/actor/date filters.
 
 Done (Phase 39): outbound email MVP — `outbound_email_log` (ops RLS, append-only), Edge Function `send-outbound-email` via Resend (`RESEND_API_KEY`), admin compose UI `/admin/email` with optional invoice verification-link stub. Not marketing campaigns.

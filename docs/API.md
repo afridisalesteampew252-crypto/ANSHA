@@ -86,6 +86,10 @@ General ledger RPCs (Phase 38, ops-only via `private.is_ops_user()`):
 - `delete_draft_gl_journal(p_journal_id)`
 - `gl_trial_balance(p_as_of?)` / `gl_profit_and_loss(p_from, p_to)` / `gl_balance_sheet(p_as_of?)` — statement views from posted journals only
 
+AI ops assistant RPCs (Phase 42, ops-only via private.is_ops_user()):
+
+- get_ai_ops_grounding(p_query?) — compact jsonb counts + recent vehicles + optional title matches
+
 TODO: auto-post journals from bank/expense/invoice/remittance modules using `source_module` + `source_id` (manual MVP only today).
 
 Audit log (Phase 43): no public RPCs. Writes go through `private.write_audit_log(action, entity_type, entity_id, metadata?, actor_id?)` (SECURITY DEFINER; not granted to `authenticated`). Ops read `audit_logs` via Data API SELECT. Automatic hooks: invoice status updates, vehicle `stock_status` updates, remittance allocation insert/delete.
