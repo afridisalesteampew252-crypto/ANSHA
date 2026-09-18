@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, ClipboardList, Loader2, Plus, Search, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,15 @@ type LineDraft = {
   vehicle_id: string;
 };
 
-type StockOption = { id: string; label: string };
+type StockOption = {
+  id: string;
+  label: string;
+  title?: string | null;
+  stock_number?: string | null;
+  chassis_number?: string | null;
+  part_code?: string | null;
+  name?: string | null;
+};
 
 const money = (value: number, currency = 'AED') =>
   new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value || 0));
@@ -76,9 +85,12 @@ export default function PurchaseOrdersPage() {
     if (poRes.error) toast.error(poRes.error.message);
     setOrders((poRes.data || []) as PurchaseOrder[]);
     setSuppliers((supRes.data || []) as Supplier[]);
-    setParts((partRes.data || []).map((row) => ({ id: row.id, label: `${row.part_code} — ${row.name}` })));
+    setParts((partRes.data || []).map((row) => ({ id: row.id, label: `${row.part_code} — ${row.name}`, part_code: row.part_code, name: row.name })));
     setVehicles((vehRes.data || []).map((row) => ({
       id: row.id,
+      title: row.title,
+      stock_number: row.stock_number,
+      chassis_number: row.chassis_number,
       label: `${row.stock_number || row.chassis_number || row.id.slice(0, 8)} — ${row.title}`,
     })));
   }, []);
@@ -266,18 +278,30 @@ export default function PurchaseOrdersPage() {
                   {line.inventory_type === 'vehicle' ? (
                     <div className="space-y-1.5">
                       <Label>Vehicle</Label>
-                      <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={line.vehicle_id} onChange={(e) => setDraftLines((rows) => rows.map((row, i) => (i === index ? { ...row, vehicle_id: e.target.value } : row)))}>
-                        <option value="">Select</option>
-                        {vehicles.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={line.vehicle_id}
+                        onValueChange={(value) => setDraftLines((rows) => rows.map((row, i) => (i === index ? { ...row, vehicle_id: value } : row)))}
+                        options={vehicles.map(vehicleSelectOption)}
+                        placeholder="Select"
+                        searchPlaceholder="Search stock #, chassis, title…"
+                        clearLabel="Select"
+                      />
                     </div>
                   ) : line.inventory_type === 'part' ? (
                     <div className="space-y-1.5">
                       <Label>Part</Label>
-                      <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={line.part_id} onChange={(e) => setDraftLines((rows) => rows.map((row, i) => (i === index ? { ...row, part_id: e.target.value } : row)))}>
-                        <option value="">Select</option>
-                        {parts.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
-                      </select>
+                      <SearchableSelect
+                        value={line.part_id}
+                        onValueChange={(value) => setDraftLines((rows) => rows.map((row, i) => (i === index ? { ...row, part_id: value } : row)))}
+                        options={parts.map((row) => ({
+                          value: row.id,
+                          label: row.label,
+                          keywords: [row.part_code, row.name],
+                        }))}
+                        placeholder="Select"
+                        searchPlaceholder="Search part code or name…"
+                        clearLabel="Select"
+                      />
                     </div>
                   ) : (
                     <div className="flex items-end">

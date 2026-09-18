@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ClipboardList, Loader2, Plus, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,7 +33,7 @@ type RequestRow = WorkspaceRequest & {
   vehicles?: { id: string; title: string } | null;
 };
 
-type VehicleOption = { id: string; title: string; stock_number: string | null };
+type VehicleOption = { id: string; title: string; stock_number: string | null; chassis_number?: string | null; make?: string | null; model?: string | null };
 
 export default function AdminRequestsPage() {
   return (
@@ -75,7 +76,7 @@ function AdminRequestsPageInner() {
         .select('*, assigned:admin_profiles!assigned_to(id, full_name, email), vehicles(id, title)')
         .order('created_at', { ascending: false }),
       supabase.from('admin_profiles').select('id, full_name, email').order('full_name'),
-      supabase.from('vehicles').select('id, title, stock_number').order('created_at', { ascending: false }).limit(80),
+      supabase.from('vehicles').select('id, title, stock_number, chassis_number, make, model').order('created_at', { ascending: false }).limit(80),
     ]);
     if (requestsRes.error) toast.error(requestsRes.error.message);
     setUserId(sessionData.session?.user.id || null);
@@ -216,20 +217,20 @@ function AdminRequestsPageInner() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="req-vehicle">Vehicle (optional)</Label>
-                <select
+                <SearchableSelect
                   id="req-vehicle"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                   value={newVehicle}
-                  onChange={(event) => setNewVehicle(event.target.value)}
-                >
-                  <option value="">None</option>
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.title}
-                      {vehicle.stock_number ? ` (${vehicle.stock_number})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={setNewVehicle}
+                  options={vehicles.map((vehicle) =>
+                    vehicleSelectOption({
+                      ...vehicle,
+                      label: `${vehicle.title}${vehicle.stock_number ? ` (${vehicle.stock_number})` : ''}`,
+                    })
+                  )}
+                  placeholder="None"
+                  searchPlaceholder="Search stock #, chassis, title…"
+                  clearLabel="None"
+                />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="req-notes">Notes</Label>

@@ -4,16 +4,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, Plus, Search, Ship, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect, customerSelectOption, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import type { Customer, ExportShipment, ExportShipmentMode, ExportShipmentStatus, ExportShipmentVehicle } from '@/lib/types';
 
-type StockOption = { id: string; label: string };
+type StockOption = {
+  id: string;
+  label: string;
+  title?: string | null;
+  stock_number?: string | null;
+  chassis_number?: string | null;
+};
 type LineRow = ExportShipmentVehicle & { label: string };
 
 const STATUS_FLOW: ExportShipmentStatus[] = ['draft', 'booked', 'loaded', 'sailed', 'arrived', 'completed'];
@@ -60,6 +68,7 @@ export default function ExportShipmentsPage() {
   const [eta, setEta] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
+  const [vehicleFormQuery, setVehicleFormQuery] = useState('');
 
   const load = useCallback(async () => {
     const [shipRes, custRes, vehRes] = await Promise.all([
@@ -78,6 +87,9 @@ export default function ExportShipmentsPage() {
     setVehicles(
       (vehRes.data || []).map((row) => ({
         id: row.id,
+        title: row.title,
+        stock_number: row.stock_number,
+        chassis_number: row.chassis_number,
         label: `${row.stock_number || row.chassis_number || row.id.slice(0, 8)} — ${row.title}`,
       }))
     );
@@ -142,6 +154,20 @@ export default function ExportShipmentsPage() {
     );
   }, [shipments, query, customers]);
 
+  const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
+  const vehicleOptions = useMemo(() => vehicles.map(vehicleSelectOption), [vehicles]);
+  const addableVehicleOptions = useMemo(
+    () => vehicleOptions.filter((option) => !lines.some((line) => line.vehicle_id === option.value)),
+    [vehicleOptions, lines]
+  );
+  const formVehicles = useMemo(
+    () =>
+      vehicles.filter((row) =>
+        matchesQuery(vehicleFormQuery, [row.label, row.title, row.stock_number, row.chassis_number])
+      ),
+    [vehicles, vehicleFormQuery]
+  );
+
   const resetForm = () => {
     setShowForm(false);
     setCustomerId('');
@@ -157,6 +183,7 @@ export default function ExportShipmentsPage() {
     setEta('');
     setNotes('');
     setSelectedVehicleIds([]);
+    setVehicleFormQuery('');
   };
 
   const toggleVehicle = (id: string) => {
@@ -301,12 +328,14 @@ export default function ExportShipmentsPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label>Customer (optional)</Label>
-                <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-                  <option value="">None</option>
-                  {customers.map((row) => (
-                    <option key={row.id} value={row.id}>{row.customer_code} — {row.company_name || row.full_name}</option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  value={customerId}
+                  onValueChange={setCustomerId}
+                  options={customerOptions}
+                  placeholder="None"
+                  searchPlaceholder="Search code, name, company, phone, email…"
+                  clearLabel="None"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Mode</Label>
@@ -357,13 +386,22 @@ export default function ExportShipmentsPage() {
 
             <div className="space-y-2">
               <Label>Vehicles</Label>
+              <Input
+                placeholder="Filter vehicles by stock #, chassis, title…"
+                value={vehicleFormQuery}
+                onChange={(e) => setVehicleFormQuery(e.target.value)}
+              />
               <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
-                {vehicles.map((row) => (
-                  <label key={row.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-secondary/60">
-                    <input type="checkbox" checked={selectedVehicleIds.includes(row.id)} onChange={() => toggleVehicle(row.id)} />
-                    <span className="truncate">{row.label}</span>
-                  </label>
-                ))}
+                {formVehicles.length === 0 ? (
+                  <p className="px-2 py-1.5 text-sm text-muted-foreground">No matches</p>
+                ) : (
+                  formVehicles.map((row) => (
+                    <label key={row.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-secondary/60">
+                      <input type="checkbox" checked={selectedVehicleIds.includes(row.id)} onChange={() => toggleVehicle(row.id)} />
+                      <span className="truncate">{row.label}</span>
+                    </label>
+                  ))
+                )}
               </div>
               <p className="text-xs text-muted-foreground">{selectedVehicleIds.length} selected</p>
             </div>
@@ -452,17 +490,15 @@ export default function ExportShipmentsPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label>Customer</Label>
-                    <select
-                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    <SearchableSelect
                       value={selected.customer_id || ''}
                       disabled={['completed', 'cancelled'].includes(selected.status)}
-                      onChange={(e) => patchSelected({ customer_id: e.target.value || null })}
-                    >
-                      <option value="">None</option>
-                      {customers.map((row) => (
-                        <option key={row.id} value={row.id}>{row.customer_code} — {row.company_name || row.full_name}</option>
-                      ))}
-                    </select>
+                      onValueChange={(value) => patchSelected({ customer_id: value || null })}
+                      options={customerOptions}
+                      placeholder="None"
+                      searchPlaceholder="Search code, name, company, phone, email…"
+                      clearLabel="None"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Mode</Label>
@@ -549,14 +585,15 @@ export default function ExportShipmentsPage() {
 
                   {!['completed', 'cancelled'].includes(selected.status) ? (
                     <div className="flex flex-wrap gap-2">
-                      <select className="h-10 min-w-[14rem] flex-1 rounded-md border bg-background px-3 text-sm" value={addVehicleId} onChange={(e) => setAddVehicleId(e.target.value)}>
-                        <option value="">Add vehicle…</option>
-                        {vehicles
-                          .filter((row) => !lines.some((line) => line.vehicle_id === row.id))
-                          .map((row) => (
-                            <option key={row.id} value={row.id}>{row.label}</option>
-                          ))}
-                      </select>
+                      <SearchableSelect
+                        className="min-w-[14rem] flex-1"
+                        value={addVehicleId}
+                        onValueChange={setAddVehicleId}
+                        options={addableVehicleOptions}
+                        placeholder="Add vehicle…"
+                        searchPlaceholder="Search stock #, chassis, title…"
+                        clearLabel="Add vehicle…"
+                      />
                       <Button type="button" variant="outline" disabled={busy || !addVehicleId} onClick={() => void addVehicle()}>
                         Add
                       </Button>

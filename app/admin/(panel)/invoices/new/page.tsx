@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 type Customer = { id: string; full_name: string; company_name: string | null; email: string | null; phone: string | null; address: string | null; tax_registration_number: string | null };
 type Line = { key: string; description: string; quantity: number; unit_price: number; discount_percent: number; tax_rate: number; inventory_type: '' | 'part' | 'vehicle'; part_id: string | null; vehicle_id: string | null; inventory_reference: string };
-type StockItem = { id: string; type: 'part' | 'vehicle'; reference: string; label: string; price: number | null; currency: string; status: string };
+type StockItem = { id: string; type: 'part' | 'vehicle'; reference: string; label: string; price: number | null; currency: string; status: string; keywords?: (string | null)[] };
 type EditableInvoice = { id: string; invoice_number: string; document_type: string; customer_id: string | null; customer_name: string; customer_company: string | null; customer_email: string | null; customer_phone: string | null; customer_address: string | null; customer_tax_registration_number: string | null; issue_date: string; due_date: string; currency: string; reference: string | null; notes: string | null; terms: string | null };
 type EditableItem = { description: string; quantity: number; unit_price: number; discount_percent: number; tax_rate: number; inventory_type: '' | 'part' | 'vehicle' | null; part_id: string | null; vehicle_id: string | null; inventory_reference: string | null };
 
@@ -51,8 +52,8 @@ export default function NewInvoicePage() {
       invoiceId ? supabase.from('invoice_items').select('description,quantity,unit_price,discount_percent,tax_rate,inventory_type,part_id,vehicle_id,inventory_reference').eq('invoice_id', invoiceId).order('sort_order') : Promise.resolve({ data: [], error: null }),
     ]);
     setCustomers((customerResult.data || []) as Customer[]);
-    const parts: StockItem[] = (partsResult.data || []).map((item) => ({ id: item.id, type: 'part', reference: item.part_code, label: item.name, price: item.price, currency: item.currency, status: item.stock_status }));
-    const vehicles: StockItem[] = (vehiclesResult.data || []).map((item) => ({ id: item.id, type: 'vehicle', reference: item.stock_number || item.chassis_number || item.chassis_code || item.id.slice(0, 8), label: item.title, price: item.price, currency: item.currency, status: item.stock_status }));
+    const parts: StockItem[] = (partsResult.data || []).map((item) => ({ id: item.id, type: 'part', reference: item.part_code, label: item.name, price: item.price, currency: item.currency, status: item.stock_status, keywords: [item.part_code, item.name] }));
+    const vehicles: StockItem[] = (vehiclesResult.data || []).map((item) => ({ id: item.id, type: 'vehicle', reference: item.stock_number || item.chassis_number || item.chassis_code || item.id.slice(0, 8), label: item.title, price: item.price, currency: item.currency, status: item.stock_status, keywords: [item.stock_number, item.chassis_number, item.chassis_code, item.title] }));
     setStockItems([...vehicles, ...parts]);
     if (invoiceId) {
       if (invoiceResult.error || !invoiceResult.data) {
@@ -98,6 +99,18 @@ export default function NewInvoicePage() {
     }));
   };
 
+  const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
+  const stockOptions = useMemo(
+    () =>
+      stockItems.map((item) => ({
+        value: `${item.type}:${item.id}`,
+        label: `${item.reference} — ${item.label}`,
+        keywords: item.keywords || [item.reference, item.label],
+        group: item.type === 'vehicle' ? 'Vehicle stock' : 'Parts stock',
+      })),
+    [stockItems]
+  );
+
   const totals = useMemo(() => lines.reduce((sum, line) => {
     const subtotal = line.quantity * line.unit_price;
     const discount = subtotal * line.discount_percent / 100;
@@ -142,7 +155,18 @@ export default function NewInvoicePage() {
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <div className="min-w-0 space-y-6">
         <Card><CardHeader><CardTitle className="text-lg">Customer</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="saved-customer">Saved customer</Label><select id="saved-customer" value={customerId} onChange={(event) => chooseCustomer(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="">Enter customer manually</option>{customers.map((item) => <option key={item.id} value={item.id}>{item.company_name ? `${item.company_name} — ${item.full_name}` : item.full_name}</option>)}</select></div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="saved-customer">Saved customer</Label>
+            <SearchableSelect
+              id="saved-customer"
+              value={customerId}
+              onValueChange={chooseCustomer}
+              options={customerOptions}
+              placeholder="Enter customer manually"
+              searchPlaceholder="Search name, company, phone, email…"
+              clearLabel="Enter customer manually"
+            />
+          </div>
           <div className="space-y-1.5"><Label htmlFor="customer-name">Contact name *</Label><Input id="customer-name" required value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} /></div>
           <div className="space-y-1.5"><Label htmlFor="customer-company">Company</Label><Input id="customer-company" value={customer.company} onChange={(event) => setCustomer({ ...customer, company: event.target.value })} /></div>
           <div className="space-y-1.5"><Label htmlFor="customer-email">Email</Label><Input id="customer-email" type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} /></div>
@@ -154,7 +178,7 @@ export default function NewInvoicePage() {
         <Card><CardHeader className="flex-row items-center justify-between"><CardTitle className="text-lg">Line items</CardTitle><Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, newLine()])}><Plus className="h-4 w-4" />Add line</Button></CardHeader><CardContent className="space-y-3">
           <div className="hidden grid-cols-[minmax(15rem,1fr)_5rem_7rem_5rem_5rem_2.5rem] gap-2 px-1 text-xs font-medium text-muted-foreground md:grid"><span>Description</span><span>Qty</span><span>Unit price</span><span>Discount %</span><span>VAT %</span><span /></div>
           {lines.map((line, index) => <div key={line.key} className="grid gap-3 rounded-lg border p-3 md:grid-cols-[minmax(15rem,1fr)_5rem_7rem_5rem_5rem_2.5rem] md:items-end md:border-0 md:p-0">
-            <div className="space-y-2"><Label className="md:sr-only" htmlFor={`description-${line.key}`}>Description</Label><select aria-label="Pick inventory reference" value={line.inventory_type ? `${line.inventory_type}:${line.part_id || line.vehicle_id}` : ''} onChange={(event) => chooseInventory(line.key, event.target.value)} className="h-9 w-full rounded-md border bg-background px-2 text-xs"><option value="">Manual line / no stock link</option><optgroup label="Vehicle stock">{stockItems.filter((item) => item.type === 'vehicle').map((item) => <option key={`vehicle-${item.id}`} value={`vehicle:${item.id}`}>{item.reference} — {item.label}</option>)}</optgroup><optgroup label="Parts stock">{stockItems.filter((item) => item.type === 'part').map((item) => <option key={`part-${item.id}`} value={`part:${item.id}`}>{item.reference} — {item.label}</option>)}</optgroup></select><Textarea id={`description-${line.key}`} required={index === 0} rows={4} value={line.description} onChange={(event) => updateLine(line.key, 'description', event.target.value)} placeholder={index === 0 ? "Select a stock reference above or enter vehicle/part details" : "Part, vehicle, shipping, or service"} />{line.inventory_reference && <p className="text-[11px] font-medium text-primary">Linked stock: {line.inventory_reference}</p>}</div>
+            <div className="space-y-2"><Label className="md:sr-only" htmlFor={`description-${line.key}`}>Description</Label><SearchableSelect size="sm" value={line.inventory_type ? `${line.inventory_type}:${line.part_id || line.vehicle_id}` : ''} onValueChange={(value) => chooseInventory(line.key, value)} options={stockOptions} placeholder="Manual line / no stock link" searchPlaceholder="Search stock #, chassis, part code…" clearLabel="Manual line / no stock link" /><Textarea id={`description-${line.key}`} required={index === 0} rows={4} value={line.description} onChange={(event) => updateLine(line.key, 'description', event.target.value)} placeholder={index === 0 ? "Select a stock reference above or enter vehicle/part details" : "Part, vehicle, shipping, or service"} />{line.inventory_reference && <p className="text-[11px] font-medium text-primary">Linked stock: {line.inventory_reference}</p>}</div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`quantity-${line.key}`}>Quantity</Label><Input id={`quantity-${line.key}`} type="number" min="0.001" step="0.001" value={line.quantity} onChange={(event) => updateLine(line.key, 'quantity', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`price-${line.key}`}>Unit price</Label><Input id={`price-${line.key}`} type="number" min="0" step="0.01" value={line.unit_price} onChange={(event) => updateLine(line.key, 'unit_price', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`discount-${line.key}`}>Discount %</Label><Input id={`discount-${line.key}`} type="number" min="0" max="100" step="0.01" value={line.discount_percent} onChange={(event) => updateLine(line.key, 'discount_percent', event.target.value)} /></div>

@@ -5,6 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookmarkPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  SearchableSelect,
+  customerSelectOption,
+  vehicleSelectOption,
+} from '@/components/admin/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,12 +17,21 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 
-type Customer = { id: string; customer_code: string; full_name: string; company_name: string | null };
+type Customer = {
+  id: string;
+  customer_code: string;
+  full_name: string;
+  company_name: string | null;
+  phone: string | null;
+  email: string | null;
+};
 type Vehicle = {
   id: string;
   title: string;
   stock_number: string | null;
   chassis_number: string | null;
+  make: string | null;
+  model: string | null;
   price: number | null;
   currency: string;
   stock_status: string;
@@ -45,10 +59,15 @@ export default function ReservationsPage() {
 
   const load = useCallback(async () => {
     const [custRes, vehRes] = await Promise.all([
-      supabase.from('customers').select('id,customer_code,full_name,company_name').eq('is_active', true).order('full_name').limit(500),
+      supabase
+        .from('customers')
+        .select('id,customer_code,full_name,company_name,phone,email')
+        .eq('is_active', true)
+        .order('full_name')
+        .limit(500),
       supabase
         .from('vehicles')
-        .select('id,title,stock_number,chassis_number,price,currency,stock_status,is_published')
+        .select('id,title,stock_number,chassis_number,make,model,price,currency,stock_status,is_published')
         .eq('stock_status', 'available')
         .order('created_at', { ascending: false })
         .limit(500),
@@ -64,6 +83,8 @@ export default function ReservationsPage() {
   }, [load]);
 
   const selectedVehicle = useMemo(() => vehicles.find((row) => row.id === vehicleId) || null, [vehicles, vehicleId]);
+  const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
+  const vehicleOptions = useMemo(() => vehicles.map(vehicleSelectOption), [vehicles]);
 
   useEffect(() => {
     if (!selectedVehicle) return;
@@ -121,26 +142,29 @@ export default function ReservationsPage() {
           <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void submit(event)}>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="res-customer">Customer</Label>
-              <select id="res-customer" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={customerId} onChange={(e) => setCustomerId(e.target.value)} required>
-                <option value="">Select customer</option>
-                {customers.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.customer_code} — {row.company_name || row.full_name}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                id="res-customer"
+                value={customerId}
+                onValueChange={setCustomerId}
+                options={customerOptions}
+                placeholder="Select customer"
+                searchPlaceholder="Search code, name, company, phone, email…"
+                clearLabel="Select customer"
+                required
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="res-vehicle">Available vehicle</Label>
-              <select id="res-vehicle" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required>
-                <option value="">Select vehicle</option>
-                {vehicles.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {(row.stock_number || row.chassis_number || row.id.slice(0, 8))} — {row.title}
-                    {row.is_published ? ' · public' : ''}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect
+                id="res-vehicle"
+                value={vehicleId}
+                onValueChange={setVehicleId}
+                options={vehicleOptions}
+                placeholder="Select vehicle"
+                searchPlaceholder="Search stock #, chassis, title, make/model…"
+                clearLabel="Select vehicle"
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="res-price">Unit price</Label>

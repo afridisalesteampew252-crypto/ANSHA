@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Calculator, CheckCircle2, Loader2, Plus, Search, Trash2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +25,16 @@ import type {
   SupplierInvoice,
 } from '@/lib/types';
 
-type StockOption = { id: string; label: string; purchase_price: number | null };
+type StockOption = {
+  id: string;
+  label: string;
+  purchase_price: number | null;
+  title?: string | null;
+  stock_number?: string | null;
+  chassis_number?: string | null;
+  part_code?: string | null;
+  name?: string | null;
+};
 type ChargeDraft = { charge_type: LandedCostChargeType; description: string; amount: string };
 type AllocRow = LandedCostAllocation & { label: string };
 
@@ -108,11 +118,16 @@ export default function LandedCostPage() {
         id: row.id,
         label: `${row.part_code} — ${row.name}`,
         purchase_price: row.purchase_price,
+        part_code: row.part_code,
+        name: row.name,
       }))
     );
     setVehicles(
       (vehRes.data || []).map((row) => ({
         id: row.id,
+        title: row.title,
+        stock_number: row.stock_number,
+        chassis_number: row.chassis_number,
         label: `${row.stock_number || row.chassis_number || row.id.slice(0, 8)} — ${row.title}`,
         purchase_price: row.purchase_price,
       }))
@@ -700,23 +715,27 @@ export default function LandedCostPage() {
                         <option value="part">Part</option>
                       </select>
                       {addInventoryType === 'vehicle' ? (
-                        <select className="h-10 rounded-md border bg-background px-3 text-sm" value={addVehicleId} onChange={(e) => setAddVehicleId(e.target.value)}>
-                          <option value="">Select vehicle</option>
-                          {vehicles.map((row) => (
-                            <option key={row.id} value={row.id}>
-                              {row.label}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchableSelect
+                          value={addVehicleId}
+                          onValueChange={setAddVehicleId}
+                          options={vehicles.map(vehicleSelectOption)}
+                          placeholder="Select vehicle"
+                          searchPlaceholder="Search stock #, chassis, title…"
+                          clearLabel="Select vehicle"
+                        />
                       ) : (
-                        <select className="h-10 rounded-md border bg-background px-3 text-sm" value={addPartId} onChange={(e) => setAddPartId(e.target.value)}>
-                          <option value="">Select part</option>
-                          {parts.map((row) => (
-                            <option key={row.id} value={row.id}>
-                              {row.label}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchableSelect
+                          value={addPartId}
+                          onValueChange={setAddPartId}
+                          options={parts.map((row) => ({
+                            value: row.id,
+                            label: row.label,
+                            keywords: [row.part_code, row.name],
+                          }))}
+                          placeholder="Select part"
+                          searchPlaceholder="Search part code or name…"
+                          clearLabel="Select part"
+                        />
                       )}
                       <Input type="number" min="0" step="0.01" placeholder="Amount (optional)" value={addAllocAmount} onChange={(e) => setAddAllocAmount(e.target.value)} />
                       <Button type="button" disabled={busy} onClick={() => void addAllocation()}>

@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Banknote, ExternalLink, FileText, Loader2, Paperclip, Pencil, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-type Customer = { id: string; full_name: string; company_name: string | null };
+type Customer = { id: string; full_name: string; company_name: string | null; customer_code?: string | null; phone?: string | null; email?: string | null };
 type Invoice = { id: string; invoice_number: string; customer_id: string | null; customer_name: string; customer_company: string | null; currency: string; balance_due: number; status: string };
 type Document = { id: string; remittance_id: string; storage_path: string; file_name: string; size_bytes: number | null };
 type Remittance = { id: string; remittance_number: string; customer_id: string | null; customer_name: string; invoice_id: string | null; received_date: string; amount: number; currency: string; method: string; bank_reference: string | null; sender_bank: string | null; receiving_bank: string | null; status: string; notes: string | null; created_at: string };
@@ -33,7 +34,7 @@ export default function RemittancesPage() {
     const [remittanceResult, documentResult, customerResult, invoiceResult] = await Promise.all([
       supabase.from('remittances').select('*').order('received_date', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('remittance_documents').select('*').order('created_at'),
-      supabase.from('customers').select('id,full_name,company_name').eq('is_active', true).order('company_name').order('full_name'),
+      supabase.from('customers').select('id,full_name,company_name,customer_code,phone,email').eq('is_active', true).order('company_name').order('full_name'),
       supabase.from('invoices').select('id,invoice_number,customer_id,customer_name,customer_company,currency,balance_due,status').gt('balance_due', 0).neq('status', 'cancelled').order('issue_date', { ascending: false }),
     ]);
     if (remittanceResult.error) setMessage(remittanceResult.error.message);
@@ -134,14 +135,24 @@ export default function RemittancesPage() {
   };
 
   const totals = useMemo(() => remittances.filter((item) => item.status === 'confirmed').reduce<Record<string, number>>((sum, item) => ({ ...sum, [item.currency]: (sum[item.currency] || 0) + Number(item.amount) }), {}), [remittances]);
+  const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
+  const invoiceOptions = useMemo(
+    () =>
+      invoices.map((item) => ({
+        value: item.id,
+        label: `${item.invoice_number} — ${item.customer_company || item.customer_name} — ${money(item.balance_due, item.currency)}`,
+        keywords: [item.invoice_number, item.customer_company, item.customer_name],
+      })),
+    [invoices]
+  );
 
   return <div className="mx-auto max-w-7xl space-y-6">
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold">Remittances</h1><p className="text-sm text-muted-foreground">Record customer funds, reconcile invoices, and keep private transfer evidence.</p></div><Button onClick={startCreate}><Plus className="h-4 w-4" />New remittance</Button></div>
     <div className="grid gap-4 sm:grid-cols-3"><Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">Records</p><p className="mt-1 text-2xl font-bold">{remittances.length}</p></CardContent></Card>{Object.entries(totals).slice(0,2).map(([currency,total]) => <Card key={currency}><CardContent className="p-5"><p className="text-sm text-muted-foreground">Confirmed {currency}</p><p className="mt-1 text-2xl font-bold">{money(total,currency)}</p></CardContent></Card>)}</div>
 
     {open && <Card><CardHeader><CardTitle className="text-lg">{editingId ? 'Edit remittance' : 'Record money received'}</CardTitle></CardHeader><CardContent><form onSubmit={submit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <div className="space-y-1.5"><Label htmlFor="rem-invoice">Apply to invoice (optional)</Label><select id="rem-invoice" value={form.invoice_id} onChange={(event)=>chooseInvoice(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="">Unapplied transfer</option>{invoices.map((item)=><option key={item.id} value={item.id}>{item.invoice_number} — {item.customer_company || item.customer_name} — {money(item.balance_due,item.currency)}</option>)}</select></div>
-      <div className="space-y-1.5"><Label htmlFor="rem-customer">Saved customer (optional)</Label><select id="rem-customer" value={form.customer_id} onChange={(event)=>chooseCustomer(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="">Select customer</option>{customers.map((item)=><option key={item.id} value={item.id}>{item.company_name ? `${item.company_name} — ${item.full_name}` : item.full_name}</option>)}</select></div>
+      <div className="space-y-1.5"><Label htmlFor="rem-invoice">Apply to invoice (optional)</Label><SearchableSelect id="rem-invoice" value={form.invoice_id} onValueChange={chooseInvoice} options={invoiceOptions} placeholder="Unapplied transfer" searchPlaceholder="Search invoice or customer…" clearLabel="Unapplied transfer" /></div>
+      <div className="space-y-1.5"><Label htmlFor="rem-customer">Saved customer (optional)</Label><SearchableSelect id="rem-customer" value={form.customer_id} onValueChange={chooseCustomer} options={customerOptions} placeholder="Select customer" searchPlaceholder="Search code, name, company, phone, email…" clearLabel="Select customer" /></div>
       <div className="space-y-1.5"><Label htmlFor="rem-name">Customer / sender *</Label><Input id="rem-name" required value={form.customer_name} onChange={(event)=>setForm({...form,customer_name:event.target.value})}/></div>
       <div className="space-y-1.5"><Label htmlFor="rem-date">Date received</Label><Input id="rem-date" type="date" value={form.received_date} onChange={(event)=>setForm({...form,received_date:event.target.value})}/></div>
       <div className="space-y-1.5"><Label htmlFor="rem-amount">Amount *</Label><Input id="rem-amount" type="number" min="0.01" step="0.01" required value={form.amount} onChange={(event)=>setForm({...form,amount:event.target.value})}/></div>

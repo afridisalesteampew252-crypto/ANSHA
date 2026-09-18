@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, PackagePlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 import type { InventoryReceipt, PurchaseOrder, Supplier, SupplierInvoice } from '@/lib/types';
 
-type StockOption = { id: string; label: string };
+type StockOption = {
+  id: string;
+  label: string;
+  title?: string | null;
+  stock_number?: string | null;
+  chassis_number?: string | null;
+  part_code?: string | null;
+  name?: string | null;
+};
 
 export default function InventoryReceivePage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -48,9 +57,12 @@ export default function InventoryReceivePage() {
     setSuppliers((supRes.data || []) as Supplier[]);
     setSupplierInvoices((invRes.data || []) as SupplierInvoice[]);
     setPurchaseOrders((poRes.data || []) as PurchaseOrder[]);
-    setParts((partRes.data || []).map((row) => ({ id: row.id, label: `${row.part_code} — ${row.name}` })));
+    setParts((partRes.data || []).map((row) => ({ id: row.id, label: `${row.part_code} — ${row.name}`, part_code: row.part_code, name: row.name })));
     setVehicles((vehRes.data || []).map((row) => ({
       id: row.id,
+      title: row.title,
+      stock_number: row.stock_number,
+      chassis_number: row.chassis_number,
       label: `${row.stock_number || row.chassis_number || row.id.slice(0, 8)} — ${row.title}`,
     })));
     setReceipts((recRes.data || []) as InventoryReceipt[]);
@@ -176,19 +188,35 @@ export default function InventoryReceivePage() {
             {inventoryType === 'vehicle' ? (
               <div className="space-y-1.5">
                 <Label htmlFor="grn-vehicle">Vehicle</Label>
-                <select id="grn-vehicle" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} required>
-                  <option value="">Select vehicle</option>
-                  {vehicles.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
-                </select>
+                <SearchableSelect
+                  id="grn-vehicle"
+                  value={vehicleId}
+                  onValueChange={setVehicleId}
+                  options={vehicles.map(vehicleSelectOption)}
+                  placeholder="Select vehicle"
+                  searchPlaceholder="Search stock #, chassis, title…"
+                  clearLabel="Select vehicle"
+                  required
+                />
               </div>
             ) : (
               <>
                 <div className="space-y-1.5">
                   <Label htmlFor="grn-part">Part</Label>
-                  <select id="grn-part" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={partId} onChange={(e) => setPartId(e.target.value)} required>
-                    <option value="">Select part</option>
-                    {parts.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
-                  </select>
+                  <SearchableSelect
+                    id="grn-part"
+                    value={partId}
+                    onValueChange={setPartId}
+                    options={parts.map((row) => ({
+                      value: row.id,
+                      label: row.label,
+                      keywords: [row.part_code, row.name],
+                    }))}
+                    placeholder="Select part"
+                    searchPlaceholder="Search part code or name…"
+                    clearLabel="Select part"
+                    required
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="grn-qty">Quantity</Label>

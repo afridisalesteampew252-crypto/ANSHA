@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ArrowLeft, Loader2, Save, Ship } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,7 +67,9 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [landedCost, setLandedCost] = useState('');
   const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
   const [supplierId, setSupplierId] = useState('');
-  const [customers, setCustomers] = useState<Array<{ id: string; label: string }>>([]);
+  const [customers, setCustomers] = useState<
+    Array<{ id: string; customer_code: string; full_name: string; company_name: string | null; phone?: string | null; email?: string | null }>
+  >([]);
   const [reserveCustomerId, setReserveCustomerId] = useState('');
   const [reserveBusy, setReserveBusy] = useState(false);
 
@@ -118,13 +121,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
     const [supRes, custRes] = await Promise.all([
       supabase.from('suppliers').select('id,supplier_code,name').eq('is_active', true).order('name').limit(200),
-      supabase.from('customers').select('id,customer_code,full_name,company_name').order('full_name').limit(500),
+      supabase.from('customers').select('id,customer_code,full_name,company_name,phone,email').order('full_name').limit(500),
     ]);
     setSuppliers((supRes.data || []).map((item) => ({ id: item.id, label: `${item.supplier_code} — ${item.name}` })));
-    setCustomers((custRes.data || []).map((item) => ({
-      id: item.id,
-      label: `${item.customer_code} — ${item.company_name || item.full_name}`,
-    })));
+    setCustomers((custRes.data || []) as typeof customers);
   }, [id, router]);
 
   useEffect(() => {
@@ -135,6 +135,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     () => LIFECYCLE_STAGES.filter((stage) => stage.value !== (vehicle?.lifecycle_stage || 'unassigned')),
     [vehicle?.lifecycle_stage]
   );
+  const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
 
   const saveBasics = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -323,10 +324,14 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           <div className="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_auto_auto]">
             <label className="space-y-1.5 text-sm">
               <span className="font-medium">Reserve for customer</span>
-              <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={reserveCustomerId} onChange={(e) => setReserveCustomerId(e.target.value)}>
-                <option value="">Select customer</option>
-                {customers.map((row) => <option key={row.id} value={row.id}>{row.label}</option>)}
-              </select>
+              <SearchableSelect
+                value={reserveCustomerId}
+                onValueChange={setReserveCustomerId}
+                options={customerOptions}
+                placeholder="Select customer"
+                searchPlaceholder="Search code, name, company, phone, email…"
+                clearLabel="Select customer"
+              />
             </label>
             <div className="flex items-end">
               <Button type="button" disabled={reserveBusy || vehicle.stock_status === 'sold'} onClick={() => void reserveVehicle()}>
