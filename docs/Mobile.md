@@ -2,7 +2,7 @@
 
 Capacitor provides a thin iOS/Android shell around the existing public catalog PWA. It does not rewrite admin or ship a second app codebase. The WebView loads the live site URL (default `https://www.anshatradingco.com`).
 
-The installable PWA (Phase 22) remains the primary mobile path in the browser. Capacitor is additive for store-ready wrappers.
+The installable PWA (Phase 22) remains the primary mobile path in the browser. Capacitor is additive for store-ready wrappers. PWA details: `docs/PWA.md`.
 
 ## Prerequisites
 

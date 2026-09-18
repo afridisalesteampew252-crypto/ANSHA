@@ -1,6 +1,7 @@
 /* ANSHA PWA service worker — public shell only. Never cache admin, API, or auth. */
-const VERSION = 'ansha-pwa-v2';
+const VERSION = 'ansha-pwa-v1.2.0';
 const PRECACHE = [
+  '/',
   '/offline',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -8,12 +9,7 @@ const PRECACHE = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches
-      .open(VERSION)
-      .then((cache) => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(PRECACHE)));
 });
 
 self.addEventListener('activate', (event) => {
@@ -25,6 +21,12 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 function shouldBypass(url) {
   if (url.origin !== self.location.origin) return true;
   const path = url.pathname;
@@ -32,6 +34,7 @@ function shouldBypass(url) {
   if (path.startsWith('/api')) return true;
   if (path.startsWith('/portal')) return true;
   if (path.startsWith('/verify/')) return true;
+  if (path.startsWith('/auth')) return true;
   return false;
 }
 
