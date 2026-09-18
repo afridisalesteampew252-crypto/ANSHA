@@ -102,7 +102,7 @@ Open `/admin` after login. Menu groups match the sidebar.
 **Vehicles** — `/admin/vehicles` and `/admin/vehicles/[id]`
 
 1. Create or open a vehicle.
-2. Manage photos, purchase/reserve fields, and public listing (publish only when stock is **available**).
+2. On the detail page, manage photos (upload, set cover, reorder, replace, delete), purchase/reserve fields, and public listing (publish only when stock is **available**).
 3. On the detail page, advance **lifecycle** along the recommended path (Auction → Yard → Port → Sold). Record workflow events; attach private files per event.
 4. Skipping stages requires an **admin** force override with a reason.
 

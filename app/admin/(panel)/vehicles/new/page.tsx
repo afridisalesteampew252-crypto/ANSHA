@@ -161,7 +161,7 @@ export default function AddVehiclePage() {
 
     setLoading(false);
     toast.success(publish ? 'Vehicle published successfully.' : 'Draft saved successfully.');
-    router.push('/admin/vehicles');
+    router.push(`/admin/vehicles/${vehicleId}`);
   };
 
   return (
@@ -183,7 +183,7 @@ export default function AddVehiclePage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Photos</CardTitle>
-                <CardDescription>Upload vehicle photos — set one as cover</CardDescription>
+                <CardDescription>Upload now or add and manage photos later on the vehicle detail page</CardDescription>
               </div>
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoSelect} />
               <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>

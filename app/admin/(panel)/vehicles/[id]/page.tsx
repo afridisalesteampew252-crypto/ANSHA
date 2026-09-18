@@ -4,7 +4,21 @@ import { use, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { ArrowLeft, FileText, Loader2, Paperclip, Save, Ship, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  Paperclip,
+  Replace,
+  Save,
+  Ship,
+  Star,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { compressCatalogImage } from '@/lib/catalog-image';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import {
@@ -32,6 +47,7 @@ import type {
   Vehicle,
   VehicleLifecycleEvent,
   VehicleLifecycleEventAttachment,
+  VehiclePhoto,
 } from '@/lib/types';
 
 const statusClass: Record<StockStatus, string> = {
@@ -66,6 +82,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [forceOverride, setForceOverride] = useState(false);
   const [uploadingEventId, setUploadingEventId] = useState<string | null>(null);
   const [removingAttachmentId, setRemovingAttachmentId] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<VehiclePhoto[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
+  const [photoActionId, setPhotoActionId] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [make, setMake] = useState('');
@@ -100,8 +120,13 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    const [vehicleRes, eventsRes, attachmentsRes, profileRes] = await Promise.all([
+    const [vehicleRes, photosRes, eventsRes, attachmentsRes, profileRes] = await Promise.all([
       supabase.from('vehicles').select('*').eq('id', id).maybeSingle(),
+      supabase
+        .from('vehicle_photos')
+        .select('id, vehicle_id, storage_path, is_cover, sort_order, created_at')
+        .eq('vehicle_id', id)
+        .order('sort_order', { ascending: true }),
       supabase
         .from('vehicle_lifecycle_events')
         .select('*')
@@ -126,6 +151,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
     const row = vehicleRes.data as Vehicle;
     setVehicle(row);
+    setPhotos(((photosRes.data || []) as VehiclePhoto[]).sort((a, b) => a.sort_order - b.sort_order));
     setTitle(row.title);
     setMake(row.make);
     setModel(row.model);
@@ -375,6 +401,190 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     await load();
   };
 
+  const getPhotoUrl = (path: string) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    return `${supabaseUrl}/storage/v1/object/public/vehicle-images/${path}`;
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !vehicle) return;
+
+    setUploadingPhotos(true);
+    setUploadProgress({ completed: 0, total: files.length });
+    const folder = vehicle.slug || vehicle.id;
+    let successCount = 0;
+    const startingCount = photos.length;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const optimized = await compressCatalogImage(
+        file,
+        `${vehicle.make}-${vehicle.model}-${folder}-${startingCount + i + 1}`
+      );
+      const fileName = `${folder}/${Date.now()}-${optimized.file.name}`;
+
+      const { error: upErr } = await supabase.storage
+        .from('vehicle-images')
+        .upload(fileName, optimized.file, { contentType: 'image/webp', cacheControl: '31536000' });
+
+      if (upErr) {
+        toast.error(`Failed to upload ${file.name}`);
+        setUploadProgress((progress) => ({ ...progress, completed: progress.completed + 1 }));
+        continue;
+      }
+
+      const { data: photoData, error: photoErr } = await supabase
+        .from('vehicle_photos')
+        .insert({
+          vehicle_id: vehicle.id,
+          storage_path: fileName,
+          is_cover: startingCount === 0 && i === 0,
+          sort_order: startingCount + i,
+        })
+        .select('id, vehicle_id, storage_path, is_cover, sort_order, created_at')
+        .single();
+
+      if (!photoErr && photoData) {
+        setPhotos((prev) => [...prev, photoData as VehiclePhoto]);
+        successCount++;
+      } else if (photoErr) {
+        await supabase.storage.from('vehicle-images').remove([fileName]);
+        toast.error(`Failed to save ${file.name}`);
+      }
+      setUploadProgress((progress) => ({ ...progress, completed: progress.completed + 1 }));
+    }
+
+    setUploadingPhotos(false);
+    if (successCount > 0) {
+      toast.success(`${successCount} photo(s) uploaded.`);
+    }
+    e.target.value = '';
+  };
+
+  const setCoverPhoto = async (photoId: string) => {
+    if (!vehicle) return;
+    setPhotoActionId(photoId);
+    const { error: clearError } = await supabase
+      .from('vehicle_photos')
+      .update({ is_cover: false })
+      .eq('vehicle_id', vehicle.id);
+    const { error: coverError } = await supabase
+      .from('vehicle_photos')
+      .update({ is_cover: true })
+      .eq('id', photoId);
+    setPhotoActionId(null);
+    if (clearError || coverError) {
+      toast.error('Could not update the cover photo.');
+      return;
+    }
+    setPhotos((prev) => prev.map((photo) => ({ ...photo, is_cover: photo.id === photoId })));
+    toast.success('Cover photo updated.');
+  };
+
+  const deletePhoto = async (photoId: string, storagePath: string) => {
+    if (!vehicle) return;
+    if (!window.confirm('Delete this photo permanently?')) return;
+    setPhotoActionId(photoId);
+    const deletedPhoto = photos.find((photo) => photo.id === photoId);
+    const { error: storageError } = await supabase.storage.from('vehicle-images').remove([storagePath]);
+    const { error: databaseError } = await supabase.from('vehicle_photos').delete().eq('id', photoId);
+    if (storageError || databaseError) {
+      setPhotoActionId(null);
+      toast.error('Could not delete the photo.');
+      return;
+    }
+    const remainingPhotos = photos.filter((photo) => photo.id !== photoId);
+    setPhotos(remainingPhotos);
+    if (deletedPhoto?.is_cover && remainingPhotos[0]) {
+      const replacement = remainingPhotos[0];
+      const { error: replacementError } = await supabase
+        .from('vehicle_photos')
+        .update({ is_cover: true })
+        .eq('id', replacement.id);
+      if (!replacementError) {
+        setPhotos((current) =>
+          current.map((photo) => ({ ...photo, is_cover: photo.id === replacement.id }))
+        );
+      }
+    }
+    setPhotoActionId(null);
+    toast.success('Photo deleted.');
+  };
+
+  const movePhoto = async (photoId: string, direction: -1 | 1) => {
+    const index = photos.findIndex((photo) => photo.id === photoId);
+    const swapIndex = index + direction;
+    if (index < 0 || swapIndex < 0 || swapIndex >= photos.length) return;
+
+    const current = photos[index];
+    const neighbor = photos[swapIndex];
+    setPhotoActionId(photoId);
+
+    const { error: firstError } = await supabase
+      .from('vehicle_photos')
+      .update({ sort_order: neighbor.sort_order })
+      .eq('id', current.id);
+    const { error: secondError } = await supabase
+      .from('vehicle_photos')
+      .update({ sort_order: current.sort_order })
+      .eq('id', neighbor.id);
+
+    setPhotoActionId(null);
+    if (firstError || secondError) {
+      toast.error('Could not reorder photos.');
+      return;
+    }
+
+    const next = [...photos];
+    next[index] = { ...neighbor, sort_order: current.sort_order };
+    next[swapIndex] = { ...current, sort_order: neighbor.sort_order };
+    setPhotos(next.sort((a, b) => a.sort_order - b.sort_order));
+  };
+
+  const replacePhoto = async (photoId: string, file: File | undefined) => {
+    if (!vehicle || !file) return;
+    const existing = photos.find((photo) => photo.id === photoId);
+    if (!existing) return;
+
+    setPhotoActionId(photoId);
+    const folder = vehicle.slug || vehicle.id;
+    const optimized = await compressCatalogImage(
+      file,
+      `${vehicle.make}-${vehicle.model}-${folder}-replace`
+    );
+    const fileName = `${folder}/${Date.now()}-${optimized.file.name}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('vehicle-images')
+      .upload(fileName, optimized.file, { contentType: 'image/webp', cacheControl: '31536000' });
+
+    if (upErr) {
+      setPhotoActionId(null);
+      toast.error('Could not upload the replacement image.');
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from('vehicle_photos')
+      .update({ storage_path: fileName })
+      .eq('id', photoId);
+
+    if (updateError) {
+      await supabase.storage.from('vehicle-images').remove([fileName]);
+      setPhotoActionId(null);
+      toast.error('Could not replace the photo.');
+      return;
+    }
+
+    await supabase.storage.from('vehicle-images').remove([existing.storage_path]);
+    setPhotos((prev) =>
+      prev.map((photo) => (photo.id === photoId ? { ...photo, storage_path: fileName } : photo))
+    );
+    setPhotoActionId(null);
+    toast.success('Photo replaced.');
+  };
+
   if (fetching || !vehicle) {
     return (
       <div className="flex justify-center py-20">
@@ -415,6 +625,172 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           </Link>
         </Button>
       </div>
+
+      <Card className="overflow-hidden">
+        <CardHeader>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg">Photos</CardTitle>
+              <CardDescription>
+                {photos.length} {photos.length === 1 ? 'image' : 'images'} · Set cover, reorder, replace, or delete
+              </CardDescription>
+            </div>
+            <label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(event) => void handlePhotoUpload(event)}
+                disabled={uploadingPhotos}
+              />
+              <Button type="button" variant="outline" size="sm" asChild disabled={uploadingPhotos}>
+                <span>
+                  {uploadingPhotos ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {uploadingPhotos
+                    ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}`
+                    : 'Upload Photos'}
+                </span>
+              </Button>
+            </label>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <label className="flex cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-4 py-5 text-center transition-colors hover:border-foreground/30 hover:bg-secondary/60">
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              multiple
+              className="hidden"
+              onChange={(event) => void handlePhotoUpload(event)}
+              disabled={uploadingPhotos}
+            />
+            {uploadingPhotos ? (
+              <Loader2 className="h-6 w-6 animate-spin text-accent" />
+            ) : (
+              <Upload className="h-6 w-6 text-muted-foreground" />
+            )}
+            <span>
+              <span className="block text-sm font-semibold">
+                {uploadingPhotos ? 'Uploading your images…' : 'Select vehicle photos'}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                PNG, JPG or WEBP · clear square images work best
+              </span>
+            </span>
+          </label>
+          {photos.length === 0 ? (
+            <div className="flex flex-col items-center rounded-xl bg-secondary/30 py-10 text-center">
+              <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
+              <p className="mt-3 text-sm text-muted-foreground">No photos uploaded yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {photos.map((photo, index) => (
+                <div
+                  key={photo.id}
+                  className={`group overflow-hidden rounded-xl border bg-secondary/30 ${
+                    photo.is_cover ? 'border-accent ring-2 ring-accent/15' : 'border-border'
+                  }`}
+                >
+                  <div className="relative aspect-square">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getPhotoUrl(photo.storage_path)}
+                      alt={`${title || vehicle.title || 'Vehicle'} photo ${index + 1}`}
+                      className="h-full w-full object-contain p-2"
+                    />
+                    {photo.is_cover && (
+                      <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-accent px-2 py-1 text-[11px] font-semibold text-accent-foreground shadow-sm">
+                        <Star className="h-3 w-3 fill-current" /> Cover
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1 border-t border-border p-2">
+                    <div className="flex items-center justify-between gap-1">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        disabled={index === 0 || photoActionId === photo.id}
+                        onClick={() => void movePhoto(photo.id, -1)}
+                        aria-label={`Move photo ${index + 1} earlier`}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 flex-1 justify-center px-1 text-xs"
+                        disabled={photo.is_cover || photoActionId === photo.id}
+                        onClick={() => void setCoverPhoto(photo.id)}
+                      >
+                        {photoActionId === photo.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Star className="h-3.5 w-3.5" />
+                        )}
+                        {photo.is_cover ? 'Cover' : 'Make cover'}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        disabled={index === photos.length - 1 || photoActionId === photo.id}
+                        onClick={() => void movePhoto(photo.id, 1)}
+                        aria-label={`Move photo ${index + 1} later`}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          disabled={photoActionId === photo.id}
+                          onChange={(event) => {
+                            void replacePhoto(photo.id, event.target.files?.[0]);
+                            event.currentTarget.value = '';
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-full justify-start px-2 text-xs"
+                          asChild
+                          disabled={photoActionId === photo.id}
+                        >
+                          <span>
+                            <Replace className="h-3.5 w-3.5" />
+                            Replace
+                          </span>
+                        </Button>
+                      </label>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        disabled={photoActionId === photo.id}
+                        onClick={() => void deletePhoto(photo.id, photo.storage_path)}
+                        aria-label={`Delete photo ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
