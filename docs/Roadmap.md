@@ -37,6 +37,8 @@ Done (Phase 21): private ticket files on `/admin/requests/[id]` via `workspace_r
 
 Later: tighter due-date reminders.
 
+Done (Phase 26): hourly due-soon (24h) and overdue in-app notifications for active assignees. Ledger `workspace_request_due_reminders`, RPC `process_workspace_request_due_reminders`, Edge Function `remind-request-dues`, Vercel Cron `/api/cron/request-dues`. No outbound email in this slice.
+
 ## 5. Chat linking
 
 Done (Phase 20): `chat_conversation_links` attaches existing conversations to vehicle/customer/inquiry/invoice/request IDs. RPCs `link_chat_conversation` / `unlink_chat_conversation`. Team Chat UI can link/unlink and filter via query params. No second chat product.

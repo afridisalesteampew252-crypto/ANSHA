@@ -86,6 +86,19 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, optional `VAPID_SUBJECT`
 - Removes stale endpoints (HTTP 404/410)
 
+### `remind-request-dues`
+
+- GET or POST, no end-user JWT (`verify_jwt` off)
+- Auth: `Authorization: Bearer <CRON_SECRET>` (Edge Function secret `CRON_SECRET`)
+- Calls `process_workspace_request_due_reminders()` with the service role
+- Writes idempotent `workspace_request_due_reminders` rows and `admin_notifications` (`request_due`)
+
+### Cron: `/api/cron/request-dues`
+
+- Vercel Cron hourly (`0 * * * *` in `vercel.json`)
+- Auth: same `CRON_SECRET` (Vercel env); platform sends `Authorization: Bearer <CRON_SECRET>`
+- Proxies to `remind-request-dues` using only the publishable key + cron secret (no service role on Next.js)
+
 Service-role keys exist only as Edge Function secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). They must not be added as `NEXT_PUBLIC_*` variables.
 
 ## Storage API

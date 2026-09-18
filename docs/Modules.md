@@ -13,7 +13,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Blog | `/blog` | `/admin/blog` | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
 | Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
-| Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments (`internal-files`) |
+| Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments, due reminders |
 | Customer portal | `/portal` | `/portal/invoices` | `customer_profiles` + own `invoices` (read-only) |
 | Customers | no | `/admin/customers`, SOA `[id]` (+ enable portal) | `customers`, invoices, remittances, allocations |
 | Invoices | `/verify/invoice/[code]` | `/admin/invoices` | `invoices*` |

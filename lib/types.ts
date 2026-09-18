@@ -467,7 +467,19 @@ export type NotificationType =
   | 'part_request'
   | 'invoice'
   | 'remittance'
-  | 'system';
+  | 'system'
+  | 'request_due';
+
+export type WorkspaceRequestDueReminderKind = 'due_soon' | 'overdue';
+
+export interface WorkspaceRequestDueReminder {
+  id: string;
+  request_id: string;
+  assignee_id: string;
+  due_at_snapshot: string;
+  kind: WorkspaceRequestDueReminderKind;
+  notified_at: string;
+}
 
 export interface AdminNotification {
   id: string;
@@ -703,6 +715,7 @@ export interface Database {
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;
       workspace_request_attachments: TableDef<WorkspaceRequestAttachment>;
+      workspace_request_due_reminders: TableDef<WorkspaceRequestDueReminder>;
       workspace_request_events: TableDef<WorkspaceRequestEvent>;
       workspace_requests: TableDef<WorkspaceRequest>;
     };

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell, CheckCheck, CircleAlert, Inbox, Mail, MessageCircle, PackageSearch, ReceiptText } from 'lucide-react';
+import { Bell, CalendarClock, CheckCheck, CircleAlert, Inbox, Mail, MessageCircle, PackageSearch, ReceiptText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ const iconByType = {
   invoice: ReceiptText,
   remittance: ReceiptText,
   system: CircleAlert,
+  request_due: CalendarClock,
 } as const;
 
 export function AdminNotificationCenter({ userId }: { userId: string }) {
