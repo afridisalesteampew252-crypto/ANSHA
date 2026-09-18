@@ -26,11 +26,13 @@ Deno.serve(async (request) => {
 
     const { data: callerProfile, error: profileReadError } = await serviceClient
       .from('admin_profiles')
-      .select('role')
+      .select('role, is_active')
       .eq('id', user.id)
       .maybeSingle();
     if (profileReadError) return json(request, { error: 'Could not verify administrator access.' }, 500);
-    if (callerProfile?.role !== 'admin') return json(request, { error: 'Only an administrator can enable portal access.' }, 403);
+    if (callerProfile?.role !== 'admin' || callerProfile?.is_active === false) {
+      return json(request, { error: 'Only an active administrator can enable portal access.' }, 403);
+    }
 
     const payload = await request.json();
     const customerId = String(payload.customer_id || '').trim();

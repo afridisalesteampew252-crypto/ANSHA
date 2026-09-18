@@ -6,7 +6,8 @@
 2. Cookie session via `@supabase/ssr`
 3. `proxy.ts` requires claims + `admin_profiles` row for `/admin/*` except `/admin`
 4. RLS uses `public.is_admin()` = membership in `admin_profiles`, not `role = 'admin'`
-5. `role = 'admin'` is required only for Edge Function user create/update
+5. Sensitive account actions use `private.is_account_admin()` = active `role = 'admin'` (Phase 45)
+6. `role = 'admin'` is required for Edge Function user create/update and portal-create-access
 
 Treat every browser query as hostile. Policies are the API.
 
@@ -42,7 +43,7 @@ Public media buckets serve catalog/blog images. Private buckets (`profile-images
 
 Must verify the caller JWT with the anon key before using the service-role client. `admin-create-user` and `admin-update-user` both do this. CORS reflects an allowlist (canonical ANSHA hosts, localhost:3000, `https://*.vercel.app`) and does not use `*`.
 
-Staff RLS is unchanged: `is_admin()` still means any `admin_profiles` row. Tightening staff write access needs a separate approval.
+Staff may use day-to-day ops (`private.is_ops_user()`). Account-admin actions (`private.is_account_admin()`) cover user management, portal access create, GL reverse / chart changes, bank account create/delete, supplier hard-delete, and payroll post / cancel-posted. See `docs/Roles.md`.
 
 ## XSS / HTML
 

@@ -365,6 +365,38 @@ export interface SiteOffer {
 }
 
 
+/** Phase 49 — marketing campaign records (ops-only MVP). */
+export type MarketingCampaignChannel = 'push' | 'email' | 'offer';
+export type MarketingCampaignStatus = 'draft' | 'scheduled' | 'sent';
+
+export type MarketingCampaignPayload = {
+  topic?: string;
+  title?: string;
+  body?: string;
+  url?: string;
+  to_email?: string;
+  subject?: string;
+  offer_id?: string;
+  offer_title?: string;
+  summary?: string | null;
+  href?: string;
+  [key: string]: unknown;
+};
+
+export interface MarketingCampaign {
+  id: string;
+  name: string;
+  channel: MarketingCampaignChannel;
+  status: MarketingCampaignStatus;
+  payload: MarketingCampaignPayload;
+  sent_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+
+
 export type WhatsAppMessageDirection = 'outbound' | 'inbound';
 export type WhatsAppMessageKind = 'text' | 'template';
 export type WhatsAppMessageStatus = 'pending' | 'sent' | 'failed' | 'delivered' | 'read';
@@ -1325,6 +1357,7 @@ export interface Database {
       landed_cost_charges: TableDef<LandedCostCharge>;
       landed_cost_packs: TableDef<LandedCostPack>;
       leave_requests: TableDef<LeaveRequest>;
+      marketing_campaigns: TableDef<MarketingCampaign>;
       outbound_email_log: TableDef<OutboundEmailLog>;
       part_compatibility: TableDef<PartCompatibility>;
       part_photos: TableDef<PartPhoto>;

@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository includes Phase 41 analytics (`20260918300000_phase_41_analytics.sql`); parallel earlier ERP phases may also be present.
+Latest migration in the repository includes Phase 48 payroll/EOS (20260918360000_phase_48_payroll_eos.sql) and later stubs (e.g. Phase 50 bank feeds); parallel earlier ERP phases may also be present.
 
 ## Entity groups
 
@@ -35,9 +35,10 @@ Latest migration in the repository includes Phase 41 analytics (`20260918300000_
 - `export_shipments` / `export_shipment_vehicles` â?? booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events
 - `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` â?? import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
 - `bank_accounts` / `bank_transactions` â?? ops bank ledger (BNK-/BTXN-); reconcile flags; ops RLS
+- `bank_feed_connections` - Phase 50 feed placeholders (`manual`|`pending_provider`); not live Open Banking; ops RLS
 - `expense_categories` / `expenses` â?? operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
 - `vat_return_periods` â?? optional saved VAT return pack snapshots (date range + jsonb summary); ops RLS; RPCs `get_vat_return_summary` / `save_vat_return_period`
-- `employees` / `leave_requests` / `payroll_runs` / `payroll_lines` â?? HR-lite payroll (PR- numbers); leave pending/approved/rejected; optional soft `bank_account_id`; ops RLS; EOS estimate RPC is planning-only
+- employees / leave_requests / payroll_runs / payroll_lines / eos_estimate_logs ? HR-lite payroll (PR- numbers); leave balance days + optional deduct on annual approve; UAE-oriented indicative EOS calculator (ops RLS). EOS is planning-only ? not legal advice / not labour-law compliance.
 - `gl_accounts` / `gl_journals` / `gl_journal_lines` â?? chart of accounts + manual journals (JE- numbers); draft/posted/reversed; optional `source_module`/`source_id` for future auto-post; ops RLS; report RPCs `gl_trial_balance` / `gl_profit_and_loss` / `gl_balance_sheet`
 - `ai_chat_threads` / `ai_chat_messages` ? ops AI assistant history; owner-scoped RLS; grounding via `get_ai_ops_grounding`
 - `get_ops_analytics_summary(from,to)` ? Phase 41 jsonb KPIs (sales/AR, stock, requests; ops also remittances + open POs + GRNs). Workspace-executable; sales scoped to own book
@@ -48,6 +49,11 @@ Latest migration in the repository includes Phase 41 analytics (`20260918300000_
 
 - `push_subscriptions` â?? Web Push endpoints (`endpoint` unique), `notify_insights` / `notify_deals`
 - `site_offers` â?? published deals/offers with `href`, `summary`, `published_at`
+
+### Marketing campaigns (Phase 49)
+
+- `marketing_campaigns` ? ops-only campaign records: `name`, `channel` (`push`|`email`|`offer`), `status` (`draft`|`scheduled`|`sent`), `payload` jsonb, `sent_at`. Send now reuses Edge `send-web-push` / `send-outbound-email` (offer channel ? deals push). Not ESP automation; `scheduled` is a status label only.
+
 ### Public intake
 
 - `inquiries` â?? optional `part_id`, status `new|read|responded|closed`

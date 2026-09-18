@@ -90,7 +90,7 @@ AI ops assistant RPCs (Phase 42, ops-only via private.is_ops_user()):
 
 - get_ai_ops_grounding(p_query?) — compact jsonb counts + recent vehicles + optional title matches
 
-TODO: auto-post journals from bank/expense/invoice/remittance modules using `source_module` + `source_id` (manual MVP only today).
+GL auto-post (Phase 46): no new public RPCs. `private.post_auto_gl_journal` / domain writers create posted journals keyed by `source_module` + `source_id` (idempotent unique index). AFTER triggers on remittance confirm/allocate, expense post/cancel (reverse), tax/commercial invoice leave-draft, supplier payment confirm. Account codes: 1000 Cash, 1100 AR, 2000 AP, 2100 VAT, 4000 Sales, 6000 OpEx (category hints fall back to 6000 until detailed COA exists).
 
 Audit log (Phase 43): no public RPCs. Writes go through `private.write_audit_log(action, entity_type, entity_id, metadata?, actor_id?)` (SECURITY DEFINER; not granted to `authenticated`). Ops read `audit_logs` via Data API SELECT. Automatic hooks: invoice status updates, vehicle `stock_status` updates, remittance allocation insert/delete.
 
@@ -149,6 +149,13 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - Sends plain-text mail via Resend; inserts `outbound_email_log` with caller JWT (no service role)
 - Requires Edge secret `RESEND_API_KEY`; optional `RESEND_FROM_EMAIL`
 - Missing API key → HTTP 503 with configuration error (no silent fail)
+- Also invoked from `/admin/campaigns` (Phase 49) for email-channel campaigns
+
+### Marketing campaigns (Phase 49)
+
+- Table `marketing_campaigns` (ops RLS); admin UI `/admin/campaigns`
+- Send now: channel `push` → `send-web-push`; `email` → `send-outbound-email`; `offer` → `send-web-push` topic `deals` for linked `site_offers` row
+- No new Edge Function; not list blast / drip automation
 
 ### `remind-request-dues`
 

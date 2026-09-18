@@ -74,6 +74,7 @@ export default function PayrollPage() {
   const [lines, setLines] = useState<PayrollLine[]>([]);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
+  const [isAccountAdmin, setIsAccountAdmin] = useState(false);
 
   const [empName, setEmpName] = useState('');
   const [empJoin, setEmpJoin] = useState(() => new Date().toISOString().slice(0, 10));
@@ -103,11 +104,12 @@ export default function PayrollPage() {
   const [eosResult, setEosResult] = useState<EosEstimate | null>(null);
 
   const load = useCallback(async () => {
-    const [empRes, profRes, leaveRes, runRes] = await Promise.all([
+    const [empRes, profRes, leaveRes, runRes, sessionRes] = await Promise.all([
       supabase.from('employees').select('*').order('full_name').limit(200),
       supabase.from('admin_profiles').select('*').eq('is_active', true).order('full_name'),
       supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('payroll_runs').select('*').order('created_at', { ascending: false }).limit(100),
+      supabase.auth.getSession(),
     ]);
     if (empRes.error) toast.error(empRes.error.message);
     if (leaveRes.error) toast.error(leaveRes.error.message);
@@ -116,6 +118,11 @@ export default function PayrollPage() {
     setProfiles((profRes.data || []) as AdminProfile[]);
     setLeaveRequests((leaveRes.data || []) as LeaveRequest[]);
     setRuns((runRes.data || []) as PayrollRun[]);
+    const uid = sessionRes.data.session?.user?.id;
+    if (uid) {
+      const self = (profRes.data || []).find((row) => row.id === uid);
+      setIsAccountAdmin(self?.role === 'admin');
+    }
   }, []);
 
   useEffect(() => {
@@ -599,17 +606,19 @@ export default function PayrollPage() {
                     </div>
                     {selectedRun.status === 'draft' && (
                       <div className="flex flex-wrap gap-2">
-                        <Button size="sm" disabled={busy} onClick={() => void postRun(selectedRun.id)}>
-                          <CheckCircle2 className="h-4 w-4" />
-                          Post
-                        </Button>
+                        {isAccountAdmin ? (
+                          <Button size="sm" disabled={busy} onClick={() => void postRun(selectedRun.id)}>
+                            <CheckCircle2 className="h-4 w-4" />
+                            Post
+                          </Button>
+                        ) : null}
                         <Button size="sm" variant="outline" disabled={busy} onClick={() => void cancelRun(selectedRun.id)}>
                           <XCircle className="h-4 w-4" />
                           Cancel
                         </Button>
                       </div>
                     )}
-                    {selectedRun.status === 'posted' && (
+                    {selectedRun.status === 'posted' && isAccountAdmin && (
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => void cancelRun(selectedRun.id)}>
                         <XCircle className="h-4 w-4" />
                         Cancel posted run

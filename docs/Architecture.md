@@ -9,6 +9,7 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - Customer portal: `app/portal/` — login plus read-only invoices (Phase 23)
 - Web Push: `push_subscriptions` + Edge Function `send-web-push` (Phase 24)
 - Outbound email: `outbound_email_log` + Edge Function `send-outbound-email` / Resend (Phase 39)
+- Marketing campaigns: `marketing_campaigns` + `/admin/campaigns` Send now → push/email/offer hooks (Phase 49)
 - WhatsApp Cloud API: `whatsapp_message_log` + Edge Function `send-whatsapp` (Phase 40)
 - AI ops assistant: `/admin/ai` + `POST /api/ai/chat` (Vercel AI SDK; server `AI_GATEWAY_API_KEY` / `OPENAI_API_KEY`) (Phase 42)
 - Capacitor shell (Phase 44): iOS/Android WebView loading the production public URL; see `docs/Mobile.md`

@@ -34,6 +34,7 @@ export default function CustomerAccountPage() {
   const [portalEmail, setPortalEmail] = useState('');
   const [portalPassword, setPortalPassword] = useState('');
   const [portalBusy, setPortalBusy] = useState(false);
+  const [isAccountAdmin, setIsAccountAdmin] = useState(false);
   const [remittanceId, setRemittanceId] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
   const [allocationAmount, setAllocationAmount] = useState('');
@@ -43,11 +44,12 @@ export default function CustomerAccountPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [customerResult, invoiceResult, remittanceResult, portalResult] = await Promise.all([
+    const [customerResult, invoiceResult, remittanceResult, portalResult, sessionRes] = await Promise.all([
       supabase.from('customers').select('id,customer_code,full_name,company_name,email,phone,country').eq('id', customerId).single(),
       supabase.from('invoices').select('id,invoice_number,document_type,issue_date,currency,status,total_amount,amount_paid,balance_due').eq('customer_id', customerId).order('issue_date', { ascending: false }),
       supabase.from('remittances').select('id,remittance_number,received_date,amount,currency,status,method,bank_reference').eq('customer_id', customerId).order('received_date', { ascending: false }),
       supabase.from('customer_profiles').select('id,email,full_name,is_active').eq('customer_id', customerId).maybeSingle(),
+      supabase.auth.getSession(),
     ]);
     if (customerResult.error) setNotice(customerResult.error.message);
     const invoiceRows = (invoiceResult.data || []) as Invoice[];
@@ -57,6 +59,11 @@ export default function CustomerAccountPage() {
     setPortalEmail(customerResult.data?.email || '');
     setInvoices(invoiceRows);
     setRemittances(remittanceRows);
+    const uid = sessionRes.data.session?.user?.id;
+    if (uid) {
+      const { data: prof } = await supabase.from('admin_profiles').select('role').eq('id', uid).maybeSingle();
+      setIsAccountAdmin(prof?.role === 'admin');
+    }
     const [itemResult, allocationResult] = await Promise.all([
       invoiceRows.length ? supabase.from('invoice_items').select('id,invoice_id,description,quantity,line_total,inventory_type,inventory_reference').in('invoice_id', invoiceRows.map((row) => row.id)).order('sort_order') : Promise.resolve({ data: [] }),
       remittanceRows.length ? supabase.from('remittance_allocations').select('id,remittance_id,invoice_id,invoice_payment_id,amount,created_at').in('remittance_id', remittanceRows.map((row) => row.id)).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
@@ -180,7 +187,7 @@ export default function CustomerAccountPage() {
             Portal login active for <strong>{portalLink.email}</strong>
             {portalLink.is_active ? '' : ' (inactive)'}.
           </p>
-        ) : (
+        ) : isAccountAdmin ? (
           <form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]" onSubmit={(event) => void enablePortal(event)}>
             <div className="space-y-1.5">
               <Label htmlFor="portal-email">Portal email</Label>
@@ -197,6 +204,10 @@ export default function CustomerAccountPage() {
               </Button>
             </div>
           </form>
+        ) : (
+          <p className="rounded-lg border bg-background p-3 text-sm text-muted-foreground">
+            Portal access can only be enabled by an account administrator.
+          </p>
         )}
       </CardContent>
     </Card>

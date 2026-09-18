@@ -19,7 +19,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Landed cost | no | `/admin/landed-cost` (ops) | `landed_cost_packs`, `landed_cost_charges`, `landed_cost_allocations` |
 | Bank accounts | no | `/admin/bank-accounts` (ops) | `bank_accounts`, `bank_transactions` |
 | Expenses | no | `/admin/expenses` (ops) | `expense_categories`, `expenses` |
-| General ledger | no | `/admin/ledger` (ops) | `gl_accounts`, `gl_journals`, `gl_journal_lines` |
+| General ledger | no | `/admin/ledger` (ops) | `gl_accounts`, `gl_journals`, `gl_journal_lines` (Phase 46 auto-post from remittance/expense/invoice/supplier payment) |
 | Financial reports | no | `/admin/reports` (ops) | trial balance / P&L / balance sheet RPCs |
 | VAT return | no | `/admin/vat-return` (ops) | `vat_return_periods` + `get_vat_return_summary` |
 | Payroll | no | /admin/payroll (ops) | employees, leave_requests, payroll_runs, payroll_lines |
@@ -39,6 +39,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Team chat | no | `/admin/chat` (+ entity filters) | `chat_*`, `chat_conversation_links`, Realtime |
 | Internal mail | no | `/admin/mail` | `internal_mail*` |
 | Outbound email | no | `/admin/email` (ops) | `outbound_email_log` + Edge `send-outbound-email` |
+| Marketing campaigns | no | `/admin/campaigns` (ops) | `marketing_campaigns` + send hooks to push/email/offer |
 | WhatsApp | no | `/admin/whatsapp` (ops) | `whatsapp_message_log` + Edge `send-whatsapp` |
 | Notifications | no | header center | `admin_notifications` |
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |
@@ -50,6 +51,6 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 ## Not implemented
 
-Marketing email campaigns, native admin rewrite.
+Native admin rewrite.
 
 Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.

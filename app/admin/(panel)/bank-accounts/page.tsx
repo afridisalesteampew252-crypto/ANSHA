@@ -50,15 +50,21 @@ export default function BankAccountsPage() {
   const [accountForm, setAccountForm] = useState(emptyAccountForm);
   const [showTxnForm, setShowTxnForm] = useState(false);
   const [txnForm, setTxnForm] = useState(emptyTxnForm);
+  const [isAccountAdmin, setIsAccountAdmin] = useState(false);
 
   const loadAccounts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('bank_accounts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [{ data, error }, sessionRes] = await Promise.all([
+      supabase.from('bank_accounts').select('*').order('created_at', { ascending: false }),
+      supabase.auth.getSession(),
+    ]);
     if (error) {
       toast.error(error.message);
       return;
+    }
+    const uid = sessionRes.data.session?.user?.id;
+    if (uid) {
+      const { data: prof } = await supabase.from('admin_profiles').select('role').eq('id', uid).maybeSingle();
+      setIsAccountAdmin(prof?.role === 'admin');
     }
     const rows = (data || []) as BankAccount[];
     setAccounts(rows);
@@ -117,6 +123,10 @@ export default function BankAccountsPage() {
   }, [transactions, txnFilter]);
 
   const startCreateAccount = () => {
+    if (!isAccountAdmin) {
+      toast.error('Only an account administrator can create bank accounts.');
+      return;
+    }
     setEditingAccountId(null);
     setAccountForm(emptyAccountForm);
     setShowAccountForm(true);
@@ -252,10 +262,12 @@ export default function BankAccountsPage() {
             <a href="/banking" className="text-primary underline-offset-2 hover:underline">/banking</a>.
           </p>
         </div>
-        <Button onClick={startCreateAccount}>
-          <Plus className="h-4 w-4" />
-          New account
-        </Button>
+        {isAccountAdmin ? (
+          <Button onClick={startCreateAccount}>
+            <Plus className="h-4 w-4" />
+            New account
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

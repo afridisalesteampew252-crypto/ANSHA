@@ -128,6 +128,14 @@ export async function proxy(request: NextRequest) {
       }
     }
 
+    // Account-admin only routes (role = admin). Staff keep ops elsewhere.
+    if (profile.role !== 'admin' && pathname.startsWith('/admin/users')) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = '/admin/dashboard';
+      dashboardUrl.search = '';
+      return redirectWithSession(dashboardUrl);
+    }
+
     return supabaseResponse;
   }
 

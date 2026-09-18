@@ -80,6 +80,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { href: '/admin/blog', label: 'Insights / Blog', icon: BookOpen },
       { href: '/admin/offers', label: 'Deals & PWA push', icon: Megaphone },
+      { href: '/admin/campaigns', label: 'Campaigns', icon: MailPlus },
     ],
   },
   {
@@ -170,10 +171,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!profile) return null;
 
   const isSales = profile.role === 'sales';
+  const isAccountAdmin = profile.role === 'admin';
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !isSales || SALES_ALLOWED_HREFS.has(item.href)),
+      items: group.items.filter((item) => {
+        if (item.href === '/admin/users' && !isAccountAdmin) return false;
+        if (isSales && !SALES_ALLOWED_HREFS.has(item.href)) return false;
+        return true;
+      }),
     }))
     .filter((group) => group.items.length > 0);
   const visibleItems = visibleGroups.flatMap((group) => group.items);

@@ -12,14 +12,14 @@ Done in code and deployed to project `ydrnilquojvalhgifest`: `admin-update-user`
 
 Still needs your action or approval:
 
-- Enable leaked-password protection in Supabase Auth (Authentication â Providers â Email â leaked password protection)
+- Enable leaked-password protection in Supabase Auth (Authentication ? Providers ? Email ? leaked password protection)
 - Decide whether staff RLS should stay equal to admin for catalog/finance (not changed)
 
 ## 2. Housekeeping
 
 Done: README latest-migration points at Phase 21; `lib/types.ts` covers public tables through Phase 21; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
 
-Not deleted: both `001_initial_schema` files â production `schema_migrations` records `20260909192712` and `20260909194958`. Removing either file would desync git from the live database.
+Not deleted: both `001_initial_schema` files ? production `schema_migrations` records `20260909192712` and `20260909194958`. Removing either file would desync git from the live database.
 
 Inactive Supabase project `kmngigxpqhiilcavmcmm` is already `INACTIVE`. Pause API rejected that status. Permanent delete remains a dashboard action.
 
@@ -47,7 +47,7 @@ Done (Phase 23): customer portal first slice on the same database. `customer_pro
 
 Done (Phase 27): portal account statement at `/portal/account` via sanitized RPC `get_my_customer_soa` (confirmed remittances, allocations, outstanding KPIs). No remittance notes, documents, drafts, or allocate/reverse RPCs for customers.
 
-Done (Phase 28): purchase-costed inventory on the existing `vehicles` / `parts` master â `suppliers`, cost columns, GRN (`inventory_receipts` + `create_inventory_receipt`), reserve/release RPCs, tax/commercial invoice stock apply via `create_invoice_v3`, public catalog filters `stock_status = available`. Ops-only purchase UI; sales can still reserve vehicles.
+Done (Phase 28): purchase-costed inventory on the existing `vehicles` / `parts` master ? `suppliers`, cost columns, GRN (`inventory_receipts` + `create_inventory_receipt`), reserve/release RPCs, tax/commercial invoice stock apply via `create_invoice_v3`, public catalog filters `stock_status = available`. Ops-only purchase UI; sales can still reserve vehicles.
 
 Done (Phase 29): purchase orders (`purchase_orders` / lines), confirm/cancel RPCs, GRN + supplier invoice PO links, match snapshot (ordered vs received vs invoiced; paid deferred). Admin `/admin/purchase-orders`; ops-only.
 
@@ -65,32 +65,40 @@ Done (Phase 34): bank account master (`bank_accounts` / `bank_transactions`, BNK
 
 Done (Phase 35): operating expenses (`expense_categories` / `expenses`, OPEX- numbers). Create/update/post/cancel RPCs; optional soft `bank_account_id`; admin `/admin/expenses`; ops-only. No payroll.
 
-Done (Phase 36): UAE VAT return pack â `get_vat_return_summary(from,to)` (output VAT from tax/commercial invoices, input VAT from purchase invoices + supplier invoices at PO/default 5% gross-inclusive), optional `vat_return_periods` snapshots via `save_vat_return_period`. Admin `/admin/vat-return` with CSV export; ops-only; reporting-first (no GL).
+Done (Phase 36): UAE VAT return pack ? `get_vat_return_summary(from,to)` (output VAT from tax/commercial invoices, input VAT from purchase invoices + supplier invoices at PO/default 5% gross-inclusive), optional `vat_return_periods` snapshots via `save_vat_return_period`. Admin `/admin/vat-return` with CSV export; ops-only; reporting-first (no GL).
 
-Done (Phase 37): payroll / leave / EOS MVP â `employees`, `leave_requests`, `payroll_runs` / `payroll_lines` (PR- numbers). Create/post/cancel runs; leave approve/reject; `estimate_employee_eos` (basic Ã years, estimate only â not legal advice). Admin `/admin/payroll`; ops-only. Optional soft `bank_account_id`; no bank auto-pay.
+Done (Phase 37): payroll / leave / EOS MVP ? employees, leave_requests, payroll_runs / payroll_lines (PR- numbers). Create/post/cancel runs; leave approve/reject; rough EOS helper. Admin /admin/payroll; ops-only. Optional soft ank_account_id; no bank auto-pay.
 
-Done (Phase 38): general ledger MVP â `gl_accounts`, `gl_journals` / `gl_journal_lines` (JE- numbers), balanced post/reverse RPCs, seeded default chart, report RPCs (`gl_trial_balance`, `gl_profit_and_loss`, `gl_balance_sheet`). Admin `/admin/ledger` + `/admin/reports`; ops-only. Manual journals only; auto-post from bank/expense/invoice modules deferred (TODOs in docs).
+Done (Phase 48): UAE-oriented EOS upgrade ? indicative 21/30 day-wage bands + resignation/termination multipliers; eos_estimate_logs stores calculator inputs/outputs; employees.leave_balance_days; approve annual leave can optionally deduct days. Admin /admin/payroll EOS tab upgraded. **Indicative only ? not legal advice / not compliance.** Migration 20260918360000_phase_48_payroll_eos.sql.
 
-Done (Phase 41): richer ops analytics — RPC `get_ops_analytics_summary(from,to)` (jsonb: tax/commercial sales by month, outstanding AR, stock by status/origin, open/overdue requests; ops also remittances + open POs + GRNs). Dashboard `/admin/dashboard` extended; optional `/admin/analytics` with date range. Sales get own-book safe subset (no remittances/PO/GRN). Recharts. Migration `20260918300000_phase_41_analytics.sql` applied live.
+Done (Phase 38): general ledger MVP ? `gl_accounts`, `gl_journals` / `gl_journal_lines` (JE- numbers), balanced post/reverse RPCs, seeded default chart, report RPCs (`gl_trial_balance`, `gl_profit_and_loss`, `gl_balance_sheet`). Admin `/admin/ledger` + `/admin/reports`; ops-only.
 
-Done (Phase 40): WhatsApp Business Cloud API MVP — `whatsapp_message_log` (ops RLS), Edge Function `send-whatsapp` (Meta Graph), admin `/admin/whatsapp` (customer phone or E.164 paste, text/template, send log). Secrets `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID`; UI shows setup when missing.
+Done (Phase 46): GL auto-posting ? SECURITY DEFINER helpers + AFTER triggers post balanced journals for remittance confirm/allocate (Dr 1000 Cr 1100), expense post (Dr 6000/hint Cr 1000 or AP 2000; reverse on cancel), tax/commercial invoice issue (Dr 1100 Cr 4000/+2100), supplier payment confirm (Dr 2000 Cr 1000). Idempotent via `source_module`+`source_id`. Migration `20260918340000_phase_46_gl_auto_post.sql`.
 
-Done (Phase 42): AI ops assistant MVP — /admin/ai chat UI, POST /api/ai/chat (Vercel AI SDK + AI Gateway / OpenAI), grounding RPC get_ai_ops_grounding, optional history tables i_chat_threads / i_chat_messages (ops RLS). Never invents chassis/VIN numbers. Server env: AI_GATEWAY_API_KEY or OPENAI_API_KEY (+ optional AI_MODEL).
+Done (Phase 41): richer ops analytics ? RPC `get_ops_analytics_summary(from,to)` (jsonb: tax/commercial sales by month, outstanding AR, stock by status/origin, open/overdue requests; ops also remittances + open POs + GRNs). Dashboard `/admin/dashboard` extended; optional `/admin/analytics` with date range. Sales get own-book safe subset (no remittances/PO/GRN). Recharts. Migration `20260918300000_phase_41_analytics.sql` applied live.
 
-Done (Phase 43): audit-log MVP  `audit_logs` (append-only; ops SELECT), `private.write_audit_log(...)`, triggers on `invoices.status`, `vehicles.stock_status`, and `remittance_allocations` insert/delete. Admin `/admin/audit-log` with entity/actor/date filters.
+Done (Phase 40): WhatsApp Business Cloud API MVP ? `whatsapp_message_log` (ops RLS), Edge Function `send-whatsapp` (Meta Graph), admin `/admin/whatsapp` (customer phone or E.164 paste, text/template, send log). Secrets `WHATSAPP_ACCESS_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID`; UI shows setup when missing.
 
-Done (Phase 39): outbound email MVP — `outbound_email_log` (ops RLS, append-only), Edge Function `send-outbound-email` via Resend (`RESEND_API_KEY`), admin compose UI `/admin/email` with optional invoice verification-link stub. Not marketing campaigns.
+Done (Phase 42): AI ops assistant MVP ? /admin/ai chat UI, POST /api/ai/chat (Vercel AI SDK + AI Gateway / OpenAI), grounding RPC get_ai_ops_grounding, optional history tables i_chat_threads / i_chat_messages (ops RLS). Never invents chassis/VIN numbers. Server env: AI_GATEWAY_API_KEY or OPENAI_API_KEY (+ optional AI_MODEL).
+
+Done (Phase 43): audit-log MVP ? `audit_logs` (append-only; ops SELECT), `private.write_audit_log(...)`, triggers on `invoices.status`, `vehicles.stock_status`, and `remittance_allocations` insert/delete. Admin `/admin/audit-log` with entity/actor/date filters.
+
+Done (Phase 39): outbound email MVP ? outbound_email_log (ops RLS, append-only), Edge Function send-outbound-email via Resend (RESEND_API_KEY), admin compose UI /admin/email with optional invoice verification-link stub.
+
+Done (Phase 49): marketing campaigns MVP ? marketing_campaigns (name, channel push|email|offer, status draft|scheduled|sent, payload jsonb, sent_at; ops RLS), admin /admin/campaigns with Send now hooks into send-web-push / send-outbound-email / offer deals push. Not full ESP automation.
 
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.
 
-Done (Phase 24): Web Push for new insights and deals/offers. `push_subscriptions` + `site_offers`, public opt-in prompt, `/offers`, admin Deals & Offers with optional push, blog âPWA push on publishâ, Edge Function `send-web-push` (VAPID). Staff must opt in per publish â no silent DB webhook.
+Done (Phase 24): Web Push for new insights and deals/offers. `push_subscriptions` + `site_offers`, public opt-in prompt, `/offers`, admin Deals & Offers with optional push, blog ?PWA push on publish?, Edge Function `send-web-push` (VAPID). Staff must opt in per publish ? no silent DB webhook.
 
-Done (Phase 44): Capacitor native shell MVP — `capacitor.config.ts` (`com.anshatrading.app`) loads `https://www.anshatradingco.com` (or `CAPACITOR_SERVER_URL`) in an iOS/Android WebView. Config + `native/www` placeholder + npm scripts + `docs/Mobile.md`. Native `android/` / `ios/` are generated locally and gitignored. PWA unchanged; admin is not rewritten as native UI.
+Done (Phase 44): Capacitor native shell MVP ? `capacitor.config.ts` (`com.anshatrading.app`) loads `https://www.anshatradingco.com` (or `CAPACITOR_SERVER_URL`) in an iOS/Android WebView. Config + `native/www` placeholder + npm scripts + `docs/Mobile.md`. Native `android/` / `ios/` are generated locally and gitignored. PWA unchanged; admin is not rewritten as native UI.
+
+Done (Phase 45): tighter staff vs account-admin RBAC ? `private.is_account_admin()` (active `role = 'admin'`); admin-only reverse GL / chart upsert / bank account create / supplier DELETE / payroll post + cancel-posted; `/admin/users` route + nav; portal-create-access stays admin. Sales allowlist unchanged. Migration `20260918330000_phase_45_rbac_admin_staff.sql`.
 
 ## 8. Later platform
 
-Outbound email, AI automation â all against this PostgreSQL project.
+AI automation and deeper ESP features ? all against this PostgreSQL project.
 
 Stop after the current module until the next one is approved.

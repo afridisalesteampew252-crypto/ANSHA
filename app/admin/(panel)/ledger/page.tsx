@@ -44,6 +44,7 @@ export default function LedgerPage() {
   const [busy, setBusy] = useState(false);
   const [showJournalForm, setShowJournalForm] = useState(false);
   const [showAccountForm, setShowAccountForm] = useState(false);
+  const [isAccountAdmin, setIsAccountAdmin] = useState(false);
 
   const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState('');
@@ -58,14 +59,20 @@ export default function LedgerPage() {
   const [editAccountId, setEditAccountId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [acctRes, jeRes] = await Promise.all([
+    const [acctRes, jeRes, sessionRes] = await Promise.all([
       supabase.from('gl_accounts').select('*').order('sort_order').order('code'),
       supabase.from('gl_journals').select('*').order('entry_date', { ascending: false }).limit(150),
+      supabase.auth.getSession(),
     ]);
     if (acctRes.error) toast.error(acctRes.error.message);
     if (jeRes.error) toast.error(jeRes.error.message);
     setAccounts((acctRes.data || []) as GlAccount[]);
     setJournals((jeRes.data || []) as GlJournal[]);
+    const uid = sessionRes.data.session?.user?.id;
+    if (uid) {
+      const { data: prof } = await supabase.from('admin_profiles').select('role').eq('id', uid).maybeSingle();
+      setIsAccountAdmin(prof?.role === 'admin');
+    }
   }, []);
 
   useEffect(() => {
@@ -476,7 +483,7 @@ export default function LedgerPage() {
                           </Button>
                         </>
                       )}
-                      {selected.status === 'posted' && (
+                      {selected.status === 'posted' && isAccountAdmin && (
                         <Button variant="outline" disabled={busy} onClick={() => void reverseJournal()}>
                           <XCircle className="h-4 w-4" />
                           Reverse
@@ -515,19 +522,23 @@ export default function LedgerPage() {
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-4">
-          <div className="flex justify-end">
-            <Button
-              onClick={() => {
-                resetAccountForm();
-                setShowAccountForm(true);
-              }}
-            >
-              <Plus className="h-4 w-4" />
-              Add account
-            </Button>
-          </div>
+          {isAccountAdmin ? (
+            <div className="flex justify-end">
+              <Button
+                onClick={() => {
+                  resetAccountForm();
+                  setShowAccountForm(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Add account
+              </Button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Chart changes require an account administrator.</p>
+          )}
 
-          {showAccountForm && (
+          {showAccountForm && isAccountAdmin && (
             <Card>
               <CardHeader>
                 <CardTitle>{editAccountId ? 'Edit account' : 'New account'}</CardTitle>
@@ -598,14 +609,16 @@ export default function LedgerPage() {
                       <td className="p-3 capitalize">{row.account_type}</td>
                       <td className="p-3">{row.is_active ? 'Active' : 'Inactive'}</td>
                       <td className="p-3 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => startEditAccount(row)}>
-                            Edit
-                          </Button>
-                          <Button variant="outline" size="sm" disabled={busy} onClick={() => void toggleAccountActive(row)}>
-                            {row.is_active ? 'Deactivate' : 'Activate'}
-                          </Button>
-                        </div>
+                        {isAccountAdmin ? (
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => startEditAccount(row)}>
+                              Edit
+                            </Button>
+                            <Button variant="outline" size="sm" disabled={busy} onClick={() => void toggleAccountActive(row)}>
+                              {row.is_active ? 'Deactivate' : 'Activate'}
+                            </Button>
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
