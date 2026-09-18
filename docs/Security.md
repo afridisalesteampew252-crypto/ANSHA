@@ -20,6 +20,7 @@ Allowed in the browser: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLIS
 
 - Public catalog: published rows only (Phase 1 hardened vehicles that were previously fully readable)
 - Inquiries and part requests: public insert, staff read/update
+- `workspace_requests` / events: staff SELECT only; create/update/notes via SECURITY DEFINER RPCs that require `private.is_workspace_user()`
 - Finance, customers, imports, chat, mail, notifications: authenticated workspace members
 - Sequence tables: deny direct access
 - `verify_invoice`: SECURITY DEFINER, callable by anon; must remain field-limited

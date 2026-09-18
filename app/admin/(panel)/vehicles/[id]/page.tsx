@@ -285,8 +285,22 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             <Textarea value={eventNotes} onChange={(event) => setEventNotes(event.target.value)} rows={3} placeholder="Reference numbers, yard notes, courier details…" />
           </label>
           <Button onClick={() => void recordEvent()} disabled={recording}>
-            {recording ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {recording ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Record event
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Assignable requests</CardTitle>
+          <CardDescription>
+            Lifecycle events stay on this vehicle. Open a BL, inspection, or shipping ticket when work needs an owner and due date.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline">
+            <Link href={`/admin/requests?vehicle=${id}`}>Open requests for this vehicle</Link>
           </Button>
         </CardContent>
       </Card>

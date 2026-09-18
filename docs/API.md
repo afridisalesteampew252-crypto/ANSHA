@@ -39,6 +39,12 @@ Vehicle lifecycle RPCs (Phase 18):
 - `transition_vehicle_lifecycle(p_vehicle_id, p_to_stage, p_notes?, p_sync_stock_sold?)` — moves `lifecycle_stage`, writes history, optionally sets `stock_status = sold`
 - `record_vehicle_lifecycle_event(p_vehicle_id, p_event_type, p_title?, p_notes?, p_metadata?)` — logs BL/inspection/shipping/etc. without changing stage
 
+Request workflow RPCs (Phase 19):
+
+- `create_workspace_request(...)` — staff-created BL/inspection/shipping/other tickets (intake types must link an existing inquiry or part request)
+- `update_workspace_request(...)` — status, assignee, due date, title, notes; writes history
+- `record_workspace_request_event(p_request_id, p_notes)` — append-only note
+
 ## Edge Functions
 
 Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowlist: `docs` canonical hosts, `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://*.vercel.app`. Unknown origins get no `Access-Control-Allow-Origin`.

@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository: `20260918060000_phase_18_vehicle_lifecycle.sql`.
+Latest migration in the repository: `20260918070000_phase_19_request_workflows.sql`.
 
 ## Entity groups
 
@@ -32,6 +32,13 @@ Latest migration in the repository: `20260918060000_phase_18_vehicle_lifecycle.s
 
 - `inquiries` — optional `part_id`, status `new|read|responded|closed`
 - `part_requests` — sourcing request, status `new|reviewed|fulfilled|closed`
+
+### Staff requests
+
+- `workspace_requests` — assignable tickets (`inquiry`|`part_request`|`bl`|`inspection`|`shipping`|`other`) with status `open|in_progress|waiting|done|cancelled`, optional assignee/due date, optional links to intake/vehicle/customer
+- `workspace_request_events` — append-only opened/status/assignment/due/note/title history
+
+Intake rows stay as submitted. One ticket per inquiry and per part request (unique indexes). Mutations go through RPCs `create_workspace_request`, `update_workspace_request`, and `record_workspace_request_event`.
 
 ### Content
 
@@ -81,4 +88,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` covers public tables through Phase 17. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.
+Hand-written `lib/types.ts` covers public tables through Phase 19. Generated types are not checked in. New modules must extend `lib/types.ts` to match migrations.

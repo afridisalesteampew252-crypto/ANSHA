@@ -18,11 +18,12 @@ Canonical public site: `https://www.anshatradingco.com`.
 
 - Manage catalog, customers, invoices, remittances, imports
 - Internal chat, mail, and notifications
+- Assign request tickets (intake, BL, inspection, shipping) with due dates
 - Provision staff users (admin role)
 
 ### Out of current product
 
-Customer self-service portal, mobile apps, PWA, auction/yard/port operations, generic request ERP, AI automation, WhatsApp Business API, outbound email.
+Customer self-service portal, mobile apps, PWA, AI automation, WhatsApp Business API, outbound email.
 
 ## Users
 

@@ -42,7 +42,7 @@ Public website, staff ERP, and any future customer portal or mobile wrap share o
 
 ## Vehicle and requests
 
-Current vehicle/part operational state is `stock_status` (`available`|`reserved`|`sold`). Auction/yard/port and generic request tickets must be designed as additive workflows. See `docs/Database.md` and `docs/Modules.md`.
+Current vehicle/part commercial state is `stock_status` (`available`|`reserved`|`sold`). Vehicle operational stage is `lifecycle_stage`. Staff request tickets (`workspace_requests`) are additive and must not replace intake tables or vehicle lifecycle events. See `docs/Database.md` and `docs/Modules.md`.
 
 ## Chat
 

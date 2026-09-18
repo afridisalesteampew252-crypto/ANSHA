@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Search, Inbox, Mail, Phone, Package, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ export default function AdminInquiriesPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedInquiry, setSelectedInquiry] = useState<(Inquiry & { parts?: { name: string; part_code: string } | null }) | null>(null);
+  const [ticketByInquiry, setTicketByInquiry] = useState<Record<string, string>>({});
 
   const fetchInquiries = useCallback(async () => {
     setLoading(true);
@@ -43,6 +45,12 @@ export default function AdminInquiriesPage() {
 
     const { data } = await q;
     setInquiries((data || []) as unknown as (Inquiry & { parts?: { name: string; part_code: string } | null })[]);
+    const { data: tickets } = await supabase.from('workspace_requests').select('id, inquiry_id').not('inquiry_id', 'is', null);
+    const map: Record<string, string> = {};
+    for (const ticket of tickets || []) {
+      if (ticket.inquiry_id) map[ticket.inquiry_id as string] = ticket.id as string;
+    }
+    setTicketByInquiry(map);
     setLoading(false);
   }, [search, statusFilter]);
 
@@ -66,7 +74,7 @@ export default function AdminInquiriesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Inquiries</h1>
-        <p className="text-sm text-muted-foreground">Customer messages and part inquiries</p>
+        <p className="text-sm text-muted-foreground">Customer messages. Assignment, due dates, and part-sourcing tickets live under Requests.</p>
       </div>
 
       {/* Filters */}
@@ -185,6 +193,11 @@ export default function AdminInquiriesPage() {
                   <p className="text-xs text-muted-foreground">Date</p>
                   <p className="text-sm">{new Date(selectedInquiry.created_at).toLocaleString()}</p>
                 </div>
+                {ticketByInquiry[selectedInquiry.id] ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/admin/requests/${ticketByInquiry[selectedInquiry.id]}`}>Open request ticket</Link>
+                  </Button>
+                ) : null}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Status:</span>
                   <Select value={selectedInquiry.status} onValueChange={(v) => updateStatus(selectedInquiry.id, v as InquiryStatus)}>

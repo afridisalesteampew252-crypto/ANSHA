@@ -24,7 +24,7 @@ Browser
 ## Dependency direction
 
 - UI (`app/`, `components/`) may call `lib/supabase` and domain helpers
-- Domain helpers (`lib/stock.ts`, `lib/catalog-image.ts`, `lib/site-config.ts`) must not import UI
+- Domain helpers (`lib/stock.ts`, `lib/catalog-image.ts`, `lib/site-config.ts`, `lib/vehicle-lifecycle.ts`, `lib/workspace-requests.ts`) must not import UI
 - Privileged Auth administration stays in `supabase/functions/*`
 - Schema changes stay in `supabase/migrations/`
 - Do not add a second ORM or a second database for a new surface

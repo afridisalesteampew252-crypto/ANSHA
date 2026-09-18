@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
-  BookOpen, Car, ChevronLeft, ChevronRight, ExternalLink, Inbox, LayoutDashboard,
+  BookOpen, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, Inbox, LayoutDashboard,
   Loader2, Mail, Menu, MessageCircle, Package, Plus, ReceiptText, Tag, Upload, WalletCards,
   UserCog, Users, X,
 } from 'lucide-react';
@@ -27,6 +27,7 @@ const navItems = [
   { href: '/admin/invoices/supplier', label: 'Supplier Invoices', icon: ReceiptText },
   { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
   { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
+  { href: '/admin/requests', label: 'Requests', icon: ClipboardList },
   { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
   { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
   { href: '/admin/blog', label: 'Blog', icon: BookOpen },

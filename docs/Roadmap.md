@@ -17,7 +17,7 @@ Still needs your action or approval:
 
 ## 2. Housekeeping
 
-Done: README latest-migration points at Phase 17; `lib/types.ts` covers public tables through Phase 17; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
+Done: README latest-migration points at Phase 19; `lib/types.ts` covers public tables through Phase 19; CI runs `verify:brands`; `netlify.toml` removed; publishable keys removed from `vercel.json` (`next.config.js` no longer inlines them).
 
 Not deleted: both `001_initial_schema` files — production `schema_migrations` records `20260909192712` and `20260909194958`. Removing either file would desync git from the live database.
 
@@ -31,7 +31,9 @@ Later enhancements: document attachments on events, stricter transition rules, p
 
 ## 4. Request workflows
 
-Reuse `inquiries` and `part_requests` as intake. Add a request entity only if assignment, due dates, attachments, and activity cannot fit those tables safely.
+Done (Phase 19): `inquiries` and `part_requests` remain intake. Staff tickets live in `workspace_requests` with assignment, due dates, and `workspace_request_events`. Admin queue is `/admin/requests`. Existing intake was backfilled. New website submissions open a ticket automatically.
+
+Later: attachments on tickets, tighter due-date reminders.
 
 ## 5. Chat linking
 
@@ -49,4 +51,4 @@ First: keep public and admin responsive. Then PWA. Later Capacitor wrapping the 
 
 Outbound email, WhatsApp Business API, analytics beyond the current dashboard, AI automation — all against this PostgreSQL project.
 
-Stop after documentation until the next module is approved.
+Stop after the current module until the next one is approved.

@@ -12,7 +12,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Categories | `/categories` | `/admin/categories` | `categories` |
 | Blog | `/blog` | `/admin/blog` | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
-| Part requests | `PartRequestForm` on public pages | no dedicated staff list page; insert notifies via `admin_notifications` | `part_requests` |
+| Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
+| Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, `workspace_request_events` |
 | Customers | no | `/admin/customers`, SOA `[id]` | `customers`, invoices, remittances, allocations |
 | Invoices | `/verify/invoice/[code]` | `/admin/invoices` | `invoices*` |
 | Supplier invoices | no | `/admin/invoices/supplier` | `supplier_invoices` |
@@ -28,6 +29,6 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 
 ## Not implemented
 
-Suppliers master, purchases orders, shipments beyond lifecycle events, generic request tickets with assignment/due dates, customer portal, audit-log module, outbound email, WhatsApp API, PWA, Android/iOS, AI automation.
+Suppliers master, purchase orders, shipments beyond lifecycle events, request attachments, customer portal, audit-log module, outbound email, WhatsApp API, PWA, Android/iOS, AI automation.
 
-Vehicle lifecycle stages and workflow events exist. Part requests and inquiries are intake records, not the full request-workflow design in the master prompt.
+Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables.

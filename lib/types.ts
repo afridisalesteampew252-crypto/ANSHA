@@ -162,6 +162,52 @@ export interface VehicleLifecycleEvent {
   created_at: string;
 }
 
+export type WorkspaceRequestType =
+  | 'inquiry'
+  | 'part_request'
+  | 'bl'
+  | 'inspection'
+  | 'shipping'
+  | 'other';
+
+export type WorkspaceRequestStatus = 'open' | 'in_progress' | 'waiting' | 'done' | 'cancelled';
+
+export type WorkspaceRequestEventType =
+  | 'opened'
+  | 'status_change'
+  | 'assignment'
+  | 'due_date'
+  | 'note'
+  | 'title_change';
+
+export interface WorkspaceRequest {
+  id: string;
+  request_type: WorkspaceRequestType;
+  status: WorkspaceRequestStatus;
+  title: string;
+  notes: string | null;
+  assigned_to: string | null;
+  due_at: string | null;
+  inquiry_id: string | null;
+  part_request_id: string | null;
+  vehicle_id: string | null;
+  customer_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkspaceRequestEvent {
+  id: string;
+  request_id: string;
+  event_type: WorkspaceRequestEventType;
+  from_status: WorkspaceRequestStatus | null;
+  to_status: WorkspaceRequestStatus | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface VehiclePhoto {
   id: string;
   vehicle_id: string;
@@ -590,6 +636,8 @@ export interface Database {
       vehicle_photos: TableDef<VehiclePhoto>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;
       vehicles: TableDef<Vehicle>;
+      workspace_request_events: TableDef<WorkspaceRequestEvent>;
+      workspace_requests: TableDef<WorkspaceRequest>;
     };
   };
 }
