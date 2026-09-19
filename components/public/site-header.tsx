@@ -26,6 +26,7 @@ import { siteConfig } from '@/lib/site-config';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import { useCustomerLists } from '@/hooks/use-customer-lists';
+import { HeaderMarketStrip } from '@/components/public/header-market-strip';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -89,8 +90,8 @@ export function SiteHeader() {
             Dubai-based global automotive exporter
           </p>
           <div className="flex items-center gap-5 text-white/65">
-            <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-accent" />Verified inventory</span>
-            <span className="flex items-center gap-1.5"><Headphones className="h-3.5 w-3.5 text-accent" />Export support</span>
+            <span className="hidden items-center gap-1.5 xl:flex"><ShieldCheck className="h-3.5 w-3.5 text-accent" />Verified inventory</span>
+            <span className="hidden items-center gap-1.5 xl:flex"><Headphones className="h-3.5 w-3.5 text-accent" />Export support</span>
             <Link href="/admin" className="flex items-center gap-1.5 transition-colors hover:text-white">
               <CircleUserRound className="h-3.5 w-3.5" />Staff login
             </Link>
@@ -163,12 +164,17 @@ export function SiteHeader() {
           </div>
         </div>
 
+        <div className="lg:hidden">
+          <HeaderMarketStrip variant="bar" />
+        </div>
+
         <div className="hidden border-t border-border/70 lg:block">
-          <div className="container-page flex h-12 items-center gap-2 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="container-page flex h-12 items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Link href="/categories" className="flex h-full shrink-0 items-center gap-2 border-r border-border pr-5 text-sm font-bold">
               <PackageSearch className="h-4 w-4 text-accent" />Browse categories
             </Link>
-            <nav className="ml-auto flex h-full min-w-0 items-center gap-1 pl-4">
+            <HeaderMarketStrip variant="inline" className="hidden min-w-0 flex-1 lg:flex" />
+            <nav className="ml-auto flex h-full min-w-0 shrink-0 items-center gap-1 pl-2">
               {navLinks.map((link) => {
                 const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                 if (link.href === '/vehicles') return (
