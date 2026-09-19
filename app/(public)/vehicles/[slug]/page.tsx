@@ -20,6 +20,7 @@ import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { VehiclePhotoGallery } from '@/components/public/vehicle-photo-gallery';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
+import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
@@ -223,17 +224,35 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
             </div>
           )}
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <InquiryDialog
-              triggerLabel="Send Inquiry"
-              triggerSize="lg"
-              triggerVariant="default"
+          <div className="flex flex-col gap-3">
+            <SaveItemActions
+              size="md"
+              showLabels
+              item={toVehicleSaveItem({
+                id: vehicle.id,
+                slug: vehicle.slug,
+                title: vehicle.title,
+                subtitle: [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' '),
+                priceLabel: dealPrice != null
+                  ? `${vehicle.currency} ${dealPrice.toLocaleString()}`
+                  : hasPrice
+                    ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}`
+                    : 'Ask for quote',
+                imageUrl: photos[0] ? publicVehicleImageUrl(photos[0].storage_path) : null,
+              })}
             />
-            <WhatsAppButton
-              message={`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`}
-              size="lg"
-              variant="outline"
-            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <InquiryDialog
+                triggerLabel="Send Inquiry"
+                triggerSize="lg"
+                triggerVariant="default"
+              />
+              <WhatsAppButton
+                message={`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`}
+                size="lg"
+                variant="outline"
+              />
+            </div>
           </div>
 
           {vehicle.description && (

@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { DM_Sans, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
+import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { siteConfig } from '@/lib/site-config';
@@ -11,13 +11,15 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { RegisterServiceWorker } from '@/components/pwa/register-service-worker';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 
-const dmSans = DM_Sans({
+/** Body: Plus Jakarta Sans — clear marketplace UI (Amazon Ember / eBay Market Sans energy). */
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-sans',
   display: 'swap',
 });
 
-const spaceGrotesk = Space_Grotesk({
+/** Display: Outfit — strong geometric headlines for commerce scanability. */
+const outfit = Outfit({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
@@ -67,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${dmSans.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+      className={`${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans antialiased">
         <ThemeProvider>

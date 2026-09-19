@@ -34,6 +34,8 @@ import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { BrandLogo } from '@/components/public/brand-logo';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
+import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
+import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { supabase } from '@/lib/supabase/client';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
@@ -384,19 +386,38 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           )}
 
           {/* Actions */}
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <InquiryDialog
-              partId={part.id}
-              partName={part.name}
-              triggerLabel="Send Inquiry"
-              triggerSize="lg"
-              triggerVariant="default"
+          <div className="flex flex-col gap-3">
+            <SaveItemActions
+              size="md"
+              showLabels
+              item={toPartSaveItem({
+                id: part.id,
+                slug: part.slug,
+                name: part.name,
+                part_code: part.part_code,
+                priceLabel: part.show_price && part.price
+                  ? `${part.currency} ${part.price.toLocaleString()}`
+                  : 'Ask for quote',
+                imageUrl: (() => {
+                  const cover = part.part_photos?.find((p) => p.is_cover) || part.part_photos?.[0];
+                  return cover ? publicPartImageUrl(cover.storage_path) : null;
+                })(),
+              })}
             />
-            <WhatsAppButton
-              message={`Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`}
-              size="lg"
-              variant="outline"
-            />
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <InquiryDialog
+                partId={part.id}
+                partName={part.name}
+                triggerLabel="Send Inquiry"
+                triggerSize="lg"
+                triggerVariant="default"
+              />
+              <WhatsAppButton
+                message={`Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`}
+                size="lg"
+                variant="outline"
+              />
+            </div>
           </div>
 
           {/* Description */}

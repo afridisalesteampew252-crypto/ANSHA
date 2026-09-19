@@ -9,12 +9,14 @@ import {
   ChevronRight,
   CircleUserRound,
   Headphones,
+  Heart,
   Mail,
   Menu,
   PackageSearch,
   Phone,
   Search,
   ShieldCheck,
+  ShoppingBag,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { siteConfig } from '@/lib/site-config';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { STOCK_ORIGINS } from '@/lib/stock';
+import { useCustomerLists } from '@/hooks/use-customer-lists';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -35,9 +38,19 @@ const navLinks = [
   { href: '/contact', label: 'Contact' },
 ];
 
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[9px] font-black text-white">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const { cartCount, favoritesCount } = useCustomerLists();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
@@ -117,7 +130,15 @@ export function SiteHeader() {
             </div>
           </form>
 
-          <div className="ml-auto hidden items-center gap-3 xl:flex">
+          <div className="ml-auto hidden items-center gap-2 xl:flex">
+            <Link href="/favorites" className="relative grid h-10 w-10 place-items-center rounded-full border border-border text-foreground transition hover:border-accent hover:text-accent" aria-label={`Favorites${favoritesCount ? `, ${favoritesCount} saved` : ''}`}>
+              <Heart className={cn('h-[18px] w-[18px]', favoritesCount > 0 && 'fill-accent text-accent')} />
+              <CountBadge count={favoritesCount} />
+            </Link>
+            <Link href="/cart" className="relative grid h-10 w-10 place-items-center rounded-full border border-border text-foreground transition hover:border-accent hover:text-accent" aria-label={`Inquiry cart${cartCount ? `, ${cartCount} items` : ''}`}>
+              <ShoppingBag className="h-[18px] w-[18px]" />
+              <CountBadge count={cartCount} />
+            </Link>
             <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-2.5 rounded-xl px-2 py-1 text-sm">
               <span className="grid h-9 w-9 place-items-center rounded-full bg-accent/10 text-accent"><Phone className="h-4 w-4" /></span>
               <span><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">WhatsApp support</span><strong className="font-semibold">{siteConfig.whatsappDisplay}</strong></span>
@@ -126,6 +147,14 @@ export function SiteHeader() {
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-0.5 md:ml-0 xl:hidden">
+            <Link href="/favorites" className="relative grid h-11 w-11 place-items-center rounded-full text-foreground" aria-label={`Favorites${favoritesCount ? `, ${favoritesCount} saved` : ''}`}>
+              <Heart className={cn('h-5 w-5', favoritesCount > 0 && 'fill-accent text-accent')} />
+              <CountBadge count={favoritesCount} />
+            </Link>
+            <Link href="/cart" className="relative grid h-11 w-11 place-items-center rounded-full text-foreground" aria-label={`Inquiry cart${cartCount ? `, ${cartCount} items` : ''}`}>
+              <ShoppingBag className="h-5 w-5" />
+              <CountBadge count={cartCount} />
+            </Link>
             <ThemeToggle className="h-11 w-11" />
             <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

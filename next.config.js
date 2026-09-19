@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Allow phone/LAN preview of Turbopack HMR during local development.
+  allowedDevOrigins: ['192.168.18.18', '10.244.163.42', 'localhost'],
   async redirects() {
     return [
       {

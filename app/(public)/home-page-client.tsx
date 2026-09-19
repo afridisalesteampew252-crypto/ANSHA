@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { PartCard } from '@/components/public/part-card';
 import { VehicleCard } from '@/components/public/vehicle-card';
 import { BlogCard } from '@/components/public/blog-card';
+import { ExportMarketsStrip } from '@/components/public/export-markets-strip';
 import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
@@ -220,7 +221,7 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="py-14 sm:py-20">
+      <section className="py-10 sm:py-14">
         <div className="container-page">
           <div className="section-heading">
             <div>
@@ -275,7 +276,9 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="bg-secondary/45 py-14 sm:py-20">
+      <ExportMarketsStrip />
+
+      <section className="bg-secondary/45 py-10 sm:py-14">
         <div className="container-page">
           <div className="section-heading">
             <div>

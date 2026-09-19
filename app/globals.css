@@ -71,7 +71,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-sans), 'DM Sans', sans-serif;
+    font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
     letter-spacing: -0.025em;
   }
 
@@ -80,17 +80,17 @@
   .public-marketing h2,
   .public-marketing h3,
   .public-marketing .section-heading h2 {
-    font-family: var(--font-display), 'Space Grotesk', sans-serif;
+    font-family: var(--font-display), 'Outfit', sans-serif;
     letter-spacing: -0.03em;
   }
 
   .public-marketing {
-    font-family: var(--font-sans), 'DM Sans', sans-serif;
+    font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
   }
 
   .public-marketing header nav a,
   .public-marketing header .font-bold {
-    font-family: var(--font-display), 'Space Grotesk', sans-serif;
+    font-family: var(--font-display), 'Outfit', sans-serif;
   }
 
   code, .font-mono {

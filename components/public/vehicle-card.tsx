@@ -5,6 +5,7 @@ import { ArrowUpRight, Calendar, Car, Fuel, Gauge, MessageCircle } from 'lucide-
 import { Badge } from '@/components/ui/badge';
 import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
+import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
 import { siteConfig } from '@/lib/site-config';
 import type { VehicleWithPhotos } from '@/lib/types';
 
@@ -17,46 +18,68 @@ export function VehicleCard({ vehicle, priority = false }: VehicleCardProps) {
   const coverPhoto = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
   const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
   const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
+  const priceLabel = vehicle.stock_status === 'sold'
+    ? 'Sold'
+    : hasPrice
+      ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}`
+      : 'Ask for quote';
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`)}`;
+  const saveItem = toVehicleSaveItem({
+    id: vehicle.id,
+    slug: vehicle.slug,
+    title: vehicle.title,
+    subtitle: [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' '),
+    priceLabel,
+    imageUrl: photoUrl,
+  });
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-foreground/10 bg-card text-card-foreground transition duration-300 hover:-translate-y-1 hover:border-accent">
-      <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#101114]/[0.04]">
-        {photoUrl ? (
-          <CatalogImage
-            src={photoUrl}
-            alt={vehicle.title}
-            fill
-            priority={priority}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="transition-transform duration-500 group-hover:scale-105"
-            objectFit="cover"
-          />
-        ) : (
-          <span className="flex h-full items-center justify-center">
-            <Car className="h-14 w-14 text-muted-foreground/25" />
-          </span>
-        )}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#101114]/75 to-transparent" />
-        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <StockOriginBadge origin={vehicle.stock_origin} compact />
-          {vehicle.stock_status === 'sold' ? (
-            <Badge className="border-0 bg-[#101114] text-white">Sold</Badge>
-          ) : vehicle.is_featured ? (
-            <Badge className="border-0 bg-accent text-accent-foreground">Featured</Badge>
+      <div className="relative">
+        <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#101114]/[0.04]">
+          {photoUrl ? (
+            <CatalogImage
+              src={photoUrl}
+              alt={vehicle.title}
+              fill
+              priority={priority}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="transition-transform duration-500 group-hover:scale-105"
+              objectFit="cover"
+            />
+          ) : (
+            <span className="flex h-full items-center justify-center">
+              <Car className="h-14 w-14 text-muted-foreground/25" />
+            </span>
+          )}
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#101114]/75 to-transparent" />
+          {vehicle.year ? (
+            <span className="absolute bottom-3 left-3 text-sm font-bold text-white">
+              {vehicle.year} {vehicle.model}
+            </span>
           ) : null}
+          {vehicle.stock_status === 'sold' ? (
+            <span className="absolute inset-0 grid place-items-center bg-[#101114]/40 text-3xl font-black uppercase tracking-[0.2em] text-white">
+              Sold
+            </span>
+          ) : null}
+        </Link>
+
+        <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+          <div className="pointer-events-auto flex flex-wrap gap-2">
+            <StockOriginBadge origin={vehicle.stock_origin} compact />
+            {vehicle.stock_status === 'sold' ? (
+              <Badge className="border-0 bg-[#101114] text-white">Sold</Badge>
+            ) : vehicle.is_featured ? (
+              <Badge className="border-0 bg-accent text-accent-foreground">Featured</Badge>
+            ) : null}
+          </div>
+          <div className="pointer-events-auto">
+            <SaveItemActions item={saveItem} />
+          </div>
         </div>
-        {vehicle.year ? (
-          <span className="absolute bottom-3 left-3 text-sm font-bold text-white">
-            {vehicle.year} {vehicle.model}
-          </span>
-        ) : null}
-        {vehicle.stock_status === 'sold' ? (
-          <span className="absolute inset-0 grid place-items-center bg-[#101114]/40 text-3xl font-black uppercase tracking-[0.2em] text-white">
-            Sold
-          </span>
-        ) : null}
-      </Link>
+      </div>
+
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <Link href={`/vehicles/${vehicle.slug}`}>
           <h3 className="line-clamp-2 text-base font-bold leading-snug text-foreground transition-colors group-hover:text-accent">{vehicle.title}</h3>
@@ -80,13 +103,7 @@ export function VehicleCard({ vehicle, priority = false }: VehicleCardProps) {
             <span className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {hasPrice ? 'Export price' : 'Price'}
             </span>
-            <strong className="text-lg font-extrabold tracking-tight text-foreground">
-              {vehicle.stock_status === 'sold'
-                ? 'Sold'
-                : hasPrice
-                  ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}`
-                  : 'Ask for quote'}
-            </strong>
+            <strong className="text-lg font-extrabold tracking-tight text-foreground">{priceLabel}</strong>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <a
