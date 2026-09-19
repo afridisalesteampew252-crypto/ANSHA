@@ -17,8 +17,12 @@ export async function sendWebPush(input: {
       url: input.url.startsWith('http') ? input.url : `${siteConfig.url}${input.url.startsWith('/') ? '' : '/'}${input.url}`,
     },
   });
-  if (error || data?.error) {
-    throw new Error(data?.error || error?.message || 'Push send failed.');
+  const bodyError =
+    data && typeof data === 'object' && 'error' in data && typeof (data as { error?: unknown }).error === 'string'
+      ? (data as { error: string }).error
+      : null;
+  if (error || bodyError) {
+    throw new Error(bodyError || error?.message || 'Push send failed.');
   }
   return data as { sent: number; failed: number; subscribers: number; removed_stale: number };
 }

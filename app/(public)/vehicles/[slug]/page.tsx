@@ -19,9 +19,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { VehiclePhotoGallery } from '@/components/public/vehicle-photo-gallery';
+import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
-import type { VehicleWithPhotos } from '@/lib/types';
+import { effectiveDealPrice } from '@/lib/site-offers';
+import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 
@@ -29,6 +31,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
   const params = use(props.params);
   const { slug } = params;
   const [vehicle, setVehicle] = useState<VehicleWithPhotos | null>(null);
+  const [deal, setDeal] = useState<SiteOffer | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFoundFlag, setNotFoundFlag] = useState(false);
   const [coverIndex, setCoverIndex] = useState(0);
@@ -54,6 +57,15 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
       const nextCover = sortedPhotos.findIndex((p) => p.is_cover);
       setVehicle({ ...typedData, vehicle_photos: sortedPhotos });
       setCoverIndex(nextCover >= 0 ? nextCover : 0);
+
+      const { data: offerRows } = await supabase
+        .from('site_offers')
+        .select('*')
+        .eq('is_published', true)
+        .eq('vehicle_id', typedData.id)
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .limit(1);
+      setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
       setLoading(false);
     })();
   }, [slug]);
@@ -80,6 +92,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
 
   const photos = vehicle.vehicle_photos || [];
   const hasPrice = vehicle.show_price && vehicle.price && vehicle.price > 0;
+  const dealPrice = deal ? effectiveDealPrice(hasPrice ? vehicle.price : null, deal) : null;
 
   const specs = [
     { icon: Calendar, label: 'Year', value: vehicle.year?.toString() },
@@ -93,7 +106,20 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
   ].filter((s) => s.value);
 
   return (
-    <div className="container-page overflow-x-clip py-8">
+    <div className="overflow-x-clip">
+      <div className="border-b border-border bg-gradient-to-b from-secondary/60 to-background">
+        <div className="container-page py-5 sm:py-6">
+          <nav className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+            <Link href="/" className="shrink-0 hover:text-foreground">Home</Link>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+            <Link href="/vehicles" className="shrink-0 hover:text-foreground">Vehicles</Link>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+            <span className="truncate font-medium text-foreground">{vehicle.title}</span>
+          </nav>
+        </div>
+      </div>
+
+      <div className="container-page py-8 sm:py-10">
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -111,20 +137,13 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
             '@type': 'Offer',
             availability: 'https://schema.org/InStock',
             priceCurrency: vehicle.currency,
-            price: hasPrice ? vehicle.price : undefined,
+            price: dealPrice ?? (hasPrice ? vehicle.price : undefined),
             url: `${siteConfig.url}/vehicles/${vehicle.slug}`,
           },
         }}
       />
-      <nav className="mb-6 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/" className="shrink-0 hover:text-foreground">Home</Link>
-        <ChevronRight className="h-4 w-4 shrink-0" />
-        <Link href="/vehicles" className="shrink-0 hover:text-foreground">Vehicles</Link>
-        <ChevronRight className="h-4 w-4 shrink-0" />
-        <span className="truncate font-medium text-foreground">{vehicle.title}</span>
-      </nav>
 
-      <div className="grid min-w-0 gap-8 lg:grid-cols-2">
+      <div className="grid min-w-0 gap-8 lg:grid-cols-2 lg:gap-10">
         <VehiclePhotoGallery
           title={vehicle.title}
           photos={photos}
@@ -134,29 +153,51 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
 
         <div className="min-w-0 space-y-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{vehicle.title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="eyebrow">Export vehicle</p>
+            <h1 className="mt-2 font-display text-2xl font-black tracking-tight md:text-3xl lg:text-4xl">{vehicle.title}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
               {vehicle.make} {vehicle.model}
               {vehicle.variant ? ` • ${vehicle.variant}` : ''}
             </p>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
+          {deal ? (
+            <InventoryDealBanner
+              offer={deal}
+              currency={vehicle.currency}
+              listPrice={hasPrice ? vehicle.price : null}
+            />
+          ) : null}
+
+          <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 p-4 sm:p-5">
             <div>
-              <p className="text-xs text-muted-foreground">Price</p>
-              {hasPrice ? (
-                <p className="text-2xl font-bold">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {dealPrice != null ? 'Deal price' : 'Export price'}
+              </p>
+              {dealPrice != null ? (
+                <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                  <p className="text-2xl font-black tracking-tight sm:text-3xl">
+                    {vehicle.currency} {dealPrice.toLocaleString()}
+                  </p>
+                  {hasPrice ? (
+                    <span className="text-sm text-muted-foreground line-through">
+                      {vehicle.currency} {vehicle.price!.toLocaleString()}
+                    </span>
+                  ) : null}
+                </div>
+              ) : hasPrice ? (
+                <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
                   {vehicle.currency} {vehicle.price!.toLocaleString()}
                 </p>
               ) : (
-                <p className="text-2xl font-bold">Ask Price</p>
+                <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Ask for quote</p>
               )}
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">Status</p>
-              <div className="flex items-center gap-1.5 text-emerald-600">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
+              <div className="mt-1 flex items-center justify-end gap-1.5 text-emerald-600">
                 <CheckCircle2 className="h-4 w-4" />
-                <span className="text-sm font-medium">Available</span>
+                <span className="text-sm font-semibold">Available</span>
               </div>
             </div>
           </div>
@@ -204,6 +245,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

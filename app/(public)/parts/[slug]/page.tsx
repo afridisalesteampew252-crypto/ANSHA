@@ -33,9 +33,11 @@ import { PartCard } from '@/components/public/part-card';
 import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { BrandLogo } from '@/components/public/brand-logo';
+import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { supabase } from '@/lib/supabase/client';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
-import type { PartWithRelations } from '@/lib/types';
+import { effectiveDealPrice } from '@/lib/site-offers';
+import type { PartWithRelations, SiteOffer } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
 
 export default function PartDetailPage(props: { params: Promise<{ slug: string }> }) {
@@ -43,6 +45,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
   const { slug } = params;
   const [part, setPart] = useState<PartWithRelations | null>(null);
   const [relatedParts, setRelatedParts] = useState<PartWithRelations[]>([]);
+  const [deal, setDeal] = useState<SiteOffer | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFoundFlag, setNotFoundFlag] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -69,6 +72,15 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
       const coverIndex = sortedPhotos.findIndex((p) => p.is_cover);
       setPart({ ...typedData, part_photos: sortedPhotos });
       setSelectedImage(coverIndex >= 0 ? coverIndex : 0);
+
+      const { data: offerRows } = await supabase
+        .from('site_offers')
+        .select('*')
+        .eq('is_published', true)
+        .eq('part_id', typedData.id)
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .limit(1);
+      setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
       setLoading(false);
 
       // Fetch related parts (same category, excluding this one)
@@ -112,6 +124,8 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
   const photoUrl = currentPhoto
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${currentPhoto.storage_path}`
     : null;
+  const hasListPrice = Boolean(part.show_price && part.price && part.price > 0);
+  const dealPrice = deal ? effectiveDealPrice(hasListPrice ? part.price : null, deal) : null;
 
   const navigatePhoto = (dir: 'prev' | 'next') => {
     setSelectedImage((prev) => {
@@ -137,7 +151,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
             '@type': 'Offer',
             availability: part.quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             priceCurrency: part.currency,
-            price: part.show_price && part.price ? part.price : undefined,
+            price: dealPrice ?? (part.show_price && part.price ? part.price : undefined),
             url: `${siteConfig.url}/parts/${part.slug}`,
           },
         }}
@@ -266,6 +280,14 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
             <p className="mt-2 font-mono text-sm text-muted-foreground">{part.part_code}</p>
           </div>
 
+          {deal ? (
+            <InventoryDealBanner
+              offer={deal}
+              currency={part.currency}
+              listPrice={hasListPrice ? part.price : null}
+            />
+          ) : null}
+
           {/* Key info grid */}
           <div className="grid grid-cols-2 gap-4">
             {part.oem_number && (
@@ -309,11 +331,25 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           {/* Price & availability */}
           <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
             <div>
-              {part.show_price && part.price && part.price > 0 ? (
+              {dealPrice != null ? (
+                <>
+                  <p className="text-xs text-muted-foreground">Deal price</p>
+                  <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
+                    <p className="text-2xl font-bold">
+                      {part.currency} {dealPrice.toLocaleString()}
+                    </p>
+                    {hasListPrice ? (
+                      <span className="text-sm text-muted-foreground line-through">
+                        {part.currency} {part.price!.toLocaleString()}
+                      </span>
+                    ) : null}
+                  </div>
+                </>
+              ) : hasListPrice ? (
                 <>
                   <p className="text-xs text-muted-foreground">Price</p>
                   <p className="text-2xl font-bold">
-                    {part.currency} {part.price.toLocaleString()}
+                    {part.currency} {part.price!.toLocaleString()}
                   </p>
                 </>
               ) : (

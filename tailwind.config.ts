@@ -11,6 +11,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Syne', 'Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       backgroundImage: {

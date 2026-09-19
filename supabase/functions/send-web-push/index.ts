@@ -1,8 +1,87 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0';
-import webpush from 'npm:web-push@3.6.7';
+import * as webpush from 'jsr:@negrel/webpush@0.5.0';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
 type Topic = 'insights' | 'deals' | 'all';
+
+/** Trim secrets and normalize URL-safe base64 (no spaces/newlines; strip padding). */
+function normalizeBase64Url(value: string) {
+  return value.trim().replace(/\s+/g, '').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlToBytes(base64url: string) {
+  const normalized = normalizeBase64Url(base64url);
+  const padding = '='.repeat((4 - (normalized.length % 4)) % 4);
+  const base64 = normalized.replace(/-/g, '+').replace(/_/g, '/') + padding;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function bytesToBase64Url(bytes: Uint8Array) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+/** Convert web-push CLI URL-safe keys into JWK for @negrel/webpush. */
+function vapidKeysToJwk(publicKeyBase64Url: string, privateKeyBase64Url: string) {
+  const publicKeyBytes = base64UrlToBytes(publicKeyBase64Url);
+  if (publicKeyBytes.byteLength !== 65 || publicKeyBytes[0] !== 0x04) {
+    throw new Error(
+      'VAPID_PUBLIC_KEY must be an uncompressed P-256 key (65 bytes URL-safe base64 from `npx web-push generate-vapid-keys`).'
+    );
+  }
+  const privateKeyBytes = base64UrlToBytes(privateKeyBase64Url);
+  if (privateKeyBytes.byteLength !== 32) {
+    throw new Error(
+      'VAPID_PRIVATE_KEY must be 32 bytes URL-safe base64 (no spaces/newlines) matching the public key pair.'
+    );
+  }
+
+  const x = bytesToBase64Url(publicKeyBytes.slice(1, 33));
+  const y = bytesToBase64Url(publicKeyBytes.slice(33, 65));
+  const d = bytesToBase64Url(privateKeyBytes);
+
+  return {
+    publicKey: {
+      kty: 'EC',
+      crv: 'P-256',
+      alg: 'ES256',
+      x,
+      y,
+      key_ops: ['verify'],
+      ext: true,
+    },
+    privateKey: {
+      kty: 'EC',
+      crv: 'P-256',
+      alg: 'ES256',
+      x,
+      y,
+      d,
+      key_ops: ['sign'],
+      ext: true,
+    },
+  };
+}
+
+function normalizeVapidSubject(raw: string) {
+  const subject = raw.trim();
+  if (!subject) return 'mailto:info@anshatrading.com';
+  if (subject.startsWith('mailto:') || subject.startsWith('https:')) return subject;
+  if (subject.includes('@')) return `mailto:${subject}`;
+  throw new Error('VAPID_SUBJECT must be a mailto: or https: URL (e.g. mailto:info@anshatrading.com).');
+}
+
+function isStalePushError(error: unknown) {
+  if (error && typeof error === 'object' && 'response' in error) {
+    const status = Number((error as { response?: { status?: number } }).response?.status || 0);
+    return status === 404 || status === 410;
+  }
+  return false;
+}
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(request) });
@@ -12,13 +91,15 @@ Deno.serve(async (request) => {
     const url = Deno.env.get('SUPABASE_URL');
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('NEXT_PUBLIC_VAPID_PUBLIC_KEY');
-    const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
-    const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:info@anshatrading.com';
+    const vapidPublicRaw = Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('NEXT_PUBLIC_VAPID_PUBLIC_KEY');
+    const vapidPrivateRaw = Deno.env.get('VAPID_PRIVATE_KEY');
+    const vapidSubject = normalizeVapidSubject(
+      Deno.env.get('VAPID_SUBJECT') || 'mailto:info@anshatrading.com'
+    );
     const authorization = request.headers.get('Authorization') || '';
 
     if (!url || !anonKey || !serviceKey) return json(request, { error: 'Push service is not configured.' }, 500);
-    if (!vapidPublic || !vapidPrivate) {
+    if (!vapidPublicRaw || !vapidPrivateRaw) {
       return json(request, { error: 'VAPID keys are not configured on the Edge Function.' }, 500);
     }
     if (!authorization.startsWith('Bearer ')) return json(request, { error: 'Authentication required.' }, 401);
@@ -53,7 +134,14 @@ Deno.serve(async (request) => {
     if (!title || title.length > 120) return json(request, { error: 'Title is required (max 120 characters).' }, 422);
     if (!body || body.length > 300) return json(request, { error: 'Body is required (max 300 characters).' }, 422);
 
-    webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+    const vapidKeys = await webpush.importVapidKeys(
+      vapidKeysToJwk(normalizeBase64Url(vapidPublicRaw), normalizeBase64Url(vapidPrivateRaw)),
+      { extractable: false }
+    );
+    const appServer = await webpush.ApplicationServer.new({
+      contactInformation: vapidSubject,
+      vapidKeys,
+    });
 
     let query = serviceClient.from('push_subscriptions').select('id, endpoint, p256dh, auth');
     if (topic === 'insights') query = query.eq('notify_insights', true);
@@ -69,21 +157,19 @@ Deno.serve(async (request) => {
 
     for (const row of rows || []) {
       try {
-        await webpush.sendNotification(
-          {
-            endpoint: row.endpoint,
-            keys: { p256dh: row.p256dh, auth: row.auth },
+        const subscriber = appServer.subscribe({
+          endpoint: row.endpoint,
+          keys: {
+            p256dh: normalizeBase64Url(row.p256dh),
+            auth: normalizeBase64Url(row.auth),
           },
-          message,
-          { TTL: 60 * 60 * 12 }
-        );
+        });
+        await subscriber.pushTextMessage(message, { ttl: 60 * 60 * 12 });
         sent += 1;
       } catch (error) {
         failed += 1;
-        const statusCode = typeof error === 'object' && error && 'statusCode' in error
-          ? Number((error as { statusCode?: number }).statusCode)
-          : 0;
-        if (statusCode === 404 || statusCode === 410) staleIds.push(row.id);
+        if (isStalePushError(error)) staleIds.push(row.id);
+        else console.error('push send failed', error instanceof Error ? error.message : error);
       }
     }
 
@@ -99,6 +185,7 @@ Deno.serve(async (request) => {
       removed_stale: staleIds.length,
     });
   } catch (error) {
+    console.error('send-web-push error', error instanceof Error ? error.message : error);
     return json(request, { error: error instanceof Error ? error.message : 'Unknown push error.' }, 500);
   }
 });

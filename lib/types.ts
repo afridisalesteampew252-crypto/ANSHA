@@ -370,6 +370,10 @@ export interface SiteOffer {
   title: string;
   summary: string | null;
   href: string;
+  vehicle_id: string | null;
+  part_id: string | null;
+  discount_percent: number | null;
+  sale_price: number | null;
   is_published: boolean;
   published_at: string | null;
   created_by: string | null;

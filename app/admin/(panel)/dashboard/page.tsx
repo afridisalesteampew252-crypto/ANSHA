@@ -181,7 +181,7 @@ export default function AdminDashboardPage() {
           <Button asChild variant="outline"><Link href="/admin/analytics">Analytics</Link></Button>
           <Button asChild variant="outline"><Link href="/admin/customers">Customer SOA</Link></Button>
           <Button asChild variant="outline"><Link href="/admin/customers"><KeyRound className="h-4 w-4" />Enable portal</Link></Button>
-          <Button asChild variant="outline"><Link href="/admin/offers"><Megaphone className="h-4 w-4" />PWA deals</Link></Button>
+          {isOps ? <Button asChild variant="outline"><Link href="/admin/offers"><Megaphone className="h-4 w-4" />PWA deals</Link></Button> : null}
           {isOps ? <Button asChild variant="outline"><Link href="/admin/remittances"><WalletCards className="h-4 w-4" />Record funds</Link></Button> : null}
           <Button asChild variant="accent"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />New invoice</Link></Button>
         </div>

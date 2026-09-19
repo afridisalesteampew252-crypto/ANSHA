@@ -21,7 +21,7 @@ import {
   Ship,
   Wrench,
 } from 'lucide-react';
-import { CatalogImage } from '@/components/public/catalog-image';
+import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { resolveCategoryImage } from '@/lib/category-images';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,6 +81,10 @@ export default function HomePageClient() {
     count: 0,
   })), []);
 
+  const heroVehicle = featuredVehicles[0];
+  const heroPhoto = heroVehicle?.vehicle_photos?.find((photo) => photo.is_cover) || heroVehicle?.vehicle_photos?.[0];
+  const heroImageUrl = heroPhoto ? publicVehicleImageUrl(heroPhoto.storage_path) : null;
+
   const goToParts = (event: React.FormEvent) => {
     event.preventDefault();
     const params = new URLSearchParams();
@@ -94,63 +98,104 @@ export default function HomePageClient() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-[#101114] text-white">
-        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_78%_20%,rgba(220,38,38,.35),transparent_28%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
-        <div className="absolute -right-24 top-10 hidden h-[430px] w-[620px] rotate-[-8deg] rounded-[50%] border border-white/10 bg-gradient-to-br from-white/10 to-transparent blur-sm lg:block" />
-        <div className="container-page relative grid items-center gap-8 py-10 sm:gap-10 sm:py-14 lg:min-h-[560px] lg:grid-cols-[1.05fr_.95fr] lg:py-16">
-          <div className="max-w-3xl">
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-accent sm:text-base">ANSHA Trading Co.</p>
-            <p className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/55">Dubai · Vehicles &amp; parts export</p>
-            <h1 className="mt-4 max-w-3xl text-[2.15rem] font-black leading-[1.05] tracking-[-0.045em] sm:mt-5 sm:text-5xl lg:text-6xl xl:text-7xl">
-              The right automotive stock, <span className="text-accent">ready to export.</span>
-            </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-6 text-white/70 sm:mt-5 sm:text-lg sm:leading-7">
-              Search by OEM, chassis, make or model — then export with one Dubai-based team.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
-              <Button asChild variant="accent" size="lg" className="h-12 w-full rounded-full px-6 sm:w-auto"><Link href="/parts">Explore parts <ArrowRight className="h-4 w-4" /></Link></Button>
-              <Button asChild size="lg" className="h-12 w-full rounded-full border border-white/20 bg-white/5 px-6 text-white hover:bg-white/10 sm:w-auto"><Link href="/vehicles">Browse vehicles</Link></Button>
-            </div>
+      <section className="relative min-h-[78vh] overflow-hidden bg-[#101114] text-white sm:min-h-[72vh] lg:min-h-[78vh]">
+        {heroImageUrl ? (
+          <div className="absolute inset-0">
+            <CatalogImage
+              src={heroImageUrl}
+              alt={heroVehicle?.title || 'ANSHA export vehicle'}
+              fill
+              priority
+              sizes="100vw"
+              objectFit="cover"
+              className="animate-hero-ken opacity-55"
+            />
           </div>
+        ) : (
+          <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_72%_18%,rgba(220,38,38,.45),transparent_34%),linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:auto,48px_48px,48px_48px]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#101114] via-[#101114]/88 to-[#101114]/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#101114] via-transparent to-[#101114]/40" />
 
-          <div className="relative lg:pl-6">
-            <div className="rounded-[24px] border border-white/15 bg-white/[0.07] p-2.5 shadow-2xl backdrop-blur-xl sm:rounded-[28px] sm:p-5">
-              <form onSubmit={goToParts} className="rounded-2xl bg-background p-4 text-foreground sm:p-7">
-                <div className="mb-4 flex items-start justify-between gap-3 sm:mb-6 sm:gap-4">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Catalog finder</span>
-                    <h2 className="mt-1 text-lg font-extrabold sm:text-2xl">Find the right part faster</h2>
-                  </div>
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent text-white sm:h-11 sm:w-11"><PackageSearch className="h-5 w-5" /></span>
-                </div>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-bold">Part, OEM or chassis number</span>
-                  <span className="relative block">
-                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. 81110-52J30, NHP10, headlight" className="h-12 rounded-xl bg-secondary/50 pl-10" />
-                  </span>
-                </label>
-                <div className="mt-3 grid gap-3 sm:mt-4 sm:gap-4 sm:grid-cols-2">
-                  <label>
-                    <span className="mb-2 block text-xs font-bold">Manufacturer</span>
-                    <select value={finderBrand} onChange={(event) => setFinderBrand(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm">
-                      <option value="all">All manufacturers</option>
-                      {SUPPORTED_MANUFACTURERS.map((brand) => <option key={brand} value={brand}>{brand}</option>)}
-                    </select>
-                  </label>
-                  <label>
-                    <span className="mb-2 block text-xs font-bold">Category</span>
-                    <select value={finderCategory} onChange={(event) => setFinderCategory(event.target.value)} className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm">
-                      <option value="all">All categories</option>
-                      {categories.map((category) => <option key={category.id} value={category.slug}>{category.name}</option>)}
-                    </select>
-                  </label>
-                </div>
-                <Button type="submit" variant="accent" className="mt-4 h-12 w-full rounded-xl text-sm font-bold sm:mt-5">Search inventory <ArrowRight className="h-4 w-4" /></Button>
-                <p className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground sm:mt-4"><ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />Published ANSHA inventory only.</p>
-              </form>
+        <div className="container-page relative flex min-h-[78vh] flex-col justify-end pb-12 pt-24 sm:min-h-[72vh] sm:pb-16 sm:pt-28 lg:min-h-[78vh] lg:justify-center lg:pb-20 lg:pt-24">
+          <div className="max-w-2xl">
+            <p className="animate-fade-up text-sm font-black uppercase tracking-[0.22em] text-accent sm:text-base">
+              ANSHA Trading Co.
+            </p>
+            <h1 className="animate-fade-up-delay-1 mt-4 max-w-xl font-display text-[2.35rem] font-extrabold leading-[1.02] tracking-[-0.04em] sm:mt-5 sm:text-5xl lg:text-6xl xl:text-[4.25rem]">
+              Export-ready vehicles &amp; parts from Dubai.
+            </h1>
+            <p className="animate-fade-up-delay-2 mt-4 max-w-lg text-[15px] leading-6 text-white/72 sm:mt-5 sm:text-lg sm:leading-7">
+              Verified inventory, OEM fitment support, and worldwide shipping coordination — one team.
+            </p>
+            <div className="animate-fade-up-delay-2 mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+              <Button asChild variant="accent" size="lg" className="h-12 w-full rounded-full px-7 text-sm font-bold sm:w-auto">
+                <Link href="/vehicles">Browse vehicles <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+              <Button asChild size="lg" className="h-12 w-full rounded-full border border-white/25 bg-white/10 px-7 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/15 sm:w-auto">
+                <Link href="/parts">Explore parts</Link>
+              </Button>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="border-b border-border bg-gradient-to-b from-secondary/70 to-background py-8 sm:py-10">
+        <div className="container-page">
+          <form
+            onSubmit={goToParts}
+            className="grid gap-3 rounded-[22px] border border-border bg-card p-4 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
+          >
+            <div className="lg:col-span-4">
+              <span className="eyebrow">Catalog finder</span>
+              <h2 className="mt-1.5 text-lg font-extrabold tracking-tight sm:text-xl">Find the right part faster</h2>
+            </div>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Part, OEM or chassis</span>
+              <span className="relative block">
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="e.g. 81110-52J30, NHP10, headlight"
+                  className="h-12 rounded-xl bg-secondary/40 pl-10"
+                />
+              </span>
+            </label>
+            <label>
+              <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Manufacturer</span>
+              <select
+                value={finderBrand}
+                onChange={(event) => setFinderBrand(event.target.value)}
+                className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm"
+              >
+                <option value="all">All manufacturers</option>
+                {SUPPORTED_MANUFACTURERS.map((brand) => (
+                  <option key={brand} value={brand}>{brand}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Category</span>
+              <select
+                value={finderCategory}
+                onChange={(event) => setFinderCategory(event.target.value)}
+                className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm"
+              >
+                <option value="all">All categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.slug}>{category.name}</option>
+                ))}
+              </select>
+            </label>
+            <Button type="submit" variant="accent" className="h-12 rounded-xl text-sm font-bold">
+              <PackageSearch className="h-4 w-4" /> Search
+            </Button>
+            <p className="flex items-center gap-2 text-[11px] text-muted-foreground lg:col-span-4">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+              Published ANSHA inventory only.
+            </p>
+          </form>
         </div>
       </section>
 
@@ -162,9 +207,14 @@ export default function HomePageClient() {
             { icon: ClipboardCheck, title: 'Fitment Support', text: 'OEM and chassis matching' },
             { icon: Headphones, title: 'Human Service', text: 'Direct help on WhatsApp' },
           ].map((item) => (
-            <div key={item.title} className="flex min-h-[4.5rem] items-center gap-3 px-3 py-3.5 sm:min-h-24 sm:px-5 sm:py-4">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent/10 text-accent sm:h-10 sm:w-10"><item.icon className="h-4 w-4 sm:h-5 sm:w-5" /></span>
-              <div><h3 className="text-[13px] font-extrabold leading-tight sm:text-sm">{item.title}</h3><p className="mt-0.5 text-[11px] leading-4 text-muted-foreground sm:mt-1 sm:text-xs">{item.text}</p></div>
+            <div key={item.title} className="flex min-h-[4.75rem] items-center gap-3 px-3 py-3.5 sm:min-h-24 sm:px-5 sm:py-4">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent/10 text-accent sm:h-11 sm:w-11">
+                <item.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+              </span>
+              <div>
+                <h3 className="text-[13px] font-extrabold leading-tight sm:text-sm">{item.title}</h3>
+                <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground sm:mt-1 sm:text-xs">{item.text}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -173,35 +223,51 @@ export default function HomePageClient() {
       <section className="py-14 sm:py-20">
         <div className="container-page">
           <div className="section-heading">
-            <div><span className="eyebrow">Catalog departments</span><h2>Shop by category</h2><p>Move directly into the part family you need.</p></div>
+            <div>
+              <span className="eyebrow">Catalog departments</span>
+              <h2>Shop by category</h2>
+              <p>Move directly into the part family you need.</p>
+            </div>
             <Link href="/categories" className="section-link">All categories <ArrowRight className="h-4 w-4" /></Link>
           </div>
           {loading ? (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />)}</div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
               {categories.map((category, index) => {
                 const imageSrc = resolveCategoryImage(category.slug, category.image_url);
                 return (
-                <Link key={category.id} href={`/categories/${category.slug}`} className="group relative block aspect-[4/3] min-h-[9rem] overflow-hidden rounded-2xl border border-border bg-secondary">
-                  {imageSrc ? (
-                    <CatalogImage
-                      src={imageSrc}
-                      alt={category.name}
-                      fill
-                      sizes="(max-width: 768px) 50vw, 16vw"
-                      priority={index < 4}
-                      className="transition duration-500 group-hover:scale-105"
-                      objectFit="cover"
-                    />
-                  ) : <span className="absolute inset-0 grid place-items-center"><Wrench className="h-10 w-10 text-muted-foreground/15" /></span>}
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
-                  <span className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <strong className="block text-sm">{category.name}</strong>
-                    <span className="mt-1 block text-[11px] text-white/65">Browse parts</span>
-                  </span>
-                  <ChevronRight className="absolute right-3 top-3 h-7 w-7 rounded-full bg-white/90 p-1.5 text-black opacity-0 transition group-hover:opacity-100" />
-                </Link>
+                  <Link
+                    key={category.id}
+                    href={`/categories/${category.slug}`}
+                    className="group relative block aspect-[4/3] min-h-[9rem] overflow-hidden rounded-2xl border border-border bg-secondary"
+                  >
+                    {imageSrc ? (
+                      <CatalogImage
+                        src={imageSrc}
+                        alt={category.name}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 16vw"
+                        priority={index < 4}
+                        className="transition duration-500 group-hover:scale-105"
+                        objectFit="cover"
+                      />
+                    ) : (
+                      <span className="absolute inset-0 grid place-items-center">
+                        <Wrench className="h-10 w-10 text-muted-foreground/15" />
+                      </span>
+                    )}
+                    <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                    <span className="absolute inset-x-0 bottom-0 p-4 text-white">
+                      <strong className="block text-sm">{category.name}</strong>
+                      <span className="mt-1 block text-[11px] text-white/65">Browse parts</span>
+                    </span>
+                    <ChevronRight className="absolute right-3 top-3 h-7 w-7 rounded-full bg-white/90 p-1.5 text-black opacity-0 transition group-hover:opacity-100" />
+                  </Link>
                 );
               })}
             </div>
@@ -212,15 +278,31 @@ export default function HomePageClient() {
       <section className="bg-secondary/45 py-14 sm:py-20">
         <div className="container-page">
           <div className="section-heading">
-            <div><span className="eyebrow">Ready to ship</span><h2>Featured parts</h2><p>Current published inventory selected by the ANSHA team.</p></div>
+            <div>
+              <span className="eyebrow">Ready to ship</span>
+              <h2>Featured parts</h2>
+              <p>Current published inventory selected by the ANSHA team.</p>
+            </div>
             <Link href="/parts" className="section-link">View catalog <ArrowRight className="h-4 w-4" /></Link>
           </div>
           {loading ? (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="aspect-[.72] animate-pulse rounded-2xl bg-muted" />)}</div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="aspect-[.72] animate-pulse rounded-2xl bg-muted" />
+              ))}
+            </div>
           ) : featured.length ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">{featured.slice(0, 8).map((part) => <PartCard key={part.id} part={part} />)}</div>
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {featured.slice(0, 8).map((part) => (
+                <PartCard key={part.id} part={part} />
+              ))}
+            </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center"><Boxes className="mx-auto h-10 w-10 text-muted-foreground/30" /><h3 className="mt-4 font-bold">Inventory is being prepared</h3><p className="mt-1 text-sm text-muted-foreground">Send your requirements and the team will source the right part.</p></div>
+            <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
+              <Boxes className="mx-auto h-10 w-10 text-muted-foreground/30" />
+              <h3 className="mt-4 font-bold">Inventory is being prepared</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Send your requirements and the team will source the right part.</p>
+            </div>
           )}
         </div>
       </section>
@@ -228,13 +310,28 @@ export default function HomePageClient() {
       <section className="py-14 sm:py-20">
         <div className="container-page">
           <div className="section-heading">
-            <div><span className="eyebrow">Manufacturer directory</span><h2>Popular brands we supply</h2><p>Open a marque to browse published parts.</p></div>
+            <div>
+              <span className="eyebrow">Manufacturer directory</span>
+              <h2>Popular brands we supply</h2>
+              <p>Open a marque to browse published parts.</p>
+            </div>
             <Link href="/parts" className="section-link">All brands <ArrowRight className="h-4 w-4" /></Link>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
             {displayMakes.map(({ make, count }) => (
-              <Link key={make} href={`/parts?brand=${encodeURIComponent(make)}`} className="group flex min-h-24 flex-col items-center justify-center rounded-xl border border-border bg-card p-2 text-center transition hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-md">
-                <Image src={getManufacturerLogo(make)} alt={`${make} logo`} width={52} height={52} loading="lazy" className="h-9 w-12 object-contain transition group-hover:scale-105" />
+              <Link
+                key={make}
+                href={`/parts?brand=${encodeURIComponent(make)}`}
+                className="group flex min-h-[5.5rem] flex-col items-center justify-center rounded-xl border border-border bg-card p-2 text-center transition hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-md sm:min-h-24"
+              >
+                <Image
+                  src={getManufacturerLogo(make)}
+                  alt={`${make} logo`}
+                  width={52}
+                  height={52}
+                  loading="lazy"
+                  className="h-9 w-12 object-contain transition group-hover:scale-105"
+                />
                 <strong className="mt-2 line-clamp-1 text-[10px] sm:text-[11px]">{make}</strong>
                 {count > 0 && <span className="mt-0.5 text-[9px] font-semibold text-accent">{count} in stock</span>}
               </Link>
@@ -247,22 +344,38 @@ export default function HomePageClient() {
         <div className="container-page grid items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
           <div>
             <span className="eyebrow">Export showroom</span>
-            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Vehicles sourced for your destination market.</h2>
-            <p className="mt-4 max-w-xl leading-7 text-white/60">Browse published stock or send the make, model, year, and destination you need. ANSHA can coordinate inspection and export support from Dubai.</p>
+            <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+              Vehicles sourced for your destination market.
+            </h2>
+            <p className="mt-4 max-w-xl leading-7 text-white/60">
+              Browse published stock or send the make, model, year, and destination you need. ANSHA can coordinate inspection and export support from Dubai.
+            </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Button asChild variant="accent" className="rounded-full"><Link href="/vehicles">View vehicle stock <ArrowRight className="h-4 w-4" /></Link></Button>
-              <Button asChild className="rounded-full border border-white/20 bg-white/5 text-white hover:bg-white/10"><Link href="/contact">Request sourcing</Link></Button>
+              <Button asChild variant="accent" className="h-11 rounded-full px-5">
+                <Link href="/vehicles">View vehicle stock <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+              <Button asChild className="h-11 rounded-full border border-white/20 bg-white/5 px-5 text-white hover:bg-white/10">
+                <Link href="/contact">Request sourcing</Link>
+              </Button>
             </div>
           </div>
           {featuredVehicles.length ? (
-            <div className="grid gap-4 sm:grid-cols-2">{featuredVehicles.map((vehicle, index) => <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} />)}</div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {featuredVehicles.map((vehicle, index) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} />
+              ))}
+            </div>
           ) : (
             <div className="relative min-h-72 overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] p-8">
               <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
               <CarFront className="h-14 w-14 text-accent" />
               <h3 className="mt-8 text-2xl font-extrabold">Looking for a specific vehicle?</h3>
-              <p className="mt-3 max-w-md text-sm leading-6 text-white/55">Tell us the exact specification. We will respond with current availability instead of showing outdated or invented stock.</p>
-              <Link href="/contact" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white">Send requirements <ArrowRight className="h-4 w-4 text-accent" /></Link>
+              <p className="mt-3 max-w-md text-sm leading-6 text-white/55">
+                Tell us the exact specification. We will respond with current availability instead of showing outdated or invented stock.
+              </p>
+              <Link href="/contact" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white">
+                Send requirements <ArrowRight className="h-4 w-4 text-accent" />
+              </Link>
             </div>
           )}
         </div>
@@ -272,10 +385,17 @@ export default function HomePageClient() {
         <div className="container-page grid gap-8 lg:grid-cols-[.8fr_1.2fr]">
           <div className="rounded-[28px] bg-accent p-7 text-white sm:p-10">
             <CircleHelp className="h-11 w-11" />
-            <h2 className="mt-6 text-3xl font-black tracking-tight">Can’t find the exact part?</h2>
-            <p className="mt-4 leading-7 text-white/75">Share the part name, OEM number, vehicle model or chassis code. Our sourcing team will review your request.</p>
+            <h2 className="mt-6 font-display text-3xl font-extrabold tracking-tight">Can&apos;t find the exact part?</h2>
+            <p className="mt-4 leading-7 text-white/75">
+              Share the part name, OEM number, vehicle model or chassis code. Our sourcing team will review your request.
+            </p>
             <ul className="mt-7 space-y-3 text-sm font-semibold">
-              {['OEM and chassis matching', 'All major vehicle brands', 'Direct export support'].map((item) => <li key={item} className="flex items-center gap-2"><BadgeCheck className="h-4 w-4" />{item}</li>)}
+              {['OEM and chassis matching', 'All major vehicle brands', 'Direct export support'].map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4" />
+                  {item}
+                </li>
+              ))}
             </ul>
           </div>
           <div className="rounded-[28px] border border-border bg-card p-5 shadow-sm sm:p-8">
@@ -288,10 +408,18 @@ export default function HomePageClient() {
         <section className="border-t border-border bg-secondary/40 py-14 sm:py-20">
           <div className="container-page">
             <div className="section-heading">
-              <div><span className="eyebrow">Export insights</span><h2>Latest from ANSHA</h2><p>Guides and updates for automotive buyers.</p></div>
+              <div>
+                <span className="eyebrow">Export insights</span>
+                <h2>Latest from ANSHA</h2>
+                <p>Guides and updates for automotive buyers.</p>
+              </div>
               <Link href="/blog" className="section-link">All insights <ArrowRight className="h-4 w-4" /></Link>
             </div>
-            <div className="grid gap-5 md:grid-cols-3">{latestPosts.map((post) => <BlogCard key={post.id} post={post} />)}</div>
+            <div className="grid gap-5 md:grid-cols-3">
+              {latestPosts.map((post) => (
+                <BlogCard key={post.id} post={post} />
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -299,12 +427,19 @@ export default function HomePageClient() {
       <section className="border-t border-border bg-card py-8 sm:py-10">
         <div className="container-page flex flex-col items-center justify-between gap-4 text-center md:flex-row md:gap-5 md:text-left">
           <div className="flex items-center gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent/10 text-accent"><Globe2 className="h-6 w-6" /></span>
-            <div><h2 className="text-lg font-extrabold">Ready to source or export?</h2><p className="text-sm text-muted-foreground">Speak directly with the ANSHA team in Dubai.</p></div>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
+              <Globe2 className="h-6 w-6" />
+            </span>
+            <div>
+              <h2 className="text-lg font-extrabold">Ready to source or export?</h2>
+              <p className="text-sm text-muted-foreground">Speak directly with the ANSHA team in Dubai.</p>
+            </div>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
             <WhatsAppButton message="Hello ANSHA TRADING, I would like help sourcing a vehicle or automotive part." />
-            <Button asChild variant="outline" className="h-11"><Link href="/contact"><Send className="h-4 w-4" />Contact team</Link></Button>
+            <Button asChild variant="outline" className="h-11">
+              <Link href="/contact"><Send className="h-4 w-4" />Contact team</Link>
+            </Button>
           </div>
         </div>
       </section>
