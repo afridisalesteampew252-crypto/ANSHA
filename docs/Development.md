@@ -40,7 +40,7 @@ AI ops assistant (Phase 42) — server-only on Vercel / `.env.local` (never `NEX
 | `npm run cap:add:android` / `cap:add:ios` | Generate native projects (once; gitignored) |
 | `npm run cap:android` / `cap:ios` | Open Android Studio / Xcode |
 
-There is no `test` script. Native mobile steps: `docs/Mobile.md`.
+There is no `test` script. Native mobile steps: `docs/Mobile.md`. Live product checkpoint: `docs/CURRENT_STATE.md`.
 
 ## Conventions
 

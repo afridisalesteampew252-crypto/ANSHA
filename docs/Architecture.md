@@ -10,10 +10,15 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - Web Push: `push_subscriptions` + Edge Function `send-web-push` (Phase 24)
 - Outbound email: `outbound_email_log` + Edge Function `send-outbound-email` / Resend (Phase 39)
 - Marketing campaigns: `marketing_campaigns` + `/admin/campaigns` Send now → push/email/offer hooks (Phase 49)
+- Deals / inventory offers: `site_offers` with vehicle/part links (Phase 51) — `/admin/offers`, public cards via `use-inventory-deals`
+- Trade / markets: `export_market_configs` + `site_trade_settings` (Phase 52) — `/admin/trade-config`, public `/markets/[code]`
+- PWA subscribers admin: `/admin/subscribers` (ops) over `push_subscriptions`
 - WhatsApp Cloud API: `whatsapp_message_log` + Edge Function `send-whatsapp` (Phase 40)
 - AI ops assistant: `/admin/ai` + `POST /api/ai/chat` (Vercel AI SDK; server `AI_GATEWAY_API_KEY` / `OPENAI_API_KEY`) (Phase 42)
 - Capacitor shell (Phase 44): iOS/Android WebView loading the production public URL; see `docs/Mobile.md`
 - Shared backend: Supabase Auth, PostgreSQL, Storage, Realtime, Edge Functions
+
+Live status and completion %: [CURRENT_STATE.md](./CURRENT_STATE.md). Module matrix: [Modules.md](./Modules.md).
 
 The public site is an installable PWA (Phase 22) on this same database. Capacitor is an additive native wrapper around that URL, not a second frontend. Portal and native shells must keep using this same database.
 
@@ -23,7 +28,7 @@ The public site is an installable PWA (Phase 22) on this same database. Capacito
 Browser or Capacitor WebView
   → Next.js (Vercel)  [Capacitor: server.url → https://www.anshatradingco.com]
     → proxy.ts for /admin/:path*
-    → RSC / Client Components / GET /api/health / POST /api/ai/chat
+    → RSC / Client Components / GET /api/health / GET /api/fx / POST /api/ai/chat
     → Supabase JS (publishable/anon key) or Edge Function (service role, admin-only)
       → PostgreSQL / Storage / Auth / Realtime
 ```

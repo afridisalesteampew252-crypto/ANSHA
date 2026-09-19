@@ -3,32 +3,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Car, CheckCircle2, Edit, Eye, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { Car, Loader2, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { AdminVehicleCard } from '@/components/admin/admin-vehicle-card';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
+import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
-import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { LIFECYCLE_STAGES, lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
 import { toast } from 'sonner';
-import type { StockOrigin, StockStatus, VehicleWithPhotos } from '@/lib/types';
-
-const statusClass: Record<StockStatus, string> = {
-  available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
-  reserved: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  sold: 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900',
-};
-
-const stageClass: Record<LifecycleStage, string> = {
-  unassigned: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
-  auction: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300',
-  yard: 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300',
-  port: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300',
-  sold: 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900',
-};
+import type { AdminRole, StockOrigin, VehicleWithPhotos } from '@/lib/types';
 
 export default function AdminVehiclesPage() {
   const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
@@ -36,6 +21,8 @@ export default function AdminVehiclesPage() {
   const [query, setQuery] = useState('');
   const [origin, setOrigin] = useState<'all' | StockOrigin>('all');
   const [stage, setStage] = useState<'all' | LifecycleStage>('all');
+  const [role, setRole] = useState<AdminRole | null>(null);
+  const fieldAgent = isFieldAgentRole(role);
 
   const fetchVehicles = useCallback(async () => {
     setLoading(true);
@@ -43,6 +30,15 @@ export default function AdminVehiclesPage() {
     if (error) toast.error(error.message);
     setVehicles((data || []) as unknown as VehicleWithPhotos[]);
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: prof } = await supabase.from('admin_profiles').select('role').eq('id', session.user.id).maybeSingle();
+      setRole((prof?.role as AdminRole) || null);
+    })();
   }, []);
 
   useEffect(() => { void fetchVehicles(); }, [fetchVehicles]);
@@ -117,10 +113,16 @@ export default function AdminVehiclesPage() {
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Catalog</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight">Vehicle inventory</h1>
-        <p className="text-sm text-muted-foreground">Manage stock locations, availability, operational lifecycle, and publishing.</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight">{fieldAgent ? 'Vehicle stock' : 'Vehicle inventory'}</h1>
+        <p className="text-sm text-muted-foreground">
+          {fieldAgent
+            ? 'Browse stock status and identifiers, then reserve an available vehicle for a customer.'
+            : 'Manage stock locations, availability, operational lifecycle, and publishing.'}
+        </p>
       </div>
-      <Button asChild variant="accent"><Link href="/admin/vehicles/new"><Plus className="h-4 w-4" />Add vehicle</Link></Button>
+      {!fieldAgent ? (
+        <Button asChild variant="accent"><Link href="/admin/vehicles/new"><Plus className="h-4 w-4" />Add vehicle</Link></Button>
+      ) : null}
     </div>
 
     <div className="relative max-w-md">
@@ -138,39 +140,24 @@ export default function AdminVehiclesPage() {
       {STOCK_ORIGINS.map((item) => <button key={item.value} onClick={() => setOrigin(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === item.value ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>{item.label} ({vehicles.filter((vehicle) => vehicle.stock_origin === item.value).length})</button>)}
     </nav>
 
-    <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Vehicle lifecycle stages">
-      <button onClick={() => setStage('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === 'all' ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>All stages</button>
-      {LIFECYCLE_STAGES.map((item) => <button key={item.value} onClick={() => setStage(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === item.value ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>{item.label} ({vehicles.filter((vehicle) => (vehicle.lifecycle_stage || 'unassigned') === item.value).length})</button>)}
-    </nav>
+    {!fieldAgent ? (
+      <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Vehicle lifecycle stages">
+        <button onClick={() => setStage('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === 'all' ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>All stages</button>
+        {LIFECYCLE_STAGES.map((item) => <button key={item.value} onClick={() => setStage(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === item.value ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>{item.label} ({vehicles.filter((vehicle) => (vehicle.lifecycle_stage || 'unassigned') === item.value).length})</button>)}
+      </nav>
+    ) : null}
 
     {loading ? <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed py-16 text-center"><Car className="mx-auto h-10 w-10 text-muted-foreground/30" /><p className="mt-3 text-sm text-muted-foreground">{query.trim() ? 'No vehicles match this search.' : 'No vehicles in this stock location.'}</p></div> :
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">{filtered.map((vehicle) => {
-        const cover = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
-        const photoUrl = cover ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${cover.storage_path}` : '';
-        return <Card key={vehicle.id} className="overflow-hidden"><CardContent className="p-0">
-          <div className="flex gap-4 p-4">
-            <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg bg-secondary">{photoUrl ? <img src={photoUrl} alt={vehicle.title} className="h-full w-full object-cover" /> : <span className="grid h-full place-items-center"><Car className="h-7 w-7 text-muted-foreground/30" /></span>}</div>
-            <div className="min-w-0 flex-1"><div className="flex flex-wrap gap-2"><Badge className={stageClass[(vehicle.lifecycle_stage || 'unassigned') as LifecycleStage]}>{lifecycleStageLabel(vehicle.lifecycle_stage)}</Badge><Badge className={statusClass[vehicle.stock_status || 'available']}>{(vehicle.stock_status || 'available').replace('_', ' ')}</Badge>{vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}</div><h2 className="mt-2 truncate font-bold">{vehicle.title}</h2><p className="text-xs text-muted-foreground">{vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference'}</p><p className="mt-1"><StockOriginBadge origin={vehicle.stock_origin} compact /></p></div>
-          </div>
-          <div className="grid gap-3 border-t p-4 sm:grid-cols-2">
-            <label className="text-xs font-medium text-muted-foreground">Stock location<select value={vehicle.stock_origin || 'dubai'} onChange={(event) => void updateVehicle(vehicle.id, { stock_origin: event.target.value }, 'Stock location updated.')} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">{STOCK_ORIGINS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-            <label className="text-xs font-medium text-muted-foreground">Availability<select value={vehicle.stock_status || 'available'} onChange={(event) => void updateVehicle(vehicle.id, { stock_status: event.target.value }, event.target.value === 'sold' ? 'Vehicle marked sold.' : 'Availability updated.')} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"><option value="available">Available</option><option value="reserved">Reserved</option><option value="sold">Sold</option></select></label>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 border-t p-3">
-            {(vehicle.stock_status || 'available') === 'available' && !vehicle.is_published ? (
-              <Button variant="outline" size="sm" onClick={() => void setListing(vehicle, true)}><CheckCircle2 className="h-4 w-4" />Publish when available</Button>
-            ) : null}
-            {vehicle.is_published ? (
-              <Button variant="outline" size="sm" onClick={() => void setListing(vehicle, false)}><CheckCircle2 className="h-4 w-4" />Unpublish</Button>
-            ) : null}
-            {(vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold') && vehicle.is_published ? (
-              <Button variant="outline" size="sm" onClick={() => void setListing(vehicle, false)}>Unpublish when reserved</Button>
-            ) : null}
-            <Button asChild variant="ghost" size="sm"><Link href={`/vehicles/${vehicle.slug}`} target="_blank"><Eye className="h-4 w-4" />View</Link></Button>
-            <Button asChild variant="ghost" size="sm"><Link href={`/admin/vehicles/${vehicle.id}`}><Edit className="h-4 w-4" />Edit</Link></Button>
-            <Button variant="ghost" size="icon" className="ml-auto text-destructive" onClick={() => void removeVehicle(vehicle)} aria-label={`Delete ${vehicle.title}`}><Trash2 className="h-4 w-4" /></Button>
-          </div>
-        </CardContent></Card>;
-      })}</div>}
+      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">{filtered.map((vehicle) => (
+        <AdminVehicleCard
+          key={vehicle.id}
+          vehicle={vehicle}
+          fieldAgent={fieldAgent}
+          onUpdate={updateVehicle}
+          onSetListing={setListing}
+          onDelete={removeVehicle}
+          stockOriginOptions={STOCK_ORIGINS}
+        />
+      ))}</div>}
   </div>;
 }

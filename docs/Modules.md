@@ -25,14 +25,15 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Financial reports | no | `/admin/reports` (ops) | trial balance / P&L / balance sheet RPCs |
 | VAT return | no | `/admin/vat-return` (ops) | `vat_return_periods` + `get_vat_return_summary` |
 | Payroll | no | /admin/payroll (ops) | employees, leave_requests, payroll_runs, payroll_lines, eos_estimate_logs |
-| Audit log | no | `/admin/audit-log` (ops) | `audit_logs` (append-only; invoice status, vehicle stock, remittance allocate) |
-| Blog | `/blog` | `/admin/blog` | `blog_*` |
+| Audit log | no | `/admin/audit-log` (**admin only**) | `audit_logs` (append-only; invoice status, part/vehicle catalog activity, remittance allocate) |
+| HR / workforce | no | `/admin/hr`, `/admin/hr/locations`, `/admin/hr/shifts`, `/admin/hr/attendance` (ops manage; manager view + own attendance) | `shift_locations`, `shift_assignments`, `attendance_records` |
+| Blog | `/blog` | `/admin/blog` (Write / HTML / Preview) | `blog_*` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
 | Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
 | Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments, due reminders |
 | Customer portal | `/portal` | `/portal/invoices`, `/portal/account` | `customer_profiles` + own invoices + sanitized SOA RPC |
 | Customers | no | `/admin/customers`, SOA `[id]` (+ enable portal) | `customers`, invoices, remittances, allocations |
-| Reserve vehicle | no | `/admin/reservations` (sales + ops) | reserve + proforma RPC |
+| Reserve vehicle | no | `/admin/reservations` (field agents + ops) | reserve + proforma RPC |
 | Invoices | `/verify/invoice/[code]` | `/admin/invoices` (sales: customer invoices only) | `invoices*` |
 | Supplier invoices | no | `/admin/invoices/supplier` | `supplier_invoices` |
 | Remittances | no | `/admin/remittances` | `remittances*` |
@@ -42,17 +43,25 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Internal mail | no | `/admin/mail` | `internal_mail*` |
 | Outbound email | no | `/admin/email` (ops) | `outbound_email_log` + Edge `send-outbound-email` |
 | Marketing campaigns | no | `/admin/campaigns` (ops) | `marketing_campaigns` + send hooks to push/email/offer |
+| PWA subscribers | no | `/admin/subscribers` (ops) | `push_subscriptions` (deals/insights topics) |
+| Trade config | `/markets/[code]` | `/admin/trade-config` (ops) | `export_market_configs`, `site_trade_settings` |
 | WhatsApp | no | `/admin/whatsapp` (ops) | `whatsapp_message_log` + Edge `send-whatsapp` |
 | Notifications | no | header center | `admin_notifications` |
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |
 | Company pages | `/`, `/about`, `/contact` | — | static + catalog queries |
+| Cart / favorites | `/cart`, `/favorites` | — | browser localStorage inquiry list |
+| Markets / FX | header clock+FX, `/markets/[code]` | trade-config | `/api/fx` + market policies |
 | Health | `/api/health` | — | REST ping |
-| PWA | installable public shell + Web Push | admin offers / blog notify | `push_subscriptions`, `site_offers`, `/sw.js`, `send-web-push` |
+| PWA | **Anshatradingco APP** install + Web Push | offers / blog / campaigns notify | `push_subscriptions`, `site_offers`, `/sw.js`, `send-web-push` |
 | Capacitor shell | store-ready WebView wrapper (public URL) | generate `android`/`ios` locally | `capacitor.config.ts`, `native/www`, `docs/Mobile.md` |
-| Offers | `/offers` | `/admin/offers` | `site_offers` |
+| Offers / deals | `/offers` (+ nav Deals) | `/admin/offers` | `site_offers` (+ inventory link, discount/sale) |
 
 ## Not implemented
 
 Native admin rewrite.
+
+Live Open Banking OAuth (CSV bank import stub only).
+
+Separate email newsletter list (Marketing subscribers = PWA push rows only).
 
 Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BookmarkPlus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -15,7 +15,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { supabase } from '@/lib/supabase/client';
+import type { AdminRole } from '@/lib/types';
 
 type Customer = {
   id: string;
@@ -46,18 +48,27 @@ const defaultDue = () => {
 
 export default function ReservationsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedVehicle = searchParams.get('vehicle') || '';
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [customerId, setCustomerId] = useState('');
-  const [vehicleId, setVehicleId] = useState('');
+  const [vehicleId, setVehicleId] = useState(preselectedVehicle);
   const [unitPrice, setUnitPrice] = useState('');
   const [currency, setCurrency] = useState('AED');
   const [taxRate, setTaxRate] = useState('5');
   const [dueDate, setDueDate] = useState(defaultDue);
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
+  const [role, setRole] = useState<AdminRole | null>(null);
+  const fieldAgent = isFieldAgentRole(role);
 
   const load = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const { data: prof } = await supabase.from('admin_profiles').select('role').eq('id', session.user.id).maybeSingle();
+      setRole((prof?.role as AdminRole) || null);
+    }
     const [custRes, vehRes] = await Promise.all([
       supabase
         .from('customers')
@@ -81,6 +92,10 @@ export default function ReservationsPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (preselectedVehicle) setVehicleId(preselectedVehicle);
+  }, [preselectedVehicle]);
 
   const selectedVehicle = useMemo(() => vehicles.find((row) => row.id === vehicleId) || null, [vehicles, vehicleId]);
   const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
@@ -116,7 +131,7 @@ export default function ReservationsPage() {
     }
     const result = data as { invoice_id?: string; vehicle_id?: string } | null;
     toast.success('Vehicle reserved and proforma created.');
-    if (result?.invoice_id) {
+    if (result?.invoice_id && !fieldAgent) {
       router.push(`/admin/invoices/${result.invoice_id}`);
     } else {
       await load();
@@ -130,6 +145,7 @@ export default function ReservationsPage() {
         <h1 className="text-2xl font-bold tracking-tight">Reserve vehicle</h1>
         <p className="text-sm text-muted-foreground">
           Hold available stock for a customer, unpublish it from the website, and create a proforma invoice draft.
+          {fieldAgent ? ' Ops will finalize the customer invoice after reservation.' : ''}
         </p>
       </div>
 

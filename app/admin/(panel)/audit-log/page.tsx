@@ -18,6 +18,7 @@ type AuditRow = AuditLog & {
 const ENTITY_OPTIONS = [
   { value: 'all', label: 'All entity types' },
   { value: 'invoice', label: 'Invoice' },
+  { value: 'part', label: 'Part' },
   { value: 'vehicle', label: 'Vehicle' },
   { value: 'remittance_allocation', label: 'Remittance allocation' },
 ] as const;
@@ -109,7 +110,7 @@ export default function AuditLogPage() {
       <div>
         <h1 className="text-2xl font-bold">Audit log</h1>
         <p className="text-sm text-muted-foreground">
-          Read-only activity trail for invoice status, vehicle stock status, and remittance allocations.
+          Account-admin only. Catalog create/update/delete and stock status, invoice status, and remittance allocations.
         </p>
       </div>
 

@@ -89,18 +89,28 @@ Done (Phase 39): outbound email MVP ? outbound_email_log (ops RLS, append-only),
 
 Done (Phase 49): marketing campaigns MVP ? marketing_campaigns (name, channel push|email|offer, status draft|scheduled|sent, payload jsonb, sent_at; ops RLS), admin /admin/campaigns with Send now hooks into send-web-push / send-outbound-email / offer deals push. Not full ESP automation.
 
+Done (Phase 51): inventory-linked offers — `site_offers.vehicle_id` / `part_id`, `discount_percent`, `sale_price`; public cards + detail show deal price; admin attach vehicle/part on `/admin/offers`. Migration `20260919010000_phase_51_offer_inventory_links.sql`.
+
+Done (Phase 52): trade configuration — `export_market_configs` + `site_trade_settings`; public `/markets/[code]`; admin `/admin/trade-config`. Migration `20260919020000_phase_52_trade_config.sql`.
+
+Also shipped (product slices, post-50): public cart/favorites; Dubai clock + AED FX (`/api/fx`); PNG export-market flags; mobile PWA overflow fixes; admin PK/Dubai clocks + FX; Marketing `/admin/subscribers`; PWA name **Anshatradingco APP** + install CTAs; blog Write/HTML/Preview editor.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.
 
-Done (Phase 24): Web Push for new insights and deals/offers. `push_subscriptions` + `site_offers`, public opt-in prompt, `/offers`, admin Deals & Offers with optional push, blog ?PWA push on publish?, Edge Function `send-web-push` (VAPID). Staff must opt in per publish ? no silent DB webhook.
+Done (Phase 24): Web Push for new insights and deals/offers. `push_subscriptions` + `site_offers`, public opt-in prompt, `/offers`, admin Deals & Offers with optional push, blog PWA push on publish, Edge Function `send-web-push` (VAPID). Staff must opt in per publish — no silent DB webhook. **Ops note:** Edge `VAPID_*` secrets must be real URL-safe base64 matching the Vercel public key or sends return 500.
 
-Done (Phase 44): Capacitor native shell MVP ? `capacitor.config.ts` (`com.anshatrading.app`) loads `https://www.anshatradingco.com` (or `CAPACITOR_SERVER_URL`) in an iOS/Android WebView. Config + `native/www` placeholder + npm scripts + `docs/Mobile.md`. Native `android/` / `ios/` are generated locally and gitignored. PWA unchanged; admin is not rewritten as native UI.
+Done (Phase 44): Capacitor native shell MVP — `capacitor.config.ts` (`com.anshatrading.app`) loads `https://www.anshatradingco.com` (or `CAPACITOR_SERVER_URL`) in an iOS/Android WebView. Config + `native/www` placeholder + npm scripts + `docs/Mobile.md`. Native `android/` / `ios/` are generated locally and gitignored. PWA unchanged; admin is not rewritten as native UI.
 
-Done (Phase 45): tighter staff vs account-admin RBAC ? `private.is_account_admin()` (active `role = 'admin'`); admin-only reverse GL / chart upsert / bank account create / supplier DELETE / payroll post + cancel-posted; `/admin/users` route + nav; portal-create-access stays admin. Sales allowlist unchanged. Migration `20260918330000_phase_45_rbac_admin_staff.sql`.
+Done (Phase 45): tighter staff vs account-admin RBAC — `private.is_account_admin()` (active `role = 'admin'`); admin-only reverse GL / chart upsert / bank account create / supplier DELETE / payroll post + cancel-posted; `/admin/users` route + nav; portal-create-access stays admin. Sales allowlist unchanged. Migration `20260918330000_phase_45_rbac_admin_staff.sql`.
 
 ## 8. Later platform
 
-AI automation and deeper ESP features ? all against this PostgreSQL project.
+AI automation and deeper ESP features — all against this PostgreSQL project.
+
+Live bank OAuth (beyond CSV stub), email newsletter list separate from push, automated E2E suite.
 
 Stop after the current module until the next one is approved.
+
+Checkpoint: [CURRENT_STATE](./CURRENT_STATE.md).

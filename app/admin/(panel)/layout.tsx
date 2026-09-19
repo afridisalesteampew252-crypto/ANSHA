@@ -4,112 +4,59 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import {
-  Banknote, BarChart3, BookMarked, BookOpen, BookmarkPlus, Building2, Calculator, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileBarChart, FileSpreadsheet, Globe2, Inbox, LayoutDashboard,
-  Loader2, Mail, MailPlus, Megaphone, Menu, MessageCircle, Package, PackagePlus, Phone, Plus, Receipt, ReceiptText, ScrollText, Ship, Sparkles, Tag, Truck,
-  Upload, WalletCards, UserCog, Users, X, Bell,
-} from 'lucide-react';
+import { BookmarkPlus, ChevronLeft, ChevronRight, ExternalLink, Loader2, Menu, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile } from '@/lib/types';
+import {
+  canAccessHr,
+  FIELD_AGENT_NAV_HREFS,
+  isAccountAdminRole,
+  isFieldAgentRole,
+} from '@/lib/admin-rbac';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
 import { AdminMarketChrome } from '@/components/admin/admin-market-chrome';
+import {
+  ADMIN_NAV_GROUPS,
+  AdminSidebarNav,
+  findAdminNavLabel,
+  type AdminNavGroup,
+} from '@/components/admin/admin-sidebar-nav';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
-
-const navGroups: { label: string; items: NavItem[] }[] = [
-  {
-    label: 'Overview',
-    items: [
-      { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-      { href: '/admin/ai', label: 'AI assistant', icon: Sparkles },
-      { href: '/admin/audit-log', label: 'Audit log', icon: ScrollText },
-    ],
-  },
-  {
-    label: 'Catalog',
-    items: [
-      { href: '/admin/parts', label: 'Parts', icon: Package },
-      { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
-      { href: '/admin/categories', label: 'Categories', icon: Tag },
-      { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
-      { href: '/admin/suppliers', label: 'Suppliers', icon: Truck },
-      { href: '/admin/purchase-orders', label: 'Purchase orders', icon: ClipboardList },
-      { href: '/admin/inventory/receive', label: 'Receive stock', icon: PackagePlus },
-      { href: '/admin/landed-cost', label: 'Landed cost', icon: Calculator },
-      { href: '/admin/export-shipments', label: 'Export shipments', icon: Ship },
-    ],
-  },
-  {
-    label: 'Sales & customers',
-    items: [
-      { href: '/admin/customers', label: 'Customers & portal', icon: Users },
-      { href: '/admin/reservations', label: 'Reserve vehicle', icon: BookmarkPlus },
-      { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
-      { href: '/admin/invoices/supplier', label: 'Supplier Invoices', icon: ReceiptText },
-      { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
-    ],
-  },
-  {
-    label: 'Finance',
-    items: [
-      { href: '/admin/bank-accounts', label: 'Bank accounts', icon: Building2 },
-      { href: '/admin/expenses', label: 'Expenses', icon: Receipt },
-      { href: '/admin/ledger', label: 'General ledger', icon: BookMarked },
-      { href: '/admin/reports', label: 'Reports', icon: FileBarChart },
-      { href: '/admin/vat-return', label: 'VAT return', icon: FileSpreadsheet },
-    ],
-  },
-  {
-    label: 'Inbox',
-    items: [
-      { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
-      { href: '/admin/requests', label: 'Requests', icon: ClipboardList },
-      { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
-      { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
-      { href: '/admin/email', label: 'Outbound email', icon: MailPlus },
-      { href: '/admin/whatsapp', label: 'WhatsApp', icon: Phone },
-    ],
-  },
-  {
-    label: 'Marketing',
-    items: [
-      { href: '/admin/blog', label: 'Insights / Blog', icon: BookOpen },
-      { href: '/admin/offers', label: 'Deals & offers', icon: Megaphone },
-      { href: '/admin/subscribers', label: 'PWA subscribers', icon: Bell },
-      { href: '/admin/campaigns', label: 'Campaigns', icon: MailPlus },
-      { href: '/admin/trade-config', label: 'Trade config', icon: Globe2 },
-    ],
-  },
-  {
-    label: 'Team',
-    items: [
-      { href: '/admin/payroll', label: 'Payroll', icon: Banknote },
-      { href: '/admin/users', label: 'Users', icon: UserCog },
-    ],
-  },
-];
-
-const SALES_ALLOWED_HREFS = new Set([
+const MANAGER_NAV_HREFS = new Set([
   '/admin/dashboard',
-  '/admin/analytics',
-  '/admin/parts',
-  '/admin/vehicles',
-  '/admin/customers',
-  '/admin/reservations',
-  '/admin/invoices',
-  '/admin/inquiries',
-  '/admin/requests',
+  '/admin/hr',
+  '/admin/hr/locations',
+  '/admin/hr/shifts',
+  '/admin/hr/attendance',
   '/admin/chat',
-  '/admin/mail',
 ]);
 
-const isNavActive = (pathname: string, href: string) => pathname === href || (pathname.startsWith(`${href}/`) && !(href === '/admin/invoices' && pathname.startsWith('/admin/invoices/supplier')));
+function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
+  const fieldAgent = isFieldAgentRole(profile.role);
+  const isAccountAdmin = isAccountAdminRole(profile.role);
+  const isManager = profile.role === 'manager';
+  const hrAccess = canAccessHr(profile.role);
+
+  return ADMIN_NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (item.href === '/admin/users' && !isAccountAdmin) return false;
+      if (item.href === '/admin/audit-log' && !isAccountAdmin) return false;
+      // HR section + payroll (now nested under HR)
+      if ((group.id === 'hr' || item.href.startsWith('/admin/hr') || item.href === '/admin/payroll') && !hrAccess) {
+        return false;
+      }
+      if (fieldAgent && !FIELD_AGENT_NAV_HREFS.has(item.href)) return false;
+      if (isManager && !MANAGER_NAV_HREFS.has(item.href)) return false;
+      return true;
+    }),
+  })).filter((group) => group.items.length > 0);
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -173,58 +120,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-secondary/30"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!profile) return null;
 
-  const isSales = profile.role === 'sales';
-  const isAccountAdmin = profile.role === 'admin';
-  const visibleGroups = navGroups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        if (item.href === '/admin/users' && !isAccountAdmin) return false;
-        if (isSales && !SALES_ALLOWED_HREFS.has(item.href)) return false;
-        return true;
-      }),
-    }))
-    .filter((group) => group.items.length > 0);
-  const visibleItems = visibleGroups.flatMap((group) => group.items);
-  const activeItem = visibleItems.find((item) => isNavActive(pathname, item.href));
-  const pageTitle = pathname === '/admin/profile' ? 'My profile' : activeItem?.label || 'Admin workspace';
-
-  const navigation = (mobile = false) => (
-    <nav className="flex-1 space-y-4 overflow-y-auto p-3" aria-label="Admin navigation">
-      {visibleGroups.map((group) => (
-        <div key={group.label} className="space-y-1">
-          {(mobile || !collapsed) && (
-            <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground/80">{group.label}</p>
-          )}
-          {group.items.map((item) => {
-            const active = isNavActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={!mobile && collapsed ? item.label : undefined}
-                className={cn(
-                  'flex min-h-10 items-center rounded-lg text-sm font-medium transition-colors',
-                  mobile || !collapsed ? 'gap-3 px-3 py-2.5' : 'justify-center px-2 py-2.5',
-                  active
-                    ? 'bg-accent/12 text-accent shadow-[inset_3px_0_0_hsl(var(--accent))]'
-                    : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
-                )}
-              >
-                <item.icon className={cn('h-5 w-5 shrink-0', active && 'text-accent')} />
-                <span className={cn('flex min-w-0 flex-1 items-center justify-between gap-2', !mobile && collapsed && 'sr-only')}>
-                  <span className="truncate">{item.label}</span>
-                  {item.href === '/admin/chat' && chatUnread > 0 ? (
-                    <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white">{chatUnread > 99 ? '99+' : chatUnread}</span>
-                  ) : null}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      ))}
-    </nav>
-  );
+  const fieldAgent = isFieldAgentRole(profile.role);
+  const isManager = profile.role === 'manager';
+  const visibleGroups = filterNavGroups(profile);
+  const pageTitle =
+    pathname === '/admin/profile' ? 'My profile' : findAdminNavLabel(visibleGroups, pathname) || 'Admin workspace';
 
   return (
     <div className="admin-shell flex min-h-screen min-w-0">
@@ -234,7 +134,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
           </Link>
         </div>
-        {navigation()}
+        <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} />
         <div className="space-y-2 border-t border-border/80 p-3">
           {!collapsed && <div className="flex items-center justify-between px-2"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Appearance</span><ThemeToggle /></div>}
           {collapsed && <div className="flex justify-center"><ThemeToggle /></div>}
@@ -252,7 +152,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className="h-16 w-auto max-w-[220px] object-contain" />
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close admin menu"><X className="h-5 w-5" /></Button>
           </div>
-          {navigation(true)}
+          <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} />
           <div className="space-y-2 border-t border-border/80 p-3"><div className="flex items-center justify-between px-2"><span className="text-xs text-muted-foreground">Appearance</span><ThemeToggle /></div><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
         </aside>
       </>}
@@ -287,6 +187,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <AdminMarketChrome className="w-full max-w-3xl justify-center" />
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            {!fieldAgent && !isManager ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="accent"><Plus className="h-4 w-4" />Quick add</Button>
@@ -297,17 +198,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/admin/customers">Customer / enable portal</Link></DropdownMenuItem>
-                {!isSales ? <DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem> : null}
-                {!isSales ? <DropdownMenuItem asChild><Link href="/admin/offers">Deal + PWA push</Link></DropdownMenuItem> : null}
-                {!isSales ? <DropdownMenuItem asChild><Link href="/admin/subscribers">PWA subscribers</Link></DropdownMenuItem> : null}
-                {!isSales ? (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem>
-                  </>
-                ) : null}
+                <DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/admin/offers">Deal + PWA push</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/admin/subscribers">PWA subscribers</Link></DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            ) : fieldAgent ? (
+              <Button asChild variant="accent"><Link href="/admin/reservations"><BookmarkPlus className="h-4 w-4" />Reserve</Link></Button>
+            ) : null}
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
             <AdminNotificationCenter userId={profile.id} />
             <ThemeToggle />

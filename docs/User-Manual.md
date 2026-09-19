@@ -52,9 +52,10 @@ Inactive accounts are signed out automatically.
 ### Install the public site as a PWA
 
 1. On a phone or desktop browser, open the public site.
-2. Use the install prompt (or the browser “Add to Home Screen” / Install app action).
-3. Optionally allow notifications for deals and blog insights.
-4. Offline: you get a basic offline page; catalog, admin, and portal stay online-only.
+2. Use **Install app** in the header, footer, or sticky banner (app name: **Anshatradingco APP**).
+3. On iPhone Safari: Share → **Add to Home Screen** if no native install prompt appears.
+4. Optionally allow notifications for deals and blog insights.
+5. Offline: you get a basic offline page; catalog, admin, and portal stay online-only.
 
 Staff ERP is **not** a native app rewrite. Store shells (if used) wrap the public website URL only.
 
@@ -64,17 +65,21 @@ Staff ERP is **not** a native app rewrite. Store shells (if used) wrap the publi
 
 | Page | Path | Use it to |
 |---|---|---|
-| Home | `/` | Start search; jump to parts or vehicles |
-| Parts | `/parts`, `/parts/[slug]` | Browse / open a part; inquire or request sourcing |
-| Vehicles | `/vehicles`, `/vehicles/[slug]` | Browse / open a vehicle; inquire |
+| Home | `/` | Start search; jump to parts or vehicles; featured deals strip |
+| Parts | `/parts`, `/parts/[slug]` | Browse / open a part; inquire or request sourcing; deal price if linked |
+| Vehicles | `/vehicles`, `/vehicles/[slug]` | Browse / open a vehicle; inquire; deal price if linked |
 | Categories | `/categories`, `/categories/[slug]` | Shop by category |
+| Deals | `/offers` (also **Deals** in nav / mobile bar) | Current offers; tap inventory-linked deals |
+| Markets | `/markets/[code]` | Import notes + hot vehicles for a destination (from flag strip) |
+| Cart / Favorites | `/cart`, `/favorites` | Saved inquiry list (stored in the browser) |
 | Blog / insights | `/blog`, `/blog/[slug]` | Read articles |
-| Offers | `/offers` | Current deals |
 | Banking | `/banking` | Official bank details (copy fields; verify via WhatsApp link if shown) |
 | About / Contact | `/about`, `/contact` | Company info and contact forms |
 | Invoice verify | `/verify/invoice/[code]` | Confirm a document from a QR code (seller, customer, lines, totals — no private notes) |
 
 **Catalog rule:** the website only lists items that are **published** and **available**. Reserved or sold stock does not appear as buyable inventory on the public lists.
+
+**Deals rule:** publishing a deal under Marketing → Deals & PWA push with a vehicle/part attached shows discount % and/or deal price on that item’s cards and detail page. It does **not** change ERP list price.
 
 ---
 
@@ -205,9 +210,11 @@ Header **notification center**: team messages, mail, inquiries, part requests, r
 
 | Page | Path | How to use |
 |---|---|---|
-| Insights / Blog | `/admin/blog` | Draft/publish posts; optional **PWA push on publish**. |
-| Deals & PWA push | `/admin/offers` | Create site offers; optionally push to subscribers. |
-| Campaigns | `/admin/campaigns` (ops) | Draft campaigns (push / email / offer channel) → **Send now** hooks into push, outbound email, or offers. |
+| Insights / Blog | `/admin/blog` | Draft/publish with **Write** toolbar, **HTML**, or **Preview**; optional **PWA push on publish**. |
+| Deals & PWA push | `/admin/offers` | Create offers; attach vehicle/part; optional discount % / sale price; optional push. |
+| Campaigns | `/admin/campaigns` (ops) | Draft campaigns (push / email / offer channel) → **Send now**. |
+| PWA subscribers | `/admin/subscribers` (ops) | List push opt-ins (deals/insights), filter, remove stale rows. |
+| Trade config | `/admin/trade-config` (ops) | FX reference rates, freight notes, per-country import policies for `/markets/[code]`. |
 
 ### 5.9 Team
 

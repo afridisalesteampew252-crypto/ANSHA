@@ -12,24 +12,21 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 
 ## Project status
 
+Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)** (~**85–90%** of the chosen Phase 1–52 ERP + public + platform MVP).
+
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Supabase authorization and storage hardening | Complete |
-| 2 | Server-side admin authentication and route protection | Complete |
-| 3 | Next.js modernization, Vercel cleanup, CI, and quality gates | Complete |
-| 4 | Global SEO and exporter schema for parts and vehicles | Complete |
-| 4B | Premium responsive homepage, logo, brand directory, and UX fixes | Complete |
-| 5 | Admin customers/users, Excel imports, and ZIP image matching | Complete |
-| 6 | Vercel environments, deployments, domains, and runtime validation | Complete |
-| 7 | Final testing, performance, SEO validation, backups, and launch | In progress |
-| 9A | Admin operations shell, account menu, access visibility, and quick actions | Complete |
-| 9B | Secure internal chat, file sharing, groups, and internal mail | Complete |
-| 9C | Automatic catalog image optimization for direct and ZIP uploads | Complete |
-| 10 | Internal communications UI and self-service profiles | Complete |
-| 11 | Responsive operations, reliable user creation, imports, and invoicing | Complete |
-| 12 | Canonical domain migration and official banking page | Complete |
-| 13 | Public automotive catalog redesign and responsive UX | Complete |
-| 14 | QR-verifiable invoices and remittance management | Complete |
+| 1–6 | Security, auth proxy, Next 16, SEO exporter, Vercel | Complete |
+| 7 | Final testing / backups / launch hardening | In progress (CI green; E2E suite thin) |
+| 9–17 | Ops shell, chat/mail, invoicing, remittances, stock | Complete |
+| 18–27 | Lifecycle, requests, chat links, portal, due reminders | Complete |
+| 28–38 | Purchase, PO, payments, export, landed, bank, VAT, payroll, GL | Complete |
+| 39–45 | Email, WhatsApp, analytics, AI, audit, Capacitor, RBAC | Complete (secrets optional) |
+| 46–50 | GL auto-post, lifecycle harden, EOS, campaigns, bank CSV stub | Complete |
+| 51–52 | Inventory-linked deals; trade config / markets | Complete |
+| Product UX | PWA **Anshatradingco APP**, cart/fav, FX/clocks, subscribers, blog editor | Complete (push needs valid VAPID Edge secrets) |
+
+Module matrix: [docs/Modules.md](./docs/Modules.md). Full audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md).
 
 ## Phase 1 completion
 
@@ -78,7 +75,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migrations include Phase 47 lifecycle hardening (`supabase/migrations/20260918350000_phase_47_lifecycle_hardening.sql`), Phase 50 bank feed stub, and earlier concurrent ERP phases under `supabase/migrations/`.
+Latest migrations include Phase 51–52 (`offer_inventory_links`, `trade_config`) and earlier concurrent ERP phases under `supabase/migrations/`. See [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md).
 
 ## Phase 4: global SEO and exporter schema
 

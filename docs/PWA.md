@@ -1,18 +1,25 @@
 # PWA
 
-Installable public catalog (Phase 22). Staff ERP and portal stay online-only.
+Installable public catalog. Staff ERP and portal stay online-only.
 
-## v1.2.0 (shipped)
+App name: **Anshatradingco APP** (`app/manifest.ts` + Apple web-app title).
 
-- Cache bucket `ansha-pwa-v1.2.0` — precaches public shell only: `/`, `/offline`, and icons.
+## Current (shipped)
+
+- Cache bucket in `public/sw.js` — precaches public shell (`/`, `/offline`, icons).
 - Never caches `/admin`, `/api`, `/portal`, `/auth`, or `/verify/*`.
 - Offline navigations fall back to `/offline`.
-- **Update available — Refresh** banner when a new service worker is waiting; user-triggered reload via `SKIP_WAITING`.
+- **Update available — Refresh** banner when a new service worker is waiting (`SKIP_WAITING`).
+- Install UX: sticky banner, header/footer **Install app**, iOS “Add to Home Screen” hints when `beforeinstallprompt` is unavailable.
+- Web Push opt-in (`components/pwa/push-opt-in.tsx`) for deals / insights topics → `push_subscriptions`.
+- Staff send via Edge `send-web-push` (Deno `@negrel/webpush`). Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — must be real URL-safe base64 matching Vercel `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (no `…` placeholders).
 
-Files: `public/sw.js`, `components/pwa/register-service-worker.tsx`, `components/pwa/install-prompt.tsx`, `app/manifest.ts`.
+Files: `public/sw.js`, `components/pwa/*`, `app/manifest.ts`, `app/api` excluded from SW cache.
 
-## v1.3 (ideas)
+Admin Marketing → **PWA subscribers** (`/admin/subscribers`) lists opt-ins.
 
-Background sync for quote requests, richer offline catalog pages (parts/vehicles list snapshots), optional Web Share Target for inbound RFQs, and periodic `registration.update()` checks on tab focus. Push opt-in (`components/pwa/push-opt-in.tsx`) may get topic preferences once campaign tooling matures.
+## Later ideas
 
-See also `docs/Mobile.md` for the Capacitor store shell.
+Background sync for quote requests, richer offline catalog snapshots, Web Share Target for RFQs, periodic `registration.update()` on tab focus, richer topic preferences once campaigns mature.
+
+See also `docs/Mobile.md` for the Capacitor store shell and `docs/Deployment.md` for VAPID setup.

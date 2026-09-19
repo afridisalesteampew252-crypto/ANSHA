@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isFieldAgentAllowedPath, isFieldAgentRole } from '@/lib/admin-rbac';
 
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,6 +15,15 @@ function getSupabaseConfig() {
   }
 
   return { url, key };
+}
+
+function isManagerAllowedPath(pathname: string): boolean {
+  return (
+    pathname === '/admin/dashboard'
+    || pathname === '/admin/profile'
+    || pathname.startsWith('/admin/hr')
+    || pathname.startsWith('/admin/chat')
+  );
 }
 
 export async function proxy(request: NextRequest) {
@@ -106,21 +116,8 @@ export async function proxy(request: NextRequest) {
       return redirectWithSession(dashboardUrl);
     }
 
-    if (profile.role === 'sales') {
-      const allowed =
-        pathname === '/admin/dashboard'
-        || pathname.startsWith('/admin/analytics')
-        || pathname === '/admin/profile'
-        || pathname.startsWith('/admin/parts')
-        || pathname.startsWith('/admin/vehicles')
-        || pathname.startsWith('/admin/customers')
-        || pathname.startsWith('/admin/reservations')
-        || (pathname.startsWith('/admin/invoices') && !pathname.startsWith('/admin/invoices/supplier'))
-        || pathname.startsWith('/admin/inquiries')
-        || pathname.startsWith('/admin/requests')
-        || pathname.startsWith('/admin/chat')
-        || pathname.startsWith('/admin/mail');
-      if (!allowed) {
+    if (isFieldAgentRole(profile.role)) {
+      if (!isFieldAgentAllowedPath(pathname)) {
         const dashboardUrl = request.nextUrl.clone();
         dashboardUrl.pathname = '/admin/dashboard';
         dashboardUrl.search = '';
@@ -128,8 +125,24 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // Account-admin only routes (role = admin). Staff keep ops elsewhere.
+    if (profile.role === 'manager') {
+      if (!isManagerAllowedPath(pathname)) {
+        const hrUrl = request.nextUrl.clone();
+        hrUrl.pathname = '/admin/hr';
+        hrUrl.search = '';
+        return redirectWithSession(hrUrl);
+      }
+    }
+
+    // Account-admin only routes
     if (profile.role !== 'admin' && pathname.startsWith('/admin/users')) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = '/admin/dashboard';
+      dashboardUrl.search = '';
+      return redirectWithSession(dashboardUrl);
+    }
+
+    if (profile.role !== 'admin' && pathname.startsWith('/admin/audit-log')) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/admin/dashboard';
       dashboardUrl.search = '';

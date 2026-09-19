@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Loader2, Plus, Search, UserRound, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Plus, Search, Trash2, UserRound, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -344,6 +344,45 @@ export default function PayrollPage() {
     await openRun(id);
   };
 
+  const deleteEmployee = async (row: Employee) => {
+    if (!isAccountAdmin) return toast.error('Account admin required');
+    const ok = window.confirm(
+      `Delete ${row.full_name} from payroll?\n\nThis permanently removes their employee record, leave requests, payroll lines, and EOS estimate logs. Run totals are recalculated. This cannot be undone.`
+    );
+    if (!ok) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('delete_payroll_employee', { p_employee_id: row.id });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${row.full_name} deleted from payroll`);
+    if (editingEmployeeId === row.id) resetEmployeeForm();
+    if (leaveEmployeeId === row.id) setLeaveEmployeeId('');
+    if (eosEmployeeId === row.id) {
+      setEosEmployeeId('');
+      setEosResult(null);
+    }
+    if (selectedRunId) await openRun(selectedRunId);
+    await load();
+  };
+
+  const deleteRun = async (id: string, runNumber: string) => {
+    if (!isAccountAdmin) return toast.error('Account admin required');
+    const ok = window.confirm(
+      `Delete payroll run ${runNumber}?\n\nThis permanently removes the run and all of its lines. Posted runs must be cancelled first. This cannot be undone.`
+    );
+    if (!ok) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('delete_payroll_run', { p_run_id: id });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Deleted ${runNumber}`);
+    if (selectedRunId === id) {
+      setSelectedRunId(null);
+      setLines([]);
+    }
+    await load();
+  };
+
   const estimateEos = async () => {
     if (!eosEmployeeId) return toast.error('Select an employee');
     let basicOverride: number | null = null;
@@ -487,9 +526,23 @@ export default function PayrollPage() {
                       {Number(row.leave_balance_days ?? 0)} days
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => startEditEmployee(row)}>
-                    Edit
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => startEditEmployee(row)}>
+                      Edit
+                    </Button>
+                    {isAccountAdmin ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        disabled={busy}
+                        onClick={() => void deleteEmployee(row)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete
+                      </Button>
+                    ) : null}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -686,12 +739,36 @@ export default function PayrollPage() {
                           <XCircle className="h-4 w-4" />
                           Cancel
                         </Button>
+                        {isAccountAdmin ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            disabled={busy}
+                            onClick={() => void deleteRun(selectedRun.id, selectedRun.run_number)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </Button>
+                        ) : null}
                       </div>
                     )}
                     {selectedRun.status === 'posted' && isAccountAdmin && (
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => void cancelRun(selectedRun.id)}>
                         <XCircle className="h-4 w-4" />
                         Cancel posted run
+                      </Button>
+                    )}
+                    {selectedRun.status === 'cancelled' && isAccountAdmin && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        disabled={busy}
+                        onClick={() => void deleteRun(selectedRun.id, selectedRun.run_number)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete cancelled run
                       </Button>
                     )}
                   </CardHeader>

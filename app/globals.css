@@ -348,3 +348,91 @@
   min-width: 0;
 }
 
+/* A4 invoice sheet — screen preview + print isolation */
+.invoice-a4 {
+  width: 100%;
+  max-width: 210mm;
+  margin-inline: auto;
+  padding: 12mm 14mm;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px hsl(220 15% 10% / 0.04), 0 12px 28px hsl(220 15% 10% / 0.06);
+  background: #fff;
+  color: #111827;
+}
+
+.invoice-print-stage {
+  display: flex;
+  justify-content: center;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111827 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .no-print,
+  .admin-invoice-actions,
+  .admin-sidebar,
+  .admin-topbar,
+  .admin-shell > aside,
+  .admin-market-chrome {
+    display: none !important;
+  }
+
+  .admin-shell,
+  .admin-shell > div,
+  main {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .invoice-detail-page,
+  .invoice-print-stage {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-print {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .invoice-a4-table thead tr {
+    background: #111827 !important;
+    color: #fff !important;
+  }
+
+  .invoice-a4-table thead th {
+    color: #fff !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}
+

@@ -1,6 +1,6 @@
 export type PartCondition = 'new' | 'used' | 'refurbished' | 'for-parts';
 export type InquiryStatus = 'new' | 'read' | 'responded' | 'closed';
-export type AdminRole = 'admin' | 'staff' | 'sales';
+export type AdminRole = 'admin' | 'staff' | 'sales' | 'freelancer' | 'manager';
 export type StockOrigin = 'japan' | 'dubai' | 'singapore' | 'china' | 'thailand' | 'taiwan';
 export type StockStatus = 'available' | 'reserved' | 'sold';
 export type LifecycleStage = 'unassigned' | 'auction' | 'yard' | 'port' | 'sold';
@@ -1370,11 +1370,54 @@ export interface AuditLog {
   metadata: Record<string, unknown>;
   created_at: string;
 }
+
+export type OfficeShift = 'morning' | 'night';
+export type AttendanceStatus = 'present' | 'absent' | 'leave' | 'remote';
+
+/** Phase 54 — HR workforce */
+export interface ShiftLocation {
+  id: string;
+  country: string;
+  city: string | null;
+  office_name: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftAssignment {
+  id: string;
+  user_id: string;
+  location_id: string;
+  shift: OfficeShift;
+  effective_from: string;
+  effective_to: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  user_id: string;
+  assignment_id: string | null;
+  work_date: string;
+  check_in_at: string | null;
+  check_out_at: string | null;
+  status: AttendanceStatus;
+  notes: string | null;
+  recorded_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
       admin_notifications: TableDef<AdminNotification>;
       admin_profiles: TableDef<AdminProfile>;
+      attendance_records: TableDef<AttendanceRecord>;
       audit_logs: TableDef<AuditLog>;
       ai_chat_messages: TableDef<AiChatMessage>;
       ai_chat_threads: TableDef<AiChatThread>;
@@ -1432,6 +1475,8 @@ export interface Database {
       remittance_documents: TableDef<RemittanceDocument>;
       remittance_sequences: TableDef<RemittanceSequence>;
       remittances: TableDef<Remittance>;
+      shift_assignments: TableDef<ShiftAssignment>;
+      shift_locations: TableDef<ShiftLocation>;
       site_offers: TableDef<SiteOffer>;
       supplier_invoices: TableDef<SupplierInvoice>;
       supplier_payment_allocations: TableDef<SupplierPaymentAllocation>;

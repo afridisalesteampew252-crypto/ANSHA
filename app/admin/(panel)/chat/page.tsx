@@ -5,6 +5,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
+  ArrowLeft,
   Check,
   CheckCheck,
   Download,
@@ -25,7 +26,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { format, isToday } from 'date-fns';
+import { format, isSameDay, isToday, isYesterday } from 'date-fns';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile, ChatConversationLink, ChatLinkEntityType } from '@/lib/types';
 import {
@@ -136,6 +137,20 @@ function safeFileName(value: string) {
 function formatMessageTime(value: string) {
   const date = new Date(value);
   return isToday(date) ? format(date, 'h:mm a') : format(date, 'MMM d, h:mm a');
+}
+
+function formatDayLabel(value: string) {
+  const date = new Date(value);
+  if (isToday(date)) return 'Today';
+  if (isYesterday(date)) return 'Yesterday';
+  return format(date, 'EEEE, MMM d');
+}
+
+function formatListTime(value: string) {
+  const date = new Date(value);
+  if (isToday(date)) return format(date, 'h:mm a');
+  if (isYesterday(date)) return 'Yesterday';
+  return format(date, 'MMM d');
 }
 
 function formatBytes(value: number | null) {
@@ -632,82 +647,202 @@ function ChatPageInner() {
     && activeConversation.conversation_type === 'group'
     && (activeConversation.created_by === currentUserId || activeConversation.participants.some((participant) => participant.user_id === currentUserId && participant.is_manager)));
 
+  const activeOther = activeConversation?.conversation_type === 'direct'
+    ? activeConversation.participants.find((participant) => participant.user_id !== currentUserId)
+    : undefined;
+  const activeOtherProfile = activeOther ? profiles[activeOther.user_id] : undefined;
+  const hasSearch = Boolean(search.trim());
+
   return (
-    <div className="-m-4 flex h-[calc(100vh-8rem)] min-h-[620px] overflow-hidden border-y bg-card md:-m-8 md:h-[calc(100vh-5rem)]">
-      <section className={cn('w-full shrink-0 border-r md:w-80 lg:w-96', activeId && 'hidden md:block')}>
-        <div className="space-y-3 border-b p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">Team chat</h1>
-              <p className="text-xs text-muted-foreground">Direct and group conversations</p>
+    <div className="-m-4 flex h-[calc(100dvh-7.5rem)] min-h-[560px] overflow-hidden border-y border-border/80 bg-background md:-m-8 md:h-[calc(100dvh-4.75rem)]">
+      <section className={cn('flex w-full shrink-0 flex-col border-r border-border/80 bg-card md:w-[22rem] lg:w-[26rem]', activeId && 'hidden md:flex')}>
+        <div className="shrink-0 space-y-3 border-b border-border/80 px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">Team chat</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {conversations.length
+                  ? `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`
+                  : 'Direct messages and ops groups'}
+              </p>
             </div>
-            <Button size="icon" onClick={() => setCreateOpen(true)} aria-label="New conversation"><Plus className="h-4 w-4" /></Button>
+            <Button size="sm" className="shrink-0 gap-1.5" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">New</span>
+            </Button>
           </div>
           {entityFilter ? (
-            <div className="flex items-center justify-between gap-2 rounded-md border bg-secondary/40 px-3 py-2 text-xs">
-              <span>Filtered by {chatLinkEntityLabel(entityFilter.type)}</span>
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2">
+            <div className="flex items-center justify-between gap-2 rounded-md border border-accent/20 bg-accent/5 px-3 py-2 text-xs">
+              <span className="font-medium text-foreground">Linked to {chatLinkEntityLabel(entityFilter.type)}</span>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-accent hover:text-accent">
                 <Link href="/admin/chat">Clear</Link>
               </Button>
             </div>
           ) : null}
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search conversations" className="pl-9" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by name or link…"
+              className="h-10 bg-background pl-9"
+            />
           </div>
         </div>
-        <ScrollArea className="h-[calc(100%-7.5rem)]">
+        <ScrollArea className="min-h-0 flex-1">
           {filteredConversations.length ? filteredConversations.map((conversation) => {
             const other = conversation.participants.find((participant) => participant.user_id !== currentUserId);
             const profile = other ? profiles[other.user_id] : undefined;
             const mine = conversation.lastMessage?.sender_id === currentUserId;
             const previewText = conversation.last_message_preview
               || (conversation.lastMessage?.deleted_at ? 'Message removed' : conversation.lastMessage?.body)
-              || (conversation.lastMessage ? 'Attachment' : 'Start the conversation');
+              || (conversation.lastMessage ? 'Attachment' : 'No messages yet');
             const preview = mine && conversation.lastMessage ? `You: ${previewText}` : previewText;
             const previewTime = conversation.last_message_at || conversation.lastMessage?.created_at;
+            const selected = activeId === conversation.id;
             return (
-              <button key={conversation.id} type="button" onClick={() => setActiveId(conversation.id)} className={cn('flex w-full items-center gap-3 border-b p-4 text-left transition-colors hover:bg-accent', activeId === conversation.id && 'bg-primary/5', conversation.unread > 0 && 'bg-accent/5')}>
-                <span className="shrink-0">{conversation.conversation_type === 'group' ? <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary"><Users className="h-5 w-5" /></span> : <ProfileAvatar profile={profile} url={profile ? avatarUrls[profile.id] : ''} className="h-11 w-11" />}</span>
+              <button
+                key={conversation.id}
+                type="button"
+                onClick={() => setActiveId(conversation.id)}
+                className={cn(
+                  'relative flex w-full items-start gap-3 border-b border-border/60 px-4 py-3.5 text-left transition-colors',
+                  'hover:bg-secondary/60',
+                  selected && 'bg-secondary/80',
+                  conversation.unread > 0 && !selected && 'bg-accent/[0.04]'
+                )}
+              >
+                {conversation.unread > 0 ? (
+                  <span className="absolute inset-y-3 left-0 w-0.5 rounded-r bg-accent" aria-hidden />
+                ) : null}
+                <span className="shrink-0">
+                  {conversation.conversation_type === 'group' ? (
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Users className="h-5 w-5" />
+                    </span>
+                  ) : (
+                    <ProfileAvatar profile={profile} url={profile ? avatarUrls[profile.id] : ''} className="h-11 w-11 text-xs" />
+                  )}
+                </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center justify-between gap-2"><span className={cn('truncate text-sm', conversation.unread ? 'font-bold' : 'font-semibold')}>{activeTitle(conversation)}</span>{previewTime ? <span className={cn('shrink-0 text-[10px]', conversation.unread ? 'font-semibold text-accent' : 'text-muted-foreground')}>{formatMessageTime(previewTime)}</span> : null}</span>
-                  <span className="mt-1 flex items-center justify-between gap-2"><span className={cn('truncate text-xs', conversation.unread ? 'font-medium text-foreground' : 'text-muted-foreground')}>{preview}</span>{conversation.unread ? <Badge className="h-5 min-w-5 justify-center rounded-full bg-accent px-1.5 text-white">{conversation.unread}</Badge> : null}</span>
-                  {conversation.links.length ? <span className="mt-1 flex flex-wrap gap-1">{conversation.links.slice(0, 2).map((link) => <Badge key={link.id} variant="outline" className="text-[10px]">{chatLinkEntityLabel(link.entity_type)}</Badge>)}{conversation.links.length > 2 ? <Badge variant="outline" className="text-[10px]">+{conversation.links.length - 2}</Badge> : null}</span> : null}
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className={cn('truncate text-sm', conversation.unread ? 'font-semibold text-foreground' : 'font-medium text-foreground')}>
+                      {activeTitle(conversation)}
+                    </span>
+                    {previewTime ? (
+                      <span className={cn('shrink-0 text-[11px] tabular-nums', conversation.unread ? 'font-medium text-accent' : 'text-muted-foreground')}>
+                        {formatListTime(previewTime)}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="mt-1 flex items-center justify-between gap-2">
+                    <span className={cn('truncate text-[13px] leading-snug', conversation.unread ? 'text-foreground/90' : 'text-muted-foreground')}>
+                      {preview}
+                    </span>
+                    {conversation.unread ? (
+                      <Badge className="h-5 min-w-5 shrink-0 justify-center rounded-md bg-accent px-1.5 text-[11px] font-semibold text-white">
+                        {conversation.unread > 99 ? '99+' : conversation.unread}
+                      </Badge>
+                    ) : null}
+                  </span>
+                  {conversation.links.length ? (
+                    <span className="mt-1.5 flex flex-wrap gap-1">
+                      {conversation.links.slice(0, 2).map((link) => (
+                        <Badge key={link.id} variant="outline" className="border-border/80 px-1.5 py-0 text-[10px] font-normal text-muted-foreground">
+                          {chatLinkEntityLabel(link.entity_type)}
+                        </Badge>
+                      ))}
+                      {conversation.links.length > 2 ? (
+                        <Badge variant="outline" className="border-border/80 px-1.5 py-0 text-[10px] font-normal text-muted-foreground">
+                          +{conversation.links.length - 2}
+                        </Badge>
+                      ) : null}
+                    </span>
+                  ) : null}
                 </span>
               </button>
             );
           }) : (
-            <div className="px-6 py-16 text-center">
-              <MessageCircle className="mx-auto mb-3 h-9 w-9 text-muted-foreground" />
-              <p className="font-medium">No conversations yet</p>
-              <p className="mt-1 text-sm text-muted-foreground">{entityFilter ? 'No chats linked to this record yet.' : 'Start a direct chat or create a group.'}</p>
+            <div className="flex flex-col items-center px-6 py-16 text-center">
+              <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+                <MessageCircle className="h-7 w-7" />
+              </span>
+              <p className="font-display text-base font-semibold text-foreground">
+                {hasSearch || entityFilter ? 'No matching chats' : 'No conversations yet'}
+              </p>
+              <p className="mt-1.5 max-w-[16rem] text-sm leading-relaxed text-muted-foreground">
+                {entityFilter
+                  ? 'Nothing is linked to this record yet. Start a chat to attach it.'
+                  : hasSearch
+                    ? 'Try another name, or clear the search.'
+                    : 'Message a colleague or create a group for shipping, sales, or ops.'}
+              </p>
+              {!hasSearch ? (
+                <Button className="mt-5" size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  New conversation
+                </Button>
+              ) : (
+                <Button className="mt-5" size="sm" variant="outline" onClick={() => setSearch('')}>
+                  Clear search
+                </Button>
+              )}
             </div>
           )}
         </ScrollArea>
       </section>
 
-      <section className={cn('flex min-w-0 flex-1 flex-col', !activeId && 'hidden md:flex')}>
+      <section className={cn('flex min-w-0 flex-1 flex-col bg-background', !activeId && 'hidden md:flex')}>
         {activeConversation ? (
           <>
-            <header className="flex shrink-0 flex-col gap-2 border-b px-4 py-3">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setActiveId('')} aria-label="Back to conversations"><X className="h-4 w-4" /></Button>
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">{activeConversation.conversation_type === 'group' ? <Users className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}</span>
+            <header className="flex shrink-0 flex-col gap-2 border-b border-border/80 bg-card px-3 py-3 sm:px-4">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 md:hidden" onClick={() => setActiveId('')} aria-label="Back to conversations">
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                {activeConversation.conversation_type === 'group' ? (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Users className="h-5 w-5" />
+                  </span>
+                ) : (
+                  <ProfileAvatar
+                    profile={activeOtherProfile}
+                    url={activeOtherProfile ? avatarUrls[activeOtherProfile.id] : ''}
+                    className="h-10 w-10 shrink-0 text-xs"
+                  />
+                )}
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate font-semibold">{activeTitle(activeConversation)}</h2>
-                  <p className="text-xs text-muted-foreground">{activeConversation.participants.length} participant{activeConversation.participants.length === 1 ? '' : 's'}</p>
+                  <h2 className="truncate font-display text-base font-semibold tracking-tight">{activeTitle(activeConversation)}</h2>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {activeConversation.conversation_type === 'group'
+                      ? `${activeConversation.participants.length} participants`
+                      : (activeOtherProfile?.email || 'Direct message')}
+                  </p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => { setLinkType(entityFilter?.type || 'vehicle'); setLinkOpen(true); }} aria-label="Link record"><Link2 className="h-4 w-4" /></Button>
-                {canManageGroup ? <Button variant="ghost" size="icon" onClick={openGroupManager} aria-label="Manage group"><Settings className="h-4 w-4" /></Button> : null}
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setLinkType(entityFilter?.type || 'vehicle'); setLinkOpen(true); }} aria-label="Link record">
+                    <Link2 className="h-4 w-4" />
+                  </Button>
+                  {canManageGroup ? (
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={openGroupManager} aria-label="Manage group">
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
               {activeConversation.links.length ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 pl-11 md:pl-0">
                   {activeConversation.links.map((link) => (
-                    <Badge key={link.id} variant="secondary" className="gap-1 py-1">
+                    <Badge key={link.id} variant="secondary" className="gap-1.5 py-1 pl-2 pr-1 font-normal">
                       <Link href={chatLinkHref(link.entity_type, link.entity_id)} className="hover:underline">
                         {chatLinkEntityLabel(link.entity_type)}
                       </Link>
-                      <button type="button" onClick={() => void removeLink(link.id)} aria-label={`Unlink ${chatLinkEntityLabel(link.entity_type)}`}>
+                      <button
+                        type="button"
+                        className="rounded p-0.5 hover:bg-background/80"
+                        onClick={() => void removeLink(link.id)}
+                        aria-label={`Unlink ${chatLinkEntityLabel(link.entity_type)}`}
+                      >
                         <X className="h-3 w-3" />
                       </button>
                     </Badge>
@@ -715,44 +850,124 @@ function ChatPageInner() {
                 </div>
               ) : null}
             </header>
-            <ScrollArea className="flex-1 bg-[radial-gradient(circle_at_1px_1px,hsl(var(--border))_1px,transparent_0)] [background-size:18px_18px] p-4">
-              {loadingMessages ? <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div> : (
-                <div className="mx-auto max-w-3xl space-y-2.5 pb-4">
-                  {messages.map((message) => {
+            <ScrollArea className="min-h-0 flex-1 bg-[radial-gradient(circle_at_1px_1px,hsl(var(--border)/0.7)_1px,transparent_0)] [background-size:20px_20px]">
+              {loadingMessages ? (
+                <div className="flex h-full min-h-[12rem] items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex h-full min-h-[14rem] flex-col items-center justify-center px-6 py-12 text-center">
+                  <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-border/80">
+                    <MessageCircle className="h-6 w-6" />
+                  </span>
+                  <p className="font-display text-base font-semibold">Start the conversation</p>
+                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                    Say hello, share a file, or link a vehicle, invoice, or request from the header.
+                  </p>
+                </div>
+              ) : (
+                <div className="mx-auto max-w-3xl space-y-1 px-3 py-4 sm:px-5 sm:py-5">
+                  {messages.map((message, index) => {
                     const mine = message.sender_id === currentUserId;
                     const sender = profiles[message.sender_id];
                     const quoted = message.reply_to_id ? messages.find((item) => item.id === message.reply_to_id) : null;
                     const receipt = mine ? messageReceipt(message, activeConversation.participants) : null;
+                    const prev = messages[index - 1];
+                    const showDay = !prev || !isSameDay(new Date(prev.created_at), new Date(message.created_at));
+                    const showAvatar = !mine && (!prev || prev.sender_id !== message.sender_id || showDay);
                     return (
-                      <div key={message.id} className={cn('group flex gap-2', mine ? 'justify-end' : 'justify-start')}>
-                        {!mine ? <ProfileAvatar profile={sender} url={sender ? avatarUrls[sender.id] : ''} className="mt-1 h-8 w-8 text-xs" /> : null}
-                        <div className={cn('max-w-[84%] rounded-2xl px-3.5 py-2 shadow-sm', mine ? 'rounded-br-md bg-accent text-white' : 'rounded-bl-md border bg-card')}>
-                          {!mine ? <p className="mb-1 text-xs font-semibold text-accent">{personName(sender)}</p> : null}
-                          {quoted ? <div className={cn('mb-2 rounded-lg border-l-2 px-2 py-1 text-xs', mine ? 'border-white/50 bg-black/10' : 'border-accent bg-secondary')}>{quoted.deleted_at ? 'Removed message' : quoted.body || 'Attachment'}</div> : null}
-                          {message.deleted_at ? <p className="text-sm italic opacity-70">Message removed</p> : <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{message.body}</p>}
-                          {!message.deleted_at && message.attachments.map((attachment) => (
-                            <button type="button" key={attachment.id} onClick={() => void openAttachment(attachment)} className={cn('mt-2 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs', mine ? 'border-white/20 bg-black/10 hover:bg-black/20' : 'bg-secondary hover:bg-accent')}>
-                              <FileText className="h-4 w-4 shrink-0" /><span className="min-w-0 flex-1 truncate">{attachment.file_name}</span><span className="opacity-70">{formatBytes(attachment.size_bytes)}</span><Download className="h-3.5 w-3.5" />
-                            </button>
-                          ))}
-                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80"><span>{formatMessageTime(message.created_at)}</span>{message.edited_at ? <span>edited</span> : null}{receipt?.state === 'sent' ? <Check className="h-3 w-3" aria-label={receipt.label} /> : receipt ? <CheckCheck className={cn('h-3.5 w-3.5', receipt.state === 'read' && 'text-sky-200')} aria-label={receipt.label} /> : null}</div>
-                        </div>
-                        {!message.deleted_at ? (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="mt-1 h-8 w-8 opacity-0 group-hover:opacity-100 focus:opacity-100"><MoreHorizontal className="h-4 w-4" /></Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align={mine ? 'end' : 'start'}>
-                              <DropdownMenuItem onClick={() => { setReplyTo(message); setEditing(null); setBody(''); }}><Reply className="mr-2 h-4 w-4" />Reply</DropdownMenuItem>
-                              {mine ? (
-                                <>
-                                  <DropdownMenuItem onClick={() => { setEditing(message); setReplyTo(null); setBody(message.body || ''); }}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                                  <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => void softDeleteMessage(message)}><Trash2 className="mr-2 h-4 w-4" />Remove</DropdownMenuItem>
-                                </>
-                              ) : null}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                      <div key={message.id}>
+                        {showDay ? (
+                          <div className="flex items-center justify-center py-3">
+                            <span className="rounded-md border border-border/70 bg-card/95 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
+                              {formatDayLabel(message.created_at)}
+                            </span>
+                          </div>
                         ) : null}
+                        <div className={cn('group flex gap-2', mine ? 'justify-end' : 'justify-start', !showDay && 'mt-1.5')}>
+                          {!mine ? (
+                            showAvatar ? (
+                              <ProfileAvatar profile={sender} url={sender ? avatarUrls[sender.id] : ''} className="mt-1 h-8 w-8 text-[10px]" />
+                            ) : (
+                              <span className="w-8 shrink-0" aria-hidden />
+                            )
+                          ) : null}
+                          <div
+                            className={cn(
+                              'max-w-[min(84%,28rem)] px-3.5 py-2 shadow-sm',
+                              mine
+                                ? 'rounded-2xl rounded-br-md bg-accent text-white'
+                                : 'rounded-2xl rounded-bl-md border border-border/80 bg-card text-foreground'
+                            )}
+                          >
+                            {!mine && showAvatar ? (
+                              <p className="mb-1 text-xs font-semibold text-accent">{personName(sender)}</p>
+                            ) : null}
+                            {quoted ? (
+                              <div className={cn('mb-2 rounded-md border-l-2 px-2 py-1 text-xs', mine ? 'border-white/50 bg-black/10' : 'border-accent/70 bg-secondary/80')}>
+                                {quoted.deleted_at ? 'Removed message' : quoted.body || 'Attachment'}
+                              </div>
+                            ) : null}
+                            {message.deleted_at ? (
+                              <p className="text-sm italic opacity-70">Message removed</p>
+                            ) : (
+                              <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{message.body}</p>
+                            )}
+                            {!message.deleted_at && message.attachments.map((attachment) => (
+                              <button
+                                type="button"
+                                key={attachment.id}
+                                onClick={() => void openAttachment(attachment)}
+                                className={cn(
+                                  'mt-2 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs',
+                                  mine ? 'border-white/20 bg-black/10 hover:bg-black/20' : 'border-border/70 bg-secondary/70 hover:bg-secondary'
+                                )}
+                              >
+                                <FileText className="h-4 w-4 shrink-0" />
+                                <span className="min-w-0 flex-1 truncate">{attachment.file_name}</span>
+                                <span className="opacity-70">{formatBytes(attachment.size_bytes)}</span>
+                                <Download className="h-3.5 w-3.5" />
+                              </button>
+                            ))}
+                            <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-80">
+                              <span>{formatMessageTime(message.created_at)}</span>
+                              {message.edited_at ? <span>edited</span> : null}
+                              {receipt?.state === 'sent' ? (
+                                <Check className="h-3 w-3" aria-label={receipt.label} />
+                              ) : receipt ? (
+                                <CheckCheck className={cn('h-3.5 w-3.5', receipt.state === 'read' && 'text-sky-200')} aria-label={receipt.label} />
+                              ) : null}
+                            </div>
+                          </div>
+                          {!message.deleted_at ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="mt-1 h-8 w-8 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align={mine ? 'end' : 'start'}>
+                                <DropdownMenuItem onClick={() => { setReplyTo(message); setEditing(null); setBody(''); }}>
+                                  <Reply className="mr-2 h-4 w-4" />Reply
+                                </DropdownMenuItem>
+                                {mine ? (
+                                  <>
+                                    <DropdownMenuItem onClick={() => { setEditing(message); setReplyTo(null); setBody(message.body || ''); }}>
+                                      <Pencil className="mr-2 h-4 w-4" />Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => void softDeleteMessage(message)}>
+                                      <Trash2 className="mr-2 h-4 w-4" />Remove
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : null}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : null}
+                        </div>
                       </div>
                     );
                   })}
@@ -760,27 +975,35 @@ function ChatPageInner() {
                 </div>
               )}
             </ScrollArea>
-            <footer className="shrink-0 border-t bg-card/95 p-3 backdrop-blur sm:p-4">
+            <footer className="shrink-0 border-t border-border/80 bg-card px-3 py-3 sm:px-4">
               <div className="mx-auto max-w-3xl space-y-2">
                 {replyMessage ? (
-                  <div className="flex items-center justify-between rounded-lg border-l-4 border-accent bg-secondary px-3 py-2 text-xs">
-                    <span className="min-w-0"><strong>{editing ? 'Editing message' : `Replying to ${personName(profiles[replyMessage.sender_id])}`}</strong><span className="ml-2 truncate text-muted-foreground">{replyMessage.body || 'Attachment'}</span></span>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setReplyTo(null); setEditing(null); setBody(''); }}><X className="h-3.5 w-3.5" /></Button>
+                  <div className="flex items-start justify-between gap-2 rounded-md border border-border/80 border-l-4 border-l-accent bg-secondary/50 px-3 py-2 text-xs">
+                    <span className="min-w-0">
+                      <strong className="block text-foreground">{editing ? 'Editing message' : `Replying to ${personName(profiles[replyMessage.sender_id])}`}</strong>
+                      <span className="mt-0.5 line-clamp-2 text-muted-foreground">{replyMessage.body || 'Attachment'}</span>
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { setReplyTo(null); setEditing(null); setBody(''); }}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 ) : null}
                 {files.length ? (
                   <div className="flex flex-wrap gap-2">
                     {files.map((file, index) => (
-                      <Badge key={`${file.name}-${index}`} variant="secondary" className="gap-1 py-1">
-                        <Paperclip className="h-3 w-3" />{file.name}
-                        <button type="button" onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${file.name}`}><X className="h-3 w-3" /></button>
+                      <Badge key={`${file.name}-${index}`} variant="secondary" className="gap-1.5 py-1.5 font-normal">
+                        <Paperclip className="h-3 w-3" />
+                        <span className="max-w-[10rem] truncate">{file.name}</span>
+                        <button type="button" onClick={() => setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${file.name}`}>
+                          <X className="h-3 w-3" />
+                        </button>
                       </Badge>
                     ))}
                   </div>
                 ) : null}
-                <div className="flex items-end gap-2 rounded-full border bg-secondary/40 p-1.5">
+                <div className="flex items-end gap-2 rounded-xl border border-border/80 bg-background p-2 shadow-sm focus-within:border-accent/40 focus-within:ring-2 focus-within:ring-accent/15">
                   {!editing ? (
-                    <Label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-accent" aria-label="Attach files">
+                    <Label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground" aria-label="Attach files">
                       <Paperclip className="h-4 w-4" />
                       <Input type="file" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files || []))} />
                     </Label>
@@ -788,8 +1011,8 @@ function ChatPageInner() {
                   <Textarea
                     value={body}
                     onChange={(event) => setBody(event.target.value)}
-                    placeholder={editing ? 'Edit your message' : 'Message'}
-                    className="min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
+                    placeholder={editing ? 'Edit your message…' : 'Write a message…'}
+                    className="max-h-36 min-h-[2.5rem] flex-1 resize-none border-0 bg-transparent px-1 py-2.5 text-[15px] shadow-none focus-visible:ring-0"
                     rows={1}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' && !event.shiftKey) {
@@ -798,7 +1021,13 @@ function ChatPageInner() {
                       }
                     }}
                   />
-                  <Button size="icon" className="h-10 w-10 shrink-0 rounded-full bg-accent text-white hover:bg-accent/90" disabled={sending || (!body.trim() && !files.length)} onClick={() => void sendMessage()} aria-label={editing ? 'Save message' : 'Send message'}>
+                  <Button
+                    size="icon"
+                    className="h-10 w-10 shrink-0 rounded-lg bg-accent text-white hover:bg-accent/90"
+                    disabled={sending || (!body.trim() && !files.length)}
+                    onClick={() => void sendMessage()}
+                    aria-label={editing ? 'Save message' : 'Send message'}
+                  >
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : editing ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -807,13 +1036,18 @@ function ChatPageInner() {
             </footer>
           </>
         ) : (
-          <div className="flex flex-1 items-center justify-center p-8 text-center">
-            <div>
-              <MessageCircle className="mx-auto mb-4 h-12 w-12 text-primary/40" />
-              <h2 className="text-lg font-semibold">ANSHA Team Chat</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Choose a conversation or start a new one.</p>
-              <Button className="mt-4" onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" />New conversation</Button>
-            </div>
+          <div className="flex flex-1 flex-col items-center justify-center bg-card/40 p-8 text-center">
+            <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/5 text-primary ring-1 ring-border/80">
+              <MessageCircle className="h-8 w-8" />
+            </span>
+            <h2 className="font-display text-xl font-semibold tracking-tight">ANSHA Team Chat</h2>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              Pick a conversation from the list, or start a new direct message or group.
+            </p>
+            <Button className="mt-5" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New conversation
+            </Button>
           </div>
         )}
       </section>

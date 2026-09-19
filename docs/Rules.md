@@ -50,4 +50,4 @@ Internal chat and mail already exist. Do not rebuild them. Entity linking is add
 
 ## Documentation
 
-`docs/` must describe the running system. Label vision separately. Keep `docs/phase-13-public-redesign.md`.
+`docs/` must describe the running system. Label vision separately. Keep `docs/phase-13-public-redesign.md`. Live completion checkpoint: `docs/CURRENT_STATE.md`.

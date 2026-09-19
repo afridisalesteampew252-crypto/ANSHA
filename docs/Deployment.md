@@ -47,7 +47,9 @@ supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID
 supabase functions deploy send-web-push --project-ref ydrnilquojvalhgifest
 ```
 
-`VAPID_SUBJECT` is optional (defaults to that mailto). Notifications only fire when staff opts in (offers checkbox, blog “PWA push on publish”, or campaigns Send now) — nothing auto-sends from the database.
+`VAPID_SUBJECT` is optional (defaults to a mailto). Notifications only fire when staff opts in (offers checkbox, blog “PWA push on publish”, or campaigns Send now) — nothing auto-sends from the database.
+
+**Common failure:** Edge logs show `VAPID_PUBLIC_KEY is not valid URL-safe base64` or `Failed to decode base64` when secrets were pasted with ellipsis placeholders (`…`) or quotes. Re-set with the real keys from `npx web-push generate-vapid-keys` (or your existing matching pair). MCP cannot set secrets — use CLI after `npx supabase login` or the Supabase Dashboard → Edge Functions → Secrets.
 
 Outbound email (Phase 39): set Edge Function secrets for `send-outbound-email` (not Vercel `NEXT_PUBLIC_*`, and not the Supabase service role in the Next.js app):
 

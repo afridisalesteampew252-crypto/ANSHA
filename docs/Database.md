@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migration in the repository includes Phase 48 payroll/EOS (`20260918360000_phase_48_payroll_eos.sql`) and later stubs (e.g. Phase 50 bank feeds); parallel earlier ERP phases may also be present.
+Latest migrations in the repository include Phase 51 offer inventory links (`20260919010000_phase_51_offer_inventory_links.sql`) and Phase 52 trade config (`20260919020000_phase_52_trade_config.sql`). Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
 
 ## Entity groups
 
@@ -46,10 +46,12 @@ Latest migration in the repository includes Phase 48 payroll/EOS (`2026091836000
 - `vehicle_lifecycle_events` �?? append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 - `vehicle_lifecycle_event_attachments` — private file metadata for lifecycle event documents (storage prefix `vehicles/{vehicle_id}/lifecycle/{event_id}/` in `internal-files`)
 
-### Public marketing (Phase 24)
+### Public marketing (Phase 24 + 51–52)
 
-- `push_subscriptions` �?? Web Push endpoints (`endpoint` unique), `notify_insights` / `notify_deals`
-- `site_offers` �?? published deals/offers with `href`, `summary`, `published_at`
+- `push_subscriptions` — Web Push endpoints (`endpoint` unique), `notify_insights` / `notify_deals`
+- `site_offers` — published deals/offers with `href`, `summary`, `published_at`; Phase 51 adds optional `vehicle_id` / `part_id`, `discount_percent`, `sale_price` (display-only on public cards; does not rewrite ERP stock price)
+- `export_market_configs` — per-country export market policy / notes (Phase 52); drives `/markets/[code]`
+- `site_trade_settings` — FX reference rates + freight notes (Phase 52); admin `/admin/trade-config`
 
 ### Marketing campaigns (Phase 49)
 

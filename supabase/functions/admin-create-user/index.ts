@@ -42,7 +42,7 @@ Deno.serve(async (request) => {
     if (!email || !email.includes('@')) return json(request, { error: 'Enter a valid email address.' }, 422);
     if (password.length < 8) return json(request, { error: 'Temporary password must be at least 8 characters.' }, 422);
     if (!fullName) return json(request, { error: 'Full name is required.' }, 422);
-    if (!['admin', 'staff', 'sales'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
+    if (!['admin', 'staff', 'sales', 'freelancer', 'manager'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
 
     const { data: created, error: createError } = await serviceClient.auth.admin.createUser({
       email,

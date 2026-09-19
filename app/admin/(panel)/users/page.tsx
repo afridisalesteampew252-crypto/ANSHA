@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Loader2, Pencil, ShieldAlert, Upload, UserPlus, UserX, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile, AdminRole } from '@/lib/types';
+import { ADMIN_ROLE_LABEL, ADMIN_ROLE_OPTIONS } from '@/lib/admin-rbac';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,12 +28,6 @@ const emptyForm: UserForm = {
   role: 'staff',
   avatar_url: '',
   is_active: true,
-};
-
-const roleLabel: Record<AdminRole, string> = {
-  admin: 'Admin',
-  staff: 'Staff',
-  sales: 'Sales agent',
 };
 
 export default function UsersPage() {
@@ -183,7 +178,7 @@ export default function UsersPage() {
       <div>
         <h1 className="text-2xl font-bold">Admin users</h1>
         <p className="text-sm text-muted-foreground">
-          Create staff or sales-agent accounts, deactivate access, and manage passwords.
+          Create staff, sales, freelancer, or manager accounts; deactivate access; manage passwords.
         </p>
       </div>
 
@@ -226,9 +221,9 @@ export default function UsersPage() {
                   value={form.role}
                   onChange={(event) => setForm({ ...form, role: event.target.value as AdminRole })}
                 >
-                  <option value="sales">Sales agent — stock + own customers</option>
-                  <option value="staff">Staff — full operations</option>
-                  <option value="admin">Admin — full access</option>
+                  {ADMIN_ROLE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
               </div>
               {editingId ? (
@@ -291,7 +286,7 @@ export default function UsersPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
-                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">{roleLabel[user.role] || user.role}</span>
+                <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">{ADMIN_ROLE_LABEL[user.role] || user.role}</span>
                 {user.is_active === false ? (
                   <Badge variant="outline" className="border-destructive/40 text-destructive">Inactive</Badge>
                 ) : (

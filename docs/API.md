@@ -12,6 +12,11 @@ The product is not a standalone REST/GraphQL backend. Clients talk to Supabase P
 - Returns `healthy` / `degraded` / `unhealthy` without secrets
 - Includes `VERCEL_ENV` and short `VERCEL_GIT_COMMIT_SHA` when present
 
+`GET /api/fx`
+
+- Public FX proxy (AED base → USD/EUR/JPY/PKR and related)
+- Caches upstream open.er-api.com responses; used by public header and admin chrome clocks/FX strip
+
 `POST /api/ai/chat`
 
 - Ops-only (`admin` / `staff` via cookie session + `admin_profiles`)
