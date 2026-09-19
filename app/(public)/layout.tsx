@@ -12,7 +12,7 @@ export default function PublicLayout({
   return (
     <div className="public-marketing flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="min-w-0 flex-1 overflow-x-clip pb-16 lg:pb-0">{children}</main>
+      <main className="min-w-0 flex-1 overflow-x-clip pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">{children}</main>
       <SiteFooter />
       <MobileBottomNav />
       <InstallPrompt />
