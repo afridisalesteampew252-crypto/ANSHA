@@ -21,7 +21,7 @@ import {
   Ship,
   Wrench,
 } from 'lucide-react';
-import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
+import { CatalogImage } from '@/components/public/catalog-image';
 import { resolveCategoryImage } from '@/lib/category-images';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,10 +82,6 @@ export default function HomePageClient() {
     count: 0,
   })), []);
 
-  const heroVehicle = featuredVehicles[0];
-  const heroPhoto = heroVehicle?.vehicle_photos?.find((photo) => photo.is_cover) || heroVehicle?.vehicle_photos?.[0];
-  const heroImageUrl = heroPhoto ? publicVehicleImageUrl(heroPhoto.storage_path) : null;
-
   const goToParts = (event: React.FormEvent) => {
     event.preventDefault();
     const params = new URLSearchParams();
@@ -99,41 +95,31 @@ export default function HomePageClient() {
 
   return (
     <>
-      <section className="relative min-h-[78vh] max-w-full overflow-hidden bg-[#101114] text-white sm:min-h-[72vh] lg:min-h-[78vh]">
-        {heroImageUrl ? (
-          <div className="absolute inset-0">
-            <CatalogImage
-              src={heroImageUrl}
-              alt={heroVehicle?.title || 'ANSHA export vehicle'}
-              fill
-              priority
-              sizes="100vw"
-              objectFit="cover"
-              className="animate-hero-ken opacity-55"
-            />
-          </div>
-        ) : (
-          <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_72%_18%,rgba(220,38,38,.45),transparent_34%),linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:auto,48px_48px,48px_48px]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#101114] via-[#101114]/88 to-[#101114]/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#101114] via-transparent to-[#101114]/40" />
-
-        <div className="container-page relative flex min-h-[78vh] flex-col justify-end pb-12 pt-24 sm:min-h-[72vh] sm:pb-16 sm:pt-28 lg:min-h-[78vh] lg:justify-center lg:pb-20 lg:pt-24">
+      <section className="relative max-w-full overflow-hidden bg-[#101114] text-white">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_-10%,rgba(210,30,30,0.38),transparent_42%),radial-gradient(ellipse_at_12%_110%,rgba(255,255,255,0.06),transparent_46%),linear-gradient(165deg,#0b0c0f_0%,#14161b_55%,#101114_100%)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.03))]"
+        />
+        <div className="container-page relative py-10 sm:py-14 lg:py-16">
           <div className="max-w-2xl">
-            <p className="animate-fade-up text-sm font-black uppercase tracking-[0.22em] text-accent sm:text-base">
+            <p className="animate-fade-up text-xs font-black uppercase tracking-[0.22em] text-accent sm:text-sm">
               ANSHA Trading Co.
             </p>
-            <h1 className="animate-fade-up-delay-1 mt-4 max-w-xl font-display text-[2.35rem] font-extrabold leading-[1.02] tracking-[-0.04em] sm:mt-5 sm:text-5xl lg:text-6xl xl:text-[4.25rem]">
+            <h1 className="animate-fade-up-delay-1 mt-3 max-w-xl font-display text-[1.85rem] font-extrabold leading-[1.08] tracking-[-0.04em] sm:mt-4 sm:text-4xl lg:text-5xl">
               Export-ready vehicles &amp; parts from Dubai.
             </h1>
-            <p className="animate-fade-up-delay-2 mt-4 max-w-lg text-[15px] leading-6 text-white/72 sm:mt-5 sm:text-lg sm:leading-7">
+            <p className="animate-fade-up-delay-2 mt-3 max-w-lg text-[14px] leading-6 text-white/70 sm:mt-4 sm:text-base sm:leading-7">
               Verified inventory, OEM fitment support, and worldwide shipping coordination — one team.
             </p>
-            <div className="animate-fade-up-delay-2 mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
-              <Button asChild variant="accent" size="lg" className="h-12 w-full rounded-full px-7 text-sm font-bold sm:w-auto">
+            <div className="animate-fade-up-delay-2 mt-6 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-3">
+              <Button asChild variant="accent" size="lg" className="h-11 w-full rounded-full px-6 text-sm font-bold sm:h-12 sm:w-auto sm:px-7">
                 <Link href="/vehicles">Browse vehicles <ArrowRight className="h-4 w-4" /></Link>
               </Button>
-              <Button asChild size="lg" className="h-12 w-full rounded-full border border-white/25 bg-white/10 px-7 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/15 sm:w-auto">
+              <Button asChild size="lg" className="h-11 w-full rounded-full border border-white/25 bg-white/10 px-6 text-sm font-bold text-white hover:bg-white/15 sm:h-12 sm:w-auto sm:px-7">
                 <Link href="/parts">Explore parts</Link>
               </Button>
             </div>
