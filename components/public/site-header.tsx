@@ -88,15 +88,15 @@ export function SiteHeader() {
         'border-b border-border bg-background transition-shadow',
         scrolled && 'shadow-[0_8px_28px_rgba(15,23,42,0.08)]'
       )}>
-        <div className="container-page flex h-[64px] items-center gap-2 sm:h-[72px] sm:gap-4 lg:h-[80px]">
-          <Link href="/" className="flex min-w-0 shrink items-center" aria-label="Ansha Trading home">
+        <div className="container-page flex h-[72px] items-center gap-2 sm:h-[84px] sm:gap-4 lg:h-[96px]">
+          <Link href="/" className="flex min-w-0 shrink-0 items-center" aria-label="Ansha Trading home">
             <Image
               src="/images/ansha-logo-transparent.webp"
               alt="Ansha Trading Co. LLC-FZ"
               width={1000}
               height={497}
               priority
-              className="h-10 w-auto max-w-[min(42vw,150px)] object-contain sm:h-[52px] sm:max-w-[200px] lg:h-[68px] lg:max-w-[260px]"
+              className="h-12 w-auto max-w-[min(52vw,200px)] object-contain object-left sm:h-[64px] sm:max-w-[260px] lg:h-[84px] lg:max-w-[340px]"
             />
           </Link>
 
@@ -135,10 +135,10 @@ export function SiteHeader() {
 
         <div className="hidden border-t border-border/70 lg:block">
           <div className="container-page flex h-12 items-center gap-2 overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Link href="/categories" className="mr-3 flex h-full shrink-0 items-center gap-2 border-r border-border pr-5 text-sm font-bold">
+            <Link href="/categories" className="flex h-full shrink-0 items-center gap-2 border-r border-border pr-5 text-sm font-bold">
               <PackageSearch className="h-4 w-4 text-accent" />Browse categories
             </Link>
-            <nav className="flex h-full min-w-0 flex-1 items-center gap-1">
+            <nav className="ml-auto flex h-full min-w-0 items-center gap-1 pl-4">
               {navLinks.map((link) => {
                 const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                 if (link.href === '/vehicles') return (
@@ -164,7 +164,7 @@ export function SiteHeader() {
                 );
               })}
             </nav>
-            <Button asChild variant="accent" size="sm" className="ml-auto shrink-0 rounded-full px-5">
+            <Button asChild variant="accent" size="sm" className="ml-3 shrink-0 rounded-full px-5">
               <Link href="/contact">Request a quote</Link>
             </Button>
           </div>
@@ -176,7 +176,7 @@ export function SiteHeader() {
           <button className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
           <div
             id="mobile-site-menu"
-            className="fixed inset-x-0 top-[64px] z-50 max-h-[calc(100dvh-64px-4rem)] w-full max-w-[100vw] overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[72px] sm:max-h-[calc(100dvh-72px-4rem)] lg:hidden"
+            className="fixed inset-x-0 top-[72px] z-50 max-h-[calc(100dvh-72px-4rem)] w-full max-w-[100vw] overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[84px] sm:max-h-[calc(100dvh-84px-4rem)] lg:hidden"
           >
             <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch} className="md:hidden">

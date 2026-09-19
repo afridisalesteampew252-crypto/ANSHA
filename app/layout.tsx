@@ -1,6 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { DM_Sans, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { siteConfig } from '@/lib/site-config';
@@ -11,7 +11,23 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { RegisterServiceWorker } from '@/components/pwa/register-service-worker';
 import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 
-const inter = Inter({ subsets: ['latin'] });
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: { default: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`, template: `%s | ${siteConfig.name}` },
@@ -47,22 +63,32 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en" suppressHydrationWarning><body className={inter.className}><ThemeProvider>
-    <JsonLd data={[
-      {
-        '@context': 'https://schema.org', '@type': 'Organization', name: siteConfig.name,
-        url: siteConfig.url, email: siteConfig.email, telephone: siteConfig.phone,
-        description: siteConfig.description, taxID: siteConfig.taxRegistrationNumber,
-        address: { '@type': 'PostalAddress', streetAddress: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba', addressLocality: 'Dubai', addressCountry: 'AE' },
-      },
-      {
-        '@context': 'https://schema.org', '@type': 'WebSite', name: siteConfig.name, url: siteConfig.url,
-        potentialAction: { '@type': 'SearchAction', target: `${siteConfig.url}/parts?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
-      },
-    ]} />
-    <TooltipProvider delayDuration={200}>{children}<Toaster /></TooltipProvider>
-    <RegisterServiceWorker />
-    <GoogleAnalytics />
-    <Analytics /><SpeedInsights />
-  </ThemeProvider></body></html>;
+  return (
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${dmSans.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="font-sans antialiased">
+        <ThemeProvider>
+          <JsonLd data={[
+            {
+              '@context': 'https://schema.org', '@type': 'Organization', name: siteConfig.name,
+              url: siteConfig.url, email: siteConfig.email, telephone: siteConfig.phone,
+              description: siteConfig.description, taxID: siteConfig.taxRegistrationNumber,
+              address: { '@type': 'PostalAddress', streetAddress: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba', addressLocality: 'Dubai', addressCountry: 'AE' },
+            },
+            {
+              '@context': 'https://schema.org', '@type': 'WebSite', name: siteConfig.name, url: siteConfig.url,
+              potentialAction: { '@type': 'SearchAction', target: `${siteConfig.url}/parts?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
+            },
+          ]} />
+          <TooltipProvider delayDuration={200}>{children}<Toaster /></TooltipProvider>
+          <RegisterServiceWorker />
+          <GoogleAnalytics />
+          <Analytics /><SpeedInsights />
+        </ThemeProvider>
+      </body>
+    </html>
+  );
 }
