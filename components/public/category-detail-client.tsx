@@ -97,7 +97,7 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           {parts.map((part) => (
             <PartCard key={part.id} part={part} />
           ))}

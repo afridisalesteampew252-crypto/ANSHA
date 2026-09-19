@@ -5,7 +5,7 @@ import { siteConfig } from '@/lib/site-config';
 
 export function SiteFooter() {
   return (
-    <footer className="overflow-hidden border-t border-white/10 bg-[#101114] text-white">
+    <footer className="min-w-0 max-w-full overflow-x-clip border-t border-white/10 bg-[#101114] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] text-white lg:pb-0">
       <div className="h-0.5 w-full bg-accent" />
       <div className="container-page py-10 sm:py-12">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">

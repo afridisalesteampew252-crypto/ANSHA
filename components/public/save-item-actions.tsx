@@ -11,7 +11,7 @@ type SavePayload = Omit<SavedCatalogItem, 'addedAt'>;
 interface SaveItemActionsProps {
   item: SavePayload;
   className?: string;
-  size?: 'sm' | 'md';
+  size?: 'xs' | 'sm' | 'md';
   showLabels?: boolean;
 }
 
@@ -19,8 +19,8 @@ export function SaveItemActions({ item, className, size = 'sm', showLabels = fal
   const { cartHas, favoriteHas, addToCart, toggleFavorite } = useCustomerLists();
   const inCart = cartHas(item.id, item.kind);
   const saved = favoriteHas(item.id, item.kind);
-  const dim = size === 'md' ? 'h-11 w-11' : 'h-9 w-9';
-  const icon = size === 'md' ? 'h-[18px] w-[18px]' : 'h-4 w-4';
+  const dim = size === 'md' ? 'h-11 w-11' : size === 'xs' ? 'h-9 w-9' : 'h-9 w-9';
+  const icon = size === 'md' ? 'h-[18px] w-[18px]' : size === 'xs' ? 'h-3.5 w-3.5' : 'h-4 w-4';
 
   const onFavorite = (event: React.MouseEvent) => {
     event.preventDefault();

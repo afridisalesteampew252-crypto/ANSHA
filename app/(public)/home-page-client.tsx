@@ -127,11 +127,11 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="border-b border-border bg-gradient-to-b from-secondary/70 to-background py-8 sm:py-10">
-        <div className="container-page">
+      <section className="surface-warm border-b border-accent/10 py-8 sm:py-10">
+        <div className="container-page min-w-0">
           <form
             onSubmit={goToParts}
-            className="grid gap-3 rounded-[22px] border border-border bg-card p-4 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
+            className="grid gap-3 rounded-[22px] border border-accent/15 bg-card p-4 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
           >
             <div className="lg:col-span-4">
               <span className="eyebrow">Catalog finder</span>
@@ -186,8 +186,8 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="max-w-full overflow-x-clip border-b border-border bg-card">
-        <div className="container-page grid min-w-0 grid-cols-2 divide-x divide-y divide-border py-1 lg:grid-cols-4 lg:divide-y-0">
+      <section className="surface-cool max-w-full overflow-x-clip border-b border-border">
+        <div className="container-page grid min-w-0 grid-cols-2 divide-x divide-y divide-border/80 py-1 lg:grid-cols-4 lg:divide-y-0">
           {[
             { icon: BadgeCheck, title: 'Verified Stock', text: 'Accurate listings and condition' },
             { icon: Ship, title: 'Global Export', text: 'Shipping coordination worldwide' },
@@ -207,8 +207,8 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="py-10 sm:py-14">
-        <div className="container-page">
+      <section className="surface-warm py-10 sm:py-14">
+        <div className="container-page min-w-0">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Catalog departments</span>
@@ -264,8 +264,8 @@ export default function HomePageClient() {
 
       <ExportMarketsStrip />
 
-      <section className="bg-secondary/45 py-10 sm:py-14">
-        <div className="container-page">
+      <section className="surface-featured border-y border-accent/15 py-10 sm:py-14">
+        <div className="container-page min-w-0">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Ready to ship</span>
@@ -281,7 +281,7 @@ export default function HomePageClient() {
               ))}
             </div>
           ) : featured.length ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-5 lg:grid-cols-4">
               {featured.slice(0, 8).map((part) => (
                 <PartCard key={part.id} part={part} />
               ))}
@@ -296,8 +296,8 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="py-14 sm:py-20">
-        <div className="container-page">
+      <section className="surface-cool py-14 sm:py-20">
+        <div className="container-page min-w-0">
           <div className="section-heading">
             <div>
               <span className="eyebrow">Manufacturer directory</span>
@@ -329,8 +329,8 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="max-w-full overflow-hidden bg-[#101114] py-14 text-white sm:py-20">
-        <div className="container-page grid items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
+      <section className="surface-ink max-w-full overflow-hidden py-14 text-white sm:py-20">
+        <div className="container-page grid min-w-0 items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
           <div>
             <span className="eyebrow">Export showroom</span>
             <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
@@ -349,7 +349,7 @@ export default function HomePageClient() {
             </div>
           </div>
           {featuredVehicles.length ? (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               {featuredVehicles.map((vehicle, index) => (
                 <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} />
               ))}
@@ -370,8 +370,8 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="py-14 sm:py-20">
-        <div className="container-page grid gap-8 lg:grid-cols-[.8fr_1.2fr]">
+      <section className="surface-warm py-14 sm:py-20">
+        <div className="container-page grid min-w-0 gap-8 lg:grid-cols-[.8fr_1.2fr]">
           <div className="rounded-[28px] bg-accent p-7 text-white sm:p-10">
             <CircleHelp className="h-11 w-11" />
             <h2 className="mt-6 font-display text-3xl font-extrabold tracking-tight">Can&apos;t find the exact part?</h2>
@@ -394,8 +394,8 @@ export default function HomePageClient() {
       </section>
 
       {latestPosts.length > 0 && (
-        <section className="border-t border-border bg-secondary/40 py-14 sm:py-20">
-          <div className="container-page">
+        <section className="surface-mist border-t border-accent/10 py-14 sm:py-20">
+          <div className="container-page min-w-0">
             <div className="section-heading">
               <div>
                 <span className="eyebrow">Export insights</span>
@@ -413,20 +413,20 @@ export default function HomePageClient() {
         </section>
       )}
 
-      <section className="border-t border-border bg-card py-8 sm:py-10">
-        <div className="container-page flex flex-col items-center justify-between gap-4 text-center md:flex-row md:gap-5 md:text-left">
+      <section className="border-t border-accent/20 bg-[#101114] py-8 text-white sm:py-10">
+        <div className="container-page flex min-w-0 flex-col items-center justify-between gap-4 text-center md:flex-row md:gap-5 md:text-left">
           <div className="flex items-center gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent/10 text-accent">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent text-white">
               <Globe2 className="h-6 w-6" />
             </span>
             <div>
-              <h2 className="text-lg font-extrabold">Ready to source or export?</h2>
-              <p className="text-sm text-muted-foreground">Speak directly with the ANSHA team in Dubai.</p>
+              <h2 className="text-lg font-extrabold text-white">Ready to source or export?</h2>
+              <p className="text-sm text-white/60">Speak directly with the ANSHA team in Dubai.</p>
             </div>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
             <WhatsAppButton message="Hello ANSHA TRADING, I would like help sourcing a vehicle or automotive part." />
-            <Button asChild variant="outline" className="h-11">
+            <Button asChild variant="outline" className="h-11 border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white">
               <Link href="/contact"><Send className="h-4 w-4" />Contact team</Link>
             </Button>
           </div>

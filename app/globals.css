@@ -31,6 +31,13 @@
     --chart-4: 38 92% 50%;
     --chart-5: 217 91% 35%;
     --radius: 0.75rem;
+    /* Public marketing surfaces — ink / red exporter (not purple or cream). */
+    --ink: 220 10% 7%;
+    --surface-cool: 210 28% 96%;
+    --surface-warm: 0 32% 97%;
+    --surface-mist: 210 22% 94%;
+    --surface-featured: 0 55% 96%;
+    --accent-soft: 0 75% 47%;
   }
 
   .dark {
@@ -61,14 +68,20 @@
 
   html {
     scroll-behavior: smooth;
-    overflow-x: clip;
+    width: 100%;
     max-width: 100%;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
   }
 
   body {
-    @apply overflow-x-clip bg-background font-sans text-foreground;
+    @apply bg-background font-sans text-foreground;
+    width: 100%;
     max-width: 100%;
+    overflow-x: clip;
     overscroll-behavior-x: none;
+    touch-action: pan-y;
+    position: relative;
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -90,7 +103,13 @@
 
   .public-marketing {
     font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
+    width: 100%;
     max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    background:
+      radial-gradient(ellipse 80% 40% at 100% 0%, hsl(0 75% 47% / 0.05), transparent 55%),
+      hsl(var(--background));
   }
 
   .public-marketing header nav a,
@@ -131,6 +150,55 @@
 
   .section-link {
     @apply inline-flex shrink-0 items-center gap-2 text-sm font-bold text-foreground transition-colors hover:text-accent;
+  }
+
+  .surface-cool {
+    background-color: hsl(var(--surface-cool));
+  }
+
+  .surface-warm {
+    background-color: hsl(var(--surface-warm));
+  }
+
+  .surface-mist {
+    background:
+      linear-gradient(180deg, hsl(var(--surface-mist)) 0%, hsl(var(--surface-cool)) 100%);
+  }
+
+  .surface-featured {
+    background:
+      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(0 75% 47% / 0.14), transparent 50%),
+      radial-gradient(ellipse 55% 60% at 100% 100%, hsl(210 40% 40% / 0.08), transparent 48%),
+      linear-gradient(165deg, hsl(var(--surface-featured)) 0%, hsl(var(--surface-cool)) 100%);
+  }
+
+  .surface-ink {
+    background-color: #101114;
+    color: #fff;
+  }
+
+  .chip-market {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98];
+    min-height: 2.75rem;
+    border-color: hsl(0 55% 80% / 0.55);
+    background: linear-gradient(180deg, hsl(0 60% 99%) 0%, hsl(0 40% 96%) 100%);
+  }
+
+  .chip-market:hover {
+    border-color: hsl(var(--accent));
+    color: hsl(var(--accent));
+  }
+
+  .header-market-strip {
+    background:
+      linear-gradient(90deg, #101114 0%, #1a1012 42%, #14161b 100%);
+    color: #fff;
+  }
+
+  .header-market-chip {
+    @apply inline-flex shrink-0 items-baseline gap-1 rounded-full px-2 py-0.5;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(210, 30, 30, 0.18);
   }
 }
 

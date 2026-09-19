@@ -19,11 +19,15 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 w-full max-w-full border-t border-border bg-background/96 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-8px_30px_rgba(15,23,42,0.1)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[55] w-full max-w-full overflow-x-clip border-t border-border bg-background/96 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-8px_30px_rgba(15,23,42,0.1)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 lg:hidden"
       aria-label="Mobile navigation"
-      style={{ overscrollBehavior: 'none' }}
+      style={{
+        overscrollBehavior: 'none',
+        touchAction: 'manipulation',
+        transform: 'translateZ(0)',
+      }}
     >
-      <div className="mx-auto grid h-16 max-w-full grid-cols-5">
+      <div className="mx-auto grid h-16 w-full max-w-full grid-cols-5">
         {items.map((item) => {
           const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
@@ -31,7 +35,7 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold transition-colors',
+                'flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold transition-colors',
                 active ? 'text-accent' : 'text-muted-foreground'
               )}
             >
@@ -44,7 +48,7 @@ export function MobileBottomNav() {
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold text-[#199c4b]"
+          className="flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold text-[#199c4b]"
         >
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#25D366] text-white shadow-md">
             <MessageCircle className="h-4 w-4" />

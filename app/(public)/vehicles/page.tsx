@@ -59,8 +59,9 @@ export default function VehiclesPage() {
         </div>
       </section>
 
-      <div className="container-page py-8 sm:py-12">
-        <nav className="mb-5 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Vehicle stock locations">
+      <div className="container-page min-w-0 overflow-x-clip py-8 sm:py-12">
+        <nav className="mb-5 min-w-0 max-w-full overflow-x-hidden" aria-label="Vehicle stock locations">
+          <div className="flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             type="button"
             onClick={() => setStockOrigin('all')}
@@ -82,6 +83,7 @@ export default function VehiclesPage() {
               {origin.label}
             </button>
           ))}
+          </div>
         </nav>
 
         <div className="mb-8 grid gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm md:grid-cols-[1fr_200px_200px_auto] md:p-4">

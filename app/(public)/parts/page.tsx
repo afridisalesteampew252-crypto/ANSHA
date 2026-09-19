@@ -191,7 +191,7 @@ function PartsCatalog() {
             {loading ? (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <Skeleton key={index} className="aspect-[.68] rounded-2xl" />)}</div>
             ) : parts.length ? (
-              <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">{parts.map((part) => <PartCard key={part.id} part={part} />)}</div>
+              <div className="grid grid-cols-2 gap-2 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">{parts.map((part) => <PartCard key={part.id} part={part} />)}</div>
             ) : (
               <div className="rounded-3xl border border-dashed border-border bg-secondary/30 px-6 py-20 text-center"><PackageSearch className="mx-auto h-12 w-12 text-muted-foreground/25" /><h2 className="mt-5 text-xl font-extrabold">No matching parts found</h2><p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">Try fewer filters or send your OEM/chassis details to our sourcing team.</p><div className="mt-5 flex justify-center gap-3"><Button onClick={clearFilters} variant="outline">Clear filters</Button><Button asChild variant="accent"><a href="/contact">Request a part</a></Button></div></div>
             )}

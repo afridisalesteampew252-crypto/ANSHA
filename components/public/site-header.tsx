@@ -66,9 +66,17 @@ export function SiteHeader() {
   useEffect(() => setMobileOpen(false), [pathname]);
 
   useEffect(() => {
-    // Lock vertical scroll only so overflow-x: clip on html/body stays intact.
-    document.body.style.overflowY = mobileOpen ? 'hidden' : '';
+    // Lock page scroll when drawer is open without clearing overflow-x: clip.
+    const html = document.documentElement;
+    if (mobileOpen) {
+      html.style.overflowY = 'hidden';
+      document.body.style.overflowY = 'hidden';
+    } else {
+      html.style.overflowY = '';
+      document.body.style.overflowY = '';
+    }
     return () => {
+      html.style.overflowY = '';
       document.body.style.overflowY = '';
     };
   }, [mobileOpen]);
@@ -82,9 +90,9 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full max-w-full overflow-x-clip">
+    <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-x-clip">
       <div className="hidden bg-[#101114] text-white lg:block">
-        <div className="container-page flex h-9 items-center justify-between text-[11px]">
+        <div className="container-page flex h-9 min-w-0 items-center justify-between text-[11px]">
           <p className="flex items-center gap-2 font-semibold uppercase tracking-[0.14em] text-white/65">
             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
             Dubai-based global automotive exporter
@@ -100,10 +108,10 @@ export function SiteHeader() {
       </div>
 
       <div className={cn(
-        'border-b border-border bg-background transition-shadow',
+        'min-w-0 max-w-full overflow-x-clip border-b border-border bg-background transition-shadow',
         scrolled && 'shadow-[0_8px_28px_rgba(15,23,42,0.08)]'
       )}>
-        <div className="container-page flex h-[72px] items-center gap-2 sm:h-[84px] sm:gap-4 lg:h-[96px]">
+        <div className="container-page flex h-[72px] min-w-0 items-center gap-2 sm:h-[84px] sm:gap-4 lg:h-[96px]">
           <Link href="/" className="flex min-w-0 shrink-0 items-center" aria-label="Ansha Trading home">
             <Image
               src="/images/ansha-logo-transparent.webp"
@@ -209,10 +217,10 @@ export function SiteHeader() {
 
       {mobileOpen && (
         <>
-          <button className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
+          <button className="fixed inset-0 z-[58] bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
           <div
             id="mobile-site-menu"
-            className="fixed left-0 right-0 top-[72px] z-50 max-h-[calc(100dvh-72px-4.25rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[84px] sm:max-h-[calc(100dvh-84px-4.25rem-env(safe-area-inset-bottom,0px))] lg:hidden"
+            className="fixed left-0 right-0 top-[calc(4.5rem+2.25rem)] z-[60] max-h-[calc(100dvh-4.5rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[calc(5.25rem+2.25rem)] sm:max-h-[calc(100dvh-5.25rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] lg:hidden"
           >
             <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch} className="md:hidden">

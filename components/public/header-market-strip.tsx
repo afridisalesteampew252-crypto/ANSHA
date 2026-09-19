@@ -71,42 +71,39 @@ export function HeaderMarketStrip({
   return (
     <div
       className={cn(
-        'min-w-0 max-w-full',
-        variant === 'bar' && 'border-b border-border/70 bg-secondary/35',
+        'header-market-strip min-w-0 max-w-full overflow-x-hidden',
+        variant === 'bar' && 'border-b border-white/10',
         className
       )}
       aria-label="Dubai time and currency rates"
     >
       <div
         className={cn(
-          'flex max-w-full items-center gap-3 overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-          variant === 'bar' ? 'container-page h-9' : 'h-full min-w-0 flex-1 justify-center px-3'
+          'flex min-w-0 max-w-full items-center gap-3 overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          variant === 'bar' ? 'container-page h-9' : 'h-full flex-1 justify-center px-3'
         )}
       >
-        <p className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold tabular-nums text-foreground">
-          <Clock3 className="h-3.5 w-3.5 text-accent" aria-hidden />
-          <span className="text-muted-foreground">Dubai</span>
-          <time dateTime={now} className="font-bold tracking-tight">
+        <p className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold tabular-nums text-white">
+          <Clock3 className="h-3.5 w-3.5 text-[#ff5a5a]" aria-hidden />
+          <span className="text-white/55">Dubai</span>
+          <time dateTime={now} className="font-bold tracking-tight text-white">
             {now}
           </time>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">GST</span>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-white/45">GST</span>
         </p>
 
-        <span className="h-3 w-px shrink-0 bg-border" aria-hidden />
+        <span className="h-3 w-px shrink-0 bg-white/20" aria-hidden />
 
-        <div className="flex min-w-0 items-center gap-2.5 text-[11px] font-semibold tabular-nums">
-          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+        <div className="flex shrink-0 items-center gap-2.5 text-[11px] font-semibold tabular-nums text-white">
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#ff8a8a]">
             1 AED
           </span>
           {QUOTE_CODES.map((code) => {
             const value = rates?.[code];
             return (
-              <span
-                key={code}
-                className="inline-flex shrink-0 items-baseline gap-1 rounded-full border border-border/80 bg-background/80 px-2 py-0.5"
-              >
-                <span className="text-[10px] font-bold text-muted-foreground">{code}</span>
-                <span className="text-foreground">{value != null ? formatRate(code, value) : '—'}</span>
+              <span key={code} className="header-market-chip">
+                <span className="text-[10px] font-bold text-[#ff8a8a]">{code}</span>
+                <span className="text-white">{value != null ? formatRate(code, value) : '—'}</span>
               </span>
             );
           })}
