@@ -348,22 +348,46 @@
   min-width: 0;
 }
 
-/* A4 invoice sheet — screen preview + print isolation */
+/* A4 invoice sheet — screen preview mirrors print content box (A4 − 10mm margins) */
+.invoice-a4-label {
+  margin: 0;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
 .invoice-a4 {
+  /* Full A4 sheet; 10mm inset matches @page margin so screen ≈ print */
+  box-sizing: border-box;
   width: 100%;
   max-width: 210mm;
+  min-height: 297mm;
   margin-inline: auto;
-  padding: 12mm 14mm;
+  padding: 10mm;
   border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
+  border-radius: 0.25rem;
   box-shadow: 0 1px 2px hsl(220 15% 10% / 0.04), 0 12px 28px hsl(220 15% 10% / 0.06);
   background: #fff;
   color: #111827;
+  font-feature-settings: "tnum" 1;
 }
 
 .invoice-print-stage {
   display: flex;
   justify-content: center;
+  padding: 0.25rem;
+}
+
+.invoice-a4-table {
+  font-variant-numeric: tabular-nums;
+}
+
+.invoice-a4-totals dl > div:last-child {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 
 @media print {
@@ -385,7 +409,9 @@
   .admin-sidebar,
   .admin-topbar,
   .admin-shell > aside,
-  .admin-market-chrome {
+  .admin-market-chrome,
+  nav,
+  header.admin-topbar {
     display: none !important;
   }
 
@@ -401,6 +427,8 @@
     padding: 0 !important;
     overflow: visible !important;
     background: #fff !important;
+    box-shadow: none !important;
+    border: 0 !important;
   }
 
   .invoice-detail-page,
@@ -411,9 +439,11 @@
     padding: 0 !important;
   }
 
-  .invoice-print {
+  .invoice-print,
+  .invoice-a4 {
     width: 100% !important;
     max-width: none !important;
+    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
@@ -429,6 +459,18 @@
 
   .invoice-a4-table thead th {
     color: #fff !important;
+  }
+
+  .invoice-a4-totals dl > div:last-child {
+    background: #111827 !important;
+    color: #fff !important;
+  }
+
+  .invoice-a4-amount-due,
+  .invoice-a4-banking,
+  .invoice-a4-qr,
+  .invoice-a4-table-wrap {
+    break-inside: avoid;
   }
 
   a[href]::after {

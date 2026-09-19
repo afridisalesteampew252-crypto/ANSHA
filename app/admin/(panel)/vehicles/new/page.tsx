@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
 import { compressCatalogImage } from '@/lib/catalog-image';
+import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { toast } from 'sonner';
 import { STOCK_ORIGINS } from '@/lib/stock';
 
@@ -129,7 +130,11 @@ export default function AddVehiclePage() {
       let uploadSuccessCount = 0;
       for (let i = 0; i < pendingPhotos.length; i++) {
         const photo = pendingPhotos[i];
-        const optimized = await compressCatalogImage(photo.file, `${make}-${model}-${chassisCode || slug}-${i + 1}`);
+        const auctionSheet = isAuctionSheetFilename(photo.file.name);
+        const optimized = await compressCatalogImage(
+          photo.file,
+          `${make}-${model}-${chassisCode || slug}-${auctionSheet ? 'auction-sheet' : i + 1}`
+        );
         const fileName = `${slug}/${Date.now()}-${optimized.file.name}`;
 
         const { error: upErr } = await supabase.storage
@@ -146,7 +151,8 @@ export default function AddVehiclePage() {
           .insert({
             vehicle_id: vehicleId,
             storage_path: fileName,
-            is_cover: i === coverIndex,
+            is_cover: !auctionSheet && i === coverIndex,
+            is_auction_sheet: auctionSheet,
             sort_order: i,
           });
 

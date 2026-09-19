@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Local one-off import working files
 .tmp-wa-parts/
+_import_japan_stock/
+_import_japan_stock_optimized/
+_import_japan_stock_report.json

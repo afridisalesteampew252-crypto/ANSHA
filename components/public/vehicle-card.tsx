@@ -8,6 +8,7 @@ import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
 import { siteConfig } from '@/lib/site-config';
+import { pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
 import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 
 interface VehicleCardProps {
@@ -17,7 +18,7 @@ interface VehicleCardProps {
 }
 
 export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleCardProps) {
-  const coverPhoto = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
+  const coverPhoto = pickVehicleCoverPhoto(vehicle.vehicle_photos);
   const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
   const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
   const listPrice = hasPrice ? Number(vehicle.price) : null;

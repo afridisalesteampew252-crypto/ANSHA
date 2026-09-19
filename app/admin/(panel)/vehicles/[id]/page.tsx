@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { compressCatalogImage } from '@/lib/catalog-image';
+import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import {
@@ -124,7 +125,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       supabase.from('vehicles').select('*').eq('id', id).maybeSingle(),
       supabase
         .from('vehicle_photos')
-        .select('id, vehicle_id, storage_path, is_cover, sort_order, created_at')
+        .select('id, vehicle_id, storage_path, is_cover, is_auction_sheet, sort_order, created_at')
         .eq('vehicle_id', id)
         .order('sort_order', { ascending: true }),
       supabase
@@ -418,9 +419,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const auctionSheet = isAuctionSheetFilename(file.name);
       const optimized = await compressCatalogImage(
         file,
-        `${vehicle.make}-${vehicle.model}-${folder}-${startingCount + i + 1}`
+        `${vehicle.make}-${vehicle.model}-${folder}-${auctionSheet ? 'auction-sheet' : startingCount + i + 1}`
       );
       const fileName = `${folder}/${Date.now()}-${optimized.file.name}`;
 
@@ -439,10 +441,11 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         .insert({
           vehicle_id: vehicle.id,
           storage_path: fileName,
-          is_cover: startingCount === 0 && i === 0,
+          is_cover: !auctionSheet && startingCount === 0 && i === 0,
+          is_auction_sheet: auctionSheet,
           sort_order: startingCount + i,
         })
-        .select('id, vehicle_id, storage_path, is_cover, sort_order, created_at')
+        .select('id, vehicle_id, storage_path, is_cover, is_auction_sheet, sort_order, created_at')
         .single();
 
       if (!photoErr && photoData) {
@@ -464,6 +467,11 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
   const setCoverPhoto = async (photoId: string) => {
     if (!vehicle) return;
+    const target = photos.find((photo) => photo.id === photoId);
+    if (target?.is_auction_sheet) {
+      toast.error('Auction sheets cannot be set as the cover photo.');
+      return;
+    }
     setPhotoActionId(photoId);
     const { error: clearError } = await supabase
       .from('vehicle_photos')
@@ -497,7 +505,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     const remainingPhotos = photos.filter((photo) => photo.id !== photoId);
     setPhotos(remainingPhotos);
     if (deletedPhoto?.is_cover && remainingPhotos[0]) {
-      const replacement = remainingPhotos[0];
+      const replacement = remainingPhotos.find((photo) => !photo.is_auction_sheet) || remainingPhotos[0];
       const { error: replacementError } = await supabase
         .from('vehicle_photos')
         .update({ is_cover: true })
@@ -705,6 +713,11 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         <Star className="h-3 w-3 fill-current" /> Cover
                       </div>
                     )}
+                    {photo.is_auction_sheet && (
+                      <div className="absolute right-2 top-2 rounded-full border border-amber-500/40 bg-amber-500/90 px-2 py-1 text-[11px] font-semibold text-amber-950 shadow-sm">
+                        Auction sheet
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1 border-t border-border p-2">
                     <div className="flex items-center justify-between gap-1">
@@ -724,7 +737,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         size="sm"
                         variant="ghost"
                         className="h-8 flex-1 justify-center px-1 text-xs"
-                        disabled={photo.is_cover || photoActionId === photo.id}
+                        disabled={photo.is_cover || photo.is_auction_sheet || photoActionId === photo.id}
                         onClick={() => void setCoverPhoto(photo.id)}
                       >
                         {photoActionId === photo.id ? (

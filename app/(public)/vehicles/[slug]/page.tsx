@@ -27,6 +27,7 @@ import { effectiveDealPrice } from '@/lib/site-offers';
 import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
+import { publicVehiclePhotos } from '@/lib/vehicle-photos';
 
 export default function VehicleDetailPage(props: { params: Promise<{ slug: string }> }) {
   const params = use(props.params);
@@ -54,7 +55,9 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
       }
 
       const typedData = data as unknown as VehicleWithPhotos;
-      const sortedPhotos = (typedData.vehicle_photos || []).sort((a, b) => a.sort_order - b.sort_order);
+      const sortedPhotos = publicVehiclePhotos(typedData.vehicle_photos).sort(
+        (a, b) => a.sort_order - b.sort_order
+      );
       const nextCover = sortedPhotos.findIndex((p) => p.is_cover);
       setVehicle({ ...typedData, vehicle_photos: sortedPhotos });
       setCoverIndex(nextCover >= 0 ? nextCover : 0);

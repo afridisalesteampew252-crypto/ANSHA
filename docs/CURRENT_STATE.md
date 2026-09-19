@@ -49,7 +49,7 @@ Hosting: Vercel project `anshanew`
 `admin-create-user`, `admin-update-user`, `portal-create-access`, `send-web-push`, `send-outbound-email`, `send-whatsapp`, `remind-request-dues`
 
 ### Migrations
-Through **Phase 54** (`field agents`, HR workforce, catalog audit). See `supabase/migrations/`.
+Through **Phase 56** (`vehicle_photos.is_auction_sheet` — Japan auction sheets admin-only). See `supabase/migrations/`.
 
 ## Known gaps / operator actions
 

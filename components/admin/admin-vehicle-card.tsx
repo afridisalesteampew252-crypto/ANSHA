@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
+import { pickVehicleCoverPhoto, vehicleHasAuctionSheet } from '@/lib/vehicle-photos';
 import type { StockStatus, VehicleWithPhotos } from '@/lib/types';
 
 const statusClass: Record<StockStatus, string> = {
@@ -41,7 +42,7 @@ export function AdminVehicleCard({
   onDelete,
   stockOriginOptions,
 }: Props) {
-  const cover = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
+  const cover = pickVehicleCoverPhoto(vehicle.vehicle_photos);
   const photoUrl = cover
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${cover.storage_path}`
     : '';
@@ -49,6 +50,7 @@ export function AdminVehicleCard({
   const stage = (vehicle.lifecycle_stage || 'unassigned') as LifecycleStage;
   const canReserve = status === 'available';
   const stockRef = vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference';
+  const hasAuctionSheet = vehicleHasAuctionSheet(vehicle.vehicle_photos);
 
   if (fieldAgent) {
     return (
@@ -71,6 +73,11 @@ export function AdminVehicleCard({
                   {lifecycleStageLabel(stage)}
                 </Badge>
                 <StockOriginBadge origin={vehicle.stock_origin} compact />
+                {hasAuctionSheet ? (
+                  <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 font-normal text-amber-800 dark:text-amber-200">
+                    Auction sheet
+                  </Badge>
+                ) : null}
               </div>
               <h2 className="mt-2 truncate text-base font-bold tracking-tight">{vehicle.title}</h2>
               <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">
@@ -130,6 +137,11 @@ export function AdminVehicleCard({
               <Badge className={stageClass[stage]}>{lifecycleStageLabel(stage)}</Badge>
               <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
               {vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}
+              {hasAuctionSheet ? (
+                <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-amber-800 dark:text-amber-200">
+                  Auction sheet
+                </Badge>
+              ) : null}
             </div>
             <h2 className="mt-2 truncate font-bold">{vehicle.title}</h2>
             <p className="text-xs text-muted-foreground">{stockRef}</p>

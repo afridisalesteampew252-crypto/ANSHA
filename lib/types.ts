@@ -253,6 +253,7 @@ export interface VehiclePhoto {
   vehicle_id: string;
   storage_path: string;
   is_cover: boolean;
+  is_auction_sheet: boolean;
   sort_order: number;
   created_at: string;
 }
