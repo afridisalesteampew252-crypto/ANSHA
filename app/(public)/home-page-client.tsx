@@ -99,7 +99,7 @@ export default function HomePageClient() {
 
   return (
     <>
-      <section className="relative min-h-[78vh] overflow-hidden bg-[#101114] text-white sm:min-h-[72vh] lg:min-h-[78vh]">
+      <section className="relative min-h-[78vh] max-w-full overflow-hidden bg-[#101114] text-white sm:min-h-[72vh] lg:min-h-[78vh]">
         {heroImageUrl ? (
           <div className="absolute inset-0">
             <CatalogImage
@@ -200,8 +200,8 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="border-b border-border bg-card">
-        <div className="container-page grid grid-cols-2 divide-x divide-y divide-border py-1 lg:grid-cols-4 lg:divide-y-0">
+      <section className="max-w-full overflow-x-clip border-b border-border bg-card">
+        <div className="container-page grid min-w-0 grid-cols-2 divide-x divide-y divide-border py-1 lg:grid-cols-4 lg:divide-y-0">
           {[
             { icon: BadgeCheck, title: 'Verified Stock', text: 'Accurate listings and condition' },
             { icon: Ship, title: 'Global Export', text: 'Shipping coordination worldwide' },
@@ -343,7 +343,7 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="overflow-hidden bg-[#101114] py-14 text-white sm:py-20">
+      <section className="max-w-full overflow-hidden bg-[#101114] py-14 text-white sm:py-20">
         <div className="container-page grid items-center gap-10 lg:grid-cols-[.9fr_1.1fr]">
           <div>
             <span className="eyebrow">Export showroom</span>

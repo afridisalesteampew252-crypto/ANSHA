@@ -53,8 +53,8 @@ export function InstallPrompt() {
   return (
     <div
       className={cn(
-        'fixed inset-x-3 z-50 rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur-md',
-        'bottom-[calc(4.25rem+env(safe-area-inset-bottom))] lg:bottom-4 lg:left-auto lg:right-4 lg:w-[22rem]'
+        'fixed left-3 right-3 z-50 max-w-full rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur-md',
+        'bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] lg:bottom-4 lg:left-auto lg:right-4 lg:w-[22rem]'
       )}
       role="dialog"
       aria-label="Install ANSHA app"

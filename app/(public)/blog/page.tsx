@@ -145,7 +145,7 @@ export default function BlogPage() {
 
         {/* Category chips */}
         {categories.length > 0 && (
-          <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+          <div className="mb-6 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setSelectedCategory('all')}
               className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${

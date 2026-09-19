@@ -65,9 +65,10 @@ export function SiteHeader() {
   useEffect(() => setMobileOpen(false), [pathname]);
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    // Lock vertical scroll only so overflow-x: clip on html/body stays intact.
+    document.body.style.overflowY = mobileOpen ? 'hidden' : '';
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflowY = '';
     };
   }, [mobileOpen]);
 
@@ -80,7 +81,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip">
+    <header className="sticky top-0 z-50 w-full max-w-full overflow-x-clip">
       <div className="hidden bg-[#101114] text-white lg:block">
         <div className="container-page flex h-9 items-center justify-between text-[11px]">
           <p className="flex items-center gap-2 font-semibold uppercase tracking-[0.14em] text-white/65">
@@ -205,7 +206,7 @@ export function SiteHeader() {
           <button className="fixed inset-0 z-40 bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
           <div
             id="mobile-site-menu"
-            className="fixed inset-x-0 top-[72px] z-50 max-h-[calc(100dvh-72px-4rem)] w-full max-w-[100vw] overflow-x-hidden overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[84px] sm:max-h-[calc(100dvh-84px-4rem)] lg:hidden"
+            className="fixed left-0 right-0 top-[72px] z-50 max-h-[calc(100dvh-72px-4.25rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[84px] sm:max-h-[calc(100dvh-84px-4.25rem-env(safe-area-inset-bottom,0px))] lg:hidden"
           >
             <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch} className="md:hidden">

@@ -7,10 +7,10 @@ import { EXPORT_MARKETS, flagImageUrl } from '@/lib/export-markets';
 export function ExportMarketsStrip() {
   return (
     <section
-      className="border-y border-border bg-background py-6 sm:py-8"
+      className="max-w-full overflow-x-clip border-y border-border bg-background py-6 sm:py-8"
       aria-labelledby="export-markets-heading"
     >
-      <div className="container-page">
+      <div className="container-page min-w-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div className="min-w-0">
             <span className="eyebrow">Export markets</span>
@@ -24,7 +24,7 @@ export function ExportMarketsStrip() {
         </div>
 
         <ul
-          className="mt-4 flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-5 sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+          className="mt-4 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-5 sm:flex-wrap sm:overflow-visible sm:touch-auto [&::-webkit-scrollbar]:hidden"
           role="list"
         >
           {EXPORT_MARKETS.map((market) => (

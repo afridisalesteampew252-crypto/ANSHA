@@ -101,8 +101,8 @@ export function PushOptIn() {
   return (
     <div
       className={cn(
-        'fixed inset-x-3 z-40 rounded-xl border border-border/80 bg-background/95 p-3.5 shadow-lg backdrop-blur-md',
-        'bottom-[calc(8.5rem+env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-6 sm:right-4 sm:w-[22rem]',
+        'fixed left-3 right-3 z-40 max-w-full rounded-xl border border-border/80 bg-background/95 p-3.5 shadow-lg backdrop-blur-md',
+        'bottom-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:left-auto sm:right-4 sm:bottom-6 sm:w-[22rem]',
         'lg:bottom-24'
       )}
       role="dialog"
