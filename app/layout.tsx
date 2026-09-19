@@ -38,11 +38,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   twitter: { card: 'summary_large_image', title: siteConfig.name, description: siteConfig.description },
   robots: { index: true, follow: true },
-  applicationName: siteConfig.shortName,
+  applicationName: siteConfig.pwaName,
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: siteConfig.shortName,
+    title: siteConfig.pwaShortName,
   },
   icons: {
     icon: [

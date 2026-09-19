@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase/client';
 import { sendWebPush } from '@/lib/web-push';
 import { toast } from 'sonner';
 import type { BlogCategory, BlogPost } from '@/lib/types';
+import { RichTextEditor } from '@/components/admin/rich-text-editor';
 
 function slugify(text: string) {
   return text
@@ -221,18 +222,12 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="content">Article Content (HTML)</Label>
-              <Textarea
-                id="content"
+              <Label>Article content</Label>
+              <RichTextEditor
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={20}
-                placeholder="<h2>Introduction</h2><p>Your article content here...</p>"
-                className="font-mono text-sm"
+                onChange={setContent}
+                placeholder="Write the article here — use the toolbar for headings, lists, links, and images."
               />
-              <p className="text-xs text-muted-foreground">
-                Supports HTML. Use &lt;h2&gt;, &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;ol&gt;, &lt;li&gt;, &lt;strong&gt;, &lt;a&gt;, &lt;img&gt;, &lt;blockquote&gt;.
-              </p>
             </div>
           </div>
 

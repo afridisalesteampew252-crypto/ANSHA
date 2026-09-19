@@ -1,6 +1,9 @@
 export const siteConfig = {
   name: 'ANSHA TRADING',
   shortName: 'ANSHA',
+  /** Installed PWA display name (homescreen / install UI). */
+  pwaName: 'Anshatradingco APP',
+  pwaShortName: 'Anshatradingco APP',
   tagline: 'Global Vehicles and Automotive Parts Exporter',
   description:
     'Global exporter of vehicles and automotive parts for all brands. Search inventory by OEM part number, chassis code, engine code, make, model, and year.',

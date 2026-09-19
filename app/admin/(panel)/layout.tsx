@@ -7,7 +7,7 @@ import Image from 'next/image';
 import {
   Banknote, BarChart3, BookMarked, BookOpen, BookmarkPlus, Building2, Calculator, Car, ChevronLeft, ChevronRight, ClipboardList, ExternalLink, FileBarChart, FileSpreadsheet, Globe2, Inbox, LayoutDashboard,
   Loader2, Mail, MailPlus, Megaphone, Menu, MessageCircle, Package, PackagePlus, Phone, Plus, Receipt, ReceiptText, ScrollText, Ship, Sparkles, Tag, Truck,
-  Upload, WalletCards, UserCog, Users, X,
+  Upload, WalletCards, UserCog, Users, X, Bell,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'Marketing',
     items: [
       { href: '/admin/blog', label: 'Insights / Blog', icon: BookOpen },
-      { href: '/admin/offers', label: 'Deals & PWA push', icon: Megaphone },
+      { href: '/admin/offers', label: 'Deals & offers', icon: Megaphone },
+      { href: '/admin/subscribers', label: 'PWA subscribers', icon: Bell },
       { href: '/admin/campaigns', label: 'Campaigns', icon: MailPlus },
       { href: '/admin/trade-config', label: 'Trade config', icon: Globe2 },
     ],
@@ -298,6 +299,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <DropdownMenuItem asChild><Link href="/admin/customers">Customer / enable portal</Link></DropdownMenuItem>
                 {!isSales ? <DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem> : null}
                 {!isSales ? <DropdownMenuItem asChild><Link href="/admin/offers">Deal + PWA push</Link></DropdownMenuItem> : null}
+                {!isSales ? <DropdownMenuItem asChild><Link href="/admin/subscribers">PWA subscribers</Link></DropdownMenuItem> : null}
                 {!isSales ? (
                   <>
                     <DropdownMenuSeparator />

@@ -28,6 +28,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import { useCustomerLists } from '@/hooks/use-customer-lists';
 import { HeaderMarketStrip } from '@/components/public/header-market-strip';
+import { InstallAppButton } from '@/components/pwa/install-prompt';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -142,6 +143,7 @@ export function SiteHeader() {
           </form>
 
           <div className="ml-auto hidden items-center gap-2 xl:flex">
+            <InstallAppButton className="rounded-full" label="Install app" />
             <Link href="/favorites" className="relative grid h-10 w-10 place-items-center rounded-full border border-border text-foreground transition hover:border-accent hover:text-accent" aria-label={`Favorites${favoritesCount ? `, ${favoritesCount} saved` : ''}`}>
               <Heart className={cn('h-[18px] w-[18px]', favoritesCount > 0 && 'fill-accent text-accent')} />
               <CountBadge count={favoritesCount} />
@@ -270,6 +272,7 @@ export function SiteHeader() {
                 <Button asChild variant="accent" className="h-12"><Link href="/parts">Find parts</Link></Button>
                 <Button asChild variant="outline" className="h-12"><Link href="/contact">Get a quote</Link></Button>
               </div>
+              <InstallAppButton className="h-12 w-full justify-center rounded-xl" size="default" label="Download / Install app" />
               <div className="space-y-1 border-t border-border pt-4 text-sm text-muted-foreground">
                 <a href={`tel:${siteConfig.phone}`} className="flex min-h-11 items-center gap-2"><Phone className="h-4 w-4 text-accent" />{siteConfig.phone}</a>
                 <a href={`mailto:${siteConfig.email}`} className="flex min-h-11 items-center gap-2 break-all"><Mail className="h-4 w-4 shrink-0 text-accent" />{siteConfig.email}</a>

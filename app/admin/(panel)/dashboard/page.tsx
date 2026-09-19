@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowRight, Car, CircleDollarSign, ClipboardList, Inbox, KeyRound, Megaphone, Package, PackagePlus, Plus, Truck, Users, WalletCards,
+  ArrowRight, Bell, Car, CircleDollarSign, ClipboardList, Inbox, KeyRound, Megaphone, Package, PackagePlus, Plus, Truck, Users, WalletCards,
 } from 'lucide-react';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -95,7 +95,7 @@ function StatLink({
 }
 
 export default function AdminDashboardPage() {
-  const [counts, setCounts] = useState({ parts: 0, vehicles: 0, customers: 0, inquiries: 0, unreadChats: 0, portalUsers: 0 });
+  const [counts, setCounts] = useState({ parts: 0, vehicles: 0, customers: 0, inquiries: 0, unreadChats: 0, portalUsers: 0, pushSubscribers: 0 });
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
@@ -108,7 +108,7 @@ export default function AdminDashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       const from = rangeFrom();
       const to = rangeTo();
-      const [partsRes, vehiclesRes, customersRes, inquiryRes, recentRes, invoiceRes, remittanceRes, partStockRes, vehicleStockRes, membershipRes, portalRes, analyticsRes] = await Promise.all([
+      const [partsRes, vehiclesRes, customersRes, inquiryRes, recentRes, invoiceRes, remittanceRes, partStockRes, vehicleStockRes, membershipRes, portalRes, analyticsRes, pushRes] = await Promise.all([
         supabase.from('parts').select('id', { count: 'exact', head: true }),
         supabase.from('vehicles').select('id', { count: 'exact', head: true }),
         supabase.from('customers').select('id', { count: 'exact', head: true }),
@@ -121,6 +121,7 @@ export default function AdminDashboardPage() {
         user ? supabase.from('chat_participants').select('conversation_id,last_read_at').eq('user_id', user.id) : Promise.resolve({ data: [] as { conversation_id: string; last_read_at: string | null }[] }),
         supabase.from('customer_profiles').select('id', { count: 'exact', head: true }),
         supabase.rpc('get_ops_analytics_summary', { p_from: from, p_to: to }),
+        supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }),
       ]);
       let unreadChats = 0;
       const memberships = membershipRes.data || [];
@@ -139,6 +140,7 @@ export default function AdminDashboardPage() {
         inquiries: inquiryRes.count || 0,
         unreadChats,
         portalUsers: portalRes.count || 0,
+        pushSubscribers: pushRes.count || 0,
       });
       setInvoices((invoiceRes.data || []) as Invoice[]);
       setRemittances((remittanceRes.data || []) as Remittance[]);
@@ -234,6 +236,7 @@ export default function AdminDashboardPage() {
     { label: 'Customers', value: analytics?.counts.customers ?? counts.customers, icon: Users, href: '/admin/customers' },
     { label: 'Portal logins', value: analytics?.counts.portal_users ?? counts.portalUsers, icon: KeyRound, href: '/admin/customers' },
     { label: 'New inquiries', value: analytics?.counts.new_inquiries ?? counts.inquiries, icon: Inbox, href: '/admin/inquiries' },
+    ...(isOps ? [{ label: 'PWA subscribers', value: counts.pushSubscribers, icon: Bell, href: '/admin/subscribers' }] : []),
   ].filter((card) => card.label !== 'Portal logins' || isOps || card.value != null);
 
   return (
@@ -253,6 +256,7 @@ export default function AdminDashboardPage() {
             <Button asChild variant="outline" size="sm"><Link href="/admin/analytics">Analytics</Link></Button>
             {isOps ? <Button asChild variant="outline" size="sm"><Link href="/admin/remittances"><WalletCards className="h-4 w-4" />Funds</Link></Button> : null}
             {isOps ? <Button asChild variant="outline" size="sm"><Link href="/admin/offers"><Megaphone className="h-4 w-4" />Deals</Link></Button> : null}
+            {isOps ? <Button asChild variant="outline" size="sm"><Link href="/admin/subscribers"><Bell className="h-4 w-4" />Subscribers</Link></Button> : null}
             <Button asChild variant="outline" size="sm"><Link href="/admin/customers"><KeyRound className="h-4 w-4" />Portal</Link></Button>
           </div>
         </div>
@@ -310,7 +314,7 @@ export default function AdminDashboardPage() {
 
       <section className="space-y-3">
         <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Catalog &amp; people</h3>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           {operationalCards.map((card) => (
             <StatLink key={card.label} href={card.href} label={card.label} value={card.value} icon={card.icon} loading={loading} />
           ))}

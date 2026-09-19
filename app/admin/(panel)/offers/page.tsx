@@ -465,7 +465,9 @@ export default function AdminOffersPage() {
             <CardContent className="py-12 text-center">
               <Bell className="mx-auto h-8 w-8 text-muted-foreground/40" />
               <p className="mt-3 text-sm font-medium">No offers yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">Publish your first deal above.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Create a deal above, then optionally push to PWA subscribers from Marketing → PWA subscribers.
+              </p>
             </CardContent>
           </Card>
         ) : (

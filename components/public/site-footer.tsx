@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 import { siteConfig } from '@/lib/site-config';
+import { InstallAppButton } from '@/components/pwa/install-prompt';
 
 export function SiteFooter() {
   return (
@@ -35,6 +36,12 @@ export function SiteFooter() {
               <MessageCircle className="h-4 w-4" />
               Chat on WhatsApp
             </a>
+            <div className="mt-3">
+              <InstallAppButton
+                className="border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                label={`Install ${siteConfig.pwaName}`}
+              />
+            </div>
           </div>
 
           <div>

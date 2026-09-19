@@ -1,53 +1,150 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, X } from 'lucide-react';
+import { Download, Share, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { siteConfig } from '@/lib/site-config';
+import { usePwaInstall } from '@/components/pwa/use-pwa-install';
 
-const DISMISS_KEY = 'ansha-pwa-install-dismissed';
+export function InstallAppButton({
+  className,
+  variant = 'outline',
+  size = 'sm',
+  label = 'Install app',
+}: {
+  className?: string;
+  variant?: 'outline' | 'ghost' | 'accent' | 'default' | 'secondary';
+  size?: 'sm' | 'default' | 'icon' | 'lg';
+  label?: string;
+}) {
+  const { installed, canNativePrompt, isIos, promptInstall, clearDismiss } = usePwaInstall();
+  const [hintOpen, setHintOpen] = useState(false);
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-};
+  if (installed) return null;
+
+  const onClick = async () => {
+    clearDismiss();
+    if (canNativePrompt) {
+      await promptInstall();
+      return;
+    }
+    setHintOpen(true);
+  };
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant={variant}
+        size={size}
+        className={cn('gap-1.5', className)}
+        onClick={() => void onClick()}
+        aria-label={`Download or install ${siteConfig.pwaName}`}
+      >
+        <Download className="h-4 w-4" />
+        {label}
+      </Button>
+      {hintOpen ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/45 p-4 sm:items-center"
+          role="dialog"
+          aria-label={`How to install ${siteConfig.pwaName}`}
+          onClick={() => setHintOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold">{siteConfig.pwaName}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {isIos
+                    ? 'On iPhone or iPad, add the app from Safari’s share menu.'
+                    : 'Use your browser menu to install, or try again after browsing a few pages.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-md p-1 text-muted-foreground hover:bg-secondary"
+                aria-label="Close"
+                onClick={() => setHintOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {isIos ? (
+              <ol className="mt-4 space-y-2 text-sm text-foreground">
+                <li className="flex gap-2">
+                  <span className="font-bold text-accent">1.</span>
+                  Tap <Share className="mx-1 inline h-4 w-4 text-accent" aria-hidden /> Share in Safari.
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-accent">2.</span>
+                  Choose <strong>Add to Home Screen</strong>.
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-accent">3.</span>
+                  Confirm — {siteConfig.pwaName} opens like an app.
+                </li>
+              </ol>
+            ) : (
+              <ul className="mt-4 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
+                <li>Chrome / Edge: menu → <strong>Install app</strong> or <strong>Install {siteConfig.pwaName}</strong>.</li>
+                <li>Android: browser menu → <strong>Add to Home screen</strong> / Install.</li>
+                <li>If Install is missing, keep browsing — Chrome shows it after eligibility.</li>
+              </ul>
+            )}
+            <Button type="button" className="mt-5 w-full" onClick={() => setHintOpen(false)}>
+              Got it
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
 
 export function InstallPrompt() {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+  const {
+    installed,
+    dismissed,
+    canNativePrompt,
+    isIos,
+    showManualHint,
+    promptInstall,
+    dismissBanner,
+  } = usePwaInstall();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if (localStorage.getItem(DISMISS_KEY) === '1') return;
-
-    const onPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferred(event as BeforeInstallPromptEvent);
-      setVisible(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', onPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt);
-  }, []);
-
-  if (!visible || !deferred) return null;
-
-  const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, '1');
-    setVisible(false);
-    setDeferred(null);
-  };
-
-  const install = async () => {
-    await deferred.prompt();
-    const choice = await deferred.userChoice;
-    if (choice.outcome === 'accepted') {
+    if (installed || dismissed) {
       setVisible(false);
-      setDeferred(null);
       return;
     }
-    dismiss();
+    // Show quickly when native prompt is ready; otherwise soft-delay for iOS / manual.
+    const delay = canNativePrompt ? 600 : 2200;
+    const timer = window.setTimeout(() => setVisible(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [installed, dismissed, canNativePrompt]);
+
+  if (!visible || installed || dismissed) return null;
+
+  const install = async () => {
+    if (canNativePrompt) {
+      const result = await promptInstall();
+      if (result.outcome === 'accepted') {
+        setVisible(false);
+        return;
+      }
+      if (result.outcome === 'dismissed') {
+        dismissBanner();
+        setVisible(false);
+      }
+      return;
+    }
+    // Manual / iOS: keep banner; user follows steps below.
   };
 
   return (
@@ -57,22 +154,45 @@ export function InstallPrompt() {
         'bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] lg:bottom-4 lg:left-auto lg:right-4 lg:w-[22rem]'
       )}
       role="dialog"
-      aria-label="Install ANSHA app"
+      aria-label={`Install ${siteConfig.pwaName}`}
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
           <Download className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Install ANSHA</p>
+          <p className="text-sm font-semibold">Install {siteConfig.pwaName}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Add the catalog to your home screen for faster access. Staff ERP stays online-only.
+            {isIos || showManualHint
+              ? 'Add the catalog to your home screen for faster access.'
+              : 'Download the app for quicker browsing. Staff ERP stays online-only.'}
           </p>
+          {(isIos || (showManualHint && !canNativePrompt)) ? (
+            <ol className="mt-2 space-y-1 text-[11px] leading-snug text-muted-foreground">
+              {isIos ? (
+                <>
+                  <li>1. Tap Share in Safari</li>
+                  <li>2. Add to Home Screen</li>
+                </>
+              ) : (
+                <>
+                  <li>Use the browser menu → Install app / Add to Home screen</li>
+                  <li>Or tap Install app in the site header or footer</li>
+                </>
+              )}
+            </ol>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" type="button" onClick={() => void install()}>
-              Install
-            </Button>
-            <Button size="sm" type="button" variant="ghost" onClick={dismiss}>
+            {canNativePrompt ? (
+              <Button size="sm" type="button" onClick={() => void install()}>
+                Install app
+              </Button>
+            ) : (
+              <Button size="sm" type="button" variant="accent" onClick={dismissBanner}>
+                Got it
+              </Button>
+            )}
+            <Button size="sm" type="button" variant="ghost" onClick={dismissBanner}>
               Not now
             </Button>
           </div>
@@ -81,7 +201,7 @@ export function InstallPrompt() {
           type="button"
           className="rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
           aria-label="Dismiss install prompt"
-          onClick={dismiss}
+          onClick={dismissBanner}
         >
           <X className="h-4 w-4" />
         </button>
