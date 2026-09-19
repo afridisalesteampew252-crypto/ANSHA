@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Ship } from 'lucide-react';
 import { VehicleCard } from '@/components/public/vehicle-card';
+import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { flagImageUrl, getExportMarket } from '@/lib/export-markets';
 import { supabase } from '@/lib/supabase/client';
 import type { VehicleWithPhotos } from '@/lib/types';
@@ -20,6 +21,7 @@ export default function MarketDestinationPage() {
   const params = useParams<{ code: string }>();
   const code = String(params?.code || '').toUpperCase();
   const market = getExportMarket(code);
+  const { dealForVehicle } = useInventoryDeals();
   const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
   const [config, setConfig] = useState<MarketConfig | null>(null);
   const [loading, setLoading] = useState(Boolean(market));
@@ -144,7 +146,7 @@ export default function MarketDestinationPage() {
           ) : vehicles.length ? (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {vehicles.slice(0, 6).map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                <VehicleCard key={vehicle.id} vehicle={vehicle} deal={dealForVehicle(vehicle.id)} />
               ))}
             </div>
           ) : (

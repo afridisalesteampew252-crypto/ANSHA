@@ -6,10 +6,12 @@ import { notFound } from 'next/navigation';
 import { ChevronRight, Package } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PartCard } from '@/components/public/part-card';
+import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { supabase } from '@/lib/supabase/client';
 import type { Category, PartWithRelations } from '@/lib/types';
 
 export function CategoryDetailClient({ slug }: { slug: string }) {
+  const { dealForPart } = useInventoryDeals();
   const [category, setCategory] = useState<Category | null>(null);
   const [parts, setParts] = useState<PartWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
               {parts.map((part) => (
-                <PartCard key={part.id} part={part} />
+                <PartCard key={part.id} part={part} deal={dealForPart(part.id)} />
               ))}
             </div>
           )}

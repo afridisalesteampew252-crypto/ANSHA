@@ -7,23 +7,31 @@ import { BrandLogo } from '@/components/public/brand-logo';
 import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
+import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
-import type { PartWithRelations } from '@/lib/types';
+import type { PartWithRelations, SiteOffer } from '@/lib/types';
 
 interface PartCardProps {
   part: PartWithRelations;
+  deal?: SiteOffer | null;
 }
 
-export function PartCard({ part }: PartCardProps) {
+export function PartCard({ part, deal = null }: PartCardProps) {
   const coverPhoto = part.part_photos?.find((photo) => photo.is_cover) || part.part_photos?.[0];
   const compatibility = part.part_compatibility?.[0];
   const photoUrl = coverPhoto ? publicPartImageUrl(coverPhoto.storage_path) : null;
   const hasPrice = Boolean(part.show_price && part.price && part.price > 0);
+  const listPrice = hasPrice ? Number(part.price) : null;
+  const dealPrice =
+    part.stock_status !== 'sold' && deal ? effectiveDealPrice(listPrice, deal) : null;
+  const discountLabel = deal ? formatDealDiscount(deal.discount_percent) : null;
   const priceLabel = part.stock_status === 'sold'
     ? 'Sold'
-    : hasPrice
-      ? `${part.currency} ${part.price!.toLocaleString()}`
-      : 'Ask for quote';
+    : dealPrice != null
+      ? `${part.currency} ${dealPrice.toLocaleString()}`
+      : hasPrice
+        ? `${part.currency} ${part.price!.toLocaleString()}`
+        : 'Ask for quote';
   const oemOrCode = part.oem_number || part.part_code;
   const waMessage = `Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
@@ -124,12 +132,25 @@ export function PartCard({ part }: PartCardProps) {
 
         <div className="mt-auto space-y-2 border-t border-foreground/10 pt-2.5 sm:pt-3">
           <div className="min-w-0">
+            <div className="mb-0.5 flex flex-wrap items-center gap-1">
+              {discountLabel && part.stock_status !== 'sold' ? (
+                <Badge className="h-5 border-0 bg-[#101114] px-1.5 text-[9px] text-white">{discountLabel}</Badge>
+              ) : null}
+              {deal && !discountLabel && dealPrice != null && part.stock_status !== 'sold' ? (
+                <Badge className="h-5 border-0 bg-[#101114] px-1.5 text-[9px] text-white">Deal</Badge>
+              ) : null}
+            </div>
             <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
-              {hasPrice ? 'Export price' : 'Price'}
+              {dealPrice != null ? 'Deal price' : hasPrice ? 'Export price' : 'Price'}
             </span>
             <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">
               {priceLabel}
             </strong>
+            {dealPrice != null && listPrice != null && dealPrice < listPrice ? (
+              <span className="mt-0.5 block text-[11px] text-muted-foreground line-through sm:text-xs">
+                {part.currency} {listPrice.toLocaleString()}
+              </span>
+            ) : null}
           </div>
           <div className="flex min-w-0 items-center gap-1.5">
             <a

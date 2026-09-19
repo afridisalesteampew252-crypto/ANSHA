@@ -32,6 +32,7 @@ import { BlogCard } from '@/components/public/blog-card';
 import { ExportMarketsStrip } from '@/components/public/export-markets-strip';
 import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
+import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import type { BlogPostWithCategory, Category, PartWithRelations, VehicleWithPhotos } from '@/lib/types';
@@ -43,6 +44,7 @@ interface MakeStat {
 
 export default function HomePageClient() {
   const router = useRouter();
+  const { dealForVehicle, dealForPart } = useInventoryDeals();
   const [query, setQuery] = useState('');
   const [finderBrand, setFinderBrand] = useState('all');
   const [finderCategory, setFinderCategory] = useState('all');
@@ -302,7 +304,7 @@ export default function HomePageClient() {
           ) : featured.length ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-5 lg:grid-cols-4">
               {featured.slice(0, 8).map((part) => (
-                <PartCard key={part.id} part={part} />
+                <PartCard key={part.id} part={part} deal={dealForPart(part.id)} />
               ))}
             </div>
           ) : (
@@ -370,7 +372,7 @@ export default function HomePageClient() {
           {featuredVehicles.length ? (
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               {featuredVehicles.map((vehicle, index) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} />
+                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} deal={dealForVehicle(vehicle.id)} />
               ))}
             </div>
           ) : (

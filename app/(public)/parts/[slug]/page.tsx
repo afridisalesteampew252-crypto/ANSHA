@@ -36,6 +36,7 @@ import { BrandLogo } from '@/components/public/brand-logo';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
 import { publicPartImageUrl } from '@/components/public/catalog-image';
+import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { supabase } from '@/lib/supabase/client';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
@@ -45,6 +46,7 @@ import { JsonLd } from '@/components/seo/json-ld';
 export default function PartDetailPage(props: { params: Promise<{ slug: string }> }) {
   const params = use(props.params);
   const { slug } = params;
+  const { dealForPart } = useInventoryDeals();
   const [part, setPart] = useState<PartWithRelations | null>(null);
   const [relatedParts, setRelatedParts] = useState<PartWithRelations[]>([]);
   const [deal, setDeal] = useState<SiteOffer | null>(null);
@@ -546,7 +548,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           <h2 className="mb-6 font-display text-xl font-black tracking-tight">Related Parts</h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {relatedParts.map((rp) => (
-              <PartCard key={rp.id} part={rp} />
+              <PartCard key={rp.id} part={rp} deal={dealForPart(rp.id)} />
             ))}
           </div>
         </div>

@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VehicleCard } from '@/components/public/vehicle-card';
+import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
 import type { StockOrigin, VehicleWithPhotos } from '@/lib/types';
 
 export default function VehiclesPage() {
+  const { dealForVehicle } = useInventoryDeals();
   const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
   const [query, setQuery] = useState('');
   const [brand, setBrand] = useState('all');
@@ -147,7 +149,7 @@ export default function VehiclesPage() {
         ) : vehicles.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {vehicles.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              <VehicleCard key={vehicle.id} vehicle={vehicle} deal={dealForVehicle(vehicle.id)} />
             ))}
           </div>
         ) : (

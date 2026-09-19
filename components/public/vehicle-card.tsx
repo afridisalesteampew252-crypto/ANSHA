@@ -6,23 +6,31 @@ import { Badge } from '@/components/ui/badge';
 import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
+import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
 import { siteConfig } from '@/lib/site-config';
-import type { VehicleWithPhotos } from '@/lib/types';
+import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 
 interface VehicleCardProps {
   vehicle: VehicleWithPhotos;
   priority?: boolean;
+  deal?: SiteOffer | null;
 }
 
-export function VehicleCard({ vehicle, priority = false }: VehicleCardProps) {
+export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleCardProps) {
   const coverPhoto = vehicle.vehicle_photos?.find((photo) => photo.is_cover) || vehicle.vehicle_photos?.[0];
   const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
   const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
+  const listPrice = hasPrice ? Number(vehicle.price) : null;
+  const dealPrice =
+    vehicle.stock_status !== 'sold' && deal ? effectiveDealPrice(listPrice, deal) : null;
+  const discountLabel = deal ? formatDealDiscount(deal.discount_percent) : null;
   const priceLabel = vehicle.stock_status === 'sold'
     ? 'Sold'
-    : hasPrice
-      ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}`
-      : 'Ask for quote';
+    : dealPrice != null
+      ? `${vehicle.currency} ${dealPrice.toLocaleString()}`
+      : hasPrice
+        ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}`
+        : 'Ask for quote';
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`)}`;
   const saveItem = toVehicleSaveItem({
     id: vehicle.id,
@@ -76,11 +84,23 @@ export function VehicleCard({ vehicle, priority = false }: VehicleCardProps) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-5">
-        {vehicle.is_featured && vehicle.stock_status !== 'sold' ? (
-          <Badge className="mb-1.5 h-5 w-fit border-0 bg-accent px-1.5 text-[9px] text-accent-foreground sm:text-[10px]">
-            Featured
-          </Badge>
-        ) : null}
+        <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-1">
+          {vehicle.is_featured && vehicle.stock_status !== 'sold' ? (
+            <Badge className="h-5 w-fit border-0 bg-accent px-1.5 text-[9px] text-accent-foreground sm:text-[10px]">
+              Featured
+            </Badge>
+          ) : null}
+          {discountLabel && vehicle.stock_status !== 'sold' ? (
+            <Badge className="h-5 w-fit border-0 bg-[#101114] px-1.5 text-[9px] text-white sm:text-[10px]">
+              {discountLabel}
+            </Badge>
+          ) : null}
+          {deal && !discountLabel && dealPrice != null && vehicle.stock_status !== 'sold' ? (
+            <Badge className="h-5 w-fit border-0 bg-[#101114] px-1.5 text-[9px] text-white sm:text-[10px]">
+              Deal
+            </Badge>
+          ) : null}
+        </div>
         <Link href={`/vehicles/${vehicle.slug}`} className="min-w-0">
           <h3 className="line-clamp-2 text-[13px] font-bold leading-snug text-foreground transition-colors group-hover:text-accent sm:text-base">
             {vehicle.title}
@@ -103,9 +123,14 @@ export function VehicleCard({ vehicle, priority = false }: VehicleCardProps) {
         <div className="mt-auto space-y-2 border-t border-foreground/10 pt-2.5 sm:pt-4">
           <div className="min-w-0">
             <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
-              {hasPrice ? 'Export price' : 'Price'}
+              {dealPrice != null ? 'Deal price' : hasPrice ? 'Export price' : 'Price'}
             </span>
             <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
+            {dealPrice != null && listPrice != null && dealPrice < listPrice ? (
+              <span className="mt-0.5 block text-[11px] text-muted-foreground line-through sm:text-xs">
+                {vehicle.currency} {listPrice.toLocaleString()}
+              </span>
+            ) : null}
           </div>
           <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
             <a
