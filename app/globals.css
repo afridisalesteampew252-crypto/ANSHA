@@ -186,14 +186,17 @@
   }
 
   .page-band {
-    @apply border-b border-white/10 bg-[#101114] text-white;
+    @apply border-b bg-[#101114] text-white;
+    border-color: rgba(255, 255, 255, 0.1);
     background:
       radial-gradient(ellipse 60% 80% at 85% 0%, rgba(210, 30, 30, 0.32), transparent 48%),
       #101114;
   }
 
   .catalog-panel {
-    @apply rounded-2xl border border-accent/15 bg-card shadow-[0_12px_40px_rgba(16,17,20,0.06)];
+    @apply rounded-2xl border bg-card;
+    border-color: hsl(var(--accent) / 0.15);
+    box-shadow: 0 12px 40px rgba(16, 17, 20, 0.06);
   }
 
   .chip-market {
