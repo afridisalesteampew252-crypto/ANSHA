@@ -115,8 +115,12 @@ export default function AdminVehiclesPage() {
 
   return <div className="space-y-6">
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><h1 className="text-2xl font-bold tracking-tight">Vehicle inventory</h1><p className="text-sm text-muted-foreground">Manage stock locations, availability, operational lifecycle, and publishing.</p></div>
-      <Button asChild><Link href="/admin/vehicles/new"><Plus className="h-4 w-4" />Add vehicle</Link></Button>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Catalog</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight">Vehicle inventory</h1>
+        <p className="text-sm text-muted-foreground">Manage stock locations, availability, operational lifecycle, and publishing.</p>
+      </div>
+      <Button asChild variant="accent"><Link href="/admin/vehicles/new"><Plus className="h-4 w-4" />Add vehicle</Link></Button>
     </div>
 
     <div className="relative max-w-md">
@@ -130,13 +134,13 @@ export default function AdminVehiclesPage() {
     </div>
 
     <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Vehicle stock locations">
-      <button onClick={() => setOrigin('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>All stock ({vehicles.length})</button>
-      {STOCK_ORIGINS.map((item) => <button key={item.value} onClick={() => setOrigin(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>{item.label} ({vehicles.filter((vehicle) => vehicle.stock_origin === item.value).length})</button>)}
+      <button onClick={() => setOrigin('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === 'all' ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>All stock ({vehicles.length})</button>
+      {STOCK_ORIGINS.map((item) => <button key={item.value} onClick={() => setOrigin(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === item.value ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>{item.label} ({vehicles.filter((vehicle) => vehicle.stock_origin === item.value).length})</button>)}
     </nav>
 
     <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Vehicle lifecycle stages">
-      <button onClick={() => setStage('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>All stages</button>
-      {LIFECYCLE_STAGES.map((item) => <button key={item.value} onClick={() => setStage(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>{item.label} ({vehicles.filter((vehicle) => (vehicle.lifecycle_stage || 'unassigned') === item.value).length})</button>)}
+      <button onClick={() => setStage('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === 'all' ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>All stages</button>
+      {LIFECYCLE_STAGES.map((item) => <button key={item.value} onClick={() => setStage(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${stage === item.value ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>{item.label} ({vehicles.filter((vehicle) => (vehicle.lifecycle_stage || 'unassigned') === item.value).length})</button>)}
     </nav>
 
     {loading ? <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : filtered.length === 0 ? <div className="rounded-xl border border-dashed py-16 text-center"><Car className="mx-auto h-10 w-10 text-muted-foreground/30" /><p className="mt-3 text-sm text-muted-foreground">{query.trim() ? 'No vehicles match this search.' : 'No vehicles in this stock location.'}</p></div> :

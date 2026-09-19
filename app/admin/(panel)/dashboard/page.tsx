@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase/client';
 import { inquiryStatusLabels } from '@/lib/site-config';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import type { OpsAnalyticsSummary } from '@/lib/ops-analytics';
+import { cn } from '@/lib/utils';
 
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
@@ -24,6 +25,74 @@ const money = (value: number, currency = 'AED') => new Intl.NumberFormat('en-AE'
 const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice'].includes(invoice.document_type) && invoice.status !== 'cancelled';
 const rangeFrom = () => format(subMonths(new Date(), 5), 'yyyy-MM-01');
 const rangeTo = () => format(new Date(), 'yyyy-MM-dd');
+
+function KpiCard({
+  label,
+  value,
+  icon: Icon,
+  loading,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  icon: typeof CircleDollarSign;
+  loading: boolean;
+  tone?: 'default' | 'accent' | 'ink';
+}) {
+  return (
+    <Card className={cn(
+      'overflow-hidden border-border/80 shadow-sm',
+      tone === 'accent' && 'border-accent/25 bg-gradient-to-br from-accent/[0.07] to-card',
+      tone === 'ink' && 'border-[#101114]/15 bg-gradient-to-br from-[#101114]/[0.04] to-card dark:from-white/[0.04]'
+    )}>
+      <CardContent className="flex items-center justify-between gap-3 p-5">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="mt-1.5 truncate text-2xl font-black tracking-tight">{loading ? '—' : value}</p>
+        </div>
+        <span className={cn(
+          'grid h-11 w-11 shrink-0 place-items-center rounded-xl',
+          tone === 'accent' ? 'bg-accent text-white' : tone === 'ink' ? 'bg-[#101114] text-white dark:bg-white dark:text-[#101114]' : 'bg-accent/10 text-accent'
+        )}>
+          <Icon className="h-5 w-5" />
+        </span>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatLink({
+  href,
+  label,
+  value,
+  icon: Icon,
+  loading,
+  warn,
+}: {
+  href: string;
+  label: string;
+  value: string | number;
+  icon: typeof Package;
+  loading: boolean;
+  warn?: boolean;
+}) {
+  return (
+    <Link href={href} className="group block h-full">
+      <Card className={cn(
+        'h-full border-border/80 transition-all hover:border-accent/30 hover:shadow-md',
+        warn && 'border-amber-400/40 bg-amber-50/40 dark:bg-amber-950/20'
+      )}>
+        <CardContent className="flex items-center justify-between gap-3 p-4 sm:p-5">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{loading ? '—' : value}</p>
+          </div>
+          <Icon className={cn('h-6 w-6 shrink-0 text-accent transition group-hover:scale-105', warn && 'text-amber-600')} />
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
 
 export default function AdminDashboardPage() {
   const [counts, setCounts] = useState({ parts: 0, vehicles: 0, customers: 0, inquiries: 0, unreadChats: 0, portalUsers: 0 });
@@ -168,116 +237,89 @@ export default function AdminDashboardPage() {
   ].filter((card) => card.label !== 'Portal logins' || isOps || card.value != null);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Operations dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Finance, inventory origin mix, portal access, and inquiry performance.
-            {analytics?.sales.scope === 'own_book' ? ' Showing your customer book.' : ''}
-          </p>
+    <div className="mx-auto max-w-7xl space-y-8">
+      <section className="admin-dash-hero overflow-hidden rounded-2xl border border-border/80 px-5 py-5 sm:px-6 sm:py-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">At a glance</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Operations dashboard</h2>
+            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
+              Finance, stock, and inbox signals in one place.
+              {analytics?.sales.scope === 'own_book' ? ' Showing your customer book.' : ''}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="accent" size="sm"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />New invoice</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link href="/admin/analytics">Analytics</Link></Button>
+            {isOps ? <Button asChild variant="outline" size="sm"><Link href="/admin/remittances"><WalletCards className="h-4 w-4" />Funds</Link></Button> : null}
+            {isOps ? <Button asChild variant="outline" size="sm"><Link href="/admin/offers"><Megaphone className="h-4 w-4" />Deals</Link></Button> : null}
+            <Button asChild variant="outline" size="sm"><Link href="/admin/customers"><KeyRound className="h-4 w-4" />Portal</Link></Button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline"><Link href="/admin/analytics">Analytics</Link></Button>
-          <Button asChild variant="outline"><Link href="/admin/customers">Customer SOA</Link></Button>
-          <Button asChild variant="outline"><Link href="/admin/customers"><KeyRound className="h-4 w-4" />Enable portal</Link></Button>
-          {isOps ? <Button asChild variant="outline"><Link href="/admin/offers"><Megaphone className="h-4 w-4" />PWA deals</Link></Button> : null}
-          {isOps ? <Button asChild variant="outline"><Link href="/admin/remittances"><WalletCards className="h-4 w-4" />Record funds</Link></Button> : null}
-          <Button asChild variant="accent"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />New invoice</Link></Button>
-        </div>
-      </div>
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: analytics?.sales.scope === 'own_book' ? 'Your invoiced · 6 months' : 'Invoiced · 6 months', value: money(totals.invoiced, currency), icon: CircleDollarSign },
-          { label: isOps ? 'Funds received' : 'Outstanding AR', value: isOps ? money(totals.received, currency) : money(totals.outstanding, currency), icon: isOps ? WalletCards : CircleDollarSign },
-          { label: isOps ? 'Outstanding AR' : 'Open requests', value: isOps ? money(totals.outstanding, currency) : String(analytics?.requests.open ?? '—'), icon: isOps ? CircleDollarSign : ClipboardList },
-          { label: 'Unread team messages', value: String(counts.unreadChats), icon: Inbox },
-        ].map((card) => (
-          <Card key={card.label}>
-            <CardContent className="flex items-center justify-between p-5">
-              <div>
-                <p className="text-sm text-muted-foreground">{card.label}</p>
-                <p className="mt-1 text-2xl font-bold">{loading ? '—' : card.value}</p>
-              </div>
-              <span className="rounded-xl bg-accent/10 p-3 text-accent"><card.icon className="h-5 w-5" /></span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Money · 6 months</h3>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard
+            label={analytics?.sales.scope === 'own_book' ? 'Your invoiced' : 'Invoiced'}
+            value={money(totals.invoiced, currency)}
+            icon={CircleDollarSign}
+            loading={loading}
+            tone="accent"
+          />
+          <KpiCard
+            label={isOps ? 'Funds received' : 'Outstanding AR'}
+            value={isOps ? money(totals.received, currency) : money(totals.outstanding, currency)}
+            icon={isOps ? WalletCards : CircleDollarSign}
+            loading={loading}
+            tone="ink"
+          />
+          <KpiCard
+            label={isOps ? 'Outstanding AR' : 'Open requests'}
+            value={isOps ? money(totals.outstanding, currency) : String(analytics?.requests.open ?? '—')}
+            icon={isOps ? CircleDollarSign : ClipboardList}
+            loading={loading}
+          />
+          <KpiCard
+            label="Unread team chat"
+            value={String(counts.unreadChats)}
+            icon={Inbox}
+            loading={loading}
+          />
+        </div>
+      </section>
 
       {(analytics?.requests || analytics?.purchase) ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Link href="/admin/requests">
-            <Card className="h-full transition-shadow hover:shadow-md">
-              <CardContent className="flex items-center justify-between p-5">
-                <div>
-                  <p className="text-sm text-muted-foreground">Open requests</p>
-                  <p className="mt-1 text-3xl font-bold">{loading ? '—' : analytics?.requests.open ?? 0}</p>
-                </div>
-                <ClipboardList className="h-7 w-7 text-accent" />
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/admin/requests">
-            <Card className="h-full transition-shadow hover:shadow-md">
-              <CardContent className="flex items-center justify-between p-5">
-                <div>
-                  <p className="text-sm text-muted-foreground">Overdue requests</p>
-                  <p className="mt-1 text-3xl font-bold">{loading ? '—' : analytics?.requests.overdue ?? 0}</p>
-                </div>
-                <Inbox className="h-7 w-7 text-accent" />
-              </CardContent>
-            </Card>
-          </Link>
-          {isOps && analytics?.purchase ? (
-            <>
-              <Link href="/admin/purchase-orders">
-                <Card className="h-full transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-center justify-between p-5">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Open purchase orders</p>
-                      <p className="mt-1 text-3xl font-bold">{loading ? '—' : analytics.purchase.open_pos}</p>
-                    </div>
-                    <Truck className="h-7 w-7 text-accent" />
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="/admin/inventory/receive">
-                <Card className="h-full transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-center justify-between p-5">
-                    <div>
-                      <p className="text-sm text-muted-foreground">GRNs · period</p>
-                      <p className="mt-1 text-3xl font-bold">{loading ? '—' : analytics.purchase.grn_in_range}</p>
-                    </div>
-                    <PackagePlus className="h-7 w-7 text-accent" />
-                  </CardContent>
-                </Card>
-              </Link>
-            </>
-          ) : null}
-        </div>
+        <section className="space-y-3">
+          <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Workflow</h3>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatLink href="/admin/requests" label="Open requests" value={analytics?.requests.open ?? 0} icon={ClipboardList} loading={loading} />
+            <StatLink href="/admin/requests" label="Overdue requests" value={analytics?.requests.overdue ?? 0} icon={Inbox} loading={loading} warn={(analytics?.requests.overdue ?? 0) > 0} />
+            {isOps && analytics?.purchase ? (
+              <>
+                <StatLink href="/admin/purchase-orders" label="Open POs" value={analytics.purchase.open_pos} icon={Truck} loading={loading} />
+                <StatLink href="/admin/inventory/receive" label="GRNs · period" value={analytics.purchase.grn_in_range} icon={PackagePlus} loading={loading} />
+              </>
+            ) : null}
+          </div>
+        </section>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {operationalCards.map((card) => (
-          <Link key={card.label} href={card.href}>
-            <Card className="h-full transition-shadow hover:shadow-md">
-              <CardContent className="flex items-center justify-between p-5">
-                <div>
-                  <p className="text-sm text-muted-foreground">{card.label}</p>
-                  <p className="mt-1 text-3xl font-bold">{loading ? '—' : card.value}</p>
-                </div>
-                <card.icon className="h-7 w-7 text-accent" />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <section className="space-y-3">
+        <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Catalog &amp; people</h3>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          {operationalCards.map((card) => (
+            <StatLink key={card.label} href={card.href} label={card.label} value={card.value} icon={card.icon} loading={loading} />
+          ))}
+        </div>
+      </section>
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <Card>
-          <CardHeader>
+        <Card className="border-border/80 shadow-sm">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">{isOps ? 'Invoiced versus received' : 'Invoiced by month'}</CardTitle>
             <CardDescription>
               {isOps
@@ -299,8 +341,8 @@ export default function AdminDashboardPage() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
+        <Card className="border-border/80 shadow-sm">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Stock position</CardTitle>
             <CardDescription>Parts and vehicles by operational status.</CardDescription>
           </CardHeader>
@@ -319,8 +361,8 @@ export default function AdminDashboardPage() {
       </div>
 
       {analytics?.sales.by_month?.some((row) => row.tax_invoice_count || row.commercial_invoice_count) ? (
-        <Card>
-          <CardHeader>
+        <Card className="border-border/80 shadow-sm">
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg">Invoices by type</CardTitle>
             <CardDescription>Tax versus commercial invoice counts by month.</CardDescription>
           </CardHeader>
@@ -340,8 +382,8 @@ export default function AdminDashboardPage() {
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader>
+      <Card className="border-border/80 shadow-sm">
+        <CardHeader className="pb-2">
           <CardTitle className="text-lg">Stock by origin</CardTitle>
           <CardDescription>Where inventory sits — Dubai (UAE), Japan, Singapore, China, Thailand, Taiwan.</CardDescription>
         </CardHeader>
@@ -358,9 +400,9 @@ export default function AdminDashboardPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <Card className="border-border/80 shadow-sm">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="text-lg">Recent inquiries</CardTitle>
               <CardDescription>Latest customer messages requiring attention.</CardDescription>
@@ -376,14 +418,16 @@ export default function AdminDashboardPage() {
           ) : recentInquiries.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">No inquiries yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="divide-y divide-border/70">
               {recentInquiries.map((inquiry) => (
-                <div key={inquiry.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
+                <div key={inquiry.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{inquiry.customer_name}</p>
+                    <p className="truncate text-sm font-semibold">{inquiry.customer_name}</p>
                     <p className="truncate text-sm text-muted-foreground">{inquiry.message}</p>
                   </div>
-                  <span className="ml-4 shrink-0 text-xs text-muted-foreground">{inquiryStatusLabels[inquiry.status] || inquiry.status}</span>
+                  <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+                    {inquiryStatusLabels[inquiry.status] || inquiry.status}
+                  </span>
                 </div>
               ))}
             </div>

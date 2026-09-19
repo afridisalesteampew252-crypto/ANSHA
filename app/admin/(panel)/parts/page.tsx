@@ -56,9 +56,16 @@ export default function AdminPartsPage() {
   }
 
   return <div className="space-y-6">
-    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold tracking-tight">Parts inventory</h1><p className="text-sm text-muted-foreground">Manage worldwide stock locations, quantities, publishing, and sold records.</p></div><Button asChild><Link href="/admin/parts/new"><Plus className="h-4 w-4" />Add part</Link></Button></div>
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Catalog</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight">Parts inventory</h1>
+        <p className="text-sm text-muted-foreground">Manage worldwide stock locations, quantities, publishing, and sold records.</p>
+      </div>
+      <Button asChild variant="accent"><Link href="/admin/parts/new"><Plus className="h-4 w-4" />Add part</Link></Button>
+    </div>
     <div className="relative max-w-xl"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, reference, OEM or part number" className="pl-10" /></div>
-    <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Parts stock locations"><button onClick={() => setOrigin('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === 'all' ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>All stock ({parts.length})</button>{STOCK_ORIGINS.map((item) => <button key={item.value} onClick={() => setOrigin(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === item.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card'}`}>{item.label} ({parts.filter((part) => part.stock_origin === item.value).length})</button>)}</nav>
+    <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Parts stock locations"><button onClick={() => setOrigin('all')} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === 'all' ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>All stock ({parts.length})</button>{STOCK_ORIGINS.map((item) => <button key={item.value} onClick={() => setOrigin(item.value)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-semibold ${origin === item.value ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'}`}>{item.label} ({parts.filter((part) => part.stock_origin === item.value).length})</button>)}</nav>
 
     {loading ? <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div> : filtered.length === 0 ? <Card><CardContent className="py-16 text-center"><Wrench className="mx-auto h-10 w-10 text-muted-foreground/30" /><p className="mt-3 text-sm text-muted-foreground">No parts found.</p></CardContent></Card> : <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">{filtered.map((part) => {
       const cover = part.part_photos?.find((photo) => photo.is_cover) || part.part_photos?.[0];

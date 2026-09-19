@@ -16,6 +16,7 @@ import type { AdminProfile } from '@/lib/types';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
+import { AdminMarketChrome } from '@/components/admin/admin-market-chrome';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
@@ -204,10 +205,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 className={cn(
                   'flex min-h-10 items-center rounded-lg text-sm font-medium transition-colors',
                   mobile || !collapsed ? 'gap-3 px-3 py-2.5' : 'justify-center px-2 py-2.5',
-                  active ? 'bg-accent/10 text-accent' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  active
+                    ? 'bg-accent/12 text-accent shadow-[inset_3px_0_0_hsl(var(--accent))]'
+                    : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
                 )}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <item.icon className={cn('h-5 w-5 shrink-0', active && 'text-accent')} />
                 <span className={cn('flex min-w-0 flex-1 items-center justify-between gap-2', !mobile && collapsed && 'sr-only')}>
                   <span className="truncate">{item.label}</span>
                   {item.href === '/admin/chat' && chatUnread > 0 ? (
@@ -223,15 +226,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
-    <div className="flex min-h-screen min-w-0 bg-secondary/20">
-      <aside className={cn('relative hidden shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
-        <div className={cn('flex h-24 items-center border-b border-border', collapsed ? 'justify-center px-2' : 'px-4')}>
+    <div className="admin-shell flex min-h-screen min-w-0">
+      <aside className={cn('admin-sidebar relative hidden shrink-0 flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
+        <div className={cn('flex h-24 items-center border-b border-border/80', collapsed ? 'justify-center px-2' : 'px-4')}>
           <Link href="/admin/dashboard" className="flex min-w-0 items-center" aria-label="ANSHA operations dashboard">
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
           </Link>
         </div>
         {navigation()}
-        <div className="space-y-2 border-t border-border p-3">
+        <div className="space-y-2 border-t border-border/80 p-3">
           {!collapsed && <div className="flex items-center justify-between px-2"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Appearance</span><ThemeToggle /></div>}
           {collapsed && <div className="flex justify-center"><ThemeToggle /></div>}
           <AdminProfileMenu compact={collapsed} profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
@@ -242,32 +245,77 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {mobileOpen && <>
-        <button className="fixed inset-0 z-[60] bg-black/45 md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close admin menu overlay" />
-        <aside className="fixed inset-y-0 left-0 z-[70] flex w-[min(86vw,20rem)] flex-col border-r bg-card shadow-2xl md:hidden">
-          <div className="flex h-20 items-center justify-between border-b px-3">
+        <button className="fixed inset-0 z-[60] bg-[#0b0c0f]/50 md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close admin menu overlay" />
+        <aside className="admin-sidebar fixed inset-y-0 left-0 z-[70] flex w-[min(86vw,20rem)] flex-col border-r border-border/80 shadow-2xl md:hidden">
+          <div className="flex h-20 items-center justify-between border-b border-border/80 px-3">
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className="h-16 w-auto max-w-[220px] object-contain" />
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close admin menu"><X className="h-5 w-5" /></Button>
           </div>
           {navigation(true)}
-          <div className="space-y-2 border-t p-3"><div className="flex items-center justify-between px-2"><span className="text-xs text-muted-foreground">Appearance</span><ThemeToggle /></div><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
+          <div className="space-y-2 border-t border-border/80 p-3"><div className="flex items-center justify-between px-2"><span className="text-xs text-muted-foreground">Appearance</span><ThemeToggle /></div><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
         </aside>
       </>}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex h-20 items-center justify-between border-b border-border bg-card/95 px-3 backdrop-blur md:hidden">
-          <div className="flex min-w-0 items-center gap-2"><Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Open admin menu"><Menu className="h-6 w-6" /></Button><div className="min-w-0"><p className="text-[10px] uppercase tracking-wider text-muted-foreground">ANSHA operations</p><h1 className="truncate text-base font-bold">{pageTitle}</h1></div></div>
-          <div className="flex shrink-0 items-center"><AdminNotificationCenter userId={profile.id} /><ThemeToggle /><AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
-        </header>
-
-        <header className="hidden h-20 items-center justify-between border-b border-border bg-card/95 px-6 backdrop-blur md:flex xl:px-8">
-          <div><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ANSHA operations</p><h1 className="text-xl font-bold tracking-tight">{pageTitle}</h1></div>
-          <div className="flex items-center gap-2">
-            <DropdownMenu><DropdownMenuTrigger asChild><Button variant="accent"><Plus className="h-4 w-4" />Quick add</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-56"><DropdownMenuLabel>Create or import</DropdownMenuLabel><DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/customers">Customer / enable portal</Link></DropdownMenuItem><DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem>{!isSales ? <DropdownMenuItem asChild><Link href="/admin/offers">Deal + PWA push</Link></DropdownMenuItem> : null}<DropdownMenuSeparator /><DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem></DropdownMenuContent></DropdownMenu>
-            <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
-            <AdminNotificationCenter userId={profile.id} />
-            <ThemeToggle /><AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
+        <header className="admin-topbar sticky top-0 z-40 border-b border-border/80 backdrop-blur md:hidden">
+          <div className="flex h-14 items-center justify-between px-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Open admin menu"><Menu className="h-6 w-6" /></Button>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">ANSHA ops</p>
+                <h1 className="truncate text-base font-bold">{pageTitle}</h1>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5">
+              <AdminNotificationCenter userId={profile.id} />
+              <ThemeToggle />
+              <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
+            </div>
+          </div>
+          <div className="border-t border-border/60 px-3 py-2">
+            <AdminMarketChrome compact />
           </div>
         </header>
+
+        <header className="admin-topbar hidden min-h-[4.5rem] items-center gap-4 border-b border-border/80 px-6 py-3 backdrop-blur md:flex xl:px-8">
+          <div className="min-w-0 shrink-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">ANSHA operations</p>
+            <h1 className="text-xl font-bold tracking-tight">{pageTitle}</h1>
+          </div>
+          <div className="mx-2 hidden min-w-0 flex-1 justify-center lg:flex xl:mx-6">
+            <AdminMarketChrome className="w-full max-w-3xl justify-center" />
+          </div>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="accent"><Plus className="h-4 w-4" />Quick add</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Create or import</DropdownMenuLabel>
+                <DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/admin/customers">Customer / enable portal</Link></DropdownMenuItem>
+                {!isSales ? <DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem> : null}
+                {!isSales ? <DropdownMenuItem asChild><Link href="/admin/offers">Deal + PWA push</Link></DropdownMenuItem> : null}
+                {!isSales ? (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild><Link href="/admin/imports">Bulk import</Link></DropdownMenuItem>
+                  </>
+                ) : null}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
+            <AdminNotificationCenter userId={profile.id} />
+            <ThemeToggle />
+            <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
+          </div>
+        </header>
+
+        <div className="admin-topbar hidden border-b border-border/60 px-6 py-2 lg:hidden md:block xl:px-8">
+          <AdminMarketChrome compact />
+        </div>
 
         <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-5 md:p-6 xl:p-8">{children}</main>
       </div>
