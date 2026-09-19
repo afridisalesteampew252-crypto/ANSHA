@@ -481,7 +481,7 @@ export default function AddPartPage() {
             </div>
             <div className="flex items-center gap-2">
               <Switch id="is-featured" checked={isFeatured} onCheckedChange={setIsFeatured} />
-              <Label htmlFor="is-featured">Feature on homepage</Label>
+              <Label htmlFor="is-featured">Boost in home rotation + featured badge</Label>
             </div>
           </CardContent>
         </Card>

@@ -21,6 +21,14 @@ export function vehicleHasAuctionSheet(photos: VehiclePhoto[] | null | undefined
   return (photos || []).some((photo) => photo.is_auction_sheet);
 }
 
+/** Admin-only auction sheet images (filename A.* / is_auction_sheet). */
+export function auctionSheetPhotos(photos: VehiclePhoto[] | null | undefined): VehiclePhoto[] {
+  return (photos || [])
+    .filter((photo) => photo.is_auction_sheet)
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
+
 export function pickVehicleCoverPhoto(photos: VehiclePhoto[] | null | undefined): VehiclePhoto | undefined {
   const publicPhotos = publicVehiclePhotos(photos);
   return publicPhotos.find((photo) => photo.is_cover) || publicPhotos[0];

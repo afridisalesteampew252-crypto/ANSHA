@@ -33,6 +33,14 @@ import { ExportMarketsStrip } from '@/components/public/export-markets-strip';
 import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
+import {
+  HOME_FEATURED_PARTS_LIMIT,
+  HOME_FEATURED_PARTS_POOL,
+  HOME_FEATURED_VEHICLES_LIMIT,
+  HOME_FEATURED_VEHICLES_POOL,
+  msUntilNextFeaturedRotation,
+  selectRotatingFeatured,
+} from '@/lib/featured-rotation';
 import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import type { BlogPostWithCategory, Category, PartWithRelations, VehicleWithPhotos } from '@/lib/types';
@@ -57,26 +65,62 @@ export default function HomePageClient() {
 
   useEffect(() => {
     let active = true;
-    (async () => {
-      const [catRes, featuredRes, latestRes, vehiclesRes, postsRes] = await Promise.all([
+    let rotationTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const loadHome = async (isInitial: boolean) => {
+      if (isInitial) setLoading(true);
+
+      const [catRes, partsPoolRes, vehiclesPoolRes, postsRes] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order').limit(12),
-        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).eq('stock_status', 'available').eq('is_featured', true).order('created_at', { ascending: false }).limit(8),
-        supabase.from('parts').select('*, categories(*), part_photos(*), part_compatibility(*)').eq('is_published', true).eq('stock_status', 'available').order('created_at', { ascending: false }).limit(8),
-        supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true).eq('stock_status', 'available').eq('is_featured', true).order('created_at', { ascending: false }).limit(4),
-        supabase.from('blog_posts').select('*, blog_categories(*)').eq('status', 'published').order('published_at', { ascending: false, nullsFirst: false }).limit(3),
+        supabase
+          .from('parts')
+          .select('*, categories(*), part_photos(*), part_compatibility(*)')
+          .eq('is_published', true)
+          .eq('stock_status', 'available')
+          .order('is_featured', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(HOME_FEATURED_PARTS_POOL),
+        supabase
+          .from('vehicles')
+          .select('*, vehicle_photos(*)')
+          .eq('is_published', true)
+          .eq('stock_status', 'available')
+          .order('is_featured', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(HOME_FEATURED_VEHICLES_POOL),
+        supabase
+          .from('blog_posts')
+          .select('*, blog_categories(*)')
+          .eq('status', 'published')
+          .order('published_at', { ascending: false, nullsFirst: false })
+          .limit(3),
       ]);
       if (!active) return;
 
+      const nowMs = Date.now();
+      const partsPool = (partsPoolRes.data || []) as unknown as PartWithRelations[];
+      const vehiclesPool = (vehiclesPoolRes.data || []) as unknown as VehicleWithPhotos[];
+
       setCategories((catRes.data || []) as Category[]);
-      setFeaturedParts((featuredRes.data || []) as unknown as PartWithRelations[]);
-      setLatestParts((latestRes.data || []) as unknown as PartWithRelations[]);
-      setFeaturedVehicles((vehiclesRes.data || []) as unknown as VehicleWithPhotos[]);
+      setFeaturedParts(selectRotatingFeatured(partsPool, HOME_FEATURED_PARTS_LIMIT, nowMs));
+      setLatestParts(partsPool.slice(0, HOME_FEATURED_PARTS_LIMIT));
+      setFeaturedVehicles(selectRotatingFeatured(vehiclesPool, HOME_FEATURED_VEHICLES_LIMIT, nowMs));
       setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
       setLoading(false);
-    })();
+
+      // Refresh at the next 10-minute boundary so open tabs advance without a full reload.
+      if (rotationTimer) clearTimeout(rotationTimer);
+      const delay = msUntilNextFeaturedRotation(nowMs) + 250;
+      rotationTimer = setTimeout(() => {
+        void loadHome(false);
+      }, delay);
+    };
+
+    void loadHome(true);
 
     return () => {
       active = false;
+      if (rotationTimer) clearTimeout(rotationTimer);
     };
   }, []);
 
@@ -291,7 +335,7 @@ export default function HomePageClient() {
             <div>
               <span className="eyebrow">Ready to ship</span>
               <h2>Featured parts</h2>
-              <p>Current published inventory selected by the ANSHA team.</p>
+              <p>Published stock that rotates every 10 minutes — team-featured items stay prioritized in the pool.</p>
             </div>
             <Link href="/parts" className="section-link">View catalog <ArrowRight className="h-4 w-4" /></Link>
           </div>

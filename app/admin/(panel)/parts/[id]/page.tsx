@@ -535,7 +535,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
-              <Label>Feature on homepage</Label>
+              <Label>Boost in home rotation + featured badge</Label>
             </div>
           </CardContent>
         </Card>

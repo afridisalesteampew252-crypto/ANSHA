@@ -113,4 +113,6 @@ Live bank OAuth (beyond CSV stub), email newsletter list separate from push, aut
 
 Stop after the current module until the next one is approved.
 
+Done (home featured rotation): display-only 10-minute rotation of home featured parts (8) and vehicles (4) via `lib/featured-rotation.ts` + home client pool query. Admin `is_featured` unchanged for badges / pool boost. No cron, no migration.
+
 Checkpoint: [CURRENT_STATE](./CURRENT_STATE.md).

@@ -25,6 +25,7 @@ Hosting: Vercel project `anshanew`
 
 ### Public
 - Catalog: `/parts`, `/vehicles`, categories, home finder, inquiry + part request
+- Home featured parts (8) + vehicles (4): **10-minute deterministic rotation** over published/available inventory (`lib/featured-rotation.ts`). Admin `is_featured` still sets badges and boosts pool membership; no cron / no DB flag writes.
 - Deals: `/offers`, inventory-linked discounts on cards + detail (`site_offers.vehicle_id` / `part_id`)
 - Markets: `/markets/[code]` + admin Trade config (rates / freight / import policy)
 - Cart + favorites (localStorage inquiry list)

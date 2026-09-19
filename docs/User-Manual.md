@@ -65,7 +65,7 @@ Staff ERP is **not** a native app rewrite. Store shells (if used) wrap the publi
 
 | Page | Path | Use it to |
 |---|---|---|
-| Home | `/` | Start search; jump to parts or vehicles; featured deals strip |
+| Home | `/` | Start search; jump to parts or vehicles; featured parts/vehicles rotate every 10 minutes across published stock |
 | Parts | `/parts`, `/parts/[slug]` | Browse / open a part; inquire or request sourcing; deal price if linked |
 | Vehicles | `/vehicles`, `/vehicles/[slug]` | Browse / open a vehicle; inquire; deal price if linked |
 | Categories | `/categories`, `/categories/[slug]` | Shop by category |

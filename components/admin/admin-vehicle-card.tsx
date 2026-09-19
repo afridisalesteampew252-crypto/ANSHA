@@ -1,15 +1,19 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
+import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import Link from 'next/link';
-import { BookmarkPlus, Car, CheckCircle2, Edit, Eye, Trash2 } from 'lucide-react';
+import { BookmarkPlus, Car, CheckCircle2, ChevronLeft, ChevronRight, Edit, Eye, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
-import { pickVehicleCoverPhoto, vehicleHasAuctionSheet } from '@/lib/vehicle-photos';
-import type { StockStatus, VehicleWithPhotos } from '@/lib/types';
+import { auctionSheetPhotos, pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
+import type { StockStatus, VehiclePhoto, VehicleWithPhotos } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 const statusClass: Record<StockStatus, string> = {
   available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -25,6 +29,9 @@ const stageClass: Record<LifecycleStage, string> = {
   sold: 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900',
 };
 
+const auctionSheetBadgeClass =
+  'cursor-pointer border-amber-500/50 bg-amber-500/10 font-normal text-amber-800 hover:bg-amber-500/20 dark:text-amber-200';
+
 type Props = {
   vehicle: VehicleWithPhotos;
   fieldAgent: boolean;
@@ -33,6 +40,88 @@ type Props = {
   onDelete?: (vehicle: VehicleWithPhotos) => void;
   stockOriginOptions?: ReadonlyArray<{ value: string; label: string }>;
 };
+
+function AuctionSheetTag({
+  photos,
+  vehicleTitle,
+  className,
+}: {
+  photos: VehiclePhoto[] | null | undefined;
+  vehicleTitle: string;
+  className?: string;
+}) {
+  const sheets = auctionSheetPhotos(photos);
+  const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState(0);
+
+  if (sheets.length === 0) return null;
+
+  const active = sheets[Math.min(index, sheets.length - 1)];
+  const photoUrl = publicVehicleImageUrl(active.storage_path);
+
+  function openSheet(event: MouseEvent | KeyboardEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIndex(0);
+    setOpen(true);
+  }
+
+  return (
+    <>
+      <Badge
+        role="button"
+        tabIndex={0}
+        variant="outline"
+        title="Open auction sheet"
+        aria-label="Open auction sheet"
+        className={cn(auctionSheetBadgeClass, className)}
+        onClick={openSheet}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') openSheet(event);
+        }}
+      >
+        Auction sheet
+      </Badge>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="h-[92vh] max-w-[min(96vw,72rem)] overflow-hidden border-white/10 bg-black/95 p-0">
+          <DialogTitle className="sr-only">
+            {vehicleTitle} — Auction sheet{sheets.length > 1 ? ` ${index + 1} of ${sheets.length}` : ''}
+          </DialogTitle>
+          <div className="relative flex h-full min-h-[50vh] w-full flex-col items-center justify-center p-4 pb-16 sm:p-8 sm:pb-20">
+            <img
+              src={photoUrl}
+              alt={`${vehicleTitle} auction sheet`}
+              className="max-h-full max-w-full object-contain"
+            />
+            {sheets.length > 1 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIndex((current) => (current - 1 + sheets.length) % sheets.length)}
+                  className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                  aria-label="Previous auction sheet"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIndex((current) => (current + 1) % sheets.length)}
+                  className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                  aria-label="Next auction sheet"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+                <p className="absolute bottom-4 text-xs text-white/80">
+                  {index + 1} / {sheets.length}
+                </p>
+              </>
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export function AdminVehicleCard({
   vehicle,
@@ -43,14 +132,11 @@ export function AdminVehicleCard({
   stockOriginOptions,
 }: Props) {
   const cover = pickVehicleCoverPhoto(vehicle.vehicle_photos);
-  const photoUrl = cover
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${cover.storage_path}`
-    : '';
+  const photoUrl = cover ? publicVehicleImageUrl(cover.storage_path) : '';
   const status = vehicle.stock_status || 'available';
   const stage = (vehicle.lifecycle_stage || 'unassigned') as LifecycleStage;
   const canReserve = status === 'available';
   const stockRef = vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference';
-  const hasAuctionSheet = vehicleHasAuctionSheet(vehicle.vehicle_photos);
 
   if (fieldAgent) {
     return (
@@ -73,11 +159,7 @@ export function AdminVehicleCard({
                   {lifecycleStageLabel(stage)}
                 </Badge>
                 <StockOriginBadge origin={vehicle.stock_origin} compact />
-                {hasAuctionSheet ? (
-                  <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 font-normal text-amber-800 dark:text-amber-200">
-                    Auction sheet
-                  </Badge>
-                ) : null}
+                <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
               </div>
               <h2 className="mt-2 truncate text-base font-bold tracking-tight">{vehicle.title}</h2>
               <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">
@@ -137,11 +219,7 @@ export function AdminVehicleCard({
               <Badge className={stageClass[stage]}>{lifecycleStageLabel(stage)}</Badge>
               <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
               {vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}
-              {hasAuctionSheet ? (
-                <Badge variant="outline" className="border-amber-500/50 bg-amber-500/10 text-amber-800 dark:text-amber-200">
-                  Auction sheet
-                </Badge>
-              ) : null}
+              <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
             </div>
             <h2 className="mt-2 truncate font-bold">{vehicle.title}</h2>
             <p className="text-xs text-muted-foreground">{stockRef}</p>
