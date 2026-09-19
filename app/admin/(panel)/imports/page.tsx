@@ -91,7 +91,6 @@ export default function ImportsPage() {
     const imageEntries = Object.entries(archive).filter(([name]) => /\.(jpe?g|png|webp|gif|avif)$/i.test(name));
     const lookupColumn = entity === 'vehicles' ? 'chassis_number' : 'part_number';
     const table = entity === 'vehicles' ? 'vehicles' : 'parts';
-    const photoTable = entity === 'vehicles' ? 'vehicle_photos' : 'part_photos';
     const bucket = entity === 'vehicles' ? 'vehicle-images' : 'part-images';
     const { data: records } = await supabase.from(table).select(`id,${lookupColumn}`);
     const recordMap = new Map(((records || []) as Array<Record<string, string | null>>).map((record) => [normalize(String(record[lookupColumn] || '')), record.id]));
@@ -106,12 +105,24 @@ export default function ImportsPage() {
         const optimized = await compressCatalogImage(new Blob([bytes], { type: sourceType }), `${entity}-${key}-${index + 1}`);
         const storagePath = `${recordId}/${Date.now()}-${optimized.file.name}`;
         const { error: uploadError } = await supabase.storage.from(bucket).upload(storagePath, optimized.file, { contentType: 'image/webp', cacheControl: '31536000' }); if (uploadError) throw uploadError;
-        const auctionSheet = entity === 'vehicles' && isAuctionSheetFilename(filename);
-        const photoPayload =
-          entity === 'vehicles'
-            ? { vehicle_id: recordId, storage_path: storagePath, is_cover: false, is_auction_sheet: auctionSheet, sort_order: 99 }
-            : { part_id: recordId, storage_path: storagePath, is_cover: false, sort_order: 99 };
-        const { error: photoError } = await supabase.from(photoTable).insert(photoPayload); if (photoError) throw photoError;
+        if (entity === 'vehicles') {
+          const { error: photoError } = await supabase.from('vehicle_photos').insert({
+            vehicle_id: recordId,
+            storage_path: storagePath,
+            is_cover: false,
+            is_auction_sheet: isAuctionSheetFilename(filename),
+            sort_order: 99,
+          });
+          if (photoError) throw photoError;
+        } else {
+          const { error: photoError } = await supabase.from('part_photos').insert({
+            part_id: recordId,
+            storage_path: storagePath,
+            is_cover: false,
+            sort_order: 99,
+          });
+          if (photoError) throw photoError;
+        }
         success += 1; results.push({ import_job_id: job.id, row_number: index + 1, record_key: key, status: 'success', payload: { filename } });
       } catch (error) { results.push({ import_job_id: job.id, row_number: index + 1, record_key: key, status: 'failed', message: error instanceof Error ? error.message : 'Image import failed', payload: { filename } }); }
     }
