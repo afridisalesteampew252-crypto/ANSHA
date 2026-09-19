@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CarFront, Home, MessageCircle, Search, Wrench } from 'lucide-react';
+import { CarFront, Home, MessageCircle, Tag, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { siteConfig } from '@/lib/site-config';
 
@@ -10,7 +10,7 @@ const items = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/parts', label: 'Parts', icon: Wrench },
   { href: '/vehicles', label: 'Vehicles', icon: CarFront },
-  { href: '/categories', label: 'Search', icon: Search },
+  { href: '/offers', label: 'Deals', icon: Tag },
 ];
 
 export function MobileBottomNav() {

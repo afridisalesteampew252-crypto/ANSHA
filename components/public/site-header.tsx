@@ -17,6 +17,7 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
+  Tag,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,10 +33,10 @@ const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/parts', label: 'Parts' },
   { href: '/vehicles', label: 'Vehicles' },
+  { href: '/offers', label: 'Deals' },
   { href: '/categories', label: 'Categories' },
   { href: '/about', label: 'About' },
   { href: '/blog', label: 'Insights' },
-  { href: '/offers', label: 'Offers' },
   { href: '/contact', label: 'Contact' },
 ];
 
@@ -181,8 +182,18 @@ export function SiteHeader() {
               <span className="hidden lg:inline">Browse categories</span>
               <span className="lg:hidden">Categories</span>
             </Link>
-            <nav className="flex h-full min-w-0 flex-1 items-center gap-0.5 lg:gap-1">
-              {navLinks.map((link) => {
+            <Link
+              href="/offers"
+              className={cn(
+                'flex h-full shrink-0 items-center gap-1.5 border-r border-border/80 px-3 text-sm font-bold lg:px-4',
+                pathname.startsWith('/offers') ? 'text-accent' : 'text-foreground hover:text-accent'
+              )}
+            >
+              <Tag className="h-4 w-4 text-accent" />
+              Deals
+            </Link>
+            <nav className="flex h-full min-w-0 flex-1 items-center gap-0.5 lg:gap-1" aria-label="Primary">
+              {navLinks.filter((link) => link.href !== '/offers').map((link) => {
                 const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                 if (link.href === '/vehicles') return (
                   <div key={link.href} className="group relative flex h-full shrink-0 items-center">
@@ -229,7 +240,17 @@ export function SiteHeader() {
                 </div>
               </form>
               <nav className="grid gap-1">
-                {navLinks.map((link) => {
+                <Link
+                  href="/offers"
+                  className={cn(
+                    'flex min-h-12 items-center justify-between rounded-xl px-4 py-3 text-sm font-bold',
+                    pathname.startsWith('/offers') ? 'bg-accent text-white' : 'bg-accent/10 text-accent hover:bg-accent/15'
+                  )}
+                >
+                  <span className="inline-flex items-center gap-2"><Tag className="h-4 w-4" />Deals &amp; offers</span>
+                  <ChevronRight className="h-4 w-4 opacity-50" />
+                </Link>
+                {navLinks.filter((link) => link.href !== '/offers').map((link) => {
                   const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                   return (
                     <Link key={link.href} href={link.href} className={cn(

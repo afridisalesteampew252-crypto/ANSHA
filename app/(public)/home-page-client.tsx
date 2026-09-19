@@ -19,6 +19,7 @@ import {
   Send,
   ShieldCheck,
   Ship,
+  Tag,
   Wrench,
 } from 'lucide-react';
 import { CatalogImage } from '@/components/public/catalog-image';
@@ -124,6 +125,24 @@ export default function HomePageClient() {
               </Button>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="border-b border-accent/20 bg-accent text-white">
+        <div className="container-page flex min-w-0 flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center sm:py-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
+              <Tag className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/75">Featured</p>
+              <h2 className="text-base font-extrabold tracking-tight sm:text-lg">Current deals &amp; export offers</h2>
+              <p className="mt-0.5 text-sm text-white/75">Published promotions from ANSHA — always linked here.</p>
+            </div>
+          </div>
+          <Button asChild className="h-11 w-full shrink-0 rounded-full bg-white px-5 text-sm font-bold text-accent hover:bg-white/90 sm:w-auto">
+            <Link href="/offers">View deals <ArrowRight className="h-4 w-4" /></Link>
+          </Button>
         </div>
       </section>
 
