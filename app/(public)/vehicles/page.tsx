@@ -59,6 +59,7 @@ export default function VehiclesPage() {
         </div>
       </section>
 
+      <div className="surface-cool border-t border-accent/10">
       <div className="container-page min-w-0 overflow-x-clip py-8 sm:py-12">
         <nav className="mb-5 min-w-0 max-w-full overflow-x-hidden" aria-label="Vehicle stock locations">
           <div className="flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -86,7 +87,7 @@ export default function VehiclesPage() {
           </div>
         </nav>
 
-        <div className="mb-8 grid gap-3 rounded-2xl border border-border bg-card p-3 shadow-sm md:grid-cols-[1fr_200px_200px_auto] md:p-4">
+        <div className="mb-8 grid gap-3 catalog-panel p-3 md:grid-cols-[1fr_180px_180px_auto] md:p-4 lg:grid-cols-[1fr_200px_200px_auto]">
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -179,6 +180,7 @@ export default function VehiclesPage() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </>
   );

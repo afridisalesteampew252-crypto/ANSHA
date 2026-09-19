@@ -71,8 +71,8 @@ export default function MarketDestinationPage() {
   const fx = config?.exchange_rate_note?.trim();
 
   return (
-    <div className="bg-background">
-      <section className="border-b border-border bg-[#101114] text-white">
+    <div>
+      <section className="page-band">
         <div className="container-page py-8 sm:py-10">
           <Link href="/" className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white">
             <ArrowLeft className="h-4 w-4" /> Back to home
@@ -87,8 +87,8 @@ export default function MarketDestinationPage() {
               unoptimized
             />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400">{market.region}</p>
-              <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{market.name}</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">{market.region}</p>
+              <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">{market.name}</h1>
               <p className="mt-2 max-w-2xl text-sm text-white/70">
                 Import guidance from Dubai, plus vehicles buyers in this market often request.
               </p>
@@ -97,9 +97,10 @@ export default function MarketDestinationPage() {
         </div>
       </section>
 
-      <section className="container-page grid gap-8 py-8 sm:py-10 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="surface-mist border-t border-accent/10">
+      <div className="container-page grid gap-8 py-8 sm:py-10 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="catalog-panel p-5 sm:p-6">
             <div className="flex items-center gap-2 text-accent">
               <Ship className="h-4 w-4" />
               <h2 className="text-sm font-bold uppercase tracking-wide">Import policy</h2>
@@ -109,13 +110,13 @@ export default function MarketDestinationPage() {
           {(freight || fx) && (
             <div className="grid gap-4 sm:grid-cols-2">
               {freight ? (
-                <div className="rounded-2xl border border-border bg-card p-5">
+                <div className="catalog-panel p-5">
                   <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Freight</h3>
                   <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{freight}</p>
                 </div>
               ) : null}
               {fx ? (
-                <div className="rounded-2xl border border-border bg-card p-5">
+                <div className="catalog-panel p-5">
                   <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Exchange / pricing notes</h3>
                   <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{fx}</p>
                 </div>
@@ -147,11 +148,12 @@ export default function MarketDestinationPage() {
               ))}
             </div>
           ) : (
-            <p className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            <p className="rounded-2xl border border-dashed border-accent/20 bg-card p-6 text-sm text-muted-foreground">
               No published vehicles yet. Browse the catalog or WhatsApp ANSHA with your destination brief.
             </p>
           )}
         </div>
+      </div>
       </section>
     </div>
   );

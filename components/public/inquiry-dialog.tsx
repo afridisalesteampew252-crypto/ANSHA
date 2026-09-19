@@ -22,7 +22,7 @@ interface InquiryDialogProps {
   partId?: string;
   partName?: string;
   triggerLabel?: string;
-  triggerVariant?: 'default' | 'outline';
+  triggerVariant?: 'default' | 'outline' | 'accent';
   triggerSize?: 'default' | 'sm' | 'lg';
 }
 

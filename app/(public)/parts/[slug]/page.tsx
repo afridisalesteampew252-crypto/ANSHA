@@ -137,7 +137,29 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
   };
 
   return (
-    <div className="container-page py-8">
+    <div className="overflow-x-clip">
+      <div className="page-band">
+        <div className="container-page py-5 sm:py-6">
+          <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/55">
+            <Link href="/" className="shrink-0 hover:text-white">Home</Link>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+            <Link href="/parts" className="shrink-0 hover:text-white">Parts</Link>
+            {part.categories && (
+              <>
+                <ChevronRight className="h-4 w-4 shrink-0" />
+                <Link href={`/categories/${part.categories.slug}`} className="shrink-0 hover:text-white">
+                  {part.categories.name}
+                </Link>
+              </>
+            )}
+            <ChevronRight className="h-4 w-4 shrink-0" />
+            <span className="truncate font-medium text-white">{part.name}</span>
+          </nav>
+        </div>
+      </div>
+
+      <div className="surface-mist">
+      <div className="container-page py-8 sm:py-10">
       <JsonLd
         data={{
           '@context': 'https://schema.org',
@@ -158,28 +180,12 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           },
         }}
       />
-      {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground">Home</Link>
-        <ChevronRight className="h-4 w-4" />
-        <Link href="/parts" className="hover:text-foreground">Parts</Link>
-        {part.categories && (
-          <>
-            <ChevronRight className="h-4 w-4" />
-            <Link href={`/categories/${part.categories.slug}`} className="hover:text-foreground">
-              {part.categories.name}
-            </Link>
-          </>
-        )}
-        <ChevronRight className="h-4 w-4" />
-        <span className="text-foreground font-medium truncate">{part.name}</span>
-      </nav>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
         {/* Image gallery */}
         <div className="space-y-4">
           <div
-            className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-xl border border-border bg-gradient-to-br from-secondary/80 to-background shadow-sm"
+            className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl border border-accent/15 bg-card shadow-sm"
             onClick={() => photoUrl && setLightboxOpen(true)}
             role={photoUrl ? 'button' : undefined}
             tabIndex={photoUrl ? 0 : undefined}
@@ -273,12 +279,12 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
             {part.categories && (
               <Link
                 href={`/categories/${part.categories.slug}`}
-                className="text-sm font-medium text-primary hover:underline"
+                className="text-sm font-medium text-accent hover:underline"
               >
                 {part.categories.name}
               </Link>
             )}
-            <h1 className="mt-1 text-2xl font-bold tracking-tight md:text-3xl">{part.name}</h1>
+            <h1 className="mt-1 font-display text-2xl font-black tracking-tight md:text-3xl">{part.name}</h1>
             <p className="mt-2 font-mono text-sm text-muted-foreground">{part.part_code}</p>
           </div>
 
@@ -291,10 +297,10 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           ) : null}
 
           {/* Key info grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {part.oem_number && (
-              <div className="flex items-center gap-2 rounded-lg border border-border p-3">
-                <Hash className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+                <Hash className="h-4 w-4 text-accent" />
                 <div>
                   <p className="text-xs text-muted-foreground">OEM Number</p>
                   <p className="text-sm font-medium font-mono">{part.oem_number}</p>
@@ -302,8 +308,8 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
               </div>
             )}
             {part.part_number && (
-              <div className="flex items-center gap-2 rounded-lg border border-border p-3">
-                <Tag className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+                <Tag className="h-4 w-4 text-accent" />
                 <div>
                   <p className="text-xs text-muted-foreground">Part Number</p>
                   <p className="text-sm font-medium font-mono">{part.part_number}</p>
@@ -311,8 +317,8 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
               </div>
             )}
             {part.brand && (
-              <div className="flex items-center gap-2 rounded-lg border border-border p-3">
-                <Box className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+                <Box className="h-4 w-4 text-accent" />
                 <div>
                   <p className="text-xs text-muted-foreground">Brand</p>
                   <div className="mt-0.5">
@@ -321,8 +327,8 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2 rounded-lg border border-border p-3">
-              <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+              <ShieldCheck className="h-4 w-4 text-accent" />
               <div>
                 <p className="text-xs text-muted-foreground">Condition</p>
                 <p className="text-sm font-medium capitalize">{conditionLabels[part.condition] || part.condition}</p>
@@ -331,17 +337,17 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           </div>
 
           {/* Price & availability */}
-          <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-4">
+          <div className="flex items-center justify-between rounded-2xl border border-accent/20 bg-[#101114] p-4 text-white sm:p-5">
             <div>
               {dealPrice != null ? (
                 <>
-                  <p className="text-xs text-muted-foreground">Deal price</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Deal price</p>
                   <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
-                    <p className="text-2xl font-bold">
+                    <p className="text-2xl font-black">
                       {part.currency} {dealPrice.toLocaleString()}
                     </p>
                     {hasListPrice ? (
-                      <span className="text-sm text-muted-foreground line-through">
+                      <span className="text-sm text-white/40 line-through">
                         {part.currency} {part.price!.toLocaleString()}
                       </span>
                     ) : null}
@@ -349,27 +355,27 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
                 </>
               ) : hasListPrice ? (
                 <>
-                  <p className="text-xs text-muted-foreground">Price</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Price</p>
+                  <p className="text-2xl font-black">
                     {part.currency} {part.price!.toLocaleString()}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-xs text-muted-foreground">Price</p>
-                  <p className="text-2xl font-bold">Ask Price</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Price</p>
+                  <p className="text-2xl font-black">Ask Price</p>
                 </>
               )}
             </div>
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">Availability</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Availability</p>
               {part.quantity > 0 ? (
-                <div className="flex items-center gap-1.5 text-emerald-600">
+                <div className="flex items-center gap-1.5 text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" />
                   <span className="text-sm font-medium">In Stock</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-white/50">
                   <XCircle className="h-4 w-4" />
                   <span className="text-sm font-medium">Out of Stock</span>
                 </div>
@@ -410,7 +416,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
                 partName={part.name}
                 triggerLabel="Send Inquiry"
                 triggerSize="lg"
-                triggerVariant="default"
+                triggerVariant="accent"
               />
               <WhatsAppButton
                 message={`Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`}
@@ -434,10 +440,10 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
 
       {/* Compatibility */}
       {compatibilities.length > 0 && (
-        <Card className="mt-8">
+        <Card className="mt-8 border-accent/15">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Car className="h-5 w-5 text-primary" />
+              <Car className="h-5 w-5 text-accent" />
               Vehicle Compatibility
             </CardTitle>
           </CardHeader>
@@ -537,14 +543,16 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
       {relatedParts.length > 0 && (
         <div className="mt-12">
           <Separator className="mb-8" />
-          <h2 className="mb-6 text-xl font-bold tracking-tight">Related Parts</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="mb-6 font-display text-xl font-black tracking-tight">Related Parts</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {relatedParts.map((rp) => (
               <PartCard key={rp.id} part={rp} />
             ))}
           </div>
         </div>
       )}
+      </div>
+      </div>
     </div>
   );
 }

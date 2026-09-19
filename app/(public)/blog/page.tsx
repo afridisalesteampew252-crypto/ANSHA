@@ -111,31 +111,28 @@ export default function BlogPage() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="border-b border-border bg-secondary/40">
-        <div className="container-page py-10">
-          <div className="mb-1.5 flex items-center gap-2">
-            <span className="accent-bar" />
-            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Knowledge Base</p>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Ansha Trading Blog</h1>
-          <p className="mt-2 text-muted-foreground max-w-2xl">
+      <section className="page-band">
+        <div className="container-page py-10 sm:py-14">
+          <p className="eyebrow text-accent mb-1.5">Knowledge Base</p>
+          <h1 className="font-display text-2xl font-black tracking-tight md:text-4xl">Ansha Trading Blog</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
             Automotive parts guides, Japanese vehicle knowledge, export information and industry insights.
           </p>
-          <div className="mt-5 relative max-w-xl">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative mt-5 max-w-xl">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
             <Input
               type="search"
               placeholder="Search articles, parts guides, export information..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="border-white/15 bg-white/10 pl-10 text-white placeholder:text-white/40"
             />
           </div>
         </div>
       </section>
 
-      <div className="container-page py-8">
+      <div className="surface-cool border-t border-accent/10">
+      <div className="container-page py-8 sm:py-10">
         {/* Featured article */}
         {!loading && featured && selectedCategory === 'all' && !searchQuery && (
           <div className="mb-8">
@@ -148,10 +145,10 @@ export default function BlogPage() {
           <div className="mb-6 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                 selectedCategory === 'all'
-                  ? 'bg-foreground text-background'
-                  : 'border border-border bg-background text-muted-foreground hover:text-foreground'
+                  ? 'bg-accent text-white'
+                  : 'border border-border bg-card text-muted-foreground hover:text-foreground'
               }`}
             >
               All Articles
@@ -160,10 +157,10 @@ export default function BlogPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.slug)}
-                className={`whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                   selectedCategory === cat.slug
-                    ? 'bg-foreground text-background'
-                    : 'border border-border bg-background text-muted-foreground hover:text-foreground'
+                    ? 'bg-accent text-white'
+                    : 'border border-border bg-card text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {cat.name}
@@ -184,7 +181,7 @@ export default function BlogPage() {
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div className="flex flex-col items-center py-20 text-center">
+          <div className="flex flex-col items-center rounded-3xl border border-dashed border-accent/20 bg-card py-20 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-border">
               <FileText className="h-8 w-8 text-muted-foreground/40" />
             </div>
@@ -222,6 +219,7 @@ export default function BlogPage() {
             )}
           </>
         )}
+      </div>
       </div>
     </div>
   );

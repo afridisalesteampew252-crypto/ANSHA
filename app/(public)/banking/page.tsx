@@ -32,16 +32,16 @@ const intermediaryBank = [
 
 export default function BankingPage() {
   return (
-    <div className="bg-background">
-      <section className="border-b border-border bg-foreground text-background">
+    <div>
+      <section className="page-band">
         <div className="container-page py-12 sm:py-16 lg:py-20">
           <div className="max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-background/15 bg-background/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-background/70">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white/70">
               <Landmark className="h-3.5 w-3.5 text-accent" />
               Official payment details
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">Banking Information</h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-background/65 sm:text-lg">
+            <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">Banking Information</h1>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">
               Use the account details below for approved payments to Ansha Trading Co. L.L.C-FZ.
               Include your invoice number or order reference with every transfer.
             </p>
@@ -49,7 +49,8 @@ export default function BankingPage() {
         </div>
       </section>
 
-      <main className="container-page py-10 sm:py-14 lg:py-16">
+      <main className="surface-mist border-t border-accent/10">
+      <div className="container-page py-10 sm:py-14 lg:py-16">
         <div className="mb-8 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="rounded-xl border border-amber-300/60 bg-amber-50 p-4 text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100">
             <div className="flex gap-3">
@@ -109,12 +110,13 @@ export default function BankingPage() {
           </section>
         </div>
 
-        <section className="mt-8 rounded-2xl border border-border bg-secondary/25 p-5 sm:p-6">
+        <section className="mt-8 rounded-2xl border border-accent/15 bg-card p-5 sm:p-6">
           <h2 className="text-lg font-bold">Payment reference</h2>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground">
             Add the ANSHA invoice number, proforma invoice number, or sales order reference to the transfer. Send the payment confirmation to {siteConfig.email} or WhatsApp {siteConfig.whatsappDisplay} so the accounts team can reconcile it promptly.
           </p>
         </section>
+      </div>
       </main>
     </div>
   );

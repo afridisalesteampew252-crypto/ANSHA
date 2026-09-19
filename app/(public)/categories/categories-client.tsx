@@ -46,10 +46,11 @@ export default function CategoriesPageClient() {
         <div className="container-page relative"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Catalog departments</span><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Browse parts by category</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">Explore ANSHA’s published inventory by automotive system and product family.</p></div>
       </section>
 
+      <div className="surface-mist border-t border-accent/10">
       <div className="container-page py-8 sm:py-12">
         <div className="relative mb-8 max-w-xl">
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search categories" className="h-12 rounded-full bg-card pl-11 shadow-sm" />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search categories" className="h-12 rounded-full border-accent/15 bg-card pl-11 shadow-sm" />
         </div>
 
         {loading ? (
@@ -82,8 +83,9 @@ export default function CategoriesPageClient() {
             })}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-border py-20 text-center"><Boxes className="mx-auto h-10 w-10 text-muted-foreground/25" /><h2 className="mt-4 text-xl font-extrabold">No category matches that search</h2><button onClick={() => setQuery('')} className="mt-3 text-sm font-bold text-accent">Clear search</button></div>
+          <div className="rounded-3xl border border-dashed border-border bg-card/60 py-20 text-center"><Boxes className="mx-auto h-10 w-10 text-muted-foreground/25" /><h2 className="mt-4 text-xl font-extrabold">No category matches that search</h2><button onClick={() => setQuery('')} className="mt-3 text-sm font-bold text-accent">Clear search</button></div>
         )}
+      </div>
       </div>
     </>
   );

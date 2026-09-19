@@ -108,18 +108,19 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
 
   return (
     <div className="overflow-x-clip">
-      <div className="border-b border-border bg-gradient-to-b from-secondary/60 to-background">
+      <div className="page-band">
         <div className="container-page py-5 sm:py-6">
-          <nav className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-            <Link href="/" className="shrink-0 hover:text-foreground">Home</Link>
+          <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/55">
+            <Link href="/" className="shrink-0 hover:text-white">Home</Link>
             <ChevronRight className="h-4 w-4 shrink-0" />
-            <Link href="/vehicles" className="shrink-0 hover:text-foreground">Vehicles</Link>
+            <Link href="/vehicles" className="shrink-0 hover:text-white">Vehicles</Link>
             <ChevronRight className="h-4 w-4 shrink-0" />
-            <span className="truncate font-medium text-foreground">{vehicle.title}</span>
+            <span className="truncate font-medium text-white">{vehicle.title}</span>
           </nav>
         </div>
       </div>
 
+      <div className="surface-cool">
       <div className="container-page py-8 sm:py-10">
       <JsonLd
         data={{
@@ -170,9 +171,9 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
             />
           ) : null}
 
-          <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 p-4 sm:p-5">
+          <div className="flex items-center justify-between rounded-2xl border border-accent/20 bg-[#101114] p-4 text-white sm:p-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
                 {dealPrice != null ? 'Deal price' : 'Export price'}
               </p>
               {dealPrice != null ? (
@@ -181,7 +182,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
                     {vehicle.currency} {dealPrice.toLocaleString()}
                   </p>
                   {hasPrice ? (
-                    <span className="text-sm text-muted-foreground line-through">
+                    <span className="text-sm text-white/40 line-through">
                       {vehicle.currency} {vehicle.price!.toLocaleString()}
                     </span>
                   ) : null}
@@ -195,8 +196,8 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
               )}
             </div>
             <div className="text-right">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</p>
-              <div className="mt-1 flex items-center justify-end gap-1.5 text-emerald-600">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Status</p>
+              <div className="mt-1 flex items-center justify-end gap-1.5 text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-sm font-semibold">Available</span>
               </div>
@@ -206,8 +207,8 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           {specs.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
               {specs.map((spec) => (
-                <div key={spec.label} className="flex min-w-0 items-center gap-2.5 rounded-lg border border-border p-3">
-                  <spec.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div key={spec.label} className="flex min-w-0 items-center gap-2.5 rounded-xl border border-accent/15 bg-card p-3">
+                  <spec.icon className="h-4 w-4 shrink-0 text-accent" />
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">{spec.label}</p>
                     <p className="truncate text-sm font-medium">{spec.value}</p>
@@ -219,7 +220,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
 
           {vehicle.location && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4 shrink-0" />
+              <MapPin className="h-4 w-4 shrink-0 text-accent" />
               <span>Location: {vehicle.location}</span>
             </div>
           )}
@@ -245,7 +246,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
               <InquiryDialog
                 triggerLabel="Send Inquiry"
                 triggerSize="lg"
-                triggerVariant="default"
+                triggerVariant="accent"
               />
               <WhatsAppButton
                 message={`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`}
@@ -256,7 +257,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           </div>
 
           {vehicle.description && (
-            <div>
+            <div className="rounded-2xl border border-accent/10 bg-card p-4 sm:p-5">
               <h2 className="mb-2 text-sm font-semibold">Description</h2>
               <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {vehicle.description}
@@ -264,6 +265,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
             </div>
           )}
         </div>
+      </div>
       </div>
       </div>
     </div>

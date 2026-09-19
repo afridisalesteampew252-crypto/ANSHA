@@ -127,59 +127,59 @@ export default function HomePageClient() {
         </div>
       </section>
 
-      <section className="surface-warm border-b border-accent/10 py-8 sm:py-10">
+      <section className="surface-featured border-b border-accent/15 py-8 sm:py-10">
         <div className="container-page min-w-0">
           <form
             onSubmit={goToParts}
-            className="grid gap-3 rounded-[22px] border border-accent/15 bg-card p-4 shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
+            className="grid gap-3 rounded-[22px] border border-accent/20 bg-[#101114] p-4 text-white shadow-[0_16px_48px_rgba(16,17,20,0.28)] sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
           >
             <div className="lg:col-span-4">
-              <span className="eyebrow">Catalog finder</span>
-              <h2 className="mt-1.5 text-lg font-extrabold tracking-tight sm:text-xl">Find the right part faster</h2>
+              <span className="eyebrow text-accent">Catalog finder</span>
+              <h2 className="mt-1.5 text-lg font-extrabold tracking-tight text-white sm:text-xl">Find the right part faster</h2>
             </div>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Part, OEM or chassis</span>
+              <span className="mb-1.5 block text-xs font-bold text-white/55">Part, OEM or chassis</span>
               <span className="relative block">
-                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="e.g. 81110-52J30, NHP10, headlight"
-                  className="h-12 rounded-xl bg-secondary/40 pl-10"
+                  className="h-12 rounded-xl border-white/15 bg-white/10 pl-10 text-white placeholder:text-white/40"
                 />
               </span>
             </label>
             <label>
-              <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Manufacturer</span>
+              <span className="mb-1.5 block text-xs font-bold text-white/55">Manufacturer</span>
               <select
                 value={finderBrand}
                 onChange={(event) => setFinderBrand(event.target.value)}
-                className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                className="h-12 w-full rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white"
               >
-                <option value="all">All manufacturers</option>
+                <option value="all" className="text-foreground">All manufacturers</option>
                 {SUPPORTED_MANUFACTURERS.map((brand) => (
-                  <option key={brand} value={brand}>{brand}</option>
+                  <option key={brand} value={brand} className="text-foreground">{brand}</option>
                 ))}
               </select>
             </label>
             <label>
-              <span className="mb-1.5 block text-xs font-bold text-muted-foreground">Category</span>
+              <span className="mb-1.5 block text-xs font-bold text-white/55">Category</span>
               <select
                 value={finderCategory}
                 onChange={(event) => setFinderCategory(event.target.value)}
-                className="h-12 w-full rounded-xl border border-input bg-background px-3 text-sm"
+                className="h-12 w-full rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white"
               >
-                <option value="all">All categories</option>
+                <option value="all" className="text-foreground">All categories</option>
                 {categories.map((category) => (
-                  <option key={category.id} value={category.slug}>{category.name}</option>
+                  <option key={category.id} value={category.slug} className="text-foreground">{category.name}</option>
                 ))}
               </select>
             </label>
             <Button type="submit" variant="accent" className="h-12 rounded-xl text-sm font-bold">
               <PackageSearch className="h-4 w-4" /> Search
             </Button>
-            <p className="flex items-center gap-2 text-[11px] text-muted-foreground lg:col-span-4">
-              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+            <p className="flex items-center gap-2 text-[11px] text-white/50 lg:col-span-4">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent" />
               Published ANSHA inventory only.
             </p>
           </form>

@@ -108,7 +108,7 @@ export function SiteHeader() {
       </div>
 
       <div className={cn(
-        'min-w-0 max-w-full overflow-x-clip border-b border-border bg-background transition-shadow',
+        'min-w-0 max-w-full overflow-x-clip border-b border-border/80 bg-[hsl(210_20%_97%)] transition-shadow dark:bg-background',
         scrolled && 'shadow-[0_8px_28px_rgba(15,23,42,0.08)]'
       )}>
         <div className="container-page flex h-[72px] min-w-0 items-center gap-2 sm:h-[84px] sm:gap-4 lg:h-[96px]">
@@ -166,30 +166,29 @@ export function SiteHeader() {
               <CountBadge count={cartCount} />
             </Link>
             <ThemeToggle className="h-11 w-11" />
-            <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+            <Button variant="ghost" size="icon" className="h-11 w-11 md:hidden" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
         </div>
 
-        <div className="lg:hidden">
-          <HeaderMarketStrip variant="bar" />
-        </div>
+        <HeaderMarketStrip />
 
-        <div className="hidden border-t border-border/70 lg:block">
-          <div className="container-page flex h-12 items-center gap-2 overflow-x-auto overscroll-x-contain touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Link href="/categories" className="flex h-full shrink-0 items-center gap-2 border-r border-border pr-5 text-sm font-bold">
-              <PackageSearch className="h-4 w-4 text-accent" />Browse categories
+        <div className="hidden border-t border-border/70 bg-secondary/40 md:block">
+          <div className="container-page flex h-11 items-center gap-1.5 overflow-x-auto overscroll-x-contain touch-pan-x lg:h-12 lg:gap-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Link href="/categories" className="flex h-full shrink-0 items-center gap-2 border-r border-border/80 pr-3 text-sm font-bold lg:pr-5">
+              <PackageSearch className="h-4 w-4 text-accent" />
+              <span className="hidden lg:inline">Browse categories</span>
+              <span className="lg:hidden">Categories</span>
             </Link>
-            <HeaderMarketStrip variant="inline" className="hidden min-w-0 flex-1 lg:flex" />
-            <nav className="ml-auto flex h-full min-w-0 shrink-0 items-center gap-1 pl-2">
+            <nav className="flex h-full min-w-0 flex-1 items-center gap-0.5 lg:gap-1">
               {navLinks.map((link) => {
                 const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                 if (link.href === '/vehicles') return (
                   <div key={link.href} className="group relative flex h-full shrink-0 items-center">
-                    <Link href="/vehicles" className={cn('relative flex h-full items-center gap-1 px-3 text-sm font-semibold transition-colors', active ? 'text-accent' : 'text-muted-foreground hover:text-foreground')}>
+                    <Link href="/vehicles" className={cn('relative flex h-full items-center gap-1 px-2.5 text-[13px] font-semibold transition-colors lg:px-3 lg:text-sm', active ? 'text-accent' : 'text-muted-foreground hover:text-foreground')}>
                       {link.label}<ChevronDown className="h-3.5 w-3.5" />
-                      {active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent" />}
+                      {active && <span className="absolute inset-x-2.5 bottom-0 h-0.5 rounded-full bg-accent lg:inset-x-3" />}
                     </Link>
                     <div className="invisible absolute left-0 top-full z-50 w-52 translate-y-2 rounded-xl border border-border bg-background p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
                       <Link href="/vehicles" className="block rounded-lg px-3 py-2 text-sm font-semibold hover:bg-secondary">All vehicle stock</Link>
@@ -199,17 +198,17 @@ export function SiteHeader() {
                 );
                 return (
                   <Link key={link.href} href={link.href} className={cn(
-                    'relative flex h-full shrink-0 items-center px-3 text-sm font-semibold transition-colors',
+                    'relative flex h-full shrink-0 items-center px-2.5 text-[13px] font-semibold transition-colors lg:px-3 lg:text-sm',
                     active ? 'text-accent' : 'text-muted-foreground hover:text-foreground'
                   )}>
                     {link.label}
-                    {active && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-accent" />}
+                    {active && <span className="absolute inset-x-2.5 bottom-0 h-0.5 rounded-full bg-accent lg:inset-x-3" />}
                   </Link>
                 );
               })}
             </nav>
-            <Button asChild variant="accent" size="sm" className="ml-3 shrink-0 rounded-full px-5">
-              <Link href="/contact">Request a quote</Link>
+            <Button asChild variant="accent" size="sm" className="ml-1 shrink-0 rounded-full px-3.5 lg:ml-3 lg:px-5">
+              <Link href="/contact"><span className="lg:hidden">Quote</span><span className="hidden lg:inline">Request a quote</span></Link>
             </Button>
           </div>
         </div>
@@ -217,10 +216,10 @@ export function SiteHeader() {
 
       {mobileOpen && (
         <>
-          <button className="fixed inset-0 z-[58] bg-black/45 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
+          <button className="fixed inset-0 z-[58] bg-black/45 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
           <div
             id="mobile-site-menu"
-            className="fixed left-0 right-0 top-[calc(4.5rem+2.25rem)] z-[60] max-h-[calc(100dvh-4.5rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[calc(5.25rem+2.25rem)] sm:max-h-[calc(100dvh-5.25rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] lg:hidden"
+            className="fixed left-0 right-0 top-[calc(4.5rem+2.25rem)] z-[60] max-h-[calc(100dvh-4.5rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[calc(5.25rem+2.25rem)] sm:max-h-[calc(100dvh-5.25rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] md:hidden"
           >
             <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch} className="md:hidden">

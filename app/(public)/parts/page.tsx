@@ -155,19 +155,20 @@ function PartsCatalog() {
         </div>
       </section>
 
+      <div className="surface-mist border-t border-accent/10">
       <div className="container-page py-7 sm:py-10">
         <form onSubmit={(event) => { event.preventDefault(); setParam('q', query); }} className="relative mb-5">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product, OEM number or part code" className="h-14 rounded-2xl bg-card pl-12 pr-28 text-base shadow-sm" />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product, OEM number or part code" className="h-14 rounded-2xl border-accent/15 bg-card pl-12 pr-28 text-base shadow-sm" />
           <Button type="submit" variant="accent" className="absolute right-1.5 top-1.5 h-11 rounded-xl px-5">Search</Button>
         </form>
 
         {activeFilters.length > 0 && <div className="mb-5 flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-muted-foreground">Active:</span>{activeFilters.map((filter) => <Badge key={filter.key} variant="secondary" className="gap-1.5 rounded-full px-3 py-1.5">{filter.label}<button onClick={() => setParam(filter.key, 'all')} aria-label={`Remove ${filter.label} filter`}><X className="h-3 w-3" /></button></Badge>)}</div>}
 
-        <div className="flex gap-7">
+        <div className="flex gap-5 lg:gap-7">
           <aside className="hidden w-64 shrink-0 lg:block">
-            <div className="sticky top-40 rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <div className="mb-6 flex items-center gap-2 border-b border-border pb-4"><Filter className="h-4 w-4 text-accent" /><h2 className="font-extrabold">Filter inventory</h2></div>
+            <div className="sticky top-48 catalog-panel p-5 lg:top-52">
+              <div className="mb-6 flex items-center gap-2 border-b border-accent/15 pb-4"><Filter className="h-4 w-4 text-accent" /><h2 className="font-extrabold">Filter inventory</h2></div>
               {filterControls}
             </div>
           </aside>
@@ -199,6 +200,7 @@ function PartsCatalog() {
             {totalPages > 1 && <div className="mt-9 flex items-center justify-center gap-3"><Button variant="outline" disabled={page <= 1} onClick={() => setParam('page', String(page - 1))}><ChevronLeft className="h-4 w-4" />Previous</Button><span className="text-xs font-bold text-muted-foreground">Page {page} of {totalPages}</span><Button variant="outline" disabled={page >= totalPages} onClick={() => setParam('page', String(page + 1))}>Next<ChevronRight className="h-4 w-4" /></Button></div>}
           </main>
         </div>
+      </div>
       </div>
     </>
   );

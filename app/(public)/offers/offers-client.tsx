@@ -47,6 +47,7 @@ export default function PublicOffersPage() {
           </p>
         </div>
       </section>
+      <div className="surface-featured border-t border-accent/10">
       <div className="container-page py-8 sm:py-12">
         {loading ? (
           <div className="space-y-3">
@@ -55,7 +56,7 @@ export default function PublicOffersPage() {
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <div className="rounded-3xl border border-dashed py-16 text-center">
+          <div className="rounded-3xl border border-dashed border-accent/20 bg-card py-16 text-center">
             <Tag className="mx-auto h-10 w-10 text-muted-foreground/30" />
             <h2 className="mt-4 text-xl font-extrabold">No live offers right now</h2>
             <p className="mt-1 text-sm text-muted-foreground">Check back soon or browse the parts catalog.</p>
@@ -77,7 +78,7 @@ export default function PublicOffersPage() {
               return (
                 <li
                   key={row.id}
-                  className="rounded-2xl border border-border bg-card p-5 shadow-sm transition duration-300 hover:border-accent/30 hover:shadow-md"
+                  className="catalog-panel p-5 transition duration-300 hover:border-accent/40 hover:shadow-md"
                 >
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 space-y-2">
@@ -117,6 +118,7 @@ export default function PublicOffersPage() {
             })}
           </ul>
         )}
+      </div>
       </div>
     </>
   );

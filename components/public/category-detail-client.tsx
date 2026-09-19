@@ -62,47 +62,53 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="container-page py-8">
-      <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground">Home</Link>
-        <ChevronRight className="h-4 w-4" />
-        <Link href="/categories" className="hover:text-foreground">Categories</Link>
-        <ChevronRight className="h-4 w-4" />
-        <span className="font-medium text-foreground">{category?.name}</span>
-      </nav>
-
-      <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-secondary/50">
-          <Package className="h-6 w-6 text-foreground" />
+    <div>
+      <section className="page-band">
+        <div className="container-page py-8 sm:py-10">
+          <nav className="mb-4 flex items-center gap-1.5 text-sm text-white/55">
+            <Link href="/" className="hover:text-white">Home</Link>
+            <ChevronRight className="h-4 w-4" />
+            <Link href="/categories" className="hover:text-white">Categories</Link>
+            <ChevronRight className="h-4 w-4" />
+            <span className="font-medium text-white">{category?.name}</span>
+          </nav>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/20">
+              <Package className="h-6 w-6 text-accent" />
+            </div>
+            <div>
+              <h1 className="font-display text-2xl font-black tracking-tight sm:text-3xl">{category?.name}</h1>
+              <p className="text-sm text-white/60">
+                {parts.length} part{parts.length !== 1 ? 's' : ''} available
+              </p>
+            </div>
+          </div>
+          {category?.description ? (
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">{category.description}</p>
+          ) : null}
         </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{category?.name}</h1>
-          <p className="text-muted-foreground">
-            {parts.length} part{parts.length !== 1 ? 's' : ''} available
-          </p>
+      </section>
+
+      <div className="surface-cool border-t border-accent/10">
+        <div className="container-page py-8 sm:py-10">
+          {parts.length === 0 ? (
+            <div className="flex flex-col items-center rounded-3xl border border-dashed border-border bg-card py-16 text-center">
+              <Package className="h-12 w-12 text-muted-foreground/30" />
+              <h3 className="mt-4 text-lg font-semibold">No parts in this category yet</h3>
+              <p className="mt-1 text-muted-foreground">Check back soon or browse other categories.</p>
+              <Link href="/parts" className="mt-4 font-medium text-accent hover:underline">
+                Browse all parts
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {parts.map((part) => (
+                <PartCard key={part.id} part={part} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
-      {category?.description ? (
-        <p className="mb-8 max-w-2xl text-muted-foreground">{category.description}</p>
-      ) : null}
-
-      {parts.length === 0 ? (
-        <div className="flex flex-col items-center py-16 text-center">
-          <Package className="h-12 w-12 text-muted-foreground/30" />
-          <h3 className="mt-4 text-lg font-semibold">No parts in this category yet</h3>
-          <p className="mt-1 text-muted-foreground">Check back soon or browse other categories.</p>
-          <Link href="/parts" className="mt-4 font-medium text-foreground hover:underline">
-            Browse all parts
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-          {parts.map((part) => (
-            <PartCard key={part.id} part={part} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
