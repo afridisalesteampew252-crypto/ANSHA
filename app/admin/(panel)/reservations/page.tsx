@@ -131,9 +131,11 @@ export default function ReservationsPage() {
     }
     const result = data as { invoice_id?: string; vehicle_id?: string } | null;
     toast.success('Vehicle reserved and proforma created.');
-    if (result?.invoice_id && !fieldAgent) {
+    if (result?.invoice_id) {
       router.push(`/admin/invoices/${result.invoice_id}`);
-    } else {
+      return;
+    }
+ else {
       await load();
       setVehicleId('');
     }

@@ -1,6 +1,6 @@
 export type PartCondition = 'new' | 'used' | 'refurbished' | 'for-parts';
 export type InquiryStatus = 'new' | 'read' | 'responded' | 'closed';
-export type AdminRole = 'admin' | 'staff' | 'sales' | 'freelancer' | 'manager';
+export type AdminRole = 'admin' | 'staff' | 'sales' | 'freelancer' | 'manager' | 'accounts';
 export type StockOrigin = 'japan' | 'dubai' | 'singapore' | 'china' | 'thailand' | 'taiwan';
 export type StockStatus = 'available' | 'reserved' | 'sold';
 export type LifecycleStage = 'unassigned' | 'auction' | 'yard' | 'port' | 'sold';

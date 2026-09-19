@@ -42,3 +42,6 @@ next-env.d.ts
 *.keystore
 *.jks
 .env*
+
+# Local one-off import working files
+.tmp-wa-parts/

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InvoicePrintDocument } from '@/components/invoices/invoice-print-document';
 import { siteConfig } from '@/lib/site-config';
+import { canManageReceivables, isFieldAgentRole } from '@/lib/admin-rbac';
 
 type Invoice = {
   id: string; invoice_number: string; customer_name: string; customer_company: string | null;
@@ -49,6 +50,8 @@ export default function InvoiceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [fieldAgent, setFieldAgent] = useState(false);
+  const [canFinance, setCanFinance] = useState(false);
   const [payment, setPayment] = useState({
     amount: '',
     payment_date: new Date().toISOString().slice(0, 10),
@@ -60,6 +63,12 @@ export default function InvoiceDetailPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle();
+      setFieldAgent(isFieldAgentRole(profile?.role));
+      setCanFinance(canManageReceivables(profile?.role));
+    }
     const [invoiceResult, itemResult, paymentResult] = await Promise.all([
       supabase.from('invoices').select('*').eq('id', params.id).maybeSingle(),
       supabase.from('invoice_items').select('*').eq('invoice_id', params.id).order('sort_order'),
@@ -84,12 +93,12 @@ export default function InvoiceDetailPage() {
   }, [invoice]);
 
   const updateStatus = async (status: string) => {
-    if (!invoice) return;
+    if (!invoice || fieldAgent) return;
     setBusy(true);
     const { error } = await supabase.from('invoices').update({ status }).eq('id', invoice.id);
     setBusy(false);
     if (error) return setMessage(error.message);
-    setMessage('Invoice status updated.');
+    setMessage(status === 'sent' ? 'Invoice marked sent / approved.' : 'Invoice status updated.');
     void load();
   };
 
@@ -160,6 +169,7 @@ export default function InvoiceDetailPage() {
   }
 
   const verificationUrl = `${siteConfig.url}/verify/invoice/${invoice.verification_code}`;
+  const canEditDraft = !fieldAgent || (invoice.document_type === 'proforma_invoice' && invoice.status === 'draft');
 
   return (
     <div className="invoice-detail-page mx-auto max-w-7xl space-y-6">
@@ -175,19 +185,26 @@ export default function InvoiceDetailPage() {
             </span>
           </div>
           <p className="text-sm text-muted-foreground">Issued {invoice.issue_date} · Due {invoice.due_date}</p>
+          {fieldAgent ? <p className="mt-1 text-xs text-muted-foreground">Draft proformas stay with you until accounts marks them sent.</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link href={`/admin/invoices/new?edit=${invoice.id}`}><Pencil className="h-4 w-4" />Edit</Link>
-          </Button>
+          {canEditDraft ? (
+            <Button asChild variant="outline">
+              <Link href={`/admin/invoices/new?edit=${invoice.id}`}><Pencil className="h-4 w-4" />Edit</Link>
+            </Button>
+          ) : null}
           <Button variant="outline" onClick={exportJson}><FileJson className="h-4 w-4" />Export JSON</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" />Print A4 / PDF</Button>
-          <Button onClick={() => setPaymentOpen((open) => !open)} disabled={invoice.status === 'cancelled' || invoice.balance_due <= 0}>
-            <Banknote className="h-4 w-4" />Record payment
-          </Button>
-          <Button variant="outline" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => void removeInvoice()}>
-            <Trash2 className="h-4 w-4" />Delete
-          </Button>
+          {canFinance ? (
+            <Button onClick={() => setPaymentOpen((open) => !open)} disabled={invoice.status === 'cancelled' || invoice.balance_due <= 0}>
+              <Banknote className="h-4 w-4" />Record payment
+            </Button>
+          ) : null}
+          {(canFinance || (fieldAgent && invoice.status === 'draft')) ? (
+            <Button variant="outline" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => void removeInvoice()}>
+              <Trash2 className="h-4 w-4" />Delete
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -200,20 +217,29 @@ export default function InvoiceDetailPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Invoice status</CardTitle></CardHeader>
             <CardContent>
-              <select
-                value={invoice.status}
-                onChange={(event) => void updateStatus(event.target.value)}
-                disabled={busy}
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-              >
-                <option value="draft">Draft</option>
-                <option value="sent">Sent</option>
-                <option value="overdue">Overdue</option>
-                <option value="cancelled">Cancelled</option>
-                {invoice.status === 'partially_paid' && <option value="partially_paid">Partially paid</option>}
-                {invoice.status === 'paid' && <option value="paid">Paid</option>}
-              </select>
-              <p className="mt-2 text-xs text-muted-foreground">Paid and partially paid statuses update automatically from payments.</p>
+              {fieldAgent ? (
+                <>
+                  <p className="rounded-md border bg-secondary/40 px-3 py-2 text-sm capitalize">{effectiveStatus.replace('_', ' ')}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">Only accounts (or ops) can mark drafts as sent.</p>
+                </>
+              ) : (
+                <>
+                  <select
+                    value={invoice.status}
+                    onChange={(event) => void updateStatus(event.target.value)}
+                    disabled={busy}
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="cancelled">Cancelled</option>
+                    {invoice.status === 'partially_paid' && <option value="partially_paid">Partially paid</option>}
+                    {invoice.status === 'paid' && <option value="paid">Paid</option>}
+                  </select>
+                  <p className="mt-2 text-xs text-muted-foreground">Mark draft → sent to approve. Paid and partially paid update automatically from payments.</p>
+                </>
+              )}
             </CardContent>
           </Card>
 

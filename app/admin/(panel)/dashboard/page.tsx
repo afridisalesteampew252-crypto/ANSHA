@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowRight, Bell, Car, CircleDollarSign, ClipboardList, Inbox, KeyRound, Megaphone, Package, PackagePlus, Plus, Truck, Users, WalletCards,
+  ArrowRight, Bell, Car, CircleDollarSign, ClipboardList, Inbox, KeyRound, Megaphone, Package, PackagePlus, Plus, Truck, Users, WalletCards, BookmarkPlus, ReceiptText, MessageCircle,
 } from 'lucide-react';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase/client';
 import { inquiryStatusLabels } from '@/lib/site-config';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import type { OpsAnalyticsSummary } from '@/lib/ops-analytics';
+import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { cn } from '@/lib/utils';
 
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
@@ -95,7 +96,8 @@ function StatLink({
 }
 
 export default function AdminDashboardPage() {
-  const [counts, setCounts] = useState({ parts: 0, vehicles: 0, customers: 0, inquiries: 0, unreadChats: 0, portalUsers: 0, pushSubscribers: 0 });
+  const [role, setRole] = useState<string | null>(null);
+  const [counts, setCounts] = useState({ parts: 0, vehicles: 0, customers: 0, inquiries: 0, unreadChats: 0, portalUsers: 0, pushSubscribers: 0, draftProformas: 0, reservations: 0 });
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
@@ -108,6 +110,49 @@ export default function AdminDashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       const from = rangeFrom();
       const to = rangeTo();
+      const profileRes = user
+        ? await supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle()
+        : { data: null };
+      const viewerRole = profileRes.data?.role || null;
+      setRole(viewerRole);
+      const fieldAgent = isFieldAgentRole(viewerRole);
+
+      if (fieldAgent) {
+        const [partsRes, vehiclesRes, customersRes, membershipRes, draftRes, reservedRes] = await Promise.all([
+          supabase.from('parts').select('id', { count: 'exact', head: true }),
+          supabase.from('vehicles').select('id', { count: 'exact', head: true }),
+          supabase.from('customers').select('id', { count: 'exact', head: true }),
+          user ? supabase.from('chat_participants').select('conversation_id,last_read_at').eq('user_id', user.id) : Promise.resolve({ data: [] as { conversation_id: string; last_read_at: string | null }[] }),
+          user
+            ? supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('document_type', 'proforma_invoice').eq('status', 'draft').eq('created_by', user.id)
+            : Promise.resolve({ count: 0 }),
+          supabase.from('vehicles').select('id', { count: 'exact', head: true }).eq('stock_status', 'reserved'),
+        ]);
+        let unreadChats = 0;
+        const memberships = membershipRes.data || [];
+        if (user && memberships.length) {
+          const readAt = new Map(memberships.map((row) => [row.conversation_id, row.last_read_at]));
+          const { data: messageRows } = await supabase.from('chat_messages').select('conversation_id,sender_id,created_at').in('conversation_id', memberships.map((row) => row.conversation_id)).neq('sender_id', user.id).order('created_at', { ascending: false }).limit(1000);
+          unreadChats = (messageRows || []).filter((message) => {
+            const lastRead = readAt.get(message.conversation_id);
+            return !lastRead || message.created_at > lastRead;
+          }).length;
+        }
+        setCounts({
+          parts: partsRes.count || 0,
+          vehicles: vehiclesRes.count || 0,
+          customers: customersRes.count || 0,
+          inquiries: 0,
+          unreadChats,
+          portalUsers: 0,
+          pushSubscribers: 0,
+          draftProformas: draftRes.count || 0,
+          reservations: reservedRes.count || 0,
+        });
+        setLoading(false);
+        return;
+      }
+
       const [partsRes, vehiclesRes, customersRes, inquiryRes, recentRes, invoiceRes, remittanceRes, partStockRes, vehicleStockRes, membershipRes, portalRes, analyticsRes, pushRes] = await Promise.all([
         supabase.from('parts').select('id', { count: 'exact', head: true }),
         supabase.from('vehicles').select('id', { count: 'exact', head: true }),
@@ -141,6 +186,8 @@ export default function AdminDashboardPage() {
         unreadChats,
         portalUsers: portalRes.count || 0,
         pushSubscribers: pushRes.count || 0,
+        draftProformas: 0,
+        reservations: 0,
       });
       setInvoices((invoiceRes.data || []) as Invoice[]);
       setRemittances((remittanceRes.data || []) as Remittance[]);
@@ -153,7 +200,8 @@ export default function AdminDashboardPage() {
     })();
   }, []);
 
-  const isOps = analytics?.viewer.is_ops ?? true;
+  const fieldAgent = isFieldAgentRole(role);
+  const isOps = analytics?.viewer.is_ops ?? (!fieldAgent && role !== 'manager');
   const receivables = useMemo(() => invoices.filter(isReceivable), [invoices]);
   const currency = analytics?.sales.totals.currency_focus
     || receivables[0]?.currency
@@ -229,6 +277,38 @@ export default function AdminDashboardPage() {
       value: inventory.filter((row) => (row.stock_origin || 'dubai') === origin.value).length,
     })).filter((row) => row.value > 0);
   }, [analytics, inventory]);
+
+  if (fieldAgent) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-8">
+        <section className="admin-dash-hero overflow-hidden rounded-2xl border border-border/80 px-5 py-5 sm:px-6 sm:py-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-accent">Field agent</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Sales workspace</h2>
+              <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
+                Browse catalog, manage your customers, reserve vehicles, and create draft proforma invoices for accounts to approve.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="accent" size="sm"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />Draft proforma</Link></Button>
+              <Button asChild variant="outline" size="sm"><Link href="/admin/reservations"><BookmarkPlus className="h-4 w-4" />Reserve</Link></Button>
+              <Button asChild variant="outline" size="sm"><Link href="/admin/customers"><Users className="h-4 w-4" />Customers</Link></Button>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <StatLink href="/admin/parts" label="Parts catalog" value={counts.parts} icon={Package} loading={loading} />
+          <StatLink href="/admin/vehicles" label="Vehicle catalog" value={counts.vehicles} icon={Car} loading={loading} />
+          <StatLink href="/admin/customers" label="Your customers" value={counts.customers} icon={Users} loading={loading} />
+          <StatLink href="/admin/invoices?documentType=proforma_invoice&status=draft" label="Draft proformas" value={counts.draftProformas} icon={ReceiptText} loading={loading} />
+          <StatLink href="/admin/reservations" label="Reserved stock" value={counts.reservations} icon={BookmarkPlus} loading={loading} />
+          <StatLink href="/admin/chat" label="Unread team chat" value={counts.unreadChats} icon={MessageCircle} loading={loading} />
+        </section>
+      </div>
+    );
+  }
 
   const operationalCards = [
     { label: 'Parts stock', value: analytics?.stock.parts_total ?? counts.parts, icon: Package, href: '/admin/parts' },

@@ -10,9 +10,12 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile } from '@/lib/types';
 import {
+  ACCOUNTS_NAV_HREFS,
   canAccessHr,
+  canManageReceivables,
   FIELD_AGENT_NAV_HREFS,
   isAccountAdminRole,
+  isAccountsRole,
   isFieldAgentRole,
 } from '@/lib/admin-rbac';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -38,6 +41,7 @@ const MANAGER_NAV_HREFS = new Set([
 
 function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
   const fieldAgent = isFieldAgentRole(profile.role);
+  const accounts = isAccountsRole(profile.role);
   const isAccountAdmin = isAccountAdminRole(profile.role);
   const isManager = profile.role === 'manager';
   const hrAccess = canAccessHr(profile.role);
@@ -52,6 +56,7 @@ function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
         return false;
       }
       if (fieldAgent && !FIELD_AGENT_NAV_HREFS.has(item.href)) return false;
+      if (accounts && !ACCOUNTS_NAV_HREFS.has(item.href)) return false;
       if (isManager && !MANAGER_NAV_HREFS.has(item.href)) return false;
       return true;
     }),
@@ -121,7 +126,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!profile) return null;
 
   const fieldAgent = isFieldAgentRole(profile.role);
+  const accounts = isAccountsRole(profile.role);
   const isManager = profile.role === 'manager';
+  const receivables = canManageReceivables(profile.role);
   const visibleGroups = filterNavGroups(profile);
   const pageTitle =
     pathname === '/admin/profile' ? 'My profile' : findAdminNavLabel(visibleGroups, pathname) || 'Admin workspace';
@@ -187,7 +194,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <AdminMarketChrome className="w-full max-w-3xl justify-center" />
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            {!fieldAgent && !isManager ? (
+            {!fieldAgent && !isManager && !accounts ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="accent"><Plus className="h-4 w-4" />Quick add</Button>
@@ -206,7 +213,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </DropdownMenuContent>
             </DropdownMenu>
             ) : fieldAgent ? (
-              <Button asChild variant="accent"><Link href="/admin/reservations"><BookmarkPlus className="h-4 w-4" />Reserve</Link></Button>
+              <div className="flex gap-2">
+                <Button asChild variant="accent"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />Draft proforma</Link></Button>
+                <Button asChild variant="outline"><Link href="/admin/reservations"><BookmarkPlus className="h-4 w-4" />Reserve</Link></Button>
+              </div>
+            ) : accounts || receivables ? (
+              <Button asChild variant="accent"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />New invoice</Link></Button>
             ) : null}
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
             <AdminNotificationCenter userId={profile.id} />

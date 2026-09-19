@@ -178,7 +178,7 @@ export default function UsersPage() {
       <div>
         <h1 className="text-2xl font-bold">Admin users</h1>
         <p className="text-sm text-muted-foreground">
-          Create staff, sales, freelancer, or manager accounts; deactivate access; manage passwords.
+          Create staff, sales, freelancer, accounts, or manager accounts; deactivate access; manage passwords.
         </p>
       </div>
 

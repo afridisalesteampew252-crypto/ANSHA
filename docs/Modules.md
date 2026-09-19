@@ -34,9 +34,9 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Customer portal | `/portal` | `/portal/invoices`, `/portal/account` | `customer_profiles` + own invoices + sanitized SOA RPC |
 | Customers | no | `/admin/customers`, SOA `[id]` (+ enable portal) | `customers`, invoices, remittances, allocations |
 | Reserve vehicle | no | `/admin/reservations` (field agents + ops) | reserve + proforma RPC |
-| Invoices | `/verify/invoice/[code]` | `/admin/invoices` (sales: customer invoices only) | `invoices*` |
-| Supplier invoices | no | `/admin/invoices/supplier` | `supplier_invoices` |
-| Remittances | no | `/admin/remittances` | `remittances*` |
+| Invoices | `/verify/invoice/[code]` | `/admin/invoices` (field agents: draft proforma; accounts/ops: full + approve sent) | `invoices*` |
+| Supplier invoices | no | `/admin/invoices/supplier` (ops + accounts) | `supplier_invoices` |
+| Remittances | no | `/admin/remittances` (ops + accounts) | `remittances*` |
 | Users | `/admin` login | `/admin/users`, `/admin/profile` | Auth + `admin_profiles` |
 | Bulk import | no | `/admin/imports` | `import_jobs`, `import_rows` |
 | Team chat | no | `/admin/chat` (+ entity filters) | `chat_*`, `chat_conversation_links`, Realtime |

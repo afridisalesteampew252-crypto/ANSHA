@@ -7,8 +7,9 @@
 | Anonymous visitor | no row | Browse published **available** catalog/blog; submit inquiry and part request; verify invoice by UUID |
 | `staff` | `admin_profiles.role` default | Day-to-day operations via `private.is_ops_user()` (PO, GRN, invoices, remittances, expenses, bank txns, shipments, draft GL, etc.). **Cannot** perform account-admin actions below |
 | `admin` | `admin_profiles.role` | Same ops access as staff, plus **account-admin** sensitive actions (`private.is_account_admin()`) |
-| `sales` | `admin_profiles.role` | **Field agent**: catalog browse (parts/vehicles list only), own-book customers, **vehicle reservations**, team chat, light dashboard. **Cannot** create/edit catalog, finance, HR, invoices UI, imports |
-| `freelancer` | `admin_profiles.role` | Same field-agent gates as `sales` (contractor label). Own-book customers + reserve. Documented synonym for contractor staff |
+| `sales` | `admin_profiles.role` | **Field agent**: catalog browse (parts/vehicles list only), own-book customers, **vehicle reservations**, **draft proforma invoices**, team chat, light dashboard. **Cannot** create/edit catalog, send/finalise invoices, finance, HR, imports |
+| `freelancer` | `admin_profiles.role` | Same field-agent gates as `sales` (contractor label). Own-book customers + reserve + draft proforma |
+| `accounts` | `admin_profiles.role` | **Receivables / finance**: customer invoices (all types; approve draft→sent), remittances, expenses, bank txns/views, supplier invoices, GL chart SELECT, VAT/report views. **Not** full admin (no users, audit purge, catalog writes, PO/GRN) |
 | `manager` | `admin_profiles.role` | **HR viewer** (+ payroll link): shifts, locations, attendance view; own check-in/out. v1 does **not** scope by location — ops (`admin`/`staff`) write locations/assignments; manager cannot open finance/catalog |
 
 There is no department role and no `domain.action` permission matrix in code. Customer portal uses `customer_profiles`, not `admin_profiles`.
@@ -20,22 +21,34 @@ There is no department role and no `domain.action` permission matrix in code. Cu
 | `public.is_admin()` | Legacy: any `admin_profiles` row (membership). **Not** `role = 'admin'`. Keep this name for RLS that only means “workspace member”. |
 | `private.is_workspace_user(uuid)` | Active `admin_profiles` row (any role). Single signature with `DEFAULT auth.uid()` — **no** zero-arg overload. |
 | `private.is_ops_user()` | Active `admin` **or** `staff` — day-to-day trading / finance ops |
+| `private.is_accounts_user()` | Active `role = 'accounts'` (Phase 55 receivables role) |
+| `private.can_manage_receivables()` | Active `admin` \| `staff` \| `accounts` — invoices, remittances, related finance views |
 | `private.is_account_admin()` | Active `role = 'admin'` — sensitive / irreversible account actions (Phase 45) |
 | `private.is_platform_admin()` | Alias of `is_account_admin()` (legacy name; now also requires `is_active`) |
 | `private.is_sales_agent()` | Active `role = 'sales'` (own-book analytics / legacy sales-only checks) |
-| `private.is_field_agent()` | Active `sales` **or** `freelancer` (Phase 54 shared catalog/reserve gate) |
+| `private.is_field_agent()` | Active `sales` **or** `freelancer` (Phase 54 shared catalog/reserve gate; Phase 55 draft proforma) |
 | `private.is_hr_viewer()` | Active `admin` \| `staff` \| `manager` (Phase 54 HR SELECT) |
 
 ## Field agents (`sales` / `freelancer`)
 
 | Area | Allowed |
 |---|---|
-| Routes (`proxy.ts`) | `/admin/dashboard`, `/admin/parts` + `/admin/vehicles` **lists only** (no `/new` or `/[id]`), `/admin/customers`, `/admin/reservations`, `/admin/chat`, `/admin/profile` |
+| Routes (`proxy.ts`) | `/admin/dashboard`, `/admin/parts` + `/admin/vehicles` **lists only**, `/admin/customers`, `/admin/reservations`, `/admin/invoices` (list/new/detail; no supplier), `/admin/chat`, `/admin/profile` |
 | Nav | Same allowlist via `FIELD_AGENT_NAV_HREFS` |
-| Catalog UI | Ops-oriented reservation cards (stock status, identifiers, Reserve / ask-team CTA) — not marketing cards; no Add/Import |
-| Catalog writes | Already ops-only RLS (`is_ops_user` insert/update); field agents blocked at route + UI |
+| Catalog UI | Ops-oriented reservation cards — no Add/Import |
+| Catalog writes | Ops-only RLS; field agents blocked at route + UI |
 | Customers | Own-book (`owner_id = auth.uid()`) via `is_field_agent()` |
-| After vehicle reserve | Stay on reservations (no invoice deep-link) |
+| Invoices | **Draft `proforma_invoice` only** (`create_invoice_v3` + RLS + trigger). Cannot set status to sent / paid paths |
+| After vehicle reserve | Opens the draft proforma detail |
+
+## Accounts (Phase 55)
+
+| Area | Allowed |
+|---|---|
+| Routes | Dashboard, customers, invoices (incl. supplier), remittances, bank accounts, expenses, ledger, reports, VAT, chat, profile |
+| Invoices | Create all document types; **approve draft→sent**; record payments |
+| Remittances / expenses / bank txns | Yes (not create/delete bank accounts — still account-admin) |
+| Not allowed | Users, audit log, catalog writes, purchase/PO/GRN, marketing, HR |
 
 ## Managers (Phase 54 v1)
 
@@ -70,10 +83,10 @@ Triggers on `parts` and `vehicles` (create / meaningful update / delete / `stock
 
 ## Enforcement locations
 
-- Route: `proxy.ts` — any active `admin_profiles` row; field-agent + manager allowlists; `/admin/users` and `/admin/audit-log` require `role = 'admin'`
-- UI: nav hides Users / Audit log for non-admin; HR group for ops/manager; field-agent nav; ledger reverse / chart edit, bank account create, payroll post / cancel-posted, portal enable — admin only
-- Database: catalog/finance often `is_admin()` or `is_ops_user()`; sensitive RPCs/RLS use `private.is_account_admin()`
-- Edge Functions: `callerProfile.role !== 'admin'` (and inactive) → 403 for user-admin and portal-create; create/update user accept roles including `freelancer` / `manager`
+- Route: `proxy.ts` — any active `admin_profiles` row; field-agent + accounts + manager allowlists; `/admin/users` and `/admin/audit-log` require `role = 'admin'`
+- UI: nav hides Users / Audit log for non-admin; HR group for ops/manager; field-agent + accounts nav; ledger reverse / chart edit, bank account create, payroll post / cancel-posted, portal enable — admin only
+- Database: catalog often `is_ops_user()`; receivables use `can_manage_receivables()`; field-agent draft proforma via RLS + `create_invoice_v3` + trigger; sensitive RPCs use `private.is_account_admin()`
+- Edge Functions: `callerProfile.role !== 'admin'` (and inactive) → 403 for user-admin and portal-create; create/update user accept roles including `freelancer` / `manager` / `accounts`
 
 ## Invariant
 

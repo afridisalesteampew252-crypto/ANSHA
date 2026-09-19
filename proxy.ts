@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { isFieldAgentAllowedPath, isFieldAgentRole } from '@/lib/admin-rbac';
+import {
+  isAccountsAllowedPath,
+  isAccountsRole,
+  isFieldAgentAllowedPath,
+  isFieldAgentRole,
+} from '@/lib/admin-rbac';
 
 function getSupabaseConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -118,6 +123,15 @@ export async function proxy(request: NextRequest) {
 
     if (isFieldAgentRole(profile.role)) {
       if (!isFieldAgentAllowedPath(pathname)) {
+        const dashboardUrl = request.nextUrl.clone();
+        dashboardUrl.pathname = '/admin/dashboard';
+        dashboardUrl.search = '';
+        return redirectWithSession(dashboardUrl);
+      }
+    }
+
+    if (isAccountsRole(profile.role)) {
+      if (!isAccountsAllowedPath(pathname)) {
         const dashboardUrl = request.nextUrl.clone();
         dashboardUrl.pathname = '/admin/dashboard';
         dashboardUrl.search = '';

@@ -1,6 +1,6 @@
 import type { AdminRole } from '@/lib/types';
 
-/** Catalog browse + reservation request only (sales / contractor). */
+/** Catalog browse + reservation + draft proforma only (sales / contractor). */
 export function isFieldAgentRole(role: string | null | undefined): boolean {
   return role === 'sales' || role === 'freelancer';
 }
@@ -8,6 +8,16 @@ export function isFieldAgentRole(role: string | null | undefined): boolean {
 /** Day-to-day trading / finance ops. */
 export function isOpsRole(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'staff';
+}
+
+/** Receivables / remittances / finance views (not full admin). */
+export function isAccountsRole(role: string | null | undefined): boolean {
+  return role === 'accounts';
+}
+
+/** Ops or accounts — customer invoices, remittances, related finance. */
+export function canManageReceivables(role: string | null | undefined): boolean {
+  return isOpsRole(role) || isAccountsRole(role);
 }
 
 export function isAccountAdminRole(role: string | null | undefined): boolean {
@@ -24,13 +34,14 @@ export function canManageHr(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'staff';
 }
 
-/** Nav + proxy allowlist for sales/freelancer (customers needed to complete vehicle reserve). */
+/** Nav + proxy allowlist for sales/freelancer. */
 export const FIELD_AGENT_NAV_HREFS = new Set([
   '/admin/dashboard',
   '/admin/parts',
   '/admin/vehicles',
   '/admin/customers',
   '/admin/reservations',
+  '/admin/invoices',
   '/admin/chat',
 ]);
 
@@ -41,13 +52,46 @@ export function isFieldAgentAllowedPath(pathname: string): boolean {
   if (pathname.startsWith('/admin/parts/') || pathname.startsWith('/admin/vehicles/')) return false;
   if (pathname.startsWith('/admin/customers')) return true;
   if (pathname.startsWith('/admin/reservations')) return true;
+  // Draft proforma only — list / new / detail / edit query on new
+  if (pathname === '/admin/invoices' || pathname === '/admin/invoices/new') return true;
+  if (pathname.startsWith('/admin/invoices/') && !pathname.startsWith('/admin/invoices/supplier')) return true;
+  if (pathname.startsWith('/admin/chat')) return true;
+  return false;
+}
+
+/** Accounts role: receivables + finance views, not catalog/purchase/HR/marketing/users. */
+export const ACCOUNTS_NAV_HREFS = new Set([
+  '/admin/dashboard',
+  '/admin/customers',
+  '/admin/invoices',
+  '/admin/invoices/supplier',
+  '/admin/remittances',
+  '/admin/bank-accounts',
+  '/admin/expenses',
+  '/admin/ledger',
+  '/admin/reports',
+  '/admin/vat-return',
+  '/admin/chat',
+]);
+
+export function isAccountsAllowedPath(pathname: string): boolean {
+  if (pathname === '/admin/dashboard' || pathname === '/admin/profile') return true;
+  if (pathname.startsWith('/admin/customers')) return true;
+  if (pathname.startsWith('/admin/invoices')) return true;
+  if (pathname.startsWith('/admin/remittances')) return true;
+  if (pathname.startsWith('/admin/bank-accounts')) return true;
+  if (pathname.startsWith('/admin/expenses')) return true;
+  if (pathname.startsWith('/admin/ledger')) return true;
+  if (pathname.startsWith('/admin/reports')) return true;
+  if (pathname.startsWith('/admin/vat-return')) return true;
   if (pathname.startsWith('/admin/chat')) return true;
   return false;
 }
 
 export const ADMIN_ROLE_OPTIONS: { value: AdminRole; label: string }[] = [
-  { value: 'sales', label: 'Sales agent — catalog + reservations' },
-  { value: 'freelancer', label: 'Freelancer — catalog + reservations (contractor)' },
+  { value: 'sales', label: 'Sales agent — catalog + reservations + draft proforma' },
+  { value: 'freelancer', label: 'Freelancer — catalog + reservations + draft proforma' },
+  { value: 'accounts', label: 'Accounts — invoices, remittances, finance views' },
   { value: 'manager', label: 'Manager — ops view + HR (shifts/attendance)' },
   { value: 'staff', label: 'Staff — full operations' },
   { value: 'admin', label: 'Admin — full access + account admin' },
@@ -59,4 +103,5 @@ export const ADMIN_ROLE_LABEL: Record<AdminRole, string> = {
   sales: 'Sales agent',
   freelancer: 'Freelancer',
   manager: 'Manager',
+  accounts: 'Accounts',
 };

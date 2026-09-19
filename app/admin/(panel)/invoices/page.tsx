@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { canManageReceivables, isFieldAgentRole } from '@/lib/admin-rbac';
 
 type InvoiceItemRef = {
   description: string | null;
@@ -60,9 +61,18 @@ export default function InvoicesPage() {
   const [documentType, setDocumentType] = useState('all');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [fieldAgent, setFieldAgent] = useState(false);
+  const [canFinance, setCanFinance] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle();
+      const role = profile?.role;
+      setFieldAgent(isFieldAgentRole(role));
+      setCanFinance(canManageReceivables(role));
+    }
     const { data, error } = await supabase
       .from('invoices')
       .select(
@@ -79,8 +89,9 @@ export default function InvoicesPage() {
 
   const filtered = useMemo(() => invoices.filter((invoice) => {
     const currentStatus = effectiveStatus(invoice);
+    if (fieldAgent && invoice.document_type !== 'proforma_invoice') return false;
     if (status !== 'all' && currentStatus !== status) return false;
-    if (documentType !== 'all' && invoice.document_type !== documentType) return false;
+    if (!fieldAgent && documentType !== 'all' && invoice.document_type !== documentType) return false;
     const itemFields = (invoice.invoice_items || []).flatMap((item) => [item.description, item.inventory_reference]);
     return matchesQuery(query, [
       invoice.invoice_number,
@@ -106,7 +117,7 @@ export default function InvoicesPage() {
       invoice.balance_due,
       ...itemFields,
     ]);
-  }), [documentType, invoices, query, status]);
+  }), [documentType, fieldAgent, invoices, query, status]);
 
   const totals = useMemo(() => ({
     issued: invoices.filter((invoice) => invoice.currency === 'AED').reduce((sum, invoice) => sum + Number(invoice.total_amount || 0), 0),
@@ -122,15 +133,15 @@ export default function InvoicesPage() {
   };
 
   return <div className="mx-auto max-w-7xl space-y-6">
-    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold">Invoice management</h1><p className="text-sm text-muted-foreground">Delivery notes, quotations, proforma, tax, purchase and commercial invoices.</p></div><div className="flex flex-wrap gap-2"><Button asChild variant="outline"><Link href="/admin/invoices/supplier"><FileText className="h-4 w-4" />Supplier invoices</Link></Button><Button asChild><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />Create document</Link></Button></div></div>
+    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><h1 className="text-2xl font-bold">{fieldAgent ? 'Draft proformas' : 'Invoice management'}</h1><p className="text-sm text-muted-foreground">{fieldAgent ? 'Your draft proforma invoices. Accounts will review and mark them sent.' : 'Delivery notes, quotations, proforma, tax, purchase and commercial invoices.'}</p></div><div className="flex flex-wrap gap-2">{canFinance ? <Button asChild variant="outline"><Link href="/admin/invoices/supplier"><FileText className="h-4 w-4" />Supplier invoices</Link></Button> : null}<Button asChild><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />{fieldAgent ? 'Draft proforma' : 'Create document'}</Link></Button></div></div>
 
-    <div className="grid gap-4 sm:grid-cols-3">
+    {!fieldAgent ? <div className="grid gap-4 sm:grid-cols-3">
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total invoiced (AED)</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{money(totals.issued, 'AED')}</p></CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Outstanding (AED)</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold">{money(totals.outstanding, 'AED')}</p></CardContent></Card>
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Overdue (AED)</CardTitle></CardHeader><CardContent><p className="text-2xl font-bold text-destructive">{money(totals.overdue, 'AED')}</p></CardContent></Card>
-    </div>
+    </div> : null}
 
-    <Card><CardContent className="p-4"><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search invoice, customer, reference, notes, VIN/stock…" className="pl-10" /></div><select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All document types</option><option value="delivery_note">Delivery notes</option><option value="quotation">Quotations</option><option value="proforma_invoice">Proforma invoices</option><option value="tax_invoice">Tax invoices</option><option value="purchase_invoice">Purchase invoices</option><option value="commercial_invoice">Commercial invoices</option></select><select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option><option value="draft">Draft</option><option value="sent">Sent</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="overdue">Overdue</option><option value="cancelled">Cancelled</option></select></div></CardContent></Card>
+    <Card><CardContent className="p-4"><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search invoice, customer, reference, notes, VIN/stock…" className="pl-10" /></div>{fieldAgent ? null : <select value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All document types</option><option value="delivery_note">Delivery notes</option><option value="quotation">Quotations</option><option value="proforma_invoice">Proforma invoices</option><option value="tax_invoice">Tax invoices</option><option value="purchase_invoice">Purchase invoices</option><option value="commercial_invoice">Commercial invoices</option></select>}<select value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="all">All statuses</option><option value="draft">Draft</option>{fieldAgent ? null : <><option value="sent">Sent</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="overdue">Overdue</option><option value="cancelled">Cancelled</option></>}</select></div></CardContent></Card>
 
     {message && <div role="status" className="rounded-lg border bg-secondary/30 p-3 text-sm">{message}</div>}
     {loading ? <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-primary" /></div> : filtered.length === 0 ? <Card><CardContent className="flex flex-col items-center gap-3 py-14 text-center"><FileText className="h-10 w-10 text-muted-foreground" /><div><p className="font-semibold">No invoices found</p><p className="text-sm text-muted-foreground">Create the first invoice or change the filters.</p></div></CardContent></Card> : <>

@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { isFieldAgentRole } from '@/lib/admin-rbac';
 
 type Customer = { id: string; full_name: string; company_name: string | null; email: string | null; phone: string | null; address: string | null; tax_registration_number: string | null };
 type Line = { key: string; description: string; quantity: number; unit_price: number; discount_percent: number; tax_rate: number; inventory_type: '' | 'part' | 'vehicle'; part_id: string | null; vehicle_id: string | null; inventory_reference: string };
@@ -25,6 +26,7 @@ const money = (value: number, currency: string) => new Intl.NumberFormat('en-AE'
 
 export default function NewInvoicePage() {
   const router = useRouter();
+  const [fieldAgent, setFieldAgent] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [customerId, setCustomerId] = useState('');
@@ -43,12 +45,20 @@ export default function NewInvoicePage() {
   const [editingId, setEditingId] = useState('');
 
   useEffect(() => { void (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    let isField = false;
+    if (user) {
+      const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle();
+      isField = isFieldAgentRole(profile?.role);
+      setFieldAgent(isField);
+      if (isField) setDocumentType('proforma_invoice');
+    }
     const invoiceId = new URLSearchParams(window.location.search).get('edit') || '';
     const [customerResult, partsResult, vehiclesResult, invoiceResult, itemResult] = await Promise.all([
       supabase.from('customers').select('id,full_name,company_name,email,phone,address,tax_registration_number').eq('is_active', true).order('company_name').order('full_name'),
       supabase.from('parts').select('id,part_code,name,price,currency,stock_status').neq('stock_status', 'sold').order('part_code').limit(500),
       supabase.from('vehicles').select('id,stock_number,chassis_number,chassis_code,title,price,currency,stock_status').neq('stock_status', 'sold').order('stock_number').limit(500),
-      invoiceId ? supabase.from('invoices').select('id,invoice_number,document_type,customer_id,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,reference,notes,terms').eq('id', invoiceId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      invoiceId ? supabase.from('invoices').select('id,invoice_number,document_type,customer_id,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,reference,notes,terms,status').eq('id', invoiceId).maybeSingle() : Promise.resolve({ data: null, error: null }),
       invoiceId ? supabase.from('invoice_items').select('description,quantity,unit_price,discount_percent,tax_rate,inventory_type,part_id,vehicle_id,inventory_reference').eq('invoice_id', invoiceId).order('sort_order') : Promise.resolve({ data: [], error: null }),
     ]);
     setCustomers((customerResult.data || []) as Customer[]);
@@ -60,8 +70,12 @@ export default function NewInvoicePage() {
         setMessage(invoiceResult.error?.message || 'Invoice could not be loaded for editing.');
         return;
       }
-      const invoice = invoiceResult.data as EditableInvoice;
-      setEditingId(invoice.id); setInvoiceNumber(invoice.invoice_number); setDocumentType(invoice.document_type);
+      const invoice = invoiceResult.data as EditableInvoice & { status?: string };
+      if (isField && (invoice.document_type !== 'proforma_invoice' || invoice.status !== 'draft')) {
+        setMessage('You can only edit draft proforma invoices.');
+        return;
+      }
+      setEditingId(invoice.id); setInvoiceNumber(invoice.invoice_number); setDocumentType(isField ? 'proforma_invoice' : invoice.document_type);
       setCustomerId(invoice.customer_id || '');
       setCustomer({ name: invoice.customer_name, company: invoice.customer_company || '', email: invoice.customer_email || '', phone: invoice.customer_phone || '', address: invoice.customer_address || '', trn: invoice.customer_tax_registration_number || '' });
       setIssueDate(invoice.issue_date); setDueDate(invoice.due_date); setCurrency(invoice.currency);
@@ -123,9 +137,10 @@ export default function NewInvoicePage() {
     const validLines = lines.filter((line) => line.description.trim());
     if (!customer.name.trim()) { setBusy(false); return setMessage('Customer name is required.'); }
     if (!validLines.length) { setBusy(false); return setMessage('Add at least one line item.'); }
+    const resolvedType = fieldAgent ? 'proforma_invoice' : documentType;
     const payload = {
       p_invoice_number: invoiceNumber.trim() || null,
-      p_document_type: documentType,
+      p_document_type: resolvedType,
       p_customer_id: customerId || null,
       p_customer_name: customer.name.trim(),
       p_customer_company: customer.company.trim(),
@@ -150,7 +165,7 @@ export default function NewInvoicePage() {
   };
 
   return <form onSubmit={submit} className="mx-auto max-w-7xl space-y-6">
-    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href={editingId ? `/admin/invoices/${editingId}` : '/admin/invoices'}><ArrowLeft className="h-4 w-4" />{editingId ? 'Invoice' : 'Invoices'}</Link></Button><h1 className="text-2xl font-bold">{editingId ? `Edit ${invoiceNumber}` : 'New invoice'}</h1><p className="text-sm text-muted-foreground">{editingId ? 'Update customer details, dates, stock-linked lines, prices, VAT, notes, and terms.' : 'Create delivery notes, quotations, proforma, tax, purchase, or commercial invoices with secure QR verification.'}</p></div><Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Saving…' : editingId ? 'Update invoice' : 'Create invoice'}</Button></div>
+    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><Button asChild variant="ghost" className="-ml-3 mb-2"><Link href={editingId ? `/admin/invoices/${editingId}` : '/admin/invoices'}><ArrowLeft className="h-4 w-4" />{editingId ? 'Invoice' : 'Invoices'}</Link></Button><h1 className="text-2xl font-bold">{editingId ? `Edit ${invoiceNumber}` : fieldAgent ? 'New draft proforma' : 'New invoice'}</h1><p className="text-sm text-muted-foreground">{fieldAgent ? 'Create a draft proforma for accounts to review and mark sent. Tax and commercial invoices are accounts-only.' : editingId ? 'Update customer details, dates, stock-linked lines, prices, VAT, notes, and terms.' : 'Create delivery notes, quotations, proforma, tax, purchase, or commercial invoices with secure QR verification.'}</p></div><Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Saving…' : editingId ? 'Update invoice' : fieldAgent ? 'Save draft proforma' : 'Create invoice'}</Button></div>
 
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <div className="min-w-0 space-y-6">
@@ -192,7 +207,7 @@ export default function NewInvoicePage() {
 
       <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
         <Card><CardHeader><CardTitle className="text-lg">Invoice details</CardTitle></CardHeader><CardContent className="grid gap-4">
-          <div className="space-y-1.5"><Label htmlFor="document-type">Document type</Label><select id="document-type" value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="proforma_invoice">Proforma invoice</option><option value="quotation">Quotation</option><option value="tax_invoice">Tax invoice</option><option value="delivery_note">Delivery note</option><option value="purchase_invoice">Purchase invoice</option><option value="commercial_invoice">Commercial invoice</option></select></div>
+          <div className="space-y-1.5"><Label htmlFor="document-type">Document type</Label>{fieldAgent ? <Input id="document-type" value="Proforma invoice (draft)" disabled /> : <select id="document-type" value={documentType} onChange={(event) => setDocumentType(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="proforma_invoice">Proforma invoice</option><option value="quotation">Quotation</option><option value="tax_invoice">Tax invoice</option><option value="delivery_note">Delivery note</option><option value="purchase_invoice">Purchase invoice</option><option value="commercial_invoice">Commercial invoice</option></select>}{fieldAgent ? <p className="text-xs text-muted-foreground">Accounts reviews drafts and marks them sent.</p> : null}</div>
           <div className="space-y-1.5"><Label htmlFor="invoice-number">Invoice number</Label><Input id="invoice-number" value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value.toUpperCase())} placeholder="RIYA0063 or leave blank" maxLength={40} /><p className="text-xs text-muted-foreground">{editingId ? 'Invoice numbers must remain unique.' : 'Use an existing sales code such as RIYA0063, or leave blank for an automatic INV number.'}</p></div>
           <div className="space-y-1.5"><Label htmlFor="issue-date">Issue date</Label><Input id="issue-date" type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="due-date">Due date</Label><Input id="due-date" type="date" min={issueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div>
