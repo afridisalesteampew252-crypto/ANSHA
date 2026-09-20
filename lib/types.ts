@@ -361,6 +361,20 @@ export interface BlogPostWithCategory extends BlogPost {
   blog_categories: BlogCategory | null;
 }
 
+export interface Review {
+  id: string;
+  name: string;
+  role: string | null;
+  location: string | null;
+  quote: string;
+  rating: number;
+  sort_order: number;
+  is_published: boolean;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PushSubscriptionRow {
   id: string;
   endpoint: string;
@@ -1483,6 +1497,7 @@ export interface Database {
       remittance_documents: TableDef<RemittanceDocument>;
       remittance_sequences: TableDef<RemittanceSequence>;
       remittances: TableDef<Remittance>;
+      reviews: TableDef<Review>;
       shift_assignments: TableDef<ShiftAssignment>;
       shift_locations: TableDef<ShiftLocation>;
       site_offers: TableDef<SiteOffer>;

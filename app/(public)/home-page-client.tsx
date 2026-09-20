@@ -48,14 +48,14 @@ import {
 import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { isMachineryClass, MACHINERY_VEHICLE_CLASSES } from '@/lib/vehicle-class';
-import type { BlogPostWithCategory, Category, PartWithRelations, VehicleWithPhotos } from '@/lib/types';
+import type { BlogPostWithCategory, Category, PartWithRelations, Review, VehicleWithPhotos } from '@/lib/types';
 
 interface MakeStat {
   make: string;
   count: number;
 }
 
-export default function HomePageClient() {
+export default function HomePageClient({ initialReviews = [] }: { initialReviews?: Review[] }) {
   const router = useRouter();
   const { dealForVehicle, dealForPart } = useInventoryDeals();
   const [query, setQuery] = useState('');
@@ -538,7 +538,7 @@ export default function HomePageClient() {
         </section>
       )}
 
-      <TestimonialsSection limit={4} />
+      <TestimonialsSection reviews={initialReviews} limit={4} />
 
       <section className="border-t border-accent/20 bg-[#101114] py-8 text-white sm:py-10">
         <div className="container-page flex min-w-0 flex-col items-center justify-between gap-4 text-center md:flex-row md:gap-5 md:text-left">

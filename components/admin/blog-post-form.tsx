@@ -16,6 +16,7 @@ import { sendWebPush } from '@/lib/web-push';
 import { toast } from 'sonner';
 import type { BlogCategory, BlogPost } from '@/lib/types';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { blogImageUrl } from '@/lib/blog-image';
 
 function slugify(text: string) {
   return text
@@ -167,11 +168,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
     router.push('/admin/blog');
   };
 
-  const imageUrl = featuredImage
-    ? featuredImage.startsWith('http')
-      ? featuredImage
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/blog-images/${featuredImage}`
-    : null;
+  const imageUrl = blogImageUrl(featuredImage);
 
   return (
     <div className="max-w-4xl space-y-6">

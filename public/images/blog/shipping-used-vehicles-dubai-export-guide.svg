@@ -1,0 +1,11 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Vehicle shipping export">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f1720"/><stop offset="100%" stop-color="#1c2a38"/></linearGradient></defs>
+  <rect width="1600" height="900" fill="url(#g)"/>
+  <path d="M120 620 L380 520 L820 520 L980 620 Z" fill="#2b3644" stroke="#c41e1e" stroke-width="4"/>
+  <rect x="200" y="430" width="560" height="90" rx="8" fill="#344252"/>
+  <circle cx="320" cy="640" r="48" fill="#121820" stroke="#e8ebf0" stroke-width="6"/>
+  <circle cx="780" cy="640" r="48" fill="#121820" stroke="#e8ebf0" stroke-width="6"/>
+  <text x="1080" y="380" fill="#f5f5f5" font-family="Georgia, serif" font-size="54" font-weight="700">Export shipping</text>
+  <text x="1080" y="450" fill="#b8bec8" font-family="Arial, sans-serif" font-size="28">Dubai · vessels · paperwork</text>
+  <text x="1080" y="760" fill="#c41e1e" font-family="Arial, sans-serif" font-size="28" font-weight="700">ANSHA TRADING</text>
+</svg>

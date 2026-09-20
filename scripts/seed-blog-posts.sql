@@ -333,3 +333,13 @@ WHERE slug = 'japanese-auto-parts-supplier';
 UPDATE blog_posts SET is_featured = false WHERE slug <> 'buying-used-cars-japan-auction-sheets';
 
 UPDATE blog_posts SET is_featured = true WHERE slug = 'buying-used-cars-japan-auction-sheets';
+UPDATE blog_posts SET featured_image = '/images/blog/' || slug || '.svg'
+WHERE slug IN (
+  'buying-used-cars-japan-auction-sheets',
+  'oem-vs-aftermarket-auto-parts',
+  'shipping-used-vehicles-dubai-export-guide',
+  'keyless-entry-smart-keys-buyers-guide',
+  'sourcing-heavy-machinery-trucks',
+  'make-model-year-color-stock-search'
+)
+AND (featured_image IS NULL OR featured_image = '' OR featured_image LIKE '/images/blog/%');

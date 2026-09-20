@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { TestimonialsSection } from '@/components/public/testimonials-section';
-import { testimonials } from '@/lib/content/testimonials';
+import { getPublishedReviews } from '@/lib/reviews';
 import { Button } from '@/components/ui/button';
 import { siteConfig } from '@/lib/site-config';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
@@ -25,7 +25,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ReviewsPage() {
+export default async function ReviewsPage() {
+  const reviews = await getPublishedReviews();
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
@@ -35,7 +37,7 @@ export default function ReviewsPage() {
     url: `${siteConfig.url}/reviews`,
     mainEntity: {
       '@type': 'ItemList',
-      itemListElement: testimonials.map((t, index) => ({
+      itemListElement: reviews.map((t, index) => ({
         '@type': 'ListItem',
         position: index + 1,
         item: {
@@ -83,6 +85,7 @@ export default function ReviewsPage() {
       </section>
 
       <TestimonialsSection
+        reviews={reviews}
         showLink={false}
         eyebrow="Trusted in trade"
         heading="Practical feedback from people who buy and ship"

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { siteConfig } from '@/lib/site-config';
+import { getPublishedReviews } from '@/lib/reviews';
 import HomePageClient from './home-page-client';
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
-  return <HomePageClient />;
+export default async function HomePage() {
+  const reviews = await getPublishedReviews(4);
+  return <HomePageClient initialReviews={reviews} />;
 }

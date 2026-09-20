@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BlogCard } from '@/components/public/blog-card';
+import { blogImageUrl } from '@/lib/blog-image';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import type { BlogPostWithCategory, BlogCategory } from '@/lib/types';
@@ -95,11 +96,7 @@ export function BlogPostClient({ slug }: { slug: string }) {
     );
   }
 
-  const imageUrl = post.featured_image
-    ? post.featured_image.startsWith('http')
-      ? post.featured_image
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/blog-images/${post.featured_image}`
-    : null;
+  const imageUrl = blogImageUrl(post.featured_image);
 
   const dateStr = post.published_at || post.created_at;
   const date = new Date(dateStr).toLocaleDateString('en-US', {

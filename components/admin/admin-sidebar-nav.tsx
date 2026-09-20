@@ -36,6 +36,7 @@ import {
   ScrollText,
   Ship,
   Sparkles,
+  Star,
   Tag,
   Truck,
   Upload,
@@ -139,6 +140,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: Megaphone,
     items: [
       { href: '/admin/blog', label: 'Insights / Blog', icon: BookOpen },
+      { href: '/admin/reviews', label: 'Reviews', icon: Star },
       { href: '/admin/offers', label: 'Deals & offers', icon: Megaphone },
       { href: '/admin/subscribers', label: 'PWA subscribers', icon: Bell },
       { href: '/admin/campaigns', label: 'Campaigns', icon: MailPlus },

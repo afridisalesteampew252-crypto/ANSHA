@@ -1,0 +1,13 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Make model year color search">
+  <defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#12161c"/><stop offset="100%" stop-color="#1f2a36"/></linearGradient></defs>
+  <rect width="1600" height="900" fill="url(#g)"/>
+  <rect x="160" y="250" width="560" height="400" rx="20" fill="#1a222c" stroke="#4a5564" stroke-width="3"/>
+  <rect x="200" y="300" width="480" height="48" rx="8" fill="#10151c" stroke="#c41e1e" stroke-width="2"/>
+  <text x="220" y="332" fill="#8a93a0" font-family="Arial, sans-serif" font-size="22">Make · Model · Year · Color</text>
+  <rect x="200" y="380" width="220" height="36" rx="6" fill="#2a3340"/>
+  <rect x="440" y="380" width="220" height="36" rx="6" fill="#2a3340"/>
+  <rect x="200" y="440" width="480" height="120" rx="10" fill="#243040"/>
+  <text x="820" y="390" fill="#f5f5f5" font-family="Georgia, serif" font-size="54" font-weight="700">Stock naming</text>
+  <text x="820" y="460" fill="#b8bec8" font-family="Arial, sans-serif" font-size="28">Clean labels speed sourcing</text>
+  <text x="820" y="760" fill="#c41e1e" font-family="Arial, sans-serif" font-size="28" font-weight="700">ANSHA TRADING</text>
+</svg>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { BlogPostClient } from '@/components/public/blog-post-client';
+import { blogImageUrl } from '@/lib/blog-image';
 import { createPublicSupabaseClient, absoluteUrl } from '@/lib/supabase/public';
 import { siteConfig } from '@/lib/site-config';
 
@@ -28,11 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     data.excerpt ||
     `${data.title} — insights from ${siteConfig.name}.`;
   const canonical = `/blog/${slug}`;
-  const imageUrl = data.featured_image
-    ? data.featured_image.startsWith('http')
-      ? data.featured_image
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/blog-images/${data.featured_image}`
-    : absoluteUrl('/images/ansha-logo-transparent.webp');
+  const imageUrl = blogImageUrl(data.featured_image, { absolute: true }) || absoluteUrl('/images/ansha-logo-transparent.webp');
 
   return {
     title,
@@ -66,6 +63,7 @@ export default async function BlogPostPage(props: Props) {
     .eq('status', 'published')
     .maybeSingle();
 
+  const cover = data ? blogImageUrl(data.featured_image, { absolute: true }) : null;
   const jsonLd = data
     ? {
         '@context': 'https://schema.org',
@@ -74,6 +72,7 @@ export default async function BlogPostPage(props: Props) {
         description: data.meta_description || data.excerpt || undefined,
         datePublished: data.published_at || undefined,
         dateModified: data.updated_at || undefined,
+        image: cover || undefined,
         author: { '@type': 'Organization', name: siteConfig.name },
         publisher: {
           '@type': 'Organization',

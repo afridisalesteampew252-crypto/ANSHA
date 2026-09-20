@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  Bold, Code2, Eye, Heading2, Heading3, ImageIcon, Italic, Link2, List, ListOrdered, Quote, Type,
+  Bold, Code2, Eye, Heading2, Heading3, ImageIcon, Italic, Link2, List, ListOrdered, Quote, Type, Upload,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 
 type Mode = 'write' | 'html' | 'preview';
@@ -28,7 +29,9 @@ export function RichTextEditor({
   className,
 }: RichTextEditorProps) {
   const [mode, setMode] = useState<Mode>('write');
+  const [uploading, setUploading] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const syncingRef = useRef(false);
 
   useEffect(() => {
@@ -69,6 +72,28 @@ export function RichTextEditor({
     run('insertImage', url);
   };
 
+  const uploadInlineImage = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      window.alert('Only image files are allowed.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      window.alert('Image must be under 5MB.');
+      return;
+    }
+    setUploading(true);
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `inline/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('blog-images').upload(path, file, { upsert: false });
+    setUploading(false);
+    if (error) {
+      window.alert(error.message || 'Upload failed.');
+      return;
+    }
+    const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/blog-images/${path}`;
+    run('insertImage', publicUrl);
+  };
+
   const tools: { label: string; icon: typeof Bold; action: () => void }[] = [
     { label: 'Bold', icon: Bold, action: () => run('bold') },
     { label: 'Italic', icon: Italic, action: () => run('italic') },
@@ -79,7 +104,7 @@ export function RichTextEditor({
     { label: 'Numbered list', icon: ListOrdered, action: () => run('insertOrderedList') },
     { label: 'Quote', icon: Quote, action: () => run('formatBlock', 'blockquote') },
     { label: 'Link', icon: Link2, action: insertLink },
-    { label: 'Image', icon: ImageIcon, action: insertImage },
+    { label: 'Image URL', icon: ImageIcon, action: insertImage },
   ];
 
   return (
@@ -123,6 +148,30 @@ export function RichTextEditor({
                 <tool.icon className="h-3.5 w-3.5" />
               </Button>
             ))}
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Upload image"
+              aria-label="Upload image"
+              disabled={uploading}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-3.5 w-3.5" />
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void uploadInlineImage(file);
+              }}
+            />
           </div>
         ) : null}
       </div>
@@ -168,7 +217,7 @@ export function RichTextEditor({
       ) : null}
 
       <p className="border-t border-border bg-secondary/20 px-3 py-2 text-[11px] text-muted-foreground">
-        Stored as HTML (same as the public blog). Use Write for formatting, HTML for raw markup, Preview before publish.
+        Stored as HTML. Use Write for formatting, upload for inline images (blog-images bucket), HTML for raw markup, Preview before publish.
       </p>
     </div>
   );

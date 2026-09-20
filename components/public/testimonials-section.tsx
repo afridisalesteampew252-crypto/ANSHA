@@ -1,14 +1,15 @@
 import Link from 'next/link';
 import { ArrowRight, Quote, Star } from 'lucide-react';
-import { testimonials, type Testimonial } from '@/lib/content/testimonials';
+import type { Review } from '@/lib/types';
 
-function Stars({ rating }: { rating: Testimonial['rating'] }) {
+function Stars({ rating }: { rating: number }) {
+  const safe = Math.min(5, Math.max(1, Math.round(rating)));
   return (
-    <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+    <div className="flex items-center gap-0.5" aria-label={`${safe} out of 5 stars`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
-          className={`h-3.5 w-3.5 ${i < rating ? 'fill-accent text-accent' : 'text-border'}`}
+          className={`h-3.5 w-3.5 ${i < safe ? 'fill-accent text-accent' : 'text-border'}`}
         />
       ))}
     </div>
@@ -16,23 +17,37 @@ function Stars({ rating }: { rating: Testimonial['rating'] }) {
 }
 
 export function TestimonialsSection({
+  reviews,
   limit,
   showLink = true,
   eyebrow = 'Customer voices',
   heading = 'What buyers say about working with ANSHA',
   subheading = 'Importers, workshops, and fleet buyers who source Japanese vehicles, auto parts, and machinery through Dubai.',
 }: {
+  reviews: Review[];
   limit?: number;
   showLink?: boolean;
   eyebrow?: string;
   heading?: string;
   subheading?: string;
 }) {
-  const items = typeof limit === 'number' ? testimonials.slice(0, limit) : testimonials;
+  const items = typeof limit === 'number' ? reviews.slice(0, limit) : reviews;
   const featured = items[0];
   const rest = items.slice(1);
 
-  if (!featured) return null;
+  if (!featured) {
+    return (
+      <section className="surface-cool border-y border-accent/10 py-14 sm:py-20">
+        <div className="container-page min-w-0 text-center">
+          <span className="eyebrow">{eyebrow}</span>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">{heading}</h2>
+          <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
+            Customer reviews will appear here once published from the admin panel.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="surface-cool border-y border-accent/10 py-14 sm:py-20">
@@ -59,7 +74,7 @@ export function TestimonialsSection({
             <Stars rating={featured.rating} />
             <span className="font-semibold text-foreground">{featured.name}</span>
             <span className="text-muted-foreground">
-              {featured.role} · {featured.location}
+              {[featured.role, featured.location].filter(Boolean).join(' · ')}
             </span>
           </figcaption>
         </figure>
@@ -72,7 +87,7 @@ export function TestimonialsSection({
                 <p className="mt-3 text-sm leading-6 text-foreground/90">&ldquo;{item.quote}&rdquo;</p>
                 <p className="mt-4 text-sm font-semibold text-foreground">{item.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.role} · {item.location}
+                  {[item.role, item.location].filter(Boolean).join(' · ')}
                 </p>
               </li>
             ))}

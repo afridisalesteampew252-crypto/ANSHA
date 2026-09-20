@@ -1,0 +1,14 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-label="Japan auction sheets">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#14161a"/><stop offset="100%" stop-color="#2a2f38"/></linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g)"/>
+  <rect x="80" y="120" width="520" height="660" rx="18" fill="#1c2027" stroke="#c41e1e" stroke-width="3"/>
+  <rect x="120" y="180" width="440" height="28" rx="4" fill="#3a414d"/>
+  <rect x="120" y="240" width="300" height="18" rx="3" fill="#30363f"/>
+  <rect x="120" y="280" width="380" height="18" rx="3" fill="#30363f"/>
+  <rect x="120" y="340" width="200" height="120" rx="8" fill="#c41e1e" opacity="0.85"/>
+  <text x="720" y="360" fill="#f5f5f5" font-family="Georgia, serif" font-size="64" font-weight="700">Auction sheets</text>
+  <text x="720" y="440" fill="#b8bec8" font-family="Arial, sans-serif" font-size="32">Japan used cars · grades &amp; notes</text>
+  <text x="720" y="760" fill="#c41e1e" font-family="Arial, sans-serif" font-size="28" font-weight="700">ANSHA TRADING</text>
+</svg>
