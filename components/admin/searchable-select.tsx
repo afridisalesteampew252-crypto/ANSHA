@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -146,7 +146,7 @@ export function SearchableSelect({
                   <X className="h-3.5 w-3.5" />
                 </span>
               ) : null}
-              <ChevronsUpDown className="h-4 w-4 opacity-50" />
+              <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
             </span>
           </Button>
         </PopoverTrigger>

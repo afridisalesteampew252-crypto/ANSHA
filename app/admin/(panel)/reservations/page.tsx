@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { BookmarkPlus, Loader2 } from 'lucide-react';
+import { BookmarkPlus, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   SearchableSelect,
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { supabase } from '@/lib/supabase/client';
@@ -81,11 +82,13 @@ const defaultDue = () => {
   return date.toISOString().slice(0, 10);
 };
 
+const fieldClass = 'space-y-2';
+
 function partSelectOption(part: Part) {
   return {
     value: part.id,
     label: `${part.part_code} — ${part.name}`,
-    searchText: [part.part_code, part.name, part.oem_number].filter(Boolean).join(' '),
+    keywords: [part.part_code, part.name, part.oem_number],
   };
 }
 
@@ -136,8 +139,10 @@ function ReservationsPageInner() {
   const [eta, setEta] = useState('');
   const [busy, setBusy] = useState(false);
   const [role, setRole] = useState<AdminRole | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const fieldAgent = isFieldAgentRole(role);
   const requesterLocked = fieldAgent;
+  const inspectionInvalid = attemptedSubmit && !inspectionRequired;
 
   const load = useCallback(async () => {
     const {
@@ -244,6 +249,7 @@ function ReservationsPageInner() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setAttemptedSubmit(true);
     if (!customerId) {
       toast.error('Select a customer.');
       return;
@@ -355,12 +361,14 @@ function ReservationsPageInner() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+    <div className="mx-auto max-w-3xl space-y-8">
+      <div className="space-y-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Reservations</p>
+        <h1 className="flex items-center gap-2.5 text-2xl font-black tracking-tight sm:text-[1.75rem]">
+          <BookmarkPlus className="h-6 w-6 shrink-0 text-accent" />
           Reserve {kind === 'part' ? 'part' : 'vehicle'}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Hold available stock for a customer, assign it to the reserving sales agent, unpublish it, and
           create a proforma draft.
           {fieldAgent
@@ -369,37 +377,38 @@ function ReservationsPageInner() {
         </p>
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setKind('vehicle');
-            if (!shipmentTerm || shipmentTerm === 'dhl') setShipmentTerm('roro');
-          }}
-          className={cn(
-            'rounded-full border px-4 py-2 text-sm font-semibold',
-            kind === 'vehicle' ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'
-          )}
-        >
-          Vehicle
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setKind('part');
-            setShipmentTerm('dhl');
-          }}
-          className={cn(
-            'rounded-full border px-4 py-2 text-sm font-semibold',
-            kind === 'part' ? 'border-accent bg-accent text-white' : 'bg-card hover:border-accent/40'
-          )}
-        >
-          Part
-        </button>
+      <div
+        className="inline-flex rounded-full border border-border/80 bg-card p-1 shadow-sm"
+        role="group"
+        aria-label="Stock kind"
+      >
+        {(['vehicle', 'part'] as const).map((item) => {
+          const active = kind === item;
+          return (
+            <button
+              key={item}
+              type="button"
+              onClick={() => {
+                setKind(item);
+                if (item === 'part') setShipmentTerm('dhl');
+                else if (!shipmentTerm || shipmentTerm === 'dhl') setShipmentTerm('roro');
+              }}
+              className={cn(
+                'min-h-10 min-w-[5.5rem] rounded-full px-5 text-sm font-semibold capitalize transition-colors',
+                active
+                  ? 'bg-accent text-accent-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+              aria-pressed={active}
+            >
+              {item}
+            </button>
+          );
+        })}
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="space-y-1.5 pb-4">
           <CardTitle className="text-lg">Customer + {kind}</CardTitle>
           <CardDescription>
             Only available {kind === 'part' ? 'parts' : 'vehicles'} are listed. Reserved stock leaves the
@@ -407,8 +416,8 @@ function ReservationsPageInner() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void submit(event)}>
-            <div className="space-y-1.5 sm:col-span-2">
+          <form className="grid grid-cols-1 gap-5 sm:grid-cols-2" onSubmit={(event) => void submit(event)} noValidate>
+            <div className={cn(fieldClass, 'sm:col-span-2')}>
               <Label htmlFor="res-customer">Customer</Label>
               <SearchableSelect
                 id="res-customer"
@@ -422,7 +431,7 @@ function ReservationsPageInner() {
               />
             </div>
             {kind === 'vehicle' ? (
-              <div className="space-y-1.5 sm:col-span-2">
+              <div className={cn(fieldClass, 'sm:col-span-2')}>
                 <Label htmlFor="res-vehicle">Available vehicle</Label>
                 <SearchableSelect
                   id="res-vehicle"
@@ -436,7 +445,7 @@ function ReservationsPageInner() {
                 />
               </div>
             ) : (
-              <div className="space-y-1.5 sm:col-span-2">
+              <div className={cn(fieldClass, 'sm:col-span-2')}>
                 <Label htmlFor="res-part">Available part</Label>
                 <SearchableSelect
                   id="res-part"
@@ -450,126 +459,143 @@ function ReservationsPageInner() {
                 />
               </div>
             )}
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-price-term">Price term</Label>
-              <select
+              <NativeSelect
                 id="res-price-term"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={priceTerm}
                 onChange={(e) => setPriceTerm(e.target.value as PriceTerm)}
-                required
               >
                 {PRICE_TERMS.map((term) => (
                   <option key={term} value={term}>
                     {PRICE_TERM_LABELS[term]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-shipment-term">Shipment term</Label>
-              <select
+              <NativeSelect
                 id="res-shipment-term"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={shipmentTerm}
                 onChange={(e) => setShipmentTerm(e.target.value as ShipmentMode)}
-                required
               >
                 {SHIPMENT_MODES.map((mode) => (
                   <option key={mode} value={mode}>
                     {SHIPMENT_MODE_LABELS[mode]}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="res-inspection">Inspection</Label>
-              <select
+            <div className={fieldClass}>
+              <Label htmlFor="res-inspection">
+                Inspection <span className="font-normal text-muted-foreground">(required)</span>
+              </Label>
+              <NativeSelect
                 id="res-inspection"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={inspectionRequired}
-                onChange={(e) => setInspectionRequired(e.target.value as InspectionChoice | '')}
-                required
+                onChange={(e) => {
+                  setInspectionRequired(e.target.value as InspectionChoice | '');
+                }}
+                aria-invalid={inspectionInvalid || undefined}
+                data-touched={attemptedSubmit ? 'true' : undefined}
+                className={inspectionInvalid ? 'border-destructive' : undefined}
               >
-                <option value="" disabled>
-                  Select Yes or No
-                </option>
+                <option value="">Select Yes or No</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
-              </select>
+              </NativeSelect>
+              {inspectionInvalid ? (
+                <p className="text-[11px] text-destructive" role="alert">
+                  Choose Yes or No before submitting.
+                </p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">Required for the reservation proforma.</p>
+              )}
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-vat">VAT</Label>
-              <select
+              <NativeSelect
                 id="res-vat"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={vatApplicable}
                 onChange={(e) => setVatApplicable(e.target.value as VatChoice | '')}
-                required
               >
                 <option value="yes">Yes — apply VAT</option>
                 <option value="no">No — exclude VAT (0%)</option>
-              </select>
+              </NativeSelect>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="res-requester">Requester name</Label>
+            <div className={fieldClass}>
+              <Label htmlFor="res-requester" className="flex items-center gap-1.5">
+                Requester name
+                {requesterLocked ? <Lock className="h-3 w-3 text-muted-foreground" aria-hidden /> : null}
+              </Label>
               <Input
                 id="res-requester"
                 value={requesterName}
                 onChange={(e) => setRequesterName(e.target.value)}
                 required={!requesterLocked}
                 readOnly={requesterLocked}
-                disabled={requesterLocked}
                 maxLength={120}
-                className={requesterLocked ? 'bg-muted/50' : undefined}
+                className={requesterLocked ? 'admin-readonly-field' : undefined}
+                aria-readonly={requesterLocked || undefined}
               />
               {requesterLocked ? (
                 <p className="text-[11px] text-muted-foreground">Locked to your profile.</p>
               ) : null}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="res-requester-role">Requester role</Label>
-              <select
-                id="res-requester-role"
-                className={cn(
-                  'h-10 w-full rounded-md border bg-background px-3 text-sm',
-                  requesterLocked && 'bg-muted/50'
-                )}
-                value={requesterRole}
-                onChange={(e) => setRequesterRole(e.target.value as RequesterRole)}
-                required={!requesterLocked}
-                disabled={requesterLocked}
-              >
-                {REQUESTER_ROLES.map((item) => (
-                  <option key={item} value={item}>
-                    {REQUESTER_ROLE_LABELS[item]}
-                  </option>
-                ))}
-              </select>
+            <div className={fieldClass}>
+              <Label htmlFor="res-requester-role" className="flex items-center gap-1.5">
+                Requester role
+                {requesterLocked ? <Lock className="h-3 w-3 text-muted-foreground" aria-hidden /> : null}
+              </Label>
+              {requesterLocked ? (
+                <>
+                  <Input
+                    id="res-requester-role"
+                    readOnly
+                    value={requesterRole ? REQUESTER_ROLE_LABELS[requesterRole] : ''}
+                    className="admin-readonly-field"
+                    aria-readonly
+                  />
+                  <p className="text-[11px] text-muted-foreground">Locked to your profile.</p>
+                </>
+              ) : (
+                <NativeSelect
+                  id="res-requester-role"
+                  value={requesterRole}
+                  onChange={(e) => setRequesterRole(e.target.value as RequesterRole)}
+                >
+                  {REQUESTER_ROLES.map((item) => (
+                    <option key={item} value={item}>
+                      {REQUESTER_ROLE_LABELS[item]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              )}
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-etd">ETD</Label>
               <Input id="res-etd" type="date" value={etd} onChange={(e) => setEtd(e.target.value)} />
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-eta">ETA</Label>
               <Input id="res-eta" type="date" value={eta} onChange={(e) => setEta(e.target.value)} />
             </div>
             {kind === 'vehicle' && selectedVehicle ? (
-              <div className="sm:col-span-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="sm:col-span-2 rounded-md border border-border/70 bg-muted/30 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
                 Catalog quotes: FOB {selectedVehicle.price_fob ?? '—'} · C&F {selectedVehicle.price_cf ?? '—'}{' '}
                 · CIF {selectedVehicle.price_cif ?? '—'} · list {selectedVehicle.price ?? '—'} (
                 {selectedVehicle.currency})
               </div>
             ) : null}
             {kind === 'part' && selectedPart ? (
-              <div className="sm:col-span-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="sm:col-span-2 rounded-md border border-border/70 bg-muted/30 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
                 Qty {selectedPart.quantity} · FOB {selectedPart.price_fob ?? '—'} · C&F{' '}
                 {selectedPart.price_cf ?? '—'} · CIF {selectedPart.price_cif ?? '—'} · list{' '}
                 {selectedPart.price ?? '—'} ({selectedPart.currency})
               </div>
             ) : null}
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-price">Unit price</Label>
               <Input
                 id="res-price"
@@ -580,7 +606,7 @@ function ReservationsPageInner() {
                 onChange={(e) => setUnitPrice(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-currency">Currency</Label>
               <Input
                 id="res-currency"
@@ -589,7 +615,7 @@ function ReservationsPageInner() {
                 maxLength={3}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-tax">VAT %</Label>
               <Input
                 id="res-tax"
@@ -601,11 +627,11 @@ function ReservationsPageInner() {
                 onChange={(e) => setTaxRate(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="res-due">Proforma due date</Label>
               <Input id="res-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className={cn(fieldClass, 'sm:col-span-2')}>
               <Label htmlFor="res-notes">Notes</Label>
               <Textarea
                 id="res-notes"
@@ -615,12 +641,12 @@ function ReservationsPageInner() {
                 placeholder="Optional reservation note on the proforma"
               />
             </div>
-            <div className="flex flex-wrap gap-2 sm:col-span-2">
-              <Button type="submit" disabled={busy}>
+            <div className="flex flex-wrap gap-2 pt-1 sm:col-span-2">
+              <Button type="submit" disabled={busy} className="min-h-10">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookmarkPlus className="h-4 w-4" />}
                 Reserve + create proforma
               </Button>
-              <Button asChild type="button" variant="outline">
+              <Button asChild type="button" variant="outline" className="min-h-10">
                 <Link href="/admin/customers">Customers</Link>
               </Button>
             </div>

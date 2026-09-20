@@ -1,6 +1,6 @@
 # Current State
 
-Verified checkpoint: **2026-09-20** (Phases **64–65**: invoice unallocate-delete + stock restore; `vehicles.stock_pool` owned vs auction stock + `/admin/auction-stock`; Phase 63 parts stock ops + reserve/RLS + export_shipment_parts + redesigned catalog lists; Phase 62 stock ops + export masters + VAT; Phase 61/61b Incoterms; Phase 58 Tawk + Phase 60 presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery).
+Verified checkpoint: **2026-09-20** (admin UI polish on export masters / reserve / GRN + responsive shell; Phases **64–65**: invoice unallocate-delete + stock restore; `vehicles.stock_pool` owned vs auction stock + `/admin/auction-stock`; Phase 63 parts stock ops + reserve/RLS + export_shipment_parts + redesigned catalog lists; Phase 62 stock ops + export masters + VAT; Phase 61/61b Incoterms; Phase 58 Tawk + Phase 60 presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery).
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
@@ -11,15 +11,15 @@ Hosting: Vercel project `anshanew`
 | Area | Approx. done | Notes |
 |---|---|---|
 | Public catalog + SEO exporter site | **~96%** | Parts/vehicles/**machinery**/categories/blog+SEO/`/reviews`/offers/markets; FOB/C&F/CIF quote strip when set; **GSC verification meta**; favicon/OG; cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
-| Staff ERP (purchase → GL → VAT/payroll) | **~97%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**, **62–65**; owned vs auction vehicle pools; invoice unallocate-delete; vehicle + parts stock dashboards; export masters; field-agent reservation RLS; VAT Yes/No; doc-driven shipment status |
+| Staff ERP (purchase → GL → VAT/payroll) | **~98%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**, **62–65**; owned vs auction vehicle pools; invoice unallocate-delete; vehicle + parts stock dashboards; export masters; field-agent reservation RLS; VAT Yes/No; doc-driven shipment status; **admin form polish** (Configuration / Reserve / Receive + `NativeSelect` + responsive shell) |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~80%** | Push **Edge VAPID secrets** often invalid until re-set correctly |
 | Customer portal | **~75%** | Invoices + SOA; no remittance UX for customers |
 | PWA / Capacitor | **~85%** | Named **Anshatradingco APP**; install CTAs; Capacitor shell docs; SW precaches favicon |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–65 + stock loads + SEO/GSC) |
+| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–65 + admin UI polish + stock loads + SEO/GSC) |
 
-**Overall product maturity (shipping ERP + public exporter):** roughly **90–95%** of the Phase 1–65 roadmap that was chosen and built. Remaining work is polish, secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, and test coverage — not a greenfield rewrite.
+**Overall product maturity (shipping ERP + public exporter):** roughly **92–95%** of the Phase 1–65 roadmap that was chosen and built. Core MVP (public catalog + staff purchase→sales→export→finance) is **shipped**. Remaining work is operator secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, automated tests, and incremental UX — not a greenfield rewrite.
 
 ## What exists now (high signal)
 
@@ -56,7 +56,7 @@ Hosting: Vercel project `anshanew`
 - **Live chat** (`/admin/live-chat`) — Needs attention list + open-count badge + Tawk open shortcuts; **`admin` + `manager` only** (`canAccessLiveChat`; nav + `proxy.ts`). Not staff / sales / freelancer / accounts. Reply in Tawk dashboard; dismiss clears ANSHA only. Setup: `docs/Tawk.md`.
 - Marketing: blog (Write/HTML/Preview), offers, campaigns, **PWA subscribers**, trade config
 - Analytics, AI assistant, audit log (admin SELECT), WhatsApp, outbound email
-- Admin chrome: Pakistan + Dubai clocks + FX strip
+- Admin chrome: Pakistan + Dubai clocks + FX strip; **responsive shell** (`admin-shell` / `admin-table-scroll`, mobile nav body lock); shared **`NativeSelect`** + SearchableSelect chevron polish on Configuration / Reserve / Receive Stock forms
 - Roles: `admin` | `staff` | `sales` | `freelancer` | `manager` | `accounts` (account-admin gates; Phases 54–55)
 - Field agents (`sales` / `freelancer`): catalog lists, own-book customers, reserve, **draft proforma only**; Phase 62–63 RLS — see **available** + **own `reserved_by`** vehicles **and parts** only
 - Accounts: receivables (approve draft→sent), remittances, related finance views — not full admin
@@ -119,7 +119,8 @@ Through **Phase 65**. Phase 65: `vehicles.stock_pool` (`owned`|`auction_third_pa
 9. Spot-check Phase 63: `/admin/parts/stock`; reserve/release parts; field-agent parts RLS; export shipment with parts; locked requester fields for sales/freelancer; redesigned `/admin/parts` + `/admin/vehicles`.
 10. Spot-check Phase 64: invoice delete blocked while allocations exist; Unallocate then Delete (or Unallocate & delete); linked vehicle/part returns to available.
 11. Spot-check Phase 65: `/admin/vehicles` shows owned only; `/admin/auction-stock` shows Japan/third-party auction; transfer to owned / mark auction; stock ops stay owned-only.
-12. Add Playwright smoke for public catalog + admin login when ready for quality gates.
+12. Spot-check admin UI polish: Configuration search/inactive filter; Reserve + Receive Stock NativeSelect forms on phone + desktop; invoice/stock filter bars wrap cleanly.
+13. Add Playwright smoke for public catalog + admin login when ready for quality gates.
 
 ## Doc map
 

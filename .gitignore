@@ -43,11 +43,14 @@ next-env.d.ts
 *.jks
 .env*
 
-# Local one-off import working files
+# Local one-off import working files / scratch
 .tmp-wa-parts/
 .tmp-wa-dubai/
 .tmp-wa-keys/
+.tmp-dubai-wa-sep20/
 .tmp_*/
+.tmp_*
+.tmp-*
 lib/*.wip.bak*
 lib/_types_head_raw.txt
 _import_japan_stock/
@@ -55,4 +58,5 @@ _import_japan_stock_optimized/
 _import_japan_stock_report.json
 
 scripts/tmp/
+scripts/seed-part-0.sql
 supabase/.temp/

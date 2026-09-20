@@ -38,6 +38,12 @@ export default function AdminPartsPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [agentNames, setAgentNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      setFiltersOpen(false);
+    }
+  }, []);
   const [shipmentByPart, setShipmentByPart] = useState<Record<string, string>>({});
   const [invoiceByPart, setInvoiceByPart] = useState<Record<string, string>>({});
   const [role, setRole] = useState<AdminRole | null>(null);
@@ -295,7 +301,7 @@ export default function AdminPartsPage() {
               Search filters
             </CardTitle>
             <CollapsibleTrigger asChild>
-              <Button type="button" size="sm" variant="ghost">
+              <Button type="button" size="sm" variant="ghost" className="min-h-10 gap-1.5">
                 <ChevronDown className={cn('h-4 w-4 transition', filtersOpen && 'rotate-180')} />
                 {filtersOpen ? 'Hide' : 'Show'}
               </Button>

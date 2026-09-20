@@ -127,6 +127,8 @@ Done (Phase 64): invoice unallocate-then-delete — remittance allocations must 
 
 Done (Phase 65): vehicle stock pools — `vehicles.stock_pool` (`owned`|`auction_third_party`); `/admin/vehicles` = owned only; `/admin/auction-stock` = third-party auction; transfer actions; Japan-origin defaults/backfill to auction; stock ops filter owned. Migration `20260920230000_phase_65_vehicle_stock_pool.sql` (applied remote). Helpers: `lib/stock.ts` (`STOCK_POOLS`), shared `AdminVehiclesInventoryPage`.
 
+Also shipped (admin UI polish, post-65, no migration): Configuration export-masters list search + inactive filter; Reserve + Receive Stock form layout with shared `NativeSelect` (`components/ui/native-select.tsx`); SearchableSelect chevron alignment; admin shell responsive tweaks (`admin-shell` / `admin-table-scroll`, mobile nav overflow lock); invoice/stock/parts filter bars wrap on small screens.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.

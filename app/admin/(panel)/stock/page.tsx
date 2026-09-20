@@ -119,6 +119,12 @@ export default function StockOpsPage() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [agents, setAgents] = useState<Array<{ id: string; label: string }>>([]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      setFiltersOpen(false);
+    }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     const [{ rows: data, error }, agentRes] = await Promise.all([
@@ -240,7 +246,7 @@ export default function StockOpsPage() {
                   Search filters
                 </CardTitle>
                 <CollapsibleTrigger asChild>
-                  <Button type="button" size="sm" variant="ghost">
+                  <Button type="button" size="sm" variant="ghost" className="min-h-10 gap-1.5">
                     <ChevronDown className={cn('h-4 w-4 transition', filtersOpen && 'rotate-180')} />
                     {filtersOpen ? 'Hide' : 'Show'}
                   </Button>

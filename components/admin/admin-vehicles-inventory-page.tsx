@@ -87,6 +87,12 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
   const machineryFocus = vehicleClass === 'machinery';
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      setFiltersOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
     setVehicleClass(parseClassFilter(searchParams.get('class')));
   }, [searchParams]);
 
@@ -440,7 +446,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
               Search filters
             </CardTitle>
             <CollapsibleTrigger asChild>
-              <Button type="button" size="sm" variant="ghost">
+              <Button type="button" size="sm" variant="ghost" className="min-h-10 gap-1.5">
                 <ChevronDown className={cn('h-4 w-4 transition', filtersOpen && 'rotate-180')} />
                 {filtersOpen ? 'Hide' : 'Show'}
               </Button>

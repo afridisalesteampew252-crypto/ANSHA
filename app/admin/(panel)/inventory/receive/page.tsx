@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, PackagePlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 import type { InventoryReceipt, PurchaseOrder, Supplier, SupplierInvoice } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 type StockOption = {
   id: string;
@@ -22,6 +24,8 @@ type StockOption = {
   part_code?: string | null;
   name?: string | null;
 };
+
+const fieldClass = 'space-y-2';
 
 export default function InventoryReceivePage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -81,6 +85,22 @@ export default function InventoryReceivePage() {
     setCurrency(po.currency || 'AED');
   }, [purchaseOrderId, purchaseOrders]);
 
+  const vehicleOptions = useMemo(() => vehicles.map(vehicleSelectOption), [vehicles]);
+  const partOptions = useMemo(
+    () =>
+      parts.map((row) => ({
+        value: row.id,
+        label: row.label,
+        keywords: [row.part_code, row.name],
+      })),
+    [parts]
+  );
+
+  const filteredInvoices = useMemo(() => {
+    if (!supplierId) return supplierInvoices;
+    return supplierInvoices.filter((row) => !row.supplier_id || row.supplier_id === supplierId);
+  }, [supplierId, supplierInvoices]);
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const cost = Number(unitCost);
@@ -123,76 +143,126 @@ export default function InventoryReceivePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Receive stock</h1>
-        <p className="text-sm text-muted-foreground">
-          Goods receipt (GRN) applies purchase cost to an existing vehicle or part. Create the catalog item first if needed.
+    <div className="mx-auto max-w-3xl space-y-8">
+      <div className="space-y-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Purchase &amp; stock</p>
+        <h1 className="flex items-center gap-2.5 text-2xl font-black tracking-tight sm:text-[1.75rem]">
+          <PackagePlus className="h-6 w-6 shrink-0 text-accent" />
+          Receive stock
+        </h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Goods receipt (GRN) applies purchase cost to an existing vehicle or part. Create the catalog item
+          first if needed.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="space-y-1.5 pb-4">
           <CardTitle className="text-lg">New receipt</CardTitle>
           <CardDescription>
-            Optional link to a confirmed <Link href="/admin/purchase-orders" className="text-primary underline">purchase order</Link> and{' '}
-            <Link href="/admin/invoices/supplier" className="text-primary underline">supplier invoice file</Link>.
+            Optional link to a confirmed{' '}
+            <Link href="/admin/purchase-orders" className="text-primary underline-offset-2 hover:underline">
+              purchase order
+            </Link>{' '}
+            and{' '}
+            <Link href="/admin/invoices/supplier" className="text-primary underline-offset-2 hover:underline">
+              supplier invoice file
+            </Link>
+            .
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void submit(event)}>
-            <div className="space-y-1.5">
+          <form className="grid grid-cols-1 gap-5 sm:grid-cols-2" onSubmit={(event) => void submit(event)}>
+            <div className={fieldClass}>
               <Label htmlFor="grn-date">Received date</Label>
-              <Input id="grn-date" type="date" value={receivedDate} onChange={(e) => setReceivedDate(e.target.value)} required />
+              <Input
+                id="grn-date"
+                type="date"
+                value={receivedDate}
+                onChange={(e) => setReceivedDate(e.target.value)}
+                required
+              />
             </div>
-            <div className="space-y-1.5">
+            <div className={fieldClass}>
               <Label htmlFor="grn-currency">Currency</Label>
-              <Input id="grn-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} required />
+              <Input
+                id="grn-currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                maxLength={3}
+                required
+              />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
+
+            <div className={cn(fieldClass, 'sm:col-span-2')}>
               <Label htmlFor="grn-po">Purchase order</Label>
-              <select id="grn-po" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={purchaseOrderId} onChange={(e) => setPurchaseOrderId(e.target.value)}>
+              <NativeSelect
+                id="grn-po"
+                value={purchaseOrderId}
+                onChange={(e) => setPurchaseOrderId(e.target.value)}
+              >
                 <option value="">No PO</option>
                 {purchaseOrders.map((row) => (
-                  <option key={row.id} value={row.id}>{row.po_number} · {row.currency} · {row.match_status.replaceAll('_', ' ')}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="grn-supplier">Supplier</Label>
-              <select id="grn-supplier" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                <option value="">No supplier</option>
-                {suppliers.map((row) => (
-                  <option key={row.id} value={row.id}>{row.supplier_code} — {row.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="grn-supplier-invoice">Supplier invoice file</Label>
-              <select id="grn-supplier-invoice" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={supplierInvoiceId} onChange={(e) => setSupplierInvoiceId(e.target.value)}>
-                <option value="">None</option>
-                {supplierInvoices.map((row) => (
                   <option key={row.id} value={row.id}>
-                    {(row.invoice_number || row.file_name)} · {row.supplier_name} · {row.invoice_date}
+                    {row.po_number} · {row.currency} · {row.match_status.replaceAll('_', ' ')}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
-            <div className="space-y-1.5">
+
+            <div className={fieldClass}>
+              <Label htmlFor="grn-supplier">Supplier</Label>
+              <NativeSelect
+                id="grn-supplier"
+                value={supplierId}
+                onChange={(e) => {
+                  setSupplierId(e.target.value);
+                  setSupplierInvoiceId('');
+                }}
+              >
+                <option value="">No supplier</option>
+                {suppliers.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.supplier_code} — {row.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className={fieldClass}>
+              <Label htmlFor="grn-supplier-invoice">Supplier invoice file</Label>
+              <NativeSelect
+                id="grn-supplier-invoice"
+                value={supplierInvoiceId}
+                onChange={(e) => setSupplierInvoiceId(e.target.value)}
+              >
+                <option value="">None</option>
+                {filteredInvoices.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.invoice_number || row.file_name} · {row.supplier_name} · {row.invoice_date}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+
+            <div className={fieldClass}>
               <Label htmlFor="grn-type">Stock type</Label>
-              <select id="grn-type" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={inventoryType} onChange={(e) => setInventoryType(e.target.value as 'vehicle' | 'part')}>
+              <NativeSelect
+                id="grn-type"
+                value={inventoryType}
+                onChange={(e) => setInventoryType(e.target.value as 'vehicle' | 'part')}
+              >
                 <option value="vehicle">Vehicle</option>
                 <option value="part">Part</option>
-              </select>
+              </NativeSelect>
             </div>
             {inventoryType === 'vehicle' ? (
-              <div className="space-y-1.5">
+              <div className={fieldClass}>
                 <Label htmlFor="grn-vehicle">Vehicle</Label>
                 <SearchableSelect
                   id="grn-vehicle"
                   value={vehicleId}
                   onValueChange={setVehicleId}
-                  options={vehicles.map(vehicleSelectOption)}
+                  options={vehicleOptions}
                   placeholder="Select vehicle"
                   searchPlaceholder="Search stock #, chassis, title…"
                   clearLabel="Select vehicle"
@@ -200,40 +270,54 @@ export default function InventoryReceivePage() {
                 />
               </div>
             ) : (
-              <>
-                <div className="space-y-1.5">
-                  <Label htmlFor="grn-part">Part</Label>
-                  <SearchableSelect
-                    id="grn-part"
-                    value={partId}
-                    onValueChange={setPartId}
-                    options={parts.map((row) => ({
-                      value: row.id,
-                      label: row.label,
-                      keywords: [row.part_code, row.name],
-                    }))}
-                    placeholder="Select part"
-                    searchPlaceholder="Search part code or name…"
-                    clearLabel="Select part"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="grn-qty">Quantity</Label>
-                  <Input id="grn-qty" type="number" min="0.001" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
-                </div>
-              </>
+              <div className={fieldClass}>
+                <Label htmlFor="grn-part">Part</Label>
+                <SearchableSelect
+                  id="grn-part"
+                  value={partId}
+                  onValueChange={setPartId}
+                  options={partOptions}
+                  placeholder="Select part"
+                  searchPlaceholder="Search part code or name…"
+                  clearLabel="Select part"
+                  required
+                />
+              </div>
             )}
-            <div className="space-y-1.5">
+
+            {inventoryType === 'part' ? (
+              <div className={fieldClass}>
+                <Label htmlFor="grn-qty">Quantity</Label>
+                <Input
+                  id="grn-qty"
+                  type="number"
+                  min="0.001"
+                  step="any"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                />
+              </div>
+            ) : null}
+            <div className={fieldClass}>
               <Label htmlFor="grn-cost">Unit cost</Label>
-              <Input id="grn-cost" type="number" min="0" step="0.01" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} required />
+              <Input
+                id="grn-cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={unitCost}
+                onChange={(e) => setUnitCost(e.target.value)}
+                required
+              />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
+
+            <div className={cn(fieldClass, 'sm:col-span-2')}>
               <Label htmlFor="grn-notes">Notes</Label>
               <Textarea id="grn-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
             </div>
-            <div className="sm:col-span-2">
-              <Button type="submit" disabled={busy}>
+            <div className="pt-1 sm:col-span-2">
+              <Button type="submit" disabled={busy} className="min-h-10">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <PackagePlus className="h-4 w-4" />}
                 Post receipt
               </Button>
@@ -242,18 +326,28 @@ export default function InventoryReceivePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg">Recent receipts</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
-          {receipts.map((row) => (
-            <div key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm">
-              <span className="font-mono font-semibold">{row.receipt_number}</span>
-              <span className="text-muted-foreground">{row.received_date} · {row.currency}</span>
-            </div>
-          ))}
-          {receipts.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No receipts yet.</p> : null}
+        <CardContent className="p-0">
+          {receipts.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">No receipts yet.</p>
+          ) : (
+            <ul className="divide-y divide-border/70">
+              {receipts.map((row) => (
+                <li
+                  key={row.id}
+                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm sm:px-6"
+                >
+                  <span className="font-mono font-semibold">{row.receipt_number}</span>
+                  <span className="text-muted-foreground">
+                    {row.received_date} · {row.currency}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

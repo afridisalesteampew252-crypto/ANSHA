@@ -146,6 +146,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
+  useEffect(() => {
+    document.body.classList.toggle('admin-nav-open', mobileOpen);
+    return () => document.body.classList.remove('admin-nav-open');
+  }, [mobileOpen]);
+
   const toggleCollapsed = () => {
     setCollapsed((current) => {
       const next = !current;
@@ -208,13 +213,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <header className="admin-topbar sticky top-0 z-40 border-b border-border/80 backdrop-blur md:hidden">
           <div className="flex h-14 items-center justify-between px-3">
             <div className="flex min-w-0 items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Open admin menu"><Menu className="h-6 w-6" /></Button>
+              <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => setMobileOpen(true)} aria-label="Open admin menu"><Menu className="h-6 w-6" /></Button>
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">ANSHA ops</p>
                 <h1 className="truncate text-base font-bold">{pageTitle}</h1>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-0.5">
+            <div className="flex shrink-0 items-center gap-1">
               <AdminNotificationCenter userId={profile.id} />
               <ThemeToggle />
               <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
@@ -272,7 +277,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <AdminMarketChrome compact />
         </div>
 
-        <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-5 md:p-6 xl:p-8">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-clip p-3 pb-8 sm:p-5 sm:pb-10 md:p-6 md:pb-12 xl:p-8">{children}</main>
       </div>
       </div>
     </AdminPresenceProvider>

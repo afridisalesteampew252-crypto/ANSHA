@@ -163,10 +163,10 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 2. Open a customer for statement of account (invoices, remittances, allocations).
 3. **Admin only:** enable portal access from the customer SOA page (sends portal credentials via the provision flow).
 
-**Reserve vehicle** — `/admin/reservations` (field agents + ops)
+**Reserve stock** — `/admin/reservations` (field agents + ops)
 
-1. Select an available vehicle and customer. Field agents only see **available** units plus vehicles **they** reserved.
-2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release.
+1. Select an available **vehicle or part** and customer. Field agents only see **available** units plus stock **they** reserved.
+2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release. Sales/freelancer requester fields are locked to their profile.
 3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. VAT No expects zero tax rates on the draft.
 4. Release (with republish when appropriate) if the deal does not proceed.
 
@@ -193,6 +193,11 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 1. Review **owned** vehicle inventory with dual columns: **payment/stock status** (Available / Reserved / Partial Paid / Paid / Unpaid / Sold) and **shipment status** (Not Booked / Booked / Shipped / Delivered). Auction-pool units are managed under **Auction stock**, not this board.
 2. Use summary chips and filters; open a vehicle for detail.
 3. **Arrival Watch** (`/admin/stock/arrival-watch`) — units with ETD/ETA or in-transit shipment focus.
+
+**Parts stock** — `/admin/parts/stock` (ops)
+
+1. Same dual payment×shipment status model as vehicles, scoped to parts inventory.
+2. Reserve / release / proforma from **Reserve stock**; field agents only see available + own reserved parts.
 
 **Export shipments** — `/admin/export-shipments` (ops)
 
@@ -241,7 +246,7 @@ Header **notification center**: team messages, mail, inquiries, part requests, r
 | Campaigns | `/admin/campaigns` (ops) | Draft campaigns (push / email / offer channel) → **Send now**. |
 | PWA subscribers | `/admin/subscribers` (ops) | List push opt-ins (deals/insights), filter, remove stale rows. |
 | Trade config | `/admin/trade-config` (ops) | FX reference rates, freight notes, per-country import policies for `/markets/[code]`. |
-| Configuration | `/admin/configuration` (ops) | Maintain export master lists: destination countries, loading/destination ports, vessels, voyages used on export shipments. |
+| Configuration | `/admin/configuration` (ops) | Maintain export master lists: destination countries, loading/destination ports, vessels, voyages used on export shipments. Search the list; toggle inactive rows. Seeded countries/ports ship with Phase 62/63 migrations. |
 
 ### 5.9 HR
 
@@ -278,16 +283,17 @@ Portal access is enabled by an **admin** from the customer page in ERP. Remittan
 
 ## 7. Tips
 
-1. **Searchable selects** — Prefer typing in dropdowns when choosing customers, stock, suppliers, or categories; long lists are meant to be filtered by search, not scrolled blindly.
+1. **Searchable selects / NativeSelect** — Prefer typing in dropdowns when choosing customers, stock, suppliers, or categories; long lists are meant to be filtered by search. Term selects (price/shipment/VAT) use the shared native select chrome.
 2. **Public stock** — Only **available** + **published** items show on the website. Reserve or sell in ERP before expecting the public list to change.
 3. **Vehicle publish** — You can publish a vehicle only while `stock_status` is available.
 4. **Role menus** — Field agents, accounts, and managers see intentional allowlists; missing sidebar items are by design.
 5. **Secrets for integrations** — Outbound email needs Resend; WhatsApp needs Meta token + phone number ID; AI needs `AI_GATEWAY_API_KEY` or `OPENAI_API_KEY`; Web Push needs VAPID keys; Tawk needs `NEXT_PUBLIC_TAWK_PROPERTY_ID` + `NEXT_PUBLIC_TAWK_WIDGET_ID`. Without them, the related admin screens show setup/empty send states (Tawk widget simply does not load).
 6. **Live chat roles** — `/admin/live-chat` is **admin + manager only**. Staff, sales, freelancer, and accounts cannot open it.
-6. **Quick add** — Desktop header **Quick add** jumps to new part/vehicle/invoice, customers, remittances, offers, or bulk import.
-7. **QR invoices** — Share the verify URL from the invoice; buyers confirm authenticity via QR or the verification code on the A4 print.
-8. **Banking page** — Point customers to `/banking` for official AED/USD payment details rather than pasting ad-hoc numbers in chat.
-9. **Auction sheets** — Admin-only; never appear on the public vehicle gallery.
+7. **Quick add** — Desktop header **Quick add** jumps to new part/vehicle/invoice, customers, remittances, offers, or bulk import.
+8. **QR invoices** — Share the verify URL from the invoice; buyers confirm authenticity via QR or the verification code on the A4 print.
+9. **Banking page** — Point customers to `/banking` for official AED/USD payment details rather than pasting ad-hoc numbers in chat.
+10. **Auction sheets** — Admin-only; never appear on the public vehicle gallery.
+11. **Owned vs auction stock** — `/admin/vehicles` is purchased inventory; Japan/third-party listings live under **Auction stock** until transferred to owned.
 
 ---
 

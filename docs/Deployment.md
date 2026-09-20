@@ -123,6 +123,32 @@ App-only ship after schema already applied:
 - No new Vercel or Edge Function secrets. Routes: `/admin/stock`, `/admin/stock/arrival-watch`, `/admin/configuration`.
 - After production READY: spot-check stock dual-status columns, Arrival Watch, Configuration masters on export shipments, field-agent own-reservation visibility, VAT Yes/No on reserve/proforma, BOL/waybill status automation.
 
+## Phase 63 (parts stock ops + export parts)
+
+App-only ship after schema already applied:
+
+- Migrations: `20260920210000_phase_63_parts_stock_ops_sales_scope.sql`, `20260920210000_seed_export_master_options.sql` — **do not re-apply** if already recorded.
+- Routes: `/admin/parts/stock`; export shipments accept `part_ids` / `export_shipment_parts`.
+- After production READY: reserve/release parts; field-agent parts RLS; redesigned `/admin/parts` + `/admin/vehicles` lists.
+
+## Phase 64 (invoice unallocate-delete + stock restore)
+
+App-only ship after schema already applied:
+
+- Migration: `20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`.
+- Helpers: `lib/invoice-delete.ts`. Spot-check Unallocate → Delete and Unallocate & delete; linked stock returns to available.
+
+## Phase 65 (owned vs auction stock pools)
+
+App-only ship after schema already applied:
+
+- Migration: `20260920230000_phase_65_vehicle_stock_pool.sql` (Japan backfill to `auction_third_party`).
+- Routes: `/admin/vehicles` (owned), `/admin/auction-stock` (third-party). Stock ops stay owned-only.
+
+## Admin UI polish (post-65, no migration)
+
+App-only: Configuration search/inactive filter; Reserve + Receive Stock `NativeSelect` forms; SearchableSelect chevron; responsive admin shell (`admin-shell` / `admin-table-scroll`). No schema or secrets.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.

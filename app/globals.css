@@ -348,6 +348,38 @@
   min-width: 0;
 }
 
+/* Keep wide admin tables inside the viewport; scroll horizontally when needed. */
+.admin-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-scroll > table {
+  min-width: 36rem;
+}
+
+/* Intentionally read-only fields (not broken disabled). */
+.admin-readonly-field {
+  @apply cursor-default border-border/80 bg-muted/40 text-foreground;
+}
+
+.admin-readonly-field:disabled,
+.admin-readonly-field[readonly] {
+  @apply opacity-100;
+}
+
+/* Avoid browser :invalid red chrome on untouched required selects. */
+.admin-shell select:invalid:not(:focus):not([data-touched='true']) {
+  border-color: hsl(var(--input));
+  box-shadow: none;
+}
+
+body.admin-nav-open {
+  overflow: hidden;
+}
+
 /* A4 invoice sheet — screen preview mirrors print content box (A4 − 10mm margins) */
 .invoice-a4-label {
   margin: 0;

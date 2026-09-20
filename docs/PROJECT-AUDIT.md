@@ -36,7 +36,7 @@ Legend: **Fact** | **Gap** | **Recommendation**
 | API | `app/api/{health,fx,ai/chat,cron/request-dues}` |
 | Domain libs | `lib/` (`types`, `site-offers`, `export-markets`, `fx`, `featured-rotation`, `vehicle-photos`, …) |
 | Hooks | `hooks/` (`use-inventory-deals`, `use-fx-rates`, `use-live-clock`, …) |
-| Migrations | `supabase/migrations/` (through Phase 57) |
+| Migrations | `supabase/migrations/` (through Phase **65**) |
 | Edge Functions | `supabase/functions/*` |
 | One-off import scripts | `scripts/import-japan-stock-vehicles.mjs`, `scripts/import-whatsapp-parts*.mjs`, `scripts/import-dubai-whatsapp-sep20-stock.mjs` |
 
@@ -80,25 +80,29 @@ Most catalog/ERP pages are Client Components talking to PostgREST with the anon/
 
 Overview: dashboard, analytics, AI, audit-log (admin)  
 Catalog: parts, vehicles, Machinery & trucks filter, categories, imports, suppliers  
-Purchase/stock: purchase-orders, inventory/receive, reservations  
+Purchase/stock: purchase-orders, inventory/receive, **stock**, **parts/stock**, **stock/arrival-watch**, reservations, **auction-stock**  
 Sales/finance: customers, invoices, remittances, bank-accounts, expenses, ledger, reports, vat-return  
 Logistics: export-shipments, landed-cost  
 Inbox: inquiries, **live-chat (admin+manager only)**, requests, chat, mail, email, whatsapp  
-Marketing: blog, offers, campaigns, **subscribers**, **trade-config**  
+Marketing: blog, offers, campaigns, **subscribers**, **trade-config**, **configuration** (export masters)  
 HR: `/admin/hr*` (ops manage; manager view)  
 Team: payroll, users, profile
 
 **Fact — admin chrome**
 
-Live Pakistan + Dubai clocks and compact AED FX in the admin header.
+Live Pakistan + Dubai clocks and compact AED FX in the admin header. Responsive shell (`admin-shell` / `admin-table-scroll`); shared `NativeSelect` on Configuration / Reserve / Receive forms.
 
-**Fact — vehicles / invoices (Phases 54–57)**
+**Fact — vehicles / invoices / stock (Phases 54–65)**
 
 - Auction sheet badge; clickable tag → lightbox of `is_auction_sheet` images
 - `vehicle_class` / equipment category / operating hours; public `/machinery`
 - Field agents: draft proforma only; accounts/ops approve sent
 - A4 print: denser layout; verification code on face with QR
-- Tawk Live chat: **admin + manager only**
+- Tawk Live chat: **admin + manager only**; Phase 58 webhook Needs attention
+- Team Chat presence (Phase 60)
+- Stock ops dual status + Arrival Watch (62); parts stock parity (63)
+- Invoice unallocate-then-delete restores stock (64)
+- Owned vs auction `stock_pool` (65)
 
 **Gap**
 
@@ -134,12 +138,18 @@ Enable Supabase leaked-password protection (dashboard).
 
 **Fact**
 
-- Additive migrations Phase 1 → **57** under `supabase/migrations/`
+- Additive migrations Phase 1 → **65** under `supabase/migrations/`
 - Phase 53: payroll delete RPCs (account-admin)
 - Phase 54: field agents / HR / catalog audit
 - Phase 55: accounts role + draft proforma RBAC
 - Phase 56: `vehicle_photos.is_auction_sheet`
 - Phase 57: `vehicles.vehicle_class` / `equipment_category` / `operating_hours`
+- Phase 58: Tawk webhook mirror tables
+- Phase 60: Team Chat `last_seen_at` presence
+- Phase 61/61b: export docs + Incoterms + reservation/invoice terms
+- Phase 62–63: stock ops, export masters (+ seed), parts reserve/RLS, `export_shipment_parts`
+- Phase 64: invoice unallocate-delete + stock restore RPCs
+- Phase 65: `vehicles.stock_pool` owned vs auction
 - Stock master remains `vehicles` / `parts` (no second catalog)
 
 See [Database](./Database.md) for schema detail.
@@ -156,6 +166,7 @@ See [Database](./Database.md) for schema detail.
 | `send-outbound-email` | Resend |
 | `send-whatsapp` | Meta Cloud API |
 | `remind-request-dues` | Request due reminders |
+| `tawk-webhook` | Phase 58 Tawk → Needs attention (deploy `--no-verify-jwt`) |
 
 **Gap — operational**
 
