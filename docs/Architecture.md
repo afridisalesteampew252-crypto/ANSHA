@@ -16,7 +16,7 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - Auction sheets (Phase 56): `vehicle_photos.is_auction_sheet` — public RLS hides; admin badge + lightbox
 - Heavy machinery & trucks (Phase 57): `vehicles.vehicle_class` + public `/machinery` + admin class filters (`lib/vehicle-class.ts`)
 - Home featured rotation: `lib/featured-rotation.ts` (10-minute buckets; 8 parts / 4 vehicles)
-- Tawk.to: public widget + admin Live chat (**admin + manager only**)
+- Tawk.to: public widget + admin Live chat Needs attention (**admin + manager only**; Phase 58 webhook mirror)
 - PWA subscribers admin: `/admin/subscribers` (ops) over `push_subscriptions`
 - WhatsApp Cloud API: `whatsapp_message_log` + Edge Function `send-whatsapp` (Phase 40)
 - AI ops assistant: `/admin/ai` + `POST /api/ai/chat` (Vercel AI SDK; server `AI_GATEWAY_API_KEY` / `OPENAI_API_KEY`) (Phase 42)
