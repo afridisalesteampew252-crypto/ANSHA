@@ -45,6 +45,8 @@ Deno.serve(async (request) => {
     if (!['admin', 'staff', 'sales', 'freelancer', 'manager', 'accounts'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
 
     const allowedOrigins = sanitizeOrigins(payload.allowed_stock_origins, role);
+    const officeId = optionalUuid(payload.office_id);
+    const shiftId = optionalUuid(payload.shift_id);
 
     const { data: created, error: createError } = await serviceClient.auth.admin.createUser({
       email,
@@ -65,6 +67,8 @@ Deno.serve(async (request) => {
       avatar_url: payload.avatar_url || null,
       is_active: true,
       allowed_stock_origins: allowedOrigins,
+      office_id: officeId,
+      shift_id: shiftId,
     }, { onConflict: 'id' });
 
     if (profileError) {
@@ -72,13 +76,22 @@ Deno.serve(async (request) => {
       return json(request, { error: `Account profile could not be created: ${profileError.message}` }, 500);
     }
 
-    return json(request, { id: created.user.id, email, full_name: fullName, role, allowed_stock_origins: allowedOrigins }, 201);
+    return json(request, {
+      id: created.user.id,
+      email,
+      full_name: fullName,
+      role,
+      allowed_stock_origins: allowedOrigins,
+      office_id: officeId,
+      shift_id: shiftId,
+    }, 201);
   } catch (error) {
     return json(request, { error: error instanceof Error ? error.message : 'Unknown user creation error.' }, 500);
   }
 });
 
 const VALID_ORIGINS = new Set(['japan', 'dubai', 'singapore', 'china', 'thailand', 'taiwan']);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function sanitizeOrigins(raw: unknown, role: string): string[] {
   if (role !== 'manager') return [];
@@ -89,4 +102,10 @@ function sanitizeOrigins(raw: unknown, role: string): string[] {
     if (VALID_ORIGINS.has(value) && !out.includes(value)) out.push(value);
   }
   return out;
+}
+
+function optionalUuid(raw: unknown): string | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const value = String(raw).trim();
+  return UUID_RE.test(value) ? value : null;
 }

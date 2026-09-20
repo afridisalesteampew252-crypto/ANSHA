@@ -322,6 +322,10 @@ export interface AdminProfile {
    * Empty array = no inventory access. Ignored for non-manager roles.
    */
   allowed_stock_origins?: StockOrigin[] | string[] | null;
+  /** Phase 70: default remittance collection office (Users UI). */
+  office_id?: string | null;
+  /** Phase 70: default remittance desk shift (Users UI). */
+  shift_id?: string | null;
   created_at: string;
 }
 
@@ -781,7 +785,7 @@ export interface RemittanceSequence {
   next_number: number;
 }
 
-/** Phase 69 — remittance collection office master */
+/** Phase 70 — office picklist for user profiles + remittance tagging/dashboard */
 export interface RemittanceOffice {
   id: string;
   name: string;
@@ -793,7 +797,7 @@ export interface RemittanceOffice {
   updated_at: string;
 }
 
-/** Phase 69 — remittance desk shift master */
+/** Phase 70 — shift picklist for user profiles + remittance tagging */
 export interface RemittanceShift {
   id: string;
   name: string;

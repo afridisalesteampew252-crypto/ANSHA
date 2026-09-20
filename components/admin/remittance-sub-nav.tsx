@@ -16,8 +16,6 @@ const ITEMS: RemittanceNavItem[] = [
   { href: '/admin/remittances', label: 'Remittances', financeOnly: true },
   { href: '/admin/remittances/mine', label: 'My remittances' },
   { href: '/admin/remittances/unknown', label: 'Unknown TTS', financeOnly: true },
-  { href: '/admin/remittances/offices', label: 'Offices', financeOnly: true },
-  { href: '/admin/remittances/shifts', label: 'Shifts', financeOnly: true },
 ];
 
 export function RemittanceSubNav({

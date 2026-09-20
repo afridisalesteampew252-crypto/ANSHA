@@ -148,8 +148,6 @@ export const ACCOUNTS_NAV_HREFS = new Set([
   '/admin/remittances/dashboard',
   '/admin/remittances/mine',
   '/admin/remittances/unknown',
-  '/admin/remittances/offices',
-  '/admin/remittances/shifts',
   '/admin/bank-accounts',
   '/admin/expenses',
   '/admin/ledger',

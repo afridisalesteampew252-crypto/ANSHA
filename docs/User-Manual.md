@@ -73,7 +73,7 @@ Staff ERP is **not** a native app rewrite. Store shells (if used) wrap the publi
 | Machinery & trucks | `/machinery` | Browse commercial trucks and heavy equipment (`vehicle_class`); filter by equipment type / origin |
 | Categories | `/categories`, `/categories/[slug]` | Shop by category |
 | Deals | `/offers` (also **Deals** in nav / mobile bar) | Current offers; tap inventory-linked deals |
-| Markets | `/markets/[code]` | Import notes + hot vehicles for a destination (from flag strip) |
+| Markets | `/markets/[code]` | Import notes + hot vehicles for a destination (**70** markets from flag strip / `lib/export-markets.ts`) |
 | Cart / Favorites | `/cart`, `/favorites` | Saved inquiry list (stored in the browser) |
 | Blog / insights | `/blog`, `/blog/[slug]` | Read articles |
 | Banking | `/banking` | Official bank details (copy fields; verify via WhatsApp link if shown) |
@@ -104,8 +104,9 @@ Open `/admin` after login. Menu groups match the sidebar.
 **Parts** — `/admin/parts`
 
 1. Open Parts → **New part** (or edit an existing row).
-2. Fill identifiers, pricing (including optional **FOB / C&F / CIF** sell quotes), stock origin/status, publish flags, photos.
-3. Save. Purchase cost fields appear on edit for ops users. Public detail shows Incoterm quotes when set.
+2. Fill identifiers (part code, OEM, slug), pricing (including optional **FOB / C&F / CIF** sell quotes), stock origin/status, publish flags, SEO meta, photos.
+3. On edit: reservation terms (price/shipment/inspection/VAT, requester, ETD/ETA) when reserved; purchase cost fields for ops; **Invoices & documents** lists linked invoice lines.
+4. Save. Public detail shows Incoterm quotes when set. List cards show requester badges **only while status is Reserved** — setting Available clears reservation metadata automatically.
 
 **Vehicles (owned)** — `/admin/vehicles` and `/admin/vehicles/[id]`
 
@@ -166,7 +167,7 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 **Reserve stock** — `/admin/reservations` (field agents + ops)
 
 1. Select an available **vehicle or part** and customer. Field agents only see **available** units plus stock **they** reserved.
-2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release. Sales/freelancer requester fields are locked to their profile.
+2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release **or** when stock is set to Available (including the list status dropdown). Sales/freelancer requester fields are locked to their profile.
 3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. VAT No expects zero tax rates on the draft.
 4. Release (with republish when appropriate) if the deal does not proceed.
 
@@ -178,24 +179,26 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 4. Print A4 — denser layout; verification code + QR on the face when verification is enabled; header shows price/shipment terms when set.
 5. Tax/commercial lines can apply sold status on linked stock when issued.
 6. **Delete:** remittance allocations must be cleared first (**Unallocate** on the invoice, or **Unallocate & delete**). After delete, linked reserved/sold vehicles/parts return to **available** (sold parts quantity restored).
+7. **Allocate (Phase 71):** on invoice detail, use **Allocate remaining** against customer remittances, or per-row **Unallocate** to return funds to the remittance pool.
 
 **Supplier invoices** — `/admin/invoices/supplier` (ops + accounts) — archive files linked to purchase (not available to field agents).
 
-**Remittances** — Phase 69 module (ops + accounts for finance pages; tagged users for My remittances)
+**Remittances** — Phases 69–71 (ops + accounts for finance pages; tagged users for My remittances)
 
 | Page | Path | Who |
 |---|---|---|
-| Dashboard | `/admin/remittances/dashboard` | Ops / accounts — date range KPIs + **office-wise** received / allocated / unallocated |
-| List / receive | `/admin/remittances` | Ops / accounts — record pending/confirmed/unknown; set office, shift, **received by**; attach evidence; allocate |
+| Dashboard | `/admin/remittances/dashboard` | Ops / accounts — date range + **office filter** (e.g. Karachi) + office-wise received / allocated / unallocated |
+| List / receive | `/admin/remittances` | Ops / accounts — record pending/confirmed/unknown; **Link user** auto-fills office/shift from profile (override optional); **Allocate remaining** + per-row **Unallocate** |
 | My remittances | `/admin/remittances/mine` | Any workspace user tagged as receiver (field agents + managers included) — read own rows |
-| Unknown TTS | `/admin/remittances/unknown` | Ops / accounts — unmatched funds; **link** to a customer via `link_remittance` |
-| Offices | `/admin/remittances/offices` | Ops / accounts — collection office master (not HR locations) |
-| Shifts | `/admin/remittances/shifts` | Ops / accounts — desk shifts (optional office + hours label) |
+| Unknown TTS | `/admin/remittances/unknown` | Ops / accounts — unmatched funds; **link** customer + user (office/shift from profile) |
 
-1. Prefer receiving with a customer; leave customer empty to save as **Unknown TTS** until linked.
-2. Tag **received by** so that staff can open **My remittances**.
-3. Allocate only after confirmed and customer-linked (unknown cannot allocate).
-4. Reverse allocations carefully when correcting.
+Office and shift live on **Users** (`/admin/users`). Remittances nav does not expose Offices/Shifts as HR-style config. Picklist routes remain at `/admin/remittances/offices` and `/shifts` for rare seed edits only.
+
+1. Assign each collector's office/shift on **Users**.
+2. Prefer receiving with a customer; leave customer empty to save as **Unknown TTS** until linked.
+3. Tag **received by** — office/shift fill from that user; staff can open **My remittances**.
+4. Allocate only after confirmed and customer-linked (unknown cannot allocate). Use **Allocate remaining** or invoice-detail allocate; any receivables user can **Unallocate**.
+5. Use the dashboard office filter for office-wise totals.
 
 ### 5.5 Stock management + export shipments + lifecycle
 

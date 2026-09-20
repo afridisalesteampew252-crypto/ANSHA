@@ -247,7 +247,7 @@ export function AdminVehicleCard({
       </div>
 
       <div className="hidden space-y-0.5 text-xs lg:block">
-        {reservedByLabel || vehicle.reservation_requester_name ? (
+        {status === 'reserved' && (reservedByLabel || vehicle.reservation_requester_name) ? (
           <Badge className="bg-sky-600 text-white">
             {vehicle.reservation_requester_name || reservedByLabel}
           </Badge>

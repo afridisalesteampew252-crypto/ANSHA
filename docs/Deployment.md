@@ -160,8 +160,22 @@ App-only ship after schema already applied on Supabase `ydrnilquojvalhgifest`:
 
 - Migrations: `20260921010000_phase_69_remittance_module_offices_shifts.sql`, `20260921011000_phase_69_drop_create_remittance_14arg.sql` — **do not re-apply** if already in `schema_migrations`.
 - No new Vercel or Edge Function secrets.
-- Routes: `/admin/remittances/dashboard`, `/admin/remittances`, `/admin/remittances/mine`, `/admin/remittances/unknown`, `/admin/remittances/offices`, `/admin/remittances/shifts`.
-- After production READY: seed Offices/Shifts; receive with office + `received_by`; Unknown TTS → link; dashboard office breakdown; field agent/manager **My remittances** only (no finance nav).
+- Routes: `/admin/remittances/dashboard`, `/admin/remittances`, `/admin/remittances/mine`, `/admin/remittances/unknown` (picklist URLs `/offices` `/shifts` optional, not primary nav).
+
+## Phase 70 (user office/shift + remittance dashboard filter)
+
+- Migration: `20260921020000_phase_70_admin_profile_office_shift.sql` — `admin_profiles.office_id` / `shift_id`; create/link remittance default from profile; backfill from existing remittance tags.
+- Redeploy Edge Functions `admin-create-user` / `admin-update-user` so Users can save office/shift.
+- UX: assign office/shift on **Users**; receive auto-fills from linked user; dashboard filters by office; Remittances nav no longer lists Offices/Shifts as config hubs.
+
+## Phase 71 (allocate/unallocate fix + stock invoice docs)
+
+App-only ship after schema already applied:
+
+- Migration: `20260921030000_phase_71_allocate_unallocate_fix.sql` — unallocate RPCs SECURITY DEFINER; `invoice_payments` DELETE for any receivables manager.
+- UX: **Allocate remaining** + per-row **Unallocate** on remittance list and invoice detail; part/vehicle detail **Invoices & documents** (`components/admin/stock-linked-invoices.tsx`).
+- Also this ship: clear reservation on available (`20260921040000_clear_reservation_on_available.sql`); export markets **20→70** (`lib/export-markets.ts`); edit-part UI completeness (reservation/VAT/SEO/OEM).
+- No new Vercel secrets. Redeploy Edge `admin-create-user` / `admin-update-user` if not already updated for Phase 70 office/shift.
 
 ## Admin UI polish (post-65, no migration)
 

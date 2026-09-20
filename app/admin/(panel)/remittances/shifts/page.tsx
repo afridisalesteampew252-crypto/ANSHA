@@ -125,8 +125,10 @@ export default function RemittanceShiftsPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="space-y-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Remittances</p>
-        <h1 className="text-2xl font-black tracking-tight">Shifts</h1>
-        <p className="text-sm text-muted-foreground">Desk shifts optionally tied to an office (e.g. Morning 9–13).</p>
+        <h1 className="text-2xl font-black tracking-tight">Shift picklist</h1>
+        <p className="text-sm text-muted-foreground">
+          Lightweight desk shifts for user profiles (e.g. Morning 9–13). Assign on Users — not an HR shift roster.
+        </p>
         <RemittanceSubNav canManageFinance unknownCount={unknownCount} />
       </div>
 

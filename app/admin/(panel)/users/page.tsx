@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Loader2, Pencil, ShieldAlert, Upload, UserPlus, UserX, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import type { AdminProfile, AdminRole } from '@/lib/types';
+import type { AdminProfile, AdminRole, RemittanceOffice, RemittanceShift } from '@/lib/types';
 import { ADMIN_ROLE_LABEL, ADMIN_ROLE_OPTIONS } from '@/lib/admin-rbac';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import { sanitizeStockOrigins } from '@/lib/manager-locations';
@@ -22,6 +22,8 @@ type UserForm = {
   avatar_url: string;
   is_active: boolean;
   allowed_stock_origins: string[];
+  office_id: string;
+  shift_id: string;
 };
 
 const emptyForm: UserForm = {
@@ -32,10 +34,14 @@ const emptyForm: UserForm = {
   avatar_url: '',
   is_active: true,
   allowed_stock_origins: [],
+  office_id: '',
+  shift_id: '',
 };
 
 export default function UsersPage() {
   const [users, setUsers] = useState<AdminProfile[]>([]);
+  const [offices, setOffices] = useState<RemittanceOffice[]>([]);
+  const [shifts, setShifts] = useState<RemittanceShift[]>([]);
   const [form, setForm] = useState<UserForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -47,12 +53,16 @@ export default function UsersPage() {
   const [selfId, setSelfId] = useState('');
 
   const load = useCallback(async () => {
-    const [{ data }, { data: { user } }] = await Promise.all([
+    const [{ data }, { data: { user } }, officeRes, shiftRes] = await Promise.all([
       supabase.from('admin_profiles').select('*').order('created_at', { ascending: false }),
       supabase.auth.getUser(),
+      supabase.from('remittance_offices').select('*').eq('is_active', true).order('sort_order').order('name'),
+      supabase.from('remittance_shifts').select('*').eq('is_active', true).order('sort_order').order('name'),
     ]);
     const records = (data || []) as AdminProfile[];
     setUsers(records);
+    setOffices((officeRes.data || []) as RemittanceOffice[]);
+    setShifts((shiftRes.data || []) as RemittanceShift[]);
     setSelfId(user?.id || '');
     setCanManage(records.find((profile) => profile.id === user?.id)?.role === 'admin');
     const withAvatars = records.filter((profile) => profile.avatar_url);
@@ -86,6 +96,8 @@ export default function UsersPage() {
       avatar_url: user.avatar_url || '',
       is_active: user.is_active !== false,
       allowed_stock_origins: sanitizeStockOrigins(user.allowed_stock_origins),
+      office_id: user.office_id || '',
+      shift_id: user.shift_id || '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -110,6 +122,21 @@ export default function UsersPage() {
     return path;
   };
 
+  const officeLabel = (id: string | null | undefined) => {
+    if (!id) return null;
+    return offices.find((o) => o.id === id)?.name || null;
+  };
+  const shiftLabel = (id: string | null | undefined) => {
+    if (!id) return null;
+    const shift = shifts.find((s) => s.id === id);
+    if (!shift) return null;
+    return shift.hours_label ? `${shift.name} (${shift.hours_label})` : shift.name;
+  };
+
+  const filteredShifts = form.office_id
+    ? shifts.filter((s) => !s.office_id || s.office_id === form.office_id)
+    : shifts;
+
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!canManage) return;
@@ -129,6 +156,8 @@ export default function UsersPage() {
           avatar_url: avatarUrl,
           is_active: form.is_active,
           allowed_stock_origins: form.role === 'manager' ? form.allowed_stock_origins : [],
+          office_id: form.office_id || null,
+          shift_id: form.shift_id || null,
         },
       });
       if (error) {
@@ -172,6 +201,8 @@ export default function UsersPage() {
           is_active: user.is_active === false,
           password: '',
           allowed_stock_origins: sanitizeStockOrigins(user.allowed_stock_origins),
+          office_id: user.office_id || null,
+          shift_id: user.shift_id || null,
         },
       });
       if (error || data?.error) {
@@ -197,7 +228,7 @@ export default function UsersPage() {
       <div>
         <h1 className="text-2xl font-bold">Admin users</h1>
         <p className="text-sm text-muted-foreground">
-          Create staff, sales, freelancer, accounts, or manager accounts; assign manager stock locations; deactivate access.
+          Create staff accounts, assign remittance office/shift, set manager stock locations, and deactivate access.
         </p>
       </div>
 
@@ -242,6 +273,43 @@ export default function UsersPage() {
                 >
                   {ADMIN_ROLE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="user-office">Remittance office</Label>
+                <select
+                  id="user-office"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  disabled={busy}
+                  value={form.office_id}
+                  onChange={(event) => setForm({ ...form, office_id: event.target.value, shift_id: '' })}
+                >
+                  <option value="">No office</option>
+                  {offices.map((office) => (
+                    <option key={office.id} value={office.id}>
+                      {office.code ? `${office.name} (${office.code})` : office.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Used when tagging remittances to this user and for office-wise remittance dashboard totals.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="user-shift">Remittance shift</Label>
+                <select
+                  id="user-shift"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  disabled={busy}
+                  value={form.shift_id}
+                  onChange={(event) => setForm({ ...form, shift_id: event.target.value })}
+                >
+                  <option value="">No shift</option>
+                  {filteredShifts.map((shift) => (
+                    <option key={shift.id} value={shift.id}>
+                      {shift.hours_label ? `${shift.name} — ${shift.hours_label}` : shift.name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -323,6 +391,12 @@ export default function UsersPage() {
                 <div className="min-w-0">
                   <p className="truncate font-medium">{user.full_name || 'Unnamed user'}</p>
                   <p className="truncate text-xs text-muted-foreground">{user.email || user.id}</p>
+                  {(officeLabel(user.office_id) || shiftLabel(user.shift_id)) ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Remittance:{' '}
+                      {[officeLabel(user.office_id), shiftLabel(user.shift_id)].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                  ) : null}
                   {user.role === 'manager' ? (
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       Locations:{' '}

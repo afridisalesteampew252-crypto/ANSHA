@@ -20,6 +20,7 @@ import {
 
 type Invoice = {
   id: string; invoice_number: string; customer_name: string; customer_company: string | null;
+  customer_id: string | null;
   customer_email: string | null; customer_phone: string | null; customer_address: string | null;
   customer_tax_registration_number: string | null; seller_name: string; seller_tax_registration_number: string;
   seller_address: string; issue_date: string; due_date: string; currency: string; reference: string | null;
@@ -37,7 +38,8 @@ type Item = {
   line_total: number; sort_order: number; price_term: 'fob' | 'cf' | 'cif' | null;
 };
 type Payment = { id: string; payment_date: string; amount: number; method: string; reference: string | null; notes: string | null; created_at: string };
-type Allocation = { id: string; remittance_id: string; amount: number; created_at: string };
+type Allocation = { id: string; remittance_id: string; amount: number; created_at: string; remittances?: { remittance_number: string; currency: string } | { remittance_number: string; currency: string }[] | null };
+type UsableRemittance = { id: string; remittance_number: string; amount: number; currency: string; available: number };
 
 const money = (value: number, currency: string) => new Intl.NumberFormat('en-AE', { style: 'currency', currency }).format(value || 0);
 const statusClass: Record<string, string> = {
@@ -56,6 +58,9 @@ export default function InvoiceDetailPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [usableRemittances, setUsableRemittances] = useState<UsableRemittance[]>([]);
+  const [allocRemittanceId, setAllocRemittanceId] = useState('');
+  const [allocAmount, setAllocAmount] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -82,15 +87,55 @@ export default function InvoiceDetailPage() {
       supabase.from('invoices').select('*').eq('id', params.id).maybeSingle(),
       supabase.from('invoice_items').select('*').eq('invoice_id', params.id).order('sort_order'),
       supabase.from('invoice_payments').select('*').eq('invoice_id', params.id).order('payment_date', { ascending: false }),
-      supabase.from('remittance_allocations').select('id,remittance_id,amount,created_at').eq('invoice_id', params.id).order('created_at', { ascending: false }),
+      supabase
+        .from('remittance_allocations')
+        .select('id,remittance_id,amount,created_at, remittances(remittance_number,currency)')
+        .eq('invoice_id', params.id)
+        .order('created_at', { ascending: false }),
     ]);
     setLoading(false);
     if (invoiceResult.error || !invoiceResult.data) return setMessage(invoiceResult.error?.message || 'Invoice not found.');
-    setInvoice(invoiceResult.data as Invoice);
+    const inv = invoiceResult.data as Invoice;
+    setInvoice(inv);
     setItems((itemResult.data || []) as Item[]);
     setPayments((paymentResult.data || []) as Payment[]);
     setAllocations((allocationResult.data || []) as Allocation[]);
-    setPayment((current) => ({ ...current, amount: String(Math.max(Number(invoiceResult.data.balance_due || 0), 0)) }));
+    setPayment((current) => ({ ...current, amount: String(Math.max(Number(inv.balance_due || 0), 0)) }));
+
+    if (inv.customer_id && Number(inv.balance_due) > 0 && inv.status !== 'cancelled') {
+      const [remRes, allAllocRes] = await Promise.all([
+        supabase
+          .from('remittances')
+          .select('id,remittance_number,amount,currency,status,is_unknown,customer_id')
+          .eq('customer_id', inv.customer_id)
+          .eq('status', 'confirmed')
+          .eq('currency', inv.currency)
+          .eq('is_unknown', false),
+        supabase.from('remittance_allocations').select('remittance_id,amount'),
+      ]);
+      const used: Record<string, number> = {};
+      for (const row of allAllocRes.data || []) {
+        used[row.remittance_id] = (used[row.remittance_id] || 0) + Number(row.amount);
+      }
+      const usable = (remRes.data || [])
+        .map((row) => ({
+          id: row.id,
+          remittance_number: row.remittance_number,
+          amount: Number(row.amount),
+          currency: row.currency,
+          available: Number(row.amount) - (used[row.id] || 0),
+        }))
+        .filter((row) => row.available > 0);
+      setUsableRemittances(usable);
+      if (usable.length === 1) {
+        setAllocRemittanceId(usable[0].id);
+        setAllocAmount(String(Math.min(usable[0].available, Number(inv.balance_due))));
+      }
+    } else {
+      setUsableRemittances([]);
+      setAllocRemittanceId('');
+      setAllocAmount('');
+    }
   }, [params.id]);
 
   useEffect(() => { void load(); }, [load]);
@@ -159,6 +204,40 @@ export default function InvoiceDetailPage() {
     setBusy(false);
     if (error) return setMessage(error.message);
     setMessage(`Unallocated ${Number(data || 0)} remittance allocation(s). You can delete the invoice now.`);
+    void load();
+  };
+
+  const reverseOneAllocation = async (allocationId: string) => {
+    if (!canFinance) return;
+    if (!window.confirm('Unallocate this remittance payment? Funds return to the remittance pool.')) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('reverse_remittance_allocation', { p_allocation_id: allocationId });
+    setBusy(false);
+    if (error) return setMessage(error.message);
+    setMessage('Allocation reversed.');
+    void load();
+  };
+
+  const allocateFromRemittance = async (useRemaining = false) => {
+    if (!invoice || !canFinance || !allocRemittanceId) return setMessage('Choose a remittance to allocate.');
+    const rem = usableRemittances.find((row) => row.id === allocRemittanceId);
+    if (!rem) return setMessage('Remittance not available.');
+    const amount = useRemaining
+      ? Math.min(rem.available, Number(invoice.balance_due))
+      : Number(allocAmount);
+    if (!(amount > 0)) return setMessage('Enter a positive allocation amount.');
+    setBusy(true);
+    setMessage('Allocating remittance…');
+    const { error } = await supabase.rpc('allocate_remittance', {
+      p_remittance_id: allocRemittanceId,
+      p_invoice_id: invoice.id,
+      p_amount: amount,
+    });
+    setBusy(false);
+    if (error) return setMessage(error.message);
+    setMessage(`Allocated ${money(amount, invoice.currency)} from ${rem.remittance_number}.`);
+    setAllocRemittanceId('');
+    setAllocAmount('');
     void load();
   };
 
@@ -371,18 +450,82 @@ export default function InvoiceDetailPage() {
           {canFinance ? (
             <Card>
               <CardHeader><CardTitle className="text-base">Remittance allocations</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
+                {invoice.customer_id && invoice.balance_due > 0 && invoice.status !== 'cancelled' ? (
+                  <div className="space-y-3 rounded-md border bg-secondary/20 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      Apply available remittance funds for this customer (same currency).
+                    </p>
+                    <div className="space-y-1">
+                      <Label htmlFor="inv-alloc-rem">Remittance</Label>
+                      <select
+                        id="inv-alloc-rem"
+                        value={allocRemittanceId}
+                        onChange={(event) => {
+                          const id = event.target.value;
+                          setAllocRemittanceId(id);
+                          const rem = usableRemittances.find((row) => row.id === id);
+                          setAllocAmount(String(rem ? Math.min(rem.available, Number(invoice.balance_due)) : ''));
+                        }}
+                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      >
+                        <option value="">Select available funds</option>
+                        {usableRemittances.map((row) => (
+                          <option key={row.id} value={row.id}>
+                            {row.remittance_number} · {money(row.available, row.currency)} available
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="inv-alloc-amt">Amount</Label>
+                      <Input
+                        id="inv-alloc-amt"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={allocAmount}
+                        onChange={(event) => setAllocAmount(event.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" size="sm" disabled={busy || !allocRemittanceId} onClick={() => void allocateFromRemittance(false)}>
+                        Allocate
+                      </Button>
+                      <Button type="button" size="sm" variant="outline" disabled={busy || !allocRemittanceId} onClick={() => void allocateFromRemittance(true)}>
+                        Allocate remaining
+                      </Button>
+                    </div>
+                    {usableRemittances.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No unallocated confirmed remittances for this customer.</p>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {allocations.length ? (
                   <>
                     <p className="text-xs text-muted-foreground">
-                      Unallocate these before deleting the invoice. Funds return to the remittance pool.
+                      Unallocate before deleting the invoice. Funds return to the remittance pool.
                     </p>
-                    {allocations.map((entry) => (
-                      <div key={entry.id} className="flex justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
-                        <span className="font-medium">{money(entry.amount, invoice.currency)}</span>
-                        <span className="text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleDateString()}</span>
-                      </div>
-                    ))}
+                    {allocations.map((entry) => {
+                      const remJoin = Array.isArray(entry.remittances) ? entry.remittances[0] : entry.remittances;
+                      return (
+                        <div key={entry.id} className="flex items-center justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
+                          <div>
+                            <p className="font-medium">{money(entry.amount, invoice.currency)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {remJoin?.remittance_number || 'Remittance'} · {new Date(entry.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button type="button" variant="ghost" size="sm" className="text-destructive" disabled={busy} onClick={() => void reverseOneAllocation(entry.id)}>
+                            Unallocate
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={() => void unallocateRemittances()}>
+                      Unallocate all ({allocations.length})
+                    </Button>
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground">No remittance allocations on this invoice.</p>

@@ -121,8 +121,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
       { href: '/admin/remittances/mine', label: 'My remittances', icon: UserCog },
       { href: '/admin/remittances/unknown', label: 'Unknown TTS', icon: Inbox },
-      { href: '/admin/remittances/offices', label: 'Offices', icon: Building2 },
-      { href: '/admin/remittances/shifts', label: 'Shifts', icon: Clock3 },
     ],
   },
   {

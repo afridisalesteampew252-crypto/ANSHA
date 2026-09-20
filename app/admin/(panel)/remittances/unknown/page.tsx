@@ -14,7 +14,13 @@ import { supabase } from '@/lib/supabase/client';
 import type { AdminRole, Remittance, RemittanceOffice, RemittanceShift } from '@/lib/types';
 
 type Customer = { id: string; full_name: string; company_name: string | null; customer_code?: string | null; phone?: string | null; email?: string | null };
-type Staff = { id: string; full_name: string | null; email: string | null };
+type Staff = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  office_id: string | null;
+  shift_id: string | null;
+};
 
 const money = (value: number, currency: string) =>
   new Intl.NumberFormat('en-AE', { style: 'currency', currency }).format(Number(value || 0));
@@ -56,7 +62,7 @@ export default function UnknownRemittancesPage() {
         .or('is_unknown.eq.true,status.eq.unknown')
         .order('received_date', { ascending: false }),
       supabase.from('customers').select('id,full_name,company_name,customer_code,phone,email').eq('is_active', true).order('company_name'),
-      supabase.from('admin_profiles').select('id,full_name,email').eq('is_active', true).order('full_name'),
+      supabase.from('admin_profiles').select('id,full_name,email,office_id,shift_id').eq('is_active', true).order('full_name'),
       supabase.from('remittance_offices').select('*').eq('is_active', true).order('sort_order'),
       supabase.from('remittance_shifts').select('*').eq('is_active', true).order('sort_order'),
       supabase.rpc('count_unknown_remittances'),
@@ -151,7 +157,7 @@ export default function UnknownRemittancesPage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Remittances</p>
         <h1 className="text-2xl font-black tracking-tight">Unknown TTS</h1>
         <p className="text-sm text-muted-foreground">
-          Unmatched bank transfers — link customer (and optionally user, office, shift) to clear the queue.
+          Unmatched bank transfers — link a customer and user. Office/shift come from the user&apos;s profile (override optional).
         </p>
         <RemittanceSubNav canManageFinance unknownCount={unknownCount} />
       </div>
@@ -177,7 +183,12 @@ export default function UnknownRemittancesPage() {
                 <Label>Linked user</Label>
                 <SearchableSelect
                   value={receivedBy}
-                  onValueChange={setReceivedBy}
+                  onValueChange={(v) => {
+                    const profile = staff.find((u) => u.id === v);
+                    setReceivedBy(v);
+                    setOfficeId(profile?.office_id || '');
+                    setShiftId(profile?.shift_id || '');
+                  }}
                   options={staffOptions}
                   placeholder="Staff who received"
                   searchPlaceholder="Search staff…"
@@ -193,9 +204,10 @@ export default function UnknownRemittancesPage() {
                     setShiftId('');
                   }}
                   options={officeOptions}
-                  placeholder="Office"
+                  placeholder="From linked user"
                   clearLabel="No office"
                 />
+                <p className="text-xs text-muted-foreground">Defaults from the linked user; override if needed.</p>
               </div>
               <div className="space-y-1.5">
                 <Label>Shift</Label>
@@ -203,7 +215,7 @@ export default function UnknownRemittancesPage() {
                   value={shiftId}
                   onValueChange={setShiftId}
                   options={shiftOptions}
-                  placeholder="Shift"
+                  placeholder="From linked user"
                   clearLabel="No shift"
                 />
               </div>

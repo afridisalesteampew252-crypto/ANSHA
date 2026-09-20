@@ -14,7 +14,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createPublicSupabaseClient();
   const { data } = await supabase
     .from('parts')
-    .select('name, description, part_code, brand, part_photos(storage_path, is_cover, sort_order)')
+    .select(
+      'name, description, part_code, brand, meta_title, meta_description, part_photos(storage_path, is_cover, sort_order)'
+    )
     .eq('slug', slug)
     .eq('is_published', true)
     .eq('stock_status', 'available')
@@ -35,8 +37,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? publicPartImageUrl(cover.storage_path)
     : absoluteUrl(defaultOgImage.url);
 
-  const title = data.name;
+  const title = data.meta_title?.trim() || data.name;
   const description =
+    data.meta_description?.trim() ||
     data.description?.trim() ||
     `${data.name}${data.part_code ? ` (${data.part_code})` : ''}${data.brand ? ` — ${data.brand}` : ''} from ${siteConfig.name}.`;
 

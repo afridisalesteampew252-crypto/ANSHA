@@ -51,6 +51,8 @@ Deno.serve(async (request) => {
     if (id === user.id && !isActive) return json(request, { error: 'You cannot deactivate your own account.' }, 422);
 
     const allowedOrigins = sanitizeOrigins(payload.allowed_stock_origins, role);
+    const officeId = optionalUuid(payload.office_id);
+    const shiftId = optionalUuid(payload.shift_id);
 
     const authUpdate: { email: string; password?: string; email_confirm: boolean; ban_duration?: string } = {
       email,
@@ -71,11 +73,19 @@ Deno.serve(async (request) => {
         avatar_url: payload.avatar_url || null,
         is_active: isActive,
         allowed_stock_origins: allowedOrigins,
+        office_id: officeId,
+        shift_id: shiftId,
       })
       .eq('id', id);
     if (profileError) return json(request, { error: profileError.message }, 500);
 
-    return json(request, { id, is_active: isActive, allowed_stock_origins: allowedOrigins });
+    return json(request, {
+      id,
+      is_active: isActive,
+      allowed_stock_origins: allowedOrigins,
+      office_id: officeId,
+      shift_id: shiftId,
+    });
   } catch (error) {
     return json(request, { error: error instanceof Error ? error.message : 'Unknown user update error.' }, 500);
   }
@@ -92,4 +102,10 @@ function sanitizeOrigins(raw: unknown, role: string): string[] {
     if (VALID_ORIGINS.has(value) && !out.includes(value)) out.push(value);
   }
   return out;
+}
+
+function optionalUuid(raw: unknown): string | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const value = String(raw).trim();
+  return UUID_RE.test(value) ? value : null;
 }

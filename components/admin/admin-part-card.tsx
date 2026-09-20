@@ -132,7 +132,7 @@ export function AdminPartCard({
       </div>
 
       <div className="hidden space-y-0.5 text-xs lg:block">
-        {reservedByLabel || part.reservation_requester_name ? (
+        {status === 'reserved' && (reservedByLabel || part.reservation_requester_name) ? (
           <Badge className="bg-sky-600 text-white">
             {part.reservation_requester_name || reservedByLabel}
           </Badge>

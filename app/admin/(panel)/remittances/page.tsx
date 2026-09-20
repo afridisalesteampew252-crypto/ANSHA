@@ -48,7 +48,13 @@ type Invoice = {
   balance_due: number;
   status: string;
 };
-type Staff = { id: string; full_name: string | null; email: string | null };
+type Staff = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  office_id: string | null;
+  shift_id: string | null;
+};
 
 const emptyForm = {
   customer_id: '',
@@ -76,7 +82,7 @@ export default function RemittancesPage() {
   const [role, setRole] = useState<AdminRole | null>(null);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [documents, setDocuments] = useState<RemittanceDocument[]>([]);
-  const [allocations, setAllocations] = useState<RemittanceAllocation[]>([]);
+  const [allocations, setAllocations] = useState<(RemittanceAllocation & { invoices?: { invoice_number: string } | { invoice_number: string }[] | null })[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
@@ -107,7 +113,7 @@ export default function RemittancesPage() {
       await Promise.all([
         supabase.from('remittances').select('*').order('received_date', { ascending: false }).order('created_at', { ascending: false }),
         supabase.from('remittance_documents').select('*').order('created_at'),
-        supabase.from('remittance_allocations').select('*'),
+        supabase.from('remittance_allocations').select('*, invoices(invoice_number)'),
         supabase.from('customers').select('id,full_name,company_name,customer_code,phone,email').eq('is_active', true).order('company_name').order('full_name'),
         supabase
           .from('invoices')
@@ -115,7 +121,7 @@ export default function RemittancesPage() {
           .gt('balance_due', 0)
           .neq('status', 'cancelled')
           .order('issue_date', { ascending: false }),
-        supabase.from('admin_profiles').select('id,full_name,email').eq('is_active', true).order('full_name'),
+        supabase.from('admin_profiles').select('id,full_name,email,office_id,shift_id').eq('is_active', true).order('full_name'),
         supabase.from('remittance_offices').select('*').eq('is_active', true).order('sort_order').order('name'),
         supabase.from('remittance_shifts').select('*').eq('is_active', true).order('sort_order').order('name'),
         supabase.rpc('count_unknown_remittances'),
@@ -123,7 +129,7 @@ export default function RemittancesPage() {
     if (remittanceResult.error) setMessage(remittanceResult.error.message);
     setRemittances((remittanceResult.data || []) as Remittance[]);
     setDocuments((documentResult.data || []) as RemittanceDocument[]);
-    setAllocations((allocResult.data || []) as RemittanceAllocation[]);
+    setAllocations((allocResult.data || []) as typeof allocations);
     setCustomers((customerResult.data || []) as Customer[]);
     setInvoices((invoiceResult.data || []) as Invoice[]);
     setStaff((staffResult.data || []) as Staff[]);
@@ -339,23 +345,55 @@ export default function RemittancesPage() {
     await load();
   };
 
-  const allocate = async () => {
-    if (!allocRemittanceId || !allocInvoiceId || Number(allocAmount) <= 0) {
-      toast.error('Choose remittance, invoice, and amount.');
+  const allocate = async (useRemaining = false) => {
+    if (!allocRemittanceId || !allocInvoiceId) {
+      toast.error('Choose remittance and invoice.');
+      return;
+    }
+    const rem = remittances.find((r) => r.id === allocRemittanceId);
+    const inv = invoices.find((i) => i.id === allocInvoiceId);
+    if (!rem || !inv) {
+      toast.error('Remittance or invoice not found.');
+      return;
+    }
+    if (rem.customer_id && inv.customer_id && rem.customer_id !== inv.customer_id) {
+      toast.error('Invoice and remittance must be for the same customer.');
+      return;
+    }
+    if (rem.currency !== inv.currency) {
+      toast.error('Currencies must match.');
+      return;
+    }
+    const available = Number(rem.amount) - (allocatedByRemittance[rem.id] || 0);
+    const amount = useRemaining
+      ? Math.min(available, Number(inv.balance_due))
+      : Number(allocAmount);
+    if (!(amount > 0)) {
+      toast.error('Amount must be greater than zero.');
       return;
     }
     setBusy(true);
     const { error } = await supabase.rpc('allocate_remittance', {
       p_remittance_id: allocRemittanceId,
       p_invoice_id: allocInvoiceId,
-      p_amount: Number(allocAmount),
+      p_amount: amount,
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success('Allocated to invoice.');
+    toast.success(`Allocated ${money(amount, rem.currency)} to ${inv.invoice_number}.`);
     setAllocRemittanceId('');
     setAllocInvoiceId('');
     setAllocAmount('');
+    await load();
+  };
+
+  const reverseAllocation = async (allocationId: string) => {
+    if (!window.confirm('Unallocate this payment? Funds return to the remittance pool.')) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('reverse_remittance_allocation', { p_allocation_id: allocationId });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success('Unallocated — remittance balance restored.');
     await load();
   };
 
@@ -368,7 +406,7 @@ export default function RemittancesPage() {
   );
 
   const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
-  const invoiceOptions = useMemo(
+  const createInvoiceOptions = useMemo(
     () =>
       invoices.map((item) => ({
         value: item.id,
@@ -376,6 +414,30 @@ export default function RemittancesPage() {
         keywords: [item.invoice_number, item.customer_company, item.customer_name],
       })),
     [invoices]
+  );
+
+  const allocInvoiceOptions = useMemo(() => {
+    const rem = remittances.find((r) => r.id === allocRemittanceId);
+    const filtered = rem
+      ? invoices.filter(
+          (item) =>
+            (!rem.customer_id || item.customer_id === rem.customer_id) &&
+            item.currency === rem.currency
+        )
+      : invoices;
+    return filtered.map((item) => ({
+      value: item.id,
+      label: `${item.invoice_number} — ${item.customer_company || item.customer_name} — ${money(item.balance_due, item.currency)}`,
+      keywords: [item.invoice_number, item.customer_company, item.customer_name],
+    }));
+  }, [invoices, remittances, allocRemittanceId]);
+
+  const recentAllocations = useMemo(
+    () =>
+      [...allocations]
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+        .slice(0, 12),
+    [allocations]
   );
   const staffOptions = useMemo(
     () =>
@@ -431,7 +493,7 @@ export default function RemittancesPage() {
           <div>
             <h1 className="text-2xl font-black tracking-tight">Remittances</h1>
             <p className="text-sm text-muted-foreground">
-              Receive funds, link customer/user/office/shift, and allocate to invoices.
+              Receive funds, link a customer and user. Office/shift auto-fill from the user&apos;s profile (finance can override).
             </p>
           </div>
           <Button onClick={startCreate}>
@@ -474,7 +536,7 @@ export default function RemittancesPage() {
                   id="rem-invoice"
                   value={form.invoice_id}
                   onValueChange={chooseInvoice}
-                  options={invoiceOptions}
+                  options={createInvoiceOptions}
                   placeholder="Unapplied transfer"
                   searchPlaceholder="Search invoice or customer…"
                   clearLabel="Unapplied transfer"
@@ -506,7 +568,15 @@ export default function RemittancesPage() {
                 <SearchableSelect
                   id="rem-user"
                   value={form.received_by}
-                  onValueChange={(v) => setForm({ ...form, received_by: v })}
+                  onValueChange={(v) => {
+                    const profile = staff.find((u) => u.id === v);
+                    setForm({
+                      ...form,
+                      received_by: v,
+                      office_id: profile?.office_id || '',
+                      shift_id: profile?.shift_id || '',
+                    });
+                  }}
                   options={staffOptions}
                   placeholder="Staff who received"
                   searchPlaceholder="Search staff…"
@@ -520,9 +590,10 @@ export default function RemittancesPage() {
                   value={form.office_id}
                   onValueChange={(v) => setForm({ ...form, office_id: v, shift_id: '' })}
                   options={officeOptions}
-                  placeholder="Office"
+                  placeholder="From linked user"
                   clearLabel="No office"
                 />
+                <p className="text-xs text-muted-foreground">Defaults from the linked user; override if needed.</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rem-shift">Shift</Label>
@@ -531,7 +602,7 @@ export default function RemittancesPage() {
                   value={form.shift_id}
                   onValueChange={(v) => setForm({ ...form, shift_id: v })}
                   options={shiftOptions}
-                  placeholder="Shift"
+                  placeholder="From linked user"
                   clearLabel="No shift"
                 />
               </div>
@@ -682,47 +753,90 @@ export default function RemittancesPage() {
         <CardHeader>
           <CardTitle className="text-lg">Allocate to invoice</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-4">
-          <div className="space-y-1.5 md:col-span-1">
-            <Label>Confirmed remittance</Label>
-            <select
-              value={allocRemittanceId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setAllocRemittanceId(id);
-                const rem = remittances.find((r) => r.id === id);
-                const available = rem ? Number(rem.amount) - (allocatedByRemittance[id] || 0) : 0;
-                setAllocAmount(String(available || ''));
-              }}
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-            >
-              <option value="">Select…</option>
-              {usableForAlloc.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.remittance_number} — {money(Number(r.amount) - (allocatedByRemittance[r.id] || 0), r.currency)} avail
-                </option>
-              ))}
-            </select>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="space-y-1.5 md:col-span-1">
+              <Label>Confirmed remittance</Label>
+              <select
+                value={allocRemittanceId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setAllocRemittanceId(id);
+                  setAllocInvoiceId('');
+                  const rem = remittances.find((r) => r.id === id);
+                  const available = rem ? Number(rem.amount) - (allocatedByRemittance[id] || 0) : 0;
+                  setAllocAmount(String(available || ''));
+                }}
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="">Select…</option>
+                {usableForAlloc.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.remittance_number} — {money(Number(r.amount) - (allocatedByRemittance[r.id] || 0), r.currency)} avail
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Invoice</Label>
+              <SearchableSelect
+                value={allocInvoiceId}
+                onValueChange={(id) => {
+                  setAllocInvoiceId(id);
+                  const rem = remittances.find((r) => r.id === allocRemittanceId);
+                  const inv = invoices.find((i) => i.id === id);
+                  if (rem && inv) {
+                    const available = Number(rem.amount) - (allocatedByRemittance[rem.id] || 0);
+                    setAllocAmount(String(Math.min(available, Number(inv.balance_due)) || ''));
+                  }
+                }}
+                options={allocInvoiceOptions}
+                placeholder={allocRemittanceId ? 'Same customer & currency' : 'Pick remittance first'}
+                searchPlaceholder="Search…"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Amount</Label>
+              <Input type="number" min="0.01" step="0.01" value={allocAmount} onChange={(e) => setAllocAmount(e.target.value)} />
+            </div>
+            <div className="flex flex-wrap items-end gap-2">
+              <Button type="button" disabled={busy} onClick={() => void allocate(false)}>
+                Allocate
+              </Button>
+              <Button type="button" variant="outline" disabled={busy} onClick={() => void allocate(true)}>
+                Allocate remaining
+              </Button>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>Invoice</Label>
-            <SearchableSelect
-              value={allocInvoiceId}
-              onValueChange={setAllocInvoiceId}
-              options={invoiceOptions}
-              placeholder="Invoice"
-              searchPlaceholder="Search…"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Amount</Label>
-            <Input type="number" min="0.01" step="0.01" value={allocAmount} onChange={(e) => setAllocAmount(e.target.value)} />
-          </div>
-          <div className="flex items-end">
-            <Button type="button" disabled={busy} onClick={() => void allocate()}>
-              Allocate
-            </Button>
-          </div>
+
+          {recentAllocations.length > 0 ? (
+            <div className="space-y-2 border-t pt-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recent allocations</p>
+              {recentAllocations.map((row) => {
+                const rem = remittances.find((r) => r.id === row.remittance_id);
+                const invJoin = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
+                const invLabel =
+                  invJoin?.invoice_number ||
+                  invoices.find((i) => i.id === row.invoice_id)?.invoice_number ||
+                  row.invoice_id.slice(0, 8);
+                return (
+                  <div key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+                    <div>
+                      <span className="font-medium">{rem?.remittance_number || 'Remittance'}</span>
+                      <span className="text-muted-foreground"> → </span>
+                      <span className="font-medium">{invLabel}</span>
+                      <span className="ml-2 text-muted-foreground">
+                        {money(row.amount, rem?.currency || 'AED')}
+                      </span>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" className="text-destructive" disabled={busy} onClick={() => void reverseAllocation(row.id)}>
+                      Unallocate
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

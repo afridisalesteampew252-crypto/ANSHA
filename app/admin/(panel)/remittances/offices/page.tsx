@@ -116,9 +116,9 @@ export default function RemittanceOfficesPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="space-y-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Remittances</p>
-        <h1 className="text-2xl font-black tracking-tight">Offices</h1>
+        <h1 className="text-2xl font-black tracking-tight">Office picklist</h1>
         <p className="text-sm text-muted-foreground">
-          Collection offices used when receiving remittances and on the office-wise dashboard.
+          Lightweight list used when assigning an office on a user profile. Remittance dashboard reports by that office — this is not HR master data.
         </p>
         <RemittanceSubNav canManageFinance unknownCount={unknownCount} />
       </div>

@@ -371,7 +371,7 @@ export default function AddPartPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {compatRows.map((row, idx) => (
-              <div key={idx} className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7 items-end rounded-md border border-border p-3">
+              <div key={idx} className="grid grid-cols-2 items-end gap-2 rounded-md border border-border p-3 sm:grid-cols-4 lg:grid-cols-8">
                 <div className="space-y-1">
                   <Label className="text-xs">Make</Label>
                   <Input value={row.make || ''} onChange={(e) => updateCompatRow(idx, 'make', e.target.value)} placeholder="Toyota" className="h-9 text-sm" />
@@ -379,6 +379,10 @@ export default function AddPartPage() {
                 <div className="space-y-1">
                   <Label className="text-xs">Model</Label>
                   <Input value={row.model || ''} onChange={(e) => updateCompatRow(idx, 'model', e.target.value)} placeholder="Aqua" className="h-9 text-sm" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Variant</Label>
+                  <Input value={row.variant || ''} onChange={(e) => updateCompatRow(idx, 'variant', e.target.value)} placeholder="G / S" className="h-9 text-sm" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Chassis</Label>

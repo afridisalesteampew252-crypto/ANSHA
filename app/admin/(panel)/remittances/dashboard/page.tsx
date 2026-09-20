@@ -39,6 +39,7 @@ export default function RemittancesDashboardPage() {
     return d.toISOString().slice(0, 10);
   });
   const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [officeFilter, setOfficeFilter] = useState('');
 
   const finance = canManageReceivables(role);
 
@@ -79,6 +80,12 @@ export default function RemittancesDashboardPage() {
     void load();
   }, [load]);
 
+  const filteredRemittances = useMemo(() => {
+    if (!officeFilter) return remittances;
+    if (officeFilter === '__none__') return remittances.filter((r) => !r.office_id);
+    return remittances.filter((r) => r.office_id === officeFilter);
+  }, [remittances, officeFilter]);
+
   const allocatedByRemittance = useMemo(() => {
     const map: Record<string, number> = {};
     for (const row of allocations) {
@@ -88,7 +95,7 @@ export default function RemittancesDashboardPage() {
   }, [allocations]);
 
   const summary = useMemo(() => {
-    const received = remittances.filter((r) => r.status === 'confirmed' || r.status === 'pending' || r.status === 'unknown');
+    const received = filteredRemittances.filter((r) => r.status === 'confirmed' || r.status === 'pending' || r.status === 'unknown');
     const byCurrency: Record<string, { received: number; allocated: number; unallocated: number }> = {};
     for (const row of received) {
       const cur = row.currency || 'AED';
@@ -100,11 +107,11 @@ export default function RemittancesDashboardPage() {
       byCurrency[cur].unallocated += Math.max(0, amt - alloc);
     }
     return {
-      count: remittances.length,
-      unknownInRange: remittances.filter((r) => r.is_unknown || r.status === 'unknown').length,
+      count: filteredRemittances.length,
+      unknownInRange: filteredRemittances.filter((r) => r.is_unknown || r.status === 'unknown').length,
       byCurrency,
     };
-  }, [remittances, allocatedByRemittance]);
+  }, [filteredRemittances, allocatedByRemittance]);
 
   const officeBreakdown = useMemo(() => {
     const officeName = (id: string | null) => {
@@ -112,7 +119,7 @@ export default function RemittancesDashboardPage() {
       return offices.find((o) => o.id === id)?.name || 'Unknown office';
     };
     const map = new Map<string, OfficeBreakdownRow>();
-    for (const row of remittances) {
+    for (const row of filteredRemittances) {
       if (row.status === 'rejected' || row.status === 'reversed') continue;
       const officeKey = row.office_id || '__none__';
       const currency = row.currency || 'AED';
@@ -143,7 +150,7 @@ export default function RemittancesDashboardPage() {
       if (b.officeName === 'Unassigned') return -1;
       return a.officeName.localeCompare(b.officeName);
     });
-  }, [remittances, allocations, offices, allocatedByRemittance]);
+  }, [filteredRemittances, offices, allocatedByRemittance]);
 
   if (loading) {
     return (
@@ -173,7 +180,7 @@ export default function RemittancesDashboardPage() {
               Dashboard
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Received, allocated, and unallocated funds — plus office-wise totals by currency.
+              Filter by office (from tagged users) — received, allocated, and unallocated totals by currency.
             </p>
           </div>
           <Button asChild><Link href="/admin/remittances">Receive remittance</Link></Button>
@@ -182,7 +189,7 @@ export default function RemittancesDashboardPage() {
       </div>
 
       <Card>
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
           <div className="space-y-1.5">
             <Label htmlFor="from">From</Label>
             <Input id="from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
@@ -190,6 +197,23 @@ export default function RemittancesDashboardPage() {
           <div className="space-y-1.5">
             <Label htmlFor="to">To</Label>
             <Input id="to" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="office-filter">Office</Label>
+            <select
+              id="office-filter"
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+              value={officeFilter}
+              onChange={(e) => setOfficeFilter(e.target.value)}
+            >
+              <option value="">All offices</option>
+              {offices.map((office) => (
+                <option key={office.id} value={office.id}>
+                  {office.code ? `${office.name} (${office.code})` : office.name}
+                </option>
+              ))}
+              <option value="__none__">Unassigned</option>
+            </select>
           </div>
           <Button type="button" variant="outline" onClick={() => void load()}>Refresh</Button>
         </CardContent>
@@ -229,7 +253,7 @@ export default function RemittancesDashboardPage() {
             Office-wise breakdown
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Totals per office and currency for the selected dates (no FX conversion — amounts stay in received currency).
+            Totals per office from remittance records (office stored when a user is tagged). Filter above for a single office (e.g. Karachi). No FX conversion.
           </p>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">

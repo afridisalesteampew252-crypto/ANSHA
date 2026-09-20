@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
+import { StockLinkedInvoices } from '@/components/admin/stock-linked-invoices';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -788,6 +789,8 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           </Button>
         </div>
       </div>
+
+      <StockLinkedInvoices vehicleId={vehicle.id} />
 
       <Card className="overflow-hidden">
         <CardHeader>

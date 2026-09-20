@@ -76,6 +76,9 @@ Remittances (Phase 69):
 - `link_remittance(p_remittance_id, p_customer_id, ...)` — resolve Unknown TTS (receivables)
 - `count_unknown_remittances()` — finance unknown queue count
 - `allocate_remittance` — receivables only; refuses unknown
+- `reverse_remittance_allocation` — receivables; SECURITY DEFINER (Phase 71)
+- `unallocate_invoice_remittances` — receivables; SECURITY DEFINER (Phase 71); returns funds to remittance pool
+- `unallocate_and_delete_invoice` — unallocate then `delete_invoice_safely`
 
 Chat linking RPCs (Phase 20):
 
