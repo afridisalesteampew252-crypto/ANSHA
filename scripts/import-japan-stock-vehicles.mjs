@@ -104,6 +104,10 @@ const CHASSIS_MAP = {
   KF2P: { make: 'Mazda', model: 'CX-5' },
   KFEP: { make: 'Mazda', model: 'CX-5' },
   KH3R3P: { make: 'Mazda', model: 'CX-60' },
+  // MXPK11 / MXPK11IS / MXPK16 = 2nd-gen Toyota Aqua (not Raize)
+  MXPK11: { make: 'Toyota', model: 'Aqua' },
+  MXPK11IS: { make: 'Toyota', model: 'Aqua' },
+  MXPK16: { make: 'Toyota', model: 'Aqua' },
 };
 
 function decodeBmwFromVin(vin) {
