@@ -5,6 +5,7 @@ import { TestimonialsSection } from '@/components/public/testimonials-section';
 import { getPublishedReviews } from '@/lib/reviews';
 import { Button } from '@/components/ui/button';
 import { siteConfig } from '@/lib/site-config';
+import { defaultOgImage } from '@/lib/seo';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 
 export const metadata: Metadata = {
@@ -18,6 +19,12 @@ export const metadata: Metadata = {
       'Real-feeling customer voices from UAE, Africa, and regional buyers who work with ANSHA.',
     url: `${siteConfig.url}/reviews`,
     type: 'website',
+    images: [defaultOgImage],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Customer Testimonials | ${siteConfig.name}`,
+    images: [defaultOgImage.url],
   },
   robots: {
     index: true,

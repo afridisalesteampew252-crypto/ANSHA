@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     data.excerpt ||
     `${data.title} — insights from ${siteConfig.name}.`;
   const canonical = `/blog/${slug}`;
-  const imageUrl = blogImageUrl(data.featured_image, { absolute: true }) || absoluteUrl('/images/ansha-logo-transparent.webp');
+  const imageUrl = blogImageUrl(data.featured_image, { absolute: true }) || absoluteUrl('/images/og-default.jpg');
 
   return {
     title,

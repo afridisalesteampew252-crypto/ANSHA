@@ -1,8 +1,10 @@
 /* ANSHA PWA service worker — public shell only. Never cache admin, API, or auth. */
-const VERSION = 'ansha-pwa-v1.2.0';
+const VERSION = 'ansha-pwa-v1.3.0';
 const PRECACHE = [
   '/',
   '/offline',
+  '/favicon.ico',
+  '/icons/favicon-48.png',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/apple-touch-icon.png',

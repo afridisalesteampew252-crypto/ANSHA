@@ -4,6 +4,7 @@ import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { siteConfig } from '@/lib/site-config';
+import { absoluteMediaUrl, defaultOgImage, favicon48Path } from '@/lib/seo';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -34,10 +35,26 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: { default: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`, template: `%s | ${siteConfig.name}` },
   description: siteConfig.description,
-  openGraph: { title: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`, description: siteConfig.description, url: siteConfig.url, siteName: siteConfig.name, type: 'website' },
   metadataBase: new URL(siteConfig.url),
-  twitter: { card: 'summary_large_image', title: siteConfig.name, description: siteConfig.description },
+  openGraph: {
+    title: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    type: 'website',
+    locale: 'en_AE',
+    images: [defaultOgImage],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: siteConfig.name,
+    description: siteConfig.description,
+    images: [defaultOgImage.url],
+  },
   robots: { index: true, follow: true },
+  verification: {
+    google: 'r0P5yQPkoLo-6HNp_VwC651U3Opl_c3wXvmSTbbUm2A',
+  },
   applicationName: siteConfig.pwaName,
   appleWebApp: {
     capable: true,
@@ -45,10 +62,14 @@ export const metadata: Metadata = {
     title: siteConfig.pwaShortName,
   },
   icons: {
+    // Stable /favicon.ico + 48×48 PNG — what Google Search prefers for SERP icons.
     icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: favicon48Path, sizes: '48x48', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
+    shortcut: '/favicon.ico',
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   formatDetection: { telephone: false },
@@ -78,6 +99,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               '@context': 'https://schema.org', '@type': 'Organization', name: siteConfig.name,
               url: siteConfig.url, email: siteConfig.email, telephone: siteConfig.phone,
               description: siteConfig.description, taxID: siteConfig.taxRegistrationNumber,
+              logo: absoluteMediaUrl('/icons/icon-512.png'),
+              image: absoluteMediaUrl(defaultOgImage.url),
               address: { '@type': 'PostalAddress', streetAddress: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba', addressLocality: 'Dubai', addressCountry: 'AE' },
             },
             {

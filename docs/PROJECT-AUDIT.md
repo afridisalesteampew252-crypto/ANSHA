@@ -62,8 +62,9 @@ Most catalog/ERP pages are Client Components talking to PostgREST with the anon/
 - PWA display name **Anshatradingco APP** + Install CTAs
 - Auction-sheet vehicle photos excluded from public gallery (RLS + `lib/vehicle-photos.ts`)
 - Heavy machinery & trucks browse at `/machinery` (`vehicle_class`)
-- Tawk.to public chat widget when `NEXT_PUBLIC_TAWK_*` set
+- Tawk.to public chat widget when `NEXT_PUBLIC_TAWK_*` set (webhook mirror = later)
 - Blog SEO metadata + Article JSON-LD; home testimonials + `/reviews` page
+- GSC `verification.google`; `/favicon.ico` + default OG `/images/og-default.jpg`
 
 **Gap**
 

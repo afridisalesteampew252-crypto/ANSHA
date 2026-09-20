@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { siteConfig } from '@/lib/site-config';
+import { defaultOgImage } from '@/lib/seo';
 
 export const metadata: Metadata = {
   title: 'Heavy Machinery & Trucks',
@@ -9,6 +10,12 @@ export const metadata: Metadata = {
     title: `Heavy Machinery & Trucks | ${siteConfig.name}`,
     description: `Inspected machinery and trucks ready for worldwide shipping coordination.`,
     url: `${siteConfig.url}/machinery`,
+    images: [defaultOgImage],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `Heavy Machinery & Trucks | ${siteConfig.name}`,
+    images: [defaultOgImage.url],
   },
 };
 

@@ -109,6 +109,10 @@ Done (Phase 57): vehicle class for heavy machinery & trucks — `vehicles.vehicl
 
 Also shipped (Tawk.to): public site widget via `NEXT_PUBLIC_TAWK_PROPERTY_ID` / `NEXT_PUBLIC_TAWK_WIDGET_ID`; admin `/admin/live-chat` agent inbox surface — **admin + manager only** (`canAccessLiveChat` + nav filter + `proxy.ts`). Optional `NEXT_PUBLIC_TAWK_DASHBOARD_URL`.
 
+Also shipped (SEO ops): Google Search Console `verification.google` in root layout; stable `/favicon.ico` + `/icons/favicon-48.png` + regenerated PWA icons; default OG `/images/og-default.jpg` (`lib/seo.ts`); after deploy → verify ownership + Request indexing (favicon can take days).
+
+**Later (Phase 58):** Tawk webhook mirror (`tawk-webhook` + `tawk_chat_sessions`) — deferred; not activated with the SEO ship.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.

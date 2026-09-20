@@ -22,6 +22,17 @@ Default branch is `main`. There is no `master` workflow in `.github/workflows/ci
 
 `vercel.json` only sets `installCommand`. Public Supabase URL and publishable key come from Vercel Environment Variables (and local `.env.local`), not from git. GitHub Actions injects placeholders for CI builds.
 
+## SEO / Search Console (shipped)
+
+After each production deploy that touches crawl metadata:
+
+1. **Google Search Console ownership** — root layout includes `metadata.verification.google` (HTML tag). Confirm the property verifies for `https://www.anshatradingco.com`.
+2. **Request indexing** — submit or re-request key URLs (home, catalog hubs, blog, reviews) once the deploy is READY.
+3. **Favicon / brand icons** — stable `/favicon.ico` plus `/icons/favicon-48.png` and PWA icons under `/icons/*`. Google may take **days** to refresh the SERP icon after a change.
+4. **Default Open Graph** — `/images/og-default.jpg` via `lib/seo.ts` (`defaultOgImage`); listing/detail pages fall back to it when no cover photo exists.
+
+Helpers: `lib/seo.ts`, `scripts/generate-brand-icons.mjs`.
+
 ## CI
 
 `.github/workflows/ci.yml` runs Node 24: `npm ci --legacy-peer-deps`, `lint`, `typecheck`, `verify:brands`, `build`. Placeholder public Supabase env is injected so the build can compile. CI does **not** run `verify:deployment`.
@@ -93,6 +104,8 @@ Tawk.to live chat (public widget + admin agent inbox): set on the **Vercel** pro
 
 Leave property/widget blank to disable the public widget. Admin Live chat is **admin + manager only** (see `docs/Roles.md`). Redeploy Next.js after changing Vercel env.
 
+**Later (Phase 58 — not part of current production activate):** Tawk webhook mirror (`TAWK_WEBHOOK_SECRET` Edge secret, migration `20260920070000_phase_58_tawk_chat_events.sql`, Edge Function `tawk-webhook` with `--no-verify-jwt`, Tawk dashboard → Webhooks). Do not set webhook secrets or deploy the function until that pass is scheduled.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.
@@ -107,4 +120,4 @@ Supabase project backups are an infrastructure concern, not an in-repo script. D
 
 ## Edge Functions
 
-`admin-create-user`, `admin-update-user`, `send-outbound-email`, `send-whatsapp`, and related functions deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy both functions together so they keep the same origin allowlist and anon-key caller verification.
+`admin-create-user`, `admin-update-user`, `send-outbound-email`, `send-whatsapp`, and related functions deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy both functions together so they keep the same origin allowlist and anon-key caller verification. (`tawk-webhook` is **later** — Phase 58.)

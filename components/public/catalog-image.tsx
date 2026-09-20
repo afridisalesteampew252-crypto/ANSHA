@@ -42,10 +42,4 @@ export function CatalogImage({
   );
 }
 
-export function publicPartImageUrl(storagePath: string) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${storagePath}`;
-}
-
-export function publicVehicleImageUrl(storagePath: string) {
-  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/vehicle-images/${storagePath}`;
-}
+export { publicPartImageUrl, publicVehicleImageUrl } from '@/lib/public-media';
