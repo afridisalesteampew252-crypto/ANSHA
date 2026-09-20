@@ -1,6 +1,6 @@
 # Current State
 
-Verified checkpoint: **2026-09-20** (SEO favicon + default OG + Google Search Console verification; Phase 57 machinery + Tawk widget; blog/`/reviews`).
+Verified checkpoint: **2026-09-20** (Japan Aug ZIP stock loads + Dubai WhatsApp Sep 20 stock; SEO/GSC + Phase 57 machinery + Tawk widget; blog/`/reviews`).
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
@@ -17,7 +17,7 @@ Hosting: Vercel project `anshanew`
 | Customer portal | **~75%** | Invoices + SOA; no remittance UX for customers |
 | PWA / Capacitor | **~85%** | Named **Anshatradingco APP**; install CTAs; Capacitor shell docs; SW precaches favicon |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (SEO/GSC + Phases 53–57 + Tawk widget + inventory + blog/reviews) |
+| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Japan Aug ZIP batches + Dubai WA Sep 20 + SEO/GSC + Phases 53–57) |
 
 **Overall product maturity (shipping ERP + public exporter):** roughly **88–93%** of the Phase 1–57 roadmap that was chosen and built. Remaining work is polish, secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, and test coverage — not a greenfield rewrite.
 
@@ -56,8 +56,25 @@ Hosting: Vercel project `anshanew`
 - A4 invoice print: denser layout; verification code on the document face (with QR)
 
 ### Inventory ops (data loads, not schema phases)
-- Japan stock ZIP: `scripts/import-japan-stock-vehicles.mjs` — **~35** chassis folders; SEO Make/Model/Year/Color; WebP photos; `A.*` → `is_auction_sheet` (report ~12 created / ~23 already present)
-- WhatsApp parts: warehouse batch + Dubai Sep 20 batch (`scripts/import-whatsapp-parts*.mjs`) + **Japan key-fob / car-electronics** batch (`scripts/import-whatsapp-parts-keys.mjs`, **16** Japan-stock parts created; qty 1, price 0, `ask_for_quote`, SEO WebP)
+
+Live Supabase counts (ops snapshot): **~191** Japan vehicles; **~32** auction-sheet photos (`is_auction_sheet`); **~2** Dubai vehicles; **~154** Dubai parts; **~16** Japan parts (key-fobs).
+
+**Japan vehicle ZIP batches** (Aug 2026 folders → `stock_origin=japan`, published, ask-for-quote, WebP, titles `{Make} {Model} {Year} {Color}`):
+
+| ZIP | Vehicles | Notes |
+|---|---|---|
+| 17 Aug | **40** (435 photos) | **20 auction sheets** (`A.*`); Harrier / Roomy / Prado / Fit / CX-8 / Tank |
+| 19 Aug | **50** (577 photos) | Alphard / Aqua / Stepwgn; MXPK chassis mapped to **Toyota Aqua** (not Raize) |
+| 25 Aug | **~35** | First ZIP + Phase 56 auction-sheet flagging on admin cards |
+| 26 Aug | **35** (409 photos) | VIN folders (e.g. CLA / Tiguan); no auction sheets in ZIP |
+| 28 Aug | **29** (343 photos) | Alphard / Note / Prado / Fit; no auction sheets in ZIP |
+
+Script: `scripts/import-japan-stock-vehicles.mjs` (+ one-off batch runners under `scripts/tmp/` when used; do not commit large extracts).
+
+**WhatsApp / Dubai parts & stock:**
+- Warehouse + Dubai parts batches: `scripts/import-whatsapp-parts.mjs`, `scripts/import-whatsapp-parts-dubai.mjs`
+- Japan key-fob / car-electronics: `scripts/import-whatsapp-parts-keys.mjs` (**16** Japan parts)
+- Dubai WhatsApp Sep 20 vehicles+parts: `scripts/import-dubai-whatsapp-sep20-stock.mjs` (**2** vehicles — Corolla Fielder Hybrid + Hilux GR Sport; **2** new parts — Volk forged wheel + STI engine-bay; Aptany wheel skipped as duplicate)
 
 ### Edge Functions
 `admin-create-user`, `admin-update-user`, `portal-create-access`, `send-web-push`, `send-outbound-email`, `send-whatsapp`, `remind-request-dues`

@@ -38,7 +38,7 @@ Legend: **Fact** | **Gap** | **Recommendation**
 | Hooks | `hooks/` (`use-inventory-deals`, `use-fx-rates`, `use-live-clock`, …) |
 | Migrations | `supabase/migrations/` (through Phase 57) |
 | Edge Functions | `supabase/functions/*` |
-| One-off import scripts | `scripts/import-japan-stock-vehicles.mjs`, `scripts/import-whatsapp-parts*.mjs` |
+| One-off import scripts | `scripts/import-japan-stock-vehicles.mjs`, `scripts/import-whatsapp-parts*.mjs`, `scripts/import-dubai-whatsapp-sep20-stock.mjs` |
 
 Most catalog/ERP pages are Client Components talking to PostgREST with the anon/authenticated JWT. RLS is the authorization backstop.
 
@@ -191,9 +191,9 @@ Roughly **88–92%** of the chosen ERP + public + platform MVP is shipped. Remai
 
 | Doc | Status after this audit |
 |---|---|
-| CURRENT_STATE.md | Checkpoint tip `e76df97` / Phases 53–56 |
+| CURRENT_STATE.md | Checkpoint 2026-09-20 / Japan Aug ZIPs + Dubai WA Sep 20 / Phases 53–57 |
 | Modules.md | Updated |
-| Roadmap.md | Phases 53–56 + open later-platform list |
+| Roadmap.md | Phases 53–57 + Japan/Dubai inventory batches + open later-platform list |
 | Roles.md | Field / accounts / manager (already current) |
 | User-Manual.md | Roles + HR + auction sheets + field/accounts flows |
 | PWA.md | Prior VAPID guidance still valid |

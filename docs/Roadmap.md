@@ -103,7 +103,7 @@ Done (Phase 55): `accounts` role + `can_manage_receivables()`; field agents crea
 
 Done (Phase 56): `vehicle_photos.is_auction_sheet`; public RLS hides A-sheets; admin badge + clickable Auction sheet lightbox; Japan ZIP import script flags `A.*`. Migration `20260920050000_phase_56_vehicle_photo_auction_sheet.sql`. Invoice A4 polish: denser layout + verification code on face.
 
-Also shipped (inventory ops, scripts): Japan stock ZIP (~35 chassis folders via `scripts/import-japan-stock-vehicles.mjs`; SEO Make/Model/Year/Color + WebP; 12 new / 23 already present); WhatsApp parts warehouse + Dubai Sep 20 batches; Japan key-fob / car-electronics batch (`scripts/import-whatsapp-parts-keys.mjs`, **16** created).
+Also shipped (inventory ops, scripts — data already in live Supabase): Japan Aug 2026 ZIP batches via `scripts/import-japan-stock-vehicles.mjs` and one-off runners — **17 Aug (40 vehicles, 20 auction sheets)**, **19 Aug (50; MXPK→Aqua)**, **25 Aug (~35 + auction-sheet flagging)**, **26 Aug (35)**, **28 Aug (29)**; live ~**191** Japan vehicles / ~**32** auction-sheet photos. WhatsApp parts: warehouse + Dubai batches; Japan key-fobs (**16**); Dubai WhatsApp Sep 20 vehicles+parts (`scripts/import-dubai-whatsapp-sep20-stock.mjs` — 2 vehicles + 2 parts).
 
 Done (Phase 57): vehicle class for heavy machinery & trucks — `vehicles.vehicle_class` (`passenger`|`commercial_truck`|`heavy_machinery`), optional `equipment_category` + `operating_hours`; public `/machinery`; admin class filters + nav “Machinery & trucks”; helpers in `lib/vehicle-class.ts`. Migration `20260920060000_phase_57_vehicle_class_machinery.sql`.
 
