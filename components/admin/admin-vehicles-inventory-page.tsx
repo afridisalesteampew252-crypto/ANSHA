@@ -35,6 +35,11 @@ import {
   VEHICLE_SALES_STATUS_LABELS,
   type VehicleSalesStatus,
 } from '@/lib/vehicle-sales-status';
+import {
+  mapStockLinkedInvoices,
+  primaryLinkedInvoiceStatus,
+  type StockListLinkedInvoice,
+} from '@/lib/stock-linked-invoice';
 import type { AdminRole, StockOrigin, VehicleWithPhotos } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -85,8 +90,9 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [agentNames, setAgentNames] = useState<Record<string, string>>({});
   const [shipmentByVehicle, setShipmentByVehicle] = useState<Record<string, string>>({});
-  const [invoiceByVehicle, setInvoiceByVehicle] = useState<Record<string, string>>({});
-  const [role, setRole] = useState<AdminRole | null>(null);
+  const [invoicesByVehicle, setInvoicesByVehicle] = useState<Record<string, StockListLinkedInvoice[]>>(
+    {}
+  );  const [role, setRole] = useState<AdminRole | null>(null);
   const [allowedOrigins, setAllowedOrigins] = useState<string[] | null>(null);
   const [claimTarget, setClaimTarget] = useState<VehicleWithPhotos | null>(null);
   const [requesterTarget, setRequesterTarget] = useState<VehicleWithPhotos | null>(null);
@@ -148,7 +154,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
       vehicleIds.length
         ? supabase
             .from('invoice_items')
-            .select('vehicle_id, invoices(status,created_at,document_type)')
+            .select('vehicle_id, invoices(id, invoice_number, status, created_at, document_type)')
             .in('vehicle_id', vehicleIds)
             .not('vehicle_id', 'is', null)
             .limit(800)
@@ -183,18 +189,8 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
       Object.fromEntries(Object.entries(shipMap).map(([id, value]) => [id, value.status]))
     );
 
-    const invMap: Record<string, { status: string; created: string }> = {};
-    for (const row of itemRes.data || []) {
-      if (!row.vehicle_id) continue;
-      const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
-      if (!inv?.status) continue;
-      const prev = invMap[row.vehicle_id];
-      if (!prev || String(inv.created_at) > prev.created) {
-        invMap[row.vehicle_id] = { status: inv.status, created: String(inv.created_at || '') };
-      }
-    }
-    setInvoiceByVehicle(
-      Object.fromEntries(Object.entries(invMap).map(([id, value]) => [id, value.status]))
+    setInvoicesByVehicle(
+      mapStockLinkedInvoices(itemRes.data || [], (row) => row.vehicle_id as string | null)
     );
 
     setLoading(false);
@@ -230,10 +226,10 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     (vehicle: VehicleWithPhotos): VehicleSalesStatus =>
       deriveVehicleSalesStatus({
         stockStatus: vehicle.stock_status,
-        invoiceStatus: invoiceByVehicle[vehicle.id],
+        invoiceStatus: primaryLinkedInvoiceStatus(invoicesByVehicle[vehicle.id]),
         shipmentStatus: shipmentByVehicle[vehicle.id],
       }),
-    [invoiceByVehicle, shipmentByVehicle]
+    [invoicesByVehicle, shipmentByVehicle]
   );
 
   const summary = useMemo(() => {
@@ -303,6 +299,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
           vehicle.reservation_requester_role,
           agentLabel,
           VEHICLE_SALES_STATUS_LABELS[salesStatusOf(vehicle)],
+          ...(invoicesByVehicle[vehicle.id] || []).map((inv) => inv.invoice_number),
           ...(vehicle.search_keywords || []),
           ...(vehicle.destination_markets || []),
           ...(vehicle.shipping_methods || []),
@@ -311,6 +308,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     [
       agentFilter,
       agentNames,
+      invoicesByVehicle,
       origin,
       query,
       salesStatus,
@@ -894,6 +892,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
                     ? exportShipmentStatusLabel(shipmentByVehicle[vehicle.id])
                     : null
                 }
+                linkedInvoices={invoicesByVehicle[vehicle.id]}
                 selected={selectedIds.has(vehicle.id)}
                 onSelectedChange={(next) => toggleSelected(vehicle.id, next)}
                 onUpdate={updateVehicle}

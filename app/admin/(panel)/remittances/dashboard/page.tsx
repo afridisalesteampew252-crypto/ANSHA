@@ -233,7 +233,7 @@ export default function RemittancesDashboardPage() {
             <p className="text-xs text-muted-foreground">{summary.unknownInRange} in date range</p>
           </CardContent>
         </Card>
-        {Object.entries(summary.byCurrency).slice(0, 2).map(([currency, totals]) => (
+        {Object.entries(summary.byCurrency).map(([currency, totals]) => (
           <Card key={currency}>
             <CardContent className="p-5">
               <p className="text-sm text-muted-foreground">Received {currency}</p>

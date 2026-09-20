@@ -21,6 +21,11 @@ import {
   PART_SALES_STATUSES,
   type PartSalesStatus,
 } from '@/lib/part-sales-status';
+import {
+  mapStockLinkedInvoices,
+  primaryLinkedInvoiceStatus,
+  type StockListLinkedInvoice,
+} from '@/lib/stock-linked-invoice';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
 import { exportShipmentStatusLabel } from '@/lib/vehicle-sales-status';
@@ -48,7 +53,7 @@ export default function AdminPartsPage() {
     }
   }, []);
   const [shipmentByPart, setShipmentByPart] = useState<Record<string, string>>({});
-  const [invoiceByPart, setInvoiceByPart] = useState<Record<string, string>>({});
+  const [invoicesByPart, setInvoicesByPart] = useState<Record<string, StockListLinkedInvoice[]>>({});
   const [role, setRole] = useState<AdminRole | null>(null);
   const [allowedOrigins, setAllowedOrigins] = useState<string[] | null>(null);
   const [claimTarget, setClaimTarget] = useState<PartWithRelations | null>(null);
@@ -90,7 +95,7 @@ export default function AdminPartsPage() {
       partIds.length
         ? supabase
             .from('invoice_items')
-            .select('part_id, invoices(status,created_at,document_type)')
+            .select('part_id, invoices(id, invoice_number, status, created_at, document_type)')
             .in('part_id', partIds)
             .not('part_id', 'is', null)
             .limit(800)
@@ -128,17 +133,9 @@ export default function AdminPartsPage() {
     }
     setShipmentByPart(Object.fromEntries(Object.entries(shipMap).map(([id, v]) => [id, v.status])));
 
-    const invMap: Record<string, { status: string; created: string }> = {};
-    for (const row of itemRes.data || []) {
-      if (!row.part_id) continue;
-      const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
-      if (!inv?.status) continue;
-      const prev = invMap[row.part_id];
-      if (!prev || String(inv.created_at) > prev.created) {
-        invMap[row.part_id] = { status: inv.status, created: String(inv.created_at || '') };
-      }
-    }
-    setInvoiceByPart(Object.fromEntries(Object.entries(invMap).map(([id, v]) => [id, v.status])));
+    setInvoicesByPart(
+      mapStockLinkedInvoices(itemRes.data || [], (row) => row.part_id as string | null)
+    );
     setLoading(false);
   }, []);
 
@@ -172,10 +169,10 @@ export default function AdminPartsPage() {
     (part: PartWithRelations): PartSalesStatus =>
       derivePartSalesStatus({
         stockStatus: part.stock_status,
-        invoiceStatus: invoiceByPart[part.id],
+        invoiceStatus: primaryLinkedInvoiceStatus(invoicesByPart[part.id]),
         shipmentStatus: shipmentByPart[part.id],
       }),
-    [invoiceByPart, shipmentByPart]
+    [invoicesByPart, shipmentByPart]
   );
 
   const categories = useMemo(() => {
@@ -227,12 +224,14 @@ export default function AdminPartsPage() {
           part.reservation_requester_name,
           compat,
           PART_SALES_STATUS_LABELS[salesStatusOf(part)],
+          ...(invoicesByPart[part.id] || []).map((inv) => inv.invoice_number),
         ]);
       }),
     [
       agentFilter,
       agentNames,
       categoryFilter,
+      invoicesByPart,
       origin,
       parts,
       query,
@@ -581,6 +580,7 @@ export default function AdminPartsPage() {
                 shipmentStatusLabel={
                   shipmentByPart[part.id] ? exportShipmentStatusLabel(shipmentByPart[part.id]) : null
                 }
+                linkedInvoices={invoicesByPart[part.id]}
                 selected={selectedIds.has(part.id)}
                 onSelectedChange={(next) => toggleSelected(part.id, next)}
                 onUpdate={updatePart}

@@ -26,6 +26,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { addToCurrencyMap, formatMoney, formatMoneyBreakdown, normalizeCurrency } from '@/lib/money';
+
+const money = (value: number, currency = 'AED') => formatMoney(value, currency);
+const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
+const trimOrNull = (value: string) => value.trim() || null;
 
 type Customer = {
   id: string;
@@ -99,10 +104,6 @@ const emptyProfileForm = (): ProfileForm => ({
   consignee_country: '',
   consignee_notes: '',
 });
-
-const money = (value: number, currency = 'AED') => new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value || 0));
-const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
-const trimOrNull = (value: string) => value.trim() || null;
 
 export default function CustomerAccountPage() {
   const params = useParams<{ id: string }>();
@@ -234,21 +235,48 @@ export default function CustomerAccountPage() {
   const usableRemittances = useMemo(() => remittances.filter((row) => row.status === 'confirmed' && Number(row.amount) - (allocatedByRemittance[row.id] || 0) > 0), [remittances, allocatedByRemittance]);
   const selectedRemittance = remittances.find((row) => row.id === remittanceId);
   const selectedInvoice = invoices.find((row) => row.id === invoiceId);
-  const totalInvoiced = receivableInvoices.reduce((sum, row) => sum + Number(row.total_amount), 0);
-  const totalAllocated = allocations.reduce((sum, row) => sum + Number(row.amount), 0);
-  const balanceDue = receivableInvoices.reduce((sum, row) => sum + Number(row.balance_due), 0);
-  const availableFunds = remittances.filter((row) => row.status === 'confirmed').reduce((sum, row) => sum + Math.max(0, Number(row.amount) - (allocatedByRemittance[row.id] || 0)), 0);
-  const currency = receivableInvoices[0]?.currency || remittances[0]?.currency || 'AED';
+
+  const soaTotals = useMemo(() => {
+    const invoiced: Record<string, number> = {};
+    const allocated: Record<string, number> = {};
+    const balance: Record<string, number> = {};
+    const available: Record<string, number> = {};
+    const remCurrency = new Map(remittances.map((row) => [row.id, row.currency]));
+    for (const row of receivableInvoices) {
+      addToCurrencyMap(invoiced, row.currency, Number(row.total_amount || 0));
+      addToCurrencyMap(balance, row.currency, Number(row.balance_due || 0));
+    }
+    for (const row of allocations) {
+      addToCurrencyMap(allocated, remCurrency.get(row.remittance_id), Number(row.amount || 0));
+    }
+    for (const row of remittances) {
+      if (row.status !== 'confirmed') continue;
+      addToCurrencyMap(available, row.currency, Math.max(0, Number(row.amount) - (allocatedByRemittance[row.id] || 0)));
+    }
+    return { invoiced, allocated, balance, available };
+  }, [allocations, allocatedByRemittance, receivableInvoices, remittances]);
+
+  const chartCurrency = normalizeCurrency(
+    receivableInvoices[0]?.currency || remittances[0]?.currency || 'AED'
+  );
 
   const chartData = useMemo(() => Array.from({ length: 6 }, (_, offset) => {
     const month = startOfMonth(subMonths(new Date(), 5 - offset));
     const key = format(month, 'yyyy-MM');
     return {
       month: format(month, 'MMM'),
-      invoices: receivableInvoices.filter((row) => row.issue_date.startsWith(key)).reduce((sum, row) => sum + Number(row.total_amount), 0),
-      payments: allocations.filter((row) => row.created_at.startsWith(key)).reduce((sum, row) => sum + Number(row.amount), 0),
+      invoices: receivableInvoices
+        .filter((row) => row.issue_date.startsWith(key) && normalizeCurrency(row.currency) === chartCurrency)
+        .reduce((sum, row) => sum + Number(row.total_amount), 0),
+      payments: allocations
+        .filter((row) => {
+          if (!row.created_at.startsWith(key)) return false;
+          const rem = remittances.find((item) => item.id === row.remittance_id);
+          return normalizeCurrency(rem?.currency) === chartCurrency;
+        })
+        .reduce((sum, row) => sum + Number(row.amount), 0),
     };
-  }), [receivableInvoices, allocations]);
+  }), [allocations, chartCurrency, receivableInvoices, remittances]);
 
   const stockRefsByInvoice = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -577,11 +605,45 @@ export default function CustomerAccountPage() {
     </Card>
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {[['Receivable invoices', money(totalInvoiced, currency), ReceiptText], ['Payments allocated', money(totalAllocated, currency), CheckCircle2], ['Outstanding balance', money(balanceDue, currency), WalletCards], ['Available remittance', money(availableFunds, currency), Banknote]].map(([label, value, Icon]) => <Card key={String(label)}><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">{String(label)}</p><p className="mt-1 text-2xl font-bold">{String(value)}</p></div><span className="rounded-xl bg-primary/10 p-3 text-primary"><Icon className="h-5 w-5" /></span></CardContent></Card>)}
+      {([
+        ['Receivable invoices', soaTotals.invoiced, ReceiptText],
+        ['Payments allocated', soaTotals.allocated, CheckCircle2],
+        ['Outstanding balance', soaTotals.balance, WalletCards],
+        ['Available remittance', soaTotals.available, Banknote],
+      ] as const).map(([label, amounts, Icon]) => (
+        <Card key={label}>
+          <CardContent className="flex items-center justify-between gap-3 p-5">
+            <div className="min-w-0">
+              <p className="text-sm text-muted-foreground">{label}</p>
+              <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
+                {formatMoneyBreakdown(amounts)}
+              </p>
+            </div>
+            <span className="rounded-xl bg-primary/10 p-3 text-primary"><Icon className="h-5 w-5" /></span>
+          </CardContent>
+        </Card>
+      ))}
     </div>
 
     <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-      <Card><CardHeader><CardTitle className="text-lg">Invoices and payments · last 6 months</CardTitle></CardHeader><CardContent className="h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} /><YAxis fontSize={12} tickLine={false} axisLine={false} /><Tooltip formatter={(value) => money(Number(value), currency)} /><Bar dataKey="invoices" name="Invoiced" fill="hsl(var(--primary))" radius={[4,4,0,0]} /><Bar dataKey="payments" name="Paid" fill="#10b981" radius={[4,4,0,0]} /></BarChart></ResponsiveContainer></CardContent></Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Invoices and payments · last 6 months</CardTitle>
+          <p className="text-sm text-muted-foreground">Chart shows {chartCurrency} only — no FX conversion across currencies.</p>
+        </CardHeader>
+        <CardContent className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
+              <Bar dataKey="invoices" name="Invoiced" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+              <Bar dataKey="payments" name="Paid" fill="#10b981" radius={[4,4,0,0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
       <Card><CardHeader><CardTitle className="text-lg">Allocate received funds</CardTitle></CardHeader><CardContent className="space-y-4">
         <div className="space-y-1.5"><Label htmlFor="soa-remittance">Confirmed remittance</Label><select id="soa-remittance" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={remittanceId} onChange={(event) => chooseRemittance(event.target.value)}><option value="">Select available funds</option>{usableRemittances.map((row) => <option key={row.id} value={row.id}>{row.remittance_number} · {money(Number(row.amount) - (allocatedByRemittance[row.id] || 0), row.currency)} available</option>)}</select></div>
         <div className="space-y-1.5"><Label htmlFor="soa-invoice">Open invoice</Label><select id="soa-invoice" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={invoiceId} onChange={(event) => { setInvoiceId(event.target.value); const invoice = invoices.find((row) => row.id === event.target.value); const available = selectedRemittance ? Number(selectedRemittance.amount) - (allocatedByRemittance[selectedRemittance.id] || 0) : 0; setAllocationAmount(String(Math.min(available, Number(invoice?.balance_due || 0)) || '')); }}><option value="">Select invoice</option>{openInvoices.filter((row) => !selectedRemittance || row.currency === selectedRemittance.currency).map((row) => <option key={row.id} value={row.id}>{row.invoice_number}{stockRefsByInvoice[row.id]?.length ? ` · ${stockRefsByInvoice[row.id].join(', ')}` : ''} · {money(row.balance_due, row.currency)}</option>)}</select></div>
@@ -606,7 +668,7 @@ export default function CustomerAccountPage() {
                 Reserved · {item.kind} · Ref {item.inventory_reference}
               </p>
             </div>
-            <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || currency)}</span>
+            <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || chartCurrency)}</span>
           </div>
         ))}
         {buyingInvoiceItems.map((item) => {
@@ -621,7 +683,7 @@ export default function CustomerAccountPage() {
                   {item.inventory_type ? ` · ${item.inventory_type}` : ''}
                 </p>
               </div>
-              <span className="shrink-0 font-semibold">{money(item.line_total, invoice?.currency || currency)}</span>
+              <span className="shrink-0 font-semibold">{money(item.line_total, invoice?.currency || chartCurrency)}</span>
             </div>
           );
         })}

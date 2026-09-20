@@ -734,7 +734,7 @@ export default function RemittancesPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [customers]);
 
-  const exportRemittances = async () => {
+  const exportRemittances = async (format: 'xlsx' | 'csv' = 'xlsx') => {
     const selected = REMITTANCE_EXPORT_COLUMNS.filter((col) => exportColumns[col.key]);
     if (selected.length === 0) {
       toast.error('Select at least one export column.');
@@ -780,12 +780,36 @@ export default function RemittancesPage() {
         return picked;
       });
 
-      await downloadExcelWorkbook({
-        filename: 'remittance-list',
-        sheetName: 'Remittances',
-        columns: selected.map((col) => ({ header: col.label, key: col.key })),
-        rows,
-      });
+      if (format === 'csv') {
+        const escapeCsv = (value: string | number | null | undefined) => {
+          const raw = value == null ? '' : String(value);
+          if (/[",\n\r]/.test(raw)) return `"${raw.replaceAll('"', '""')}"`;
+          return raw;
+        };
+        const header = selected.map((col) => escapeCsv(col.label)).join(',');
+        const lines = rows.map((row) =>
+          selected.map((col) => escapeCsv(row[col.key])).join(',')
+        );
+        const stamp = new Date().toISOString().slice(0, 10);
+        const blob = new Blob([[header, ...lines].join('\n')], {
+          type: 'text/csv;charset=utf-8',
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `remittance-list-${stamp}.csv`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        await downloadExcelWorkbook({
+          filename: 'remittance-list',
+          sheetName: 'Remittances',
+          columns: selected.map((col) => ({ header: col.label, key: col.key })),
+          rows,
+        });
+      }
       toast.success(`Exported ${rows.length} remittance${rows.length === 1 ? '' : 's'}.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Export failed');
@@ -842,9 +866,7 @@ export default function RemittancesPage() {
             ) : null}
           </CardContent>
         </Card>
-        {Object.entries(totals)
-          .slice(0, 2)
-          .map(([currency, total]) => (
+        {Object.entries(totals).map(([currency, total]) => (
             <Card key={currency}>
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Confirmed {currency}</p>
@@ -863,7 +885,7 @@ export default function RemittancesPage() {
           setFilterDraft(empty);
           setFilters(empty);
         }}
-        onExport={() => void exportRemittances()}
+        onExport={(format) => void exportRemittances(format)}
         exporting={exporting}
         columnSelection={exportColumns}
         onColumnToggle={(key, checked) =>

@@ -13,11 +13,11 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import type { OpsAnalyticsSummary } from '@/lib/ops-analytics';
+import { addToCurrencyMap, formatMoney, formatMoneyBreakdown } from '@/lib/money';
 
 const ACCENT = 'hsl(0 75% 47%)';
 const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
-const money = (value: number, currency = 'AED') =>
-  new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 1 }).format(Number(value || 0));
+const money = (value: number, currency = 'AED') => formatMoney(value, currency, { maximumFractionDigits: 1 });
 
 const defaultFrom = () => format(subMonths(new Date(), 5), 'yyyy-MM-01');
 const defaultTo = () => format(new Date(), 'yyyy-MM-dd');
@@ -40,6 +40,29 @@ export default function AdminAnalyticsPage() {
 
   const currency = summary?.sales.totals.currency_focus || summary?.collections?.totals.currency_focus || 'AED';
   const isOps = summary?.viewer.is_ops ?? false;
+
+  const moneyByCurrency = useMemo(() => {
+    if (!summary) return { invoiced: {} as Record<string, number>, outstanding: {} as Record<string, number>, received: {} as Record<string, number> };
+    const invoiced: Record<string, number> = {};
+    const outstanding: Record<string, number> = {};
+    const received: Record<string, number> = {};
+    for (const row of summary.sales.by_currency || []) {
+      addToCurrencyMap(invoiced, row.currency, Number(row.invoiced_total || 0));
+    }
+    if (summary.sales.outstanding_as_of?.length) {
+      for (const row of summary.sales.outstanding_as_of) {
+        addToCurrencyMap(outstanding, row.currency, Number(row.outstanding_ar || 0));
+      }
+    } else {
+      for (const row of summary.sales.by_currency || []) {
+        addToCurrencyMap(outstanding, row.currency, Number(row.outstanding_ar || 0));
+      }
+    }
+    for (const row of summary.collections?.by_currency || []) {
+      addToCurrencyMap(received, row.currency, Number(row.received_total || 0));
+    }
+    return { invoiced, outstanding, received };
+  }, [summary]);
 
   const monthly = useMemo(() => {
     if (!summary) return [];
@@ -122,14 +145,18 @@ export default function AdminAnalyticsPage() {
             <Card>
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Invoiced ({summary.sales.scope})</p>
-                <p className="mt-1 text-2xl font-bold">{money(summary.sales.totals.invoiced_total, currency)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{summary.sales.totals.invoice_count} tax/commercial invoices</p>
+                <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
+                  {formatMoneyBreakdown(moneyByCurrency.invoiced)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">{summary.sales.totals.invoice_count} tax/commercial invoices · no FX conversion</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Outstanding AR</p>
-                <p className="mt-1 text-2xl font-bold">{money(summary.sales.outstanding_total, currency)}</p>
+                <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
+                  {formatMoneyBreakdown(moneyByCurrency.outstanding)}
+                </p>
                 <p className="mt-1 text-xs text-muted-foreground">Open balances as of today</p>
               </CardContent>
             </Card>
@@ -137,7 +164,9 @@ export default function AdminAnalyticsPage() {
               <Card>
                 <CardContent className="p-5">
                   <p className="text-sm text-muted-foreground">Funds received</p>
-                  <p className="mt-1 text-2xl font-bold">{money(summary.collections.totals.received_total, currency)}</p>
+                  <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
+                    {formatMoneyBreakdown(moneyByCurrency.received)}
+                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">{summary.collections.totals.remittance_count} confirmed remittances</p>
                 </CardContent>
               </Card>
@@ -209,6 +238,9 @@ export default function AdminAnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">{isOps ? 'Invoiced versus received' : 'Invoiced by month'}</CardTitle>
+                <CardDescription>
+                  Monthly bars may mix currencies when several exist. KPI cards above list each currency separately (no FX conversion). Focus label: {currency}.
+                </CardDescription>
               </CardHeader>
               <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">

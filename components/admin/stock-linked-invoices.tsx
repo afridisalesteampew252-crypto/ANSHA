@@ -70,7 +70,7 @@ export function StockLinkedInvoices({ vehicleId, partId }: Props) {
     const mapped: LinkedInvoice[] = [];
     for (const row of data || []) {
       const inv = Array.isArray(row.invoices) ? row.invoices[0] : row.invoices;
-      if (!inv) continue;
+      if (!inv || inv.status === 'cancelled') continue;
       mapped.push({
         item_id: row.id,
         description: row.description,

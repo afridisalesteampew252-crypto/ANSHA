@@ -1,9 +1,15 @@
 'use client';
 
-import { Download, Eraser, Loader2, Search } from 'lucide-react';
+import { ChevronDown, Download, Eraser, FileSpreadsheet, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchableSelect, type SearchableSelectOption } from '@/components/admin/searchable-select';
@@ -11,6 +17,8 @@ import {
   REMITTANCE_EXPORT_COLUMNS,
   type RemittanceExportColumnKey,
 } from '@/lib/remittance-export';
+
+export type RemittanceExportFormat = 'xlsx' | 'csv';
 
 export type RemittanceListFilters = {
   receivedFrom: string;
@@ -53,7 +61,7 @@ type Props = {
   onDraftChange: (next: RemittanceListFilters) => void;
   onSearch: () => void;
   onClear: () => void;
-  onExport: () => void;
+  onExport: (format: RemittanceExportFormat) => void;
   exporting: boolean;
   columnSelection: Record<RemittanceExportColumnKey, boolean>;
   onColumnToggle: (key: RemittanceExportColumnKey, checked: boolean) => void;
@@ -66,6 +74,36 @@ type Props = {
   countryOptions: string[];
   matchCount: number;
 };
+
+function ExportRecordsMenu({
+  exporting,
+  onExport,
+}: {
+  exporting: boolean;
+  onExport: (format: RemittanceExportFormat) => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" disabled={exporting} className="gap-1">
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Export Records
+          <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-52">
+        <DropdownMenuItem disabled={exporting} onSelect={() => onExport('xlsx')}>
+          <FileSpreadsheet className="h-3.5 w-3.5" />
+          Export Excel (.xlsx)
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={exporting} onSelect={() => onExport('csv')}>
+          <Download className="h-3.5 w-3.5" />
+          Export CSV
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export function RemittanceExportPanel({
   draft,
@@ -93,7 +131,7 @@ export function RemittanceExportPanel({
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Remittance — List filters &amp; export</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Filter the list, choose columns, then download an Excel workbook ({matchCount} matching
+          Filter the list, choose columns, then export as Excel or CSV ({matchCount} matching
           record{matchCount === 1 ? '' : 's'}).
         </p>
       </CardHeader>
@@ -282,10 +320,7 @@ export function RemittanceExportPanel({
             <Eraser className="h-4 w-4" />
             Clear
           </Button>
-          <Button type="button" variant="default" disabled={exporting} onClick={onExport}>
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Export Records
-          </Button>
+          <ExportRecordsMenu exporting={exporting} onExport={onExport} />
         </div>
 
         <div className="space-y-3 border-t pt-4">
@@ -307,10 +342,7 @@ export function RemittanceExportPanel({
             ))}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" disabled={exporting} onClick={onExport}>
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Export Records
-            </Button>
+            <ExportRecordsMenu exporting={exporting} onExport={onExport} />
             <Button type="button" variant="outline" onClick={onSelectAllColumns}>
               Select All
             </Button>

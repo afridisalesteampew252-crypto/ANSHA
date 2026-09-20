@@ -29,6 +29,7 @@ import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { conditionLabels } from '@/lib/site-config';
 import { stockOriginLabel } from '@/lib/stock';
+import type { StockListLinkedInvoice } from '@/lib/stock-linked-invoice';
 import {
   PRICE_TERM_LABELS,
   SHIPMENT_MODE_LABELS,
@@ -50,6 +51,7 @@ type Props = {
   reservedByLabel?: string | null;
   salesStatusLabel?: string | null;
   shipmentStatusLabel?: string | null;
+  linkedInvoices?: StockListLinkedInvoice[];
   selected?: boolean;
   onSelectedChange?: (selected: boolean) => void;
   onUpdate?: (id: string, changes: Record<string, unknown>) => void;
@@ -79,6 +81,7 @@ export function AdminPartCard({
   reservedByLabel,
   salesStatusLabel,
   shipmentStatusLabel,
+  linkedInvoices = [],
   selected = false,
   onSelectedChange,
   onUpdate,
@@ -112,6 +115,8 @@ export function AdminPartCard({
     params.set('reference', 'Credit note');
     return `/admin/invoices/new?${params.toString()}`;
   })();
+  const primaryInvoice = linkedInvoices[0];
+  const extraInvoiceCount = Math.max(0, linkedInvoices.length - 1);
 
   return (
     <div
@@ -163,6 +168,24 @@ export function AdminPartCard({
             ) : (
               <Badge variant="secondary">Draft</Badge>
             )
+          ) : null}
+          {primaryInvoice ? (
+            <Link
+              href={`/admin/invoices/${primaryInvoice.id}`}
+              title={
+                extraInvoiceCount > 0
+                  ? `${linkedInvoices.length} linked invoices`
+                  : primaryInvoice.invoice_number
+              }
+              onClick={(event) => event.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-full border border-input bg-background px-2.5 py-0.5 text-xs font-normal text-foreground transition-colors hover:bg-accent/10 hover:text-accent"
+            >
+              <FileText className="h-3 w-3" />
+              {primaryInvoice.invoice_number}
+              {extraInvoiceCount > 0 ? (
+                <span className="text-muted-foreground">+{extraInvoiceCount}</span>
+              ) : null}
+            </Link>
           ) : null}
         </div>
         {fieldAgent ? (
@@ -249,6 +272,30 @@ export function AdminPartCard({
                     Edit stock details
                   </Link>
                 </DropdownMenuItem>
+              ) : null}
+              {linkedInvoices.length > 0 ? (
+                linkedInvoices.length === 1 ? (
+                  <DropdownMenuItem asChild>
+                    <Link href={`/admin/invoices/${linkedInvoices[0].id}`}>
+                      <FileText className="h-3.5 w-3.5" />
+                      View invoice
+                    </Link>
+                  </DropdownMenuItem>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/admin/invoices/${linkedInvoices[0].id}`}>
+                        <FileText className="h-3.5 w-3.5" />
+                        View invoices ({linkedInvoices.length})
+                      </Link>
+                    </DropdownMenuItem>
+                    {linkedInvoices.slice(0, 5).map((inv) => (
+                      <DropdownMenuItem key={inv.id} asChild>
+                        <Link href={`/admin/invoices/${inv.id}`}>{inv.invoice_number}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )
               ) : null}
               {isReserved || isSold ? (
                 <>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight, Bell, Car, CircleDollarSign, ClipboardList, Inbox, KeyRound, Megaphone, Package, PackagePlus, Plus, Truck, Users, WalletCards, BookmarkPlus, ReceiptText, MessageCircle,
@@ -15,6 +15,14 @@ import { STOCK_ORIGINS } from '@/lib/stock';
 import type { OpsAnalyticsSummary } from '@/lib/ops-analytics';
 import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { cn } from '@/lib/utils';
+import {
+  addToCurrencyMap,
+  formatMoneyBreakdown,
+  formatMoneyCompact,
+  listCurrencies,
+  normalizeCurrency,
+  pickCurrencyAmount,
+} from '@/lib/money';
 
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
@@ -22,10 +30,16 @@ type InventoryRow = { stock_status: string | null; stock_origin: string | null }
 
 const ACCENT = 'hsl(0 75% 47%)';
 const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
-const money = (value: number, currency = 'AED') => new Intl.NumberFormat('en-AE', { style: 'currency', currency, notation: value >= 1_000_000 ? 'compact' : 'standard', maximumFractionDigits: 1 }).format(Number(value || 0));
 const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice'].includes(invoice.document_type) && invoice.status !== 'cancelled';
 const rangeFrom = () => format(subMonths(new Date(), 5), 'yyyy-MM-01');
 const rangeTo = () => format(new Date(), 'yyyy-MM-dd');
+
+function MoneyKpiValue({ amounts, currencyFilter }: { amounts: Record<string, number>; currencyFilter: string }) {
+  if (currencyFilter !== 'all') {
+    return <>{formatMoneyCompact(pickCurrencyAmount(amounts, currencyFilter), currencyFilter)}</>;
+  }
+  return <span className="whitespace-pre-line leading-snug">{formatMoneyBreakdown(amounts, { compact: true })}</span>;
+}
 
 function KpiCard({
   label,
@@ -35,7 +49,7 @@ function KpiCard({
   tone = 'default',
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   icon: typeof CircleDollarSign;
   loading: boolean;
   tone?: 'default' | 'accent' | 'ink';
@@ -49,7 +63,7 @@ function KpiCard({
       <CardContent className="flex items-center justify-between gap-3 p-5">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-          <p className="mt-1.5 truncate text-2xl font-black tracking-tight">{loading ? '—' : value}</p>
+          <div className="mt-1.5 text-2xl font-black tracking-tight">{loading ? '—' : value}</div>
         </div>
         <span className={cn(
           'grid h-11 w-11 shrink-0 place-items-center rounded-xl',
@@ -104,6 +118,7 @@ export default function AdminDashboardPage() {
   const [recentInquiries, setRecentInquiries] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<OpsAnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [moneyCurrency, setMoneyCurrency] = useState('all');
 
   useEffect(() => {
     void (async () => {
@@ -203,54 +218,110 @@ export default function AdminDashboardPage() {
   const fieldAgent = isFieldAgentRole(role);
   const isOps = analytics?.viewer.is_ops ?? (!fieldAgent && role !== 'manager');
   const receivables = useMemo(() => invoices.filter(isReceivable), [invoices]);
-  const currency = analytics?.sales.totals.currency_focus
-    || receivables[0]?.currency
-    || remittances[0]?.currency
-    || 'AED';
 
-  const totals = useMemo(() => {
-    if (analytics) {
-      return {
-        invoiced: Number(analytics.sales.totals.invoiced_total || 0),
-        received: Number(analytics.collections?.totals.received_total || 0),
-        outstanding: Number(analytics.sales.outstanding_total ?? analytics.sales.totals.outstanding_ar ?? 0),
-      };
+  const moneyByCurrency = useMemo(() => {
+    const invoiced: Record<string, number> = {};
+    const received: Record<string, number> = {};
+    const outstanding: Record<string, number> = {};
+
+    if (analytics?.sales.by_currency?.length) {
+      for (const row of analytics.sales.by_currency) {
+        addToCurrencyMap(invoiced, row.currency, Number(row.invoiced_total || 0));
+      }
+    } else {
+      for (const row of receivables) {
+        addToCurrencyMap(invoiced, row.currency, Number(row.total_amount || 0));
+      }
     }
-    return {
-      invoiced: receivables.reduce((sum, row) => sum + Number(row.total_amount), 0),
-      received: remittances.filter((row) => row.status === 'confirmed').reduce((sum, row) => sum + Number(row.amount), 0),
-      outstanding: receivables.reduce((sum, row) => sum + Number(row.balance_due), 0),
-    };
+
+    if (analytics?.sales.outstanding_as_of?.length) {
+      for (const row of analytics.sales.outstanding_as_of) {
+        addToCurrencyMap(outstanding, row.currency, Number(row.outstanding_ar || 0));
+      }
+    } else if (analytics?.sales.by_currency?.length) {
+      for (const row of analytics.sales.by_currency) {
+        addToCurrencyMap(outstanding, row.currency, Number(row.outstanding_ar || 0));
+      }
+    } else {
+      for (const row of receivables) {
+        addToCurrencyMap(outstanding, row.currency, Math.max(Number(row.balance_due || 0), 0));
+      }
+    }
+
+    if (analytics?.collections?.by_currency?.length) {
+      for (const row of analytics.collections.by_currency) {
+        addToCurrencyMap(received, row.currency, Number(row.received_total || 0));
+      }
+    } else {
+      for (const row of remittances) {
+        if (row.status !== 'confirmed') continue;
+        addToCurrencyMap(received, row.currency, Number(row.amount || 0));
+      }
+    }
+
+    return { invoiced, received, outstanding };
   }, [analytics, receivables, remittances]);
 
+  const moneyCurrencies = useMemo(
+    () => listCurrencies([
+      ...Object.keys(moneyByCurrency.invoiced),
+      ...Object.keys(moneyByCurrency.received),
+      ...Object.keys(moneyByCurrency.outstanding),
+    ]),
+    [moneyByCurrency]
+  );
+
+  const chartCurrency = moneyCurrency === 'all'
+    ? (analytics?.sales.totals.currency_focus
+      || analytics?.collections?.totals.currency_focus
+      || moneyCurrencies[0]
+      || 'AED')
+    : moneyCurrency;
+
   const monthly = useMemo(() => {
-    if (analytics?.sales.by_month?.length || analytics?.collections?.by_month?.length) {
-      return Array.from({ length: 6 }, (_, offset) => {
-        const month = startOfMonth(subMonths(new Date(), 5 - offset));
-        const key = format(month, 'yyyy-MM');
-        const salesRow = analytics.sales.by_month.find((row) => row.month_key === key);
-        const receivedRow = analytics.collections?.by_month.find((row) => row.month_key === key);
-        return {
-          month: format(month, 'MMM'),
-          invoiced: Number(salesRow?.invoiced_total || 0),
-          received: Number(receivedRow?.received_total || 0),
-          tax: Number(salesRow?.tax_invoice_count || 0),
-          commercial: Number(salesRow?.commercial_invoice_count || 0),
-        };
-      });
+    const useClientMonthly = moneyCurrency !== 'all' || !analytics?.sales.by_month?.length;
+
+    if (!useClientMonthly && (analytics?.sales.by_month?.length || analytics?.collections?.by_month?.length)) {
+      // Analytics monthly totals can mix currencies — only use them when a single currency dominates the focus filter.
+      const multiCurrency = moneyCurrencies.length > 1;
+      if (!multiCurrency) {
+        return Array.from({ length: 6 }, (_, offset) => {
+          const month = startOfMonth(subMonths(new Date(), 5 - offset));
+          const key = format(month, 'yyyy-MM');
+          const salesRow = analytics.sales.by_month.find((row) => row.month_key === key);
+          const receivedRow = analytics.collections?.by_month.find((row) => row.month_key === key);
+          return {
+            month: format(month, 'MMM'),
+            invoiced: Number(salesRow?.invoiced_total || 0),
+            received: Number(receivedRow?.received_total || 0),
+            tax: Number(salesRow?.tax_invoice_count || 0),
+            commercial: Number(salesRow?.commercial_invoice_count || 0),
+          };
+        });
+      }
     }
+
     return Array.from({ length: 6 }, (_, offset) => {
       const month = startOfMonth(subMonths(new Date(), 5 - offset));
       const key = format(month, 'yyyy-MM');
+      const invRows = receivables.filter(
+        (row) => row.issue_date.startsWith(key) && normalizeCurrency(row.currency) === normalizeCurrency(chartCurrency)
+      );
+      const remRows = remittances.filter(
+        (row) =>
+          row.status === 'confirmed'
+          && row.received_date.startsWith(key)
+          && normalizeCurrency(row.currency) === normalizeCurrency(chartCurrency)
+      );
       return {
         month: format(month, 'MMM'),
-        invoiced: receivables.filter((row) => row.issue_date.startsWith(key)).reduce((sum, row) => sum + Number(row.total_amount), 0),
-        received: remittances.filter((row) => row.status === 'confirmed' && row.received_date.startsWith(key)).reduce((sum, row) => sum + Number(row.amount), 0),
+        invoiced: invRows.reduce((sum, row) => sum + Number(row.total_amount || 0), 0),
+        received: remRows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
         tax: 0,
         commercial: 0,
       };
     });
-  }, [analytics, receivables, remittances]);
+  }, [analytics, chartCurrency, moneyCurrency, moneyCurrencies.length, receivables, remittances]);
 
   const stockData = useMemo(() => {
     if (analytics?.stock.by_status) {
@@ -343,27 +414,66 @@ export default function AdminDashboardPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Money · 6 months</h3>
+          {moneyCurrencies.length > 0 ? (
+            <div className="flex flex-wrap gap-1" role="group" aria-label="Money currency filter">
+              <button
+                type="button"
+                onClick={() => setMoneyCurrency('all')}
+                className={cn(
+                  'rounded-md border px-2.5 py-1 text-xs font-semibold transition',
+                  moneyCurrency === 'all'
+                    ? 'border-accent bg-accent text-white'
+                    : 'border-border bg-background text-muted-foreground hover:border-accent/40'
+                )}
+              >
+                All currencies
+              </button>
+              {moneyCurrencies.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setMoneyCurrency(code)}
+                  className={cn(
+                    'rounded-md border px-2.5 py-1 text-xs font-semibold transition',
+                    moneyCurrency === code
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-border bg-background text-muted-foreground hover:border-accent/40'
+                  )}
+                >
+                  {code}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             label={analytics?.sales.scope === 'own_book' ? 'Your invoiced' : 'Invoiced'}
-            value={money(totals.invoiced, currency)}
+            value={<MoneyKpiValue amounts={moneyByCurrency.invoiced} currencyFilter={moneyCurrency} />}
             icon={CircleDollarSign}
             loading={loading}
             tone="accent"
           />
           <KpiCard
             label={isOps ? 'Funds received' : 'Outstanding AR'}
-            value={isOps ? money(totals.received, currency) : money(totals.outstanding, currency)}
+            value={
+              isOps
+                ? <MoneyKpiValue amounts={moneyByCurrency.received} currencyFilter={moneyCurrency} />
+                : <MoneyKpiValue amounts={moneyByCurrency.outstanding} currencyFilter={moneyCurrency} />
+            }
             icon={isOps ? WalletCards : CircleDollarSign}
             loading={loading}
             tone="ink"
           />
           <KpiCard
             label={isOps ? 'Outstanding AR' : 'Open requests'}
-            value={isOps ? money(totals.outstanding, currency) : String(analytics?.requests.open ?? '—')}
+            value={
+              isOps
+                ? <MoneyKpiValue amounts={moneyByCurrency.outstanding} currencyFilter={moneyCurrency} />
+                : String(analytics?.requests.open ?? '—')
+            }
             icon={isOps ? CircleDollarSign : ClipboardList}
             loading={loading}
           />
@@ -374,6 +484,11 @@ export default function AdminDashboardPage() {
             loading={loading}
           />
         </div>
+        {moneyCurrency === 'all' && moneyCurrencies.length > 1 ? (
+          <p className="text-xs text-muted-foreground">
+            Totals are listed per currency — amounts are not converted. Chart below uses {chartCurrency}.
+          </p>
+        ) : null}
       </section>
 
       {(analytics?.requests || analytics?.purchase) ? (
@@ -407,8 +522,8 @@ export default function AdminDashboardPage() {
             <CardTitle className="text-lg">{isOps ? 'Invoiced versus received' : 'Invoiced by month'}</CardTitle>
             <CardDescription>
               {isOps
-                ? 'Six-month collection performance for customer receivables.'
-                : 'Tax and commercial invoices on your customer book.'}
+                ? `Six-month collection performance (${chartCurrency} only — no FX conversion).`
+                : `Tax and commercial invoices on your customer book (${chartCurrency}).`}
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
@@ -417,7 +532,7 @@ export default function AdminDashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
                 <YAxis tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value) => money(Number(value), currency)} />
+                <Tooltip formatter={(value) => formatMoneyCompact(Number(value), chartCurrency)} />
                 <Legend />
                 <Bar dataKey="invoiced" name="Invoiced" fill={ACCENT} radius={[5, 5, 0, 0]} />
                 {isOps ? <Bar dataKey="received" name="Received" fill="#10b981" radius={[5, 5, 0, 0]} /> : null}
