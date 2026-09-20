@@ -36,14 +36,21 @@ import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import {
   PRICE_TERM_LABELS,
   PRICE_TERMS,
+  REQUESTER_ROLE_LABELS,
+  REQUESTER_ROLES,
   SHIPMENT_MODE_LABELS,
   SHIPMENT_MODES,
   boolToInspectionChoice,
+  boolToVatChoice,
   inspectionChoiceToBool,
   inspectionRequiredLabel,
+  vatApplicableLabel,
+  vatChoiceToBool,
   type InspectionChoice,
   type PriceTerm,
+  type RequesterRole,
   type ShipmentMode,
+  type VatChoice,
 } from '@/lib/trade-terms';
 import {
   EQUIPMENT_CATEGORIES,
@@ -134,6 +141,11 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [reservePriceTerm, setReservePriceTerm] = useState<PriceTerm | ''>('fob');
   const [reserveShipmentTerm, setReserveShipmentTerm] = useState<ShipmentMode | ''>('roro');
   const [reserveInspection, setReserveInspection] = useState<InspectionChoice | ''>('');
+  const [reserveVat, setReserveVat] = useState<VatChoice | ''>('yes');
+  const [reserveRequesterName, setReserveRequesterName] = useState('');
+  const [reserveRequesterRole, setReserveRequesterRole] = useState<RequesterRole | ''>('admin');
+  const [reserveEtd, setReserveEtd] = useState('');
+  const [reserveEta, setReserveEta] = useState('');
   const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
   const [supplierId, setSupplierId] = useState('');
   const [customers, setCustomers] = useState<
@@ -211,6 +223,11 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setReservePriceTerm((row.reservation_price_term as PriceTerm) || 'fob');
     setReserveShipmentTerm((row.reservation_shipment_term as ShipmentMode) || 'roro');
     setReserveInspection(boolToInspectionChoice(row.reservation_inspection_required));
+    setReserveVat(boolToVatChoice(row.reservation_vat_applicable) || 'yes');
+    setReserveRequesterName(row.reservation_requester_name || '');
+    setReserveRequesterRole((row.reservation_requester_role as RequesterRole) || 'admin');
+    setReserveEtd(row.reservation_etd || '');
+    setReserveEta(row.reservation_eta || '');
     setSupplierId(row.supplier_id || '');
     setReserveCustomerId(row.reserved_customer_id || '');
     setNextStage(RECOMMENDED_NEXT_STAGE[row.lifecycle_stage || 'unassigned'] || 'auction');
@@ -431,6 +448,14 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       toast.error('Select whether inspection is required (Yes or No).');
       return;
     }
+    if (!reserveVat) {
+      toast.error('Select whether VAT applies (Yes or No).');
+      return;
+    }
+    if (!reserveRequesterName.trim() || !reserveRequesterRole) {
+      toast.error('Enter requester name and role.');
+      return;
+    }
     setReserveBusy(true);
     const { error } = await supabase.rpc('reserve_vehicle_stock', {
       p_vehicle_id: id,
@@ -438,6 +463,11 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       p_price_term: reservePriceTerm,
       p_shipment_term: reserveShipmentTerm,
       p_inspection_required: inspectionChoiceToBool(reserveInspection),
+      p_vat_applicable: vatChoiceToBool(reserveVat) !== false,
+      p_etd: reserveEtd || null,
+      p_eta: reserveEta || null,
+      p_requester_name: reserveRequesterName.trim(),
+      p_requester_role: reserveRequesterRole,
     });
     setReserveBusy(false);
     if (error) return toast.error(error.message);
@@ -955,6 +985,60 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                 <option value="no">No</option>
               </select>
             </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">VAT</span>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={reserveVat}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReserveVat(e.target.value as VatChoice | '')}
+              >
+                <option value="yes">Yes — apply VAT</option>
+                <option value="no">No — exclude VAT</option>
+              </select>
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Requester name</span>
+              <Input
+                value={reserveRequesterName}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReserveRequesterName(e.target.value)}
+                maxLength={120}
+              />
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Requester role</span>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={reserveRequesterRole}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReserveRequesterRole(e.target.value as RequesterRole)}
+              >
+                {REQUESTER_ROLES.map((item) => (
+                  <option key={item} value={item}>
+                    {REQUESTER_ROLE_LABELS[item]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">ETD</span>
+              <Input
+                type="date"
+                value={reserveEtd}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReserveEtd(e.target.value)}
+              />
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">ETA</span>
+              <Input
+                type="date"
+                value={reserveEta}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReserveEta(e.target.value)}
+              />
+            </label>
             {vehicle.stock_status === 'reserved' ? (
               <p className="sm:col-span-2 text-xs text-muted-foreground">
                 Active reservation:{' '}
@@ -966,6 +1050,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                   ? SHIPMENT_MODE_LABELS[vehicle.reservation_shipment_term]
                   : 'no shipment term'}{' '}
                 · Inspection: {inspectionRequiredLabel(vehicle.reservation_inspection_required)}
+                · VAT: {vatApplicableLabel(vehicle.reservation_vat_applicable)}
+                {vehicle.reservation_requester_name
+                  ? ` · Requester: ${vehicle.reservation_requester_name}`
+                  : ''}
               </p>
             ) : null}
           </div>

@@ -17,7 +17,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Suppliers | no | `/admin/suppliers`, SOA `/admin/suppliers/[id]` (ops) | `suppliers`, payments, allocations |
 | Purchase orders | no | `/admin/purchase-orders` (ops) | `purchase_orders`, `purchase_order_lines` |
 | Receive stock (GRN) | no | `/admin/inventory/receive` (ops) | `inventory_receipts`, `inventory_receipt_lines` |
-| Export shipments | no | `/admin/export-shipments` (ops; modes DHL/RoRo/20ft/40ft; PDF docs BOL/export cert/waybill/courier + per-country inspection) | `export_shipments`, `export_shipment_vehicles`, `export_shipment_documents` (Phase 61; storage bucket `export-shipment-documents`) |
+| Stock management | no | `/admin/stock`, `/admin/stock/arrival-watch` (ops; dual payment×shipment status) | vehicles + linked invoices/shipments via `lib/stock-ops*` (Phase 62) |
+| Export shipments | no | `/admin/export-shipments` (ops; modes DHL/RoRo/20ft/40ft; PDF docs; export master selects; doc-driven status) | `export_shipments`, `export_shipment_vehicles`, `export_shipment_documents` (Phase 61–62; storage bucket `export-shipment-documents`); `export_master_options` |
 | Landed cost | no | `/admin/landed-cost` (ops) | `landed_cost_packs`, `landed_cost_charges`, `landed_cost_allocations` |
 | Bank accounts | no | `/admin/bank-accounts` (ops + accounts views) | `bank_accounts`, `bank_transactions`, `bank_feed_connections` + CSV import |
 | Expenses | no | `/admin/expenses` (ops + accounts) | `expense_categories`, `expenses` |
@@ -34,8 +35,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments, due reminders |
 | Customer portal | `/portal` | `/portal/invoices`, `/portal/account` | `customer_profiles` + own invoices + sanitized SOA RPC |
 | Customers | no | `/admin/customers`, SOA `[id]` (+ enable portal) | `customers`, invoices, remittances, allocations |
-| Reserve vehicle | no | `/admin/reservations` (field agents + ops; price term + shipment term + inspection Yes/No) | reserve + proforma RPC; `reservation_price_term` / `reservation_shipment_term` / `reservation_inspection_required` |
-| Invoices | `/verify/invoice/[code]` (shows price/shipment terms) | `/admin/invoices` (field agents: draft proforma; accounts/ops: full + approve sent; header + line Incoterm; A4 print shows terms) | `invoices*` (+ `price_term`/`shipment_term`); `invoice_items.price_term` (Phase 61b) |
+| Reserve vehicle | no | `/admin/reservations` (field agents + ops; price/shipment/inspection/VAT Yes/No; own-book RLS) | reserve + proforma RPC; `reserved_by` + `reservation_*` incl. VAT/ETD/ETA/requester (Phase 62) |
+| Invoices | `/verify/invoice/[code]` (shows price/shipment terms) | `/admin/invoices` (field agents: draft proforma; accounts/ops: full + approve sent; header + line Incoterm; VAT applicable; A4 print shows terms) | `invoices*` (+ `price_term`/`shipment_term`/`vat_applicable`); `invoice_items.price_term` (Phase 61b–62) |
 | Supplier invoices | no | `/admin/invoices/supplier` (ops + accounts) | `supplier_invoices` |
 | Remittances | no | `/admin/remittances` (ops + accounts) | `remittances*` |
 | Users | `/admin` login | `/admin/users`, `/admin/profile` | Auth + `admin_profiles` |
@@ -46,6 +47,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Marketing campaigns | no | `/admin/campaigns` (ops) | `marketing_campaigns` + send hooks to push/email/offer |
 | PWA subscribers | no | `/admin/subscribers` (ops) | `push_subscriptions` (deals/insights topics) |
 | Trade config | `/markets/[code]` | `/admin/trade-config` (ops) | `export_market_configs`, `site_trade_settings` |
+| Configuration (export masters) | no | `/admin/configuration` (ops) | `export_master_options` (Phase 62) |
 | WhatsApp | no | `/admin/whatsapp` (ops) | `whatsapp_message_log` + Edge `send-whatsapp` |
 | Live chat (Tawk) | public widget on site layout | `/admin/live-chat` (**admin + manager only**; Needs attention) | `NEXT_PUBLIC_TAWK_*`; Phase 58 `tawk_chat_sessions` / `tawk_ticket_events` / `tawk_webhook_receipts`; Edge `tawk-webhook` — `docs/Tawk.md` |
 | Notifications | no | header center | `admin_notifications` |

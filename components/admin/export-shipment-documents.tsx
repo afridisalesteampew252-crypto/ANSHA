@@ -20,6 +20,7 @@ const ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp';
 type Props = {
   shipmentId: string;
   readOnly?: boolean;
+  onDocumentsChanged?: () => void | Promise<void>;
 };
 
 function formatBytes(value: number | null) {
@@ -29,7 +30,7 @@ function formatBytes(value: number | null) {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function ExportShipmentDocumentsPanel({ shipmentId, readOnly }: Props) {
+export function ExportShipmentDocumentsPanel({ shipmentId, readOnly, onDocumentsChanged }: Props) {
   const [docs, setDocs] = useState<ExportShipmentDocument[]>([]);
   const [busy, setBusy] = useState(false);
   const [inspectionCountry, setInspectionCountry] = useState(EXPORT_MARKETS[0]?.code || 'AE');
@@ -124,6 +125,7 @@ export function ExportShipmentDocumentsPanel({ shipmentId, readOnly }: Props) {
       }
       toast.success(`${EXPORT_DOC_LABELS[docType]} uploaded.`);
       await load();
+      await onDocumentsChanged?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload failed.');
     } finally {
@@ -156,8 +158,8 @@ export function ExportShipmentDocumentsPanel({ shipmentId, readOnly }: Props) {
       <div>
         <p className="text-sm font-semibold">Shipping documents</p>
         <p className="text-xs text-muted-foreground">
-          PDF or image. Admin-only signed download. Courier document is typical for vehicle / RoRo / container flows; DHL
-          often uses waybill.
+          PDF or image. Admin-only signed download. BOL upload advances status to Shipped; waybill or surrendered BL
+          advances to Delivered. Booking apply sets Booked. Draft with no booking stays Not Booked.
         </p>
       </div>
 

@@ -119,6 +119,8 @@ Done (Phase 61): export shipment docs + Incoterms + reservation terms — `expor
 
 Done (Phase 61b): reservation `reservation_inspection_required` (Yes/No); invoice header `price_term` + `shipment_term`; optional `invoice_items.price_term`; A4 print + public verify show terms; reserve/proforma RPCs accept inspection. Migration `20260920150000_phase_61b_reservation_inspection_invoice_terms.sql` (applied remote). Shared labels: `lib/trade-terms.ts`.
 
+Done (Phase 62): stock ops dashboard — `/admin/stock` + `/admin/stock/arrival-watch` (payment/stock × shipment dual status); `/admin/configuration` CRUD for `export_master_options` (destination country / loading port / destination port / vessel / voyage) wired into export shipments; field-agent vehicle SELECT scoped to available + own `reserved_by`; reservation VAT Yes/No + requester + ETD/ETA; invoice `vat_applicable`; document-driven shipment status (BOL → shipped/sailed, waybill/surrendered → delivered/arrived). Migration `20260920200000_phase_62_sales_assignment_export_masters_vat.sql` (applied remote). Helpers: `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.

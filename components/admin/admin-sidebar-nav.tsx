@@ -34,6 +34,7 @@ import {
   Receipt,
   ReceiptText,
   ScrollText,
+  Settings2,
   Ship,
   Sparkles,
   Star,
@@ -89,6 +90,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Purchase & stock',
     icon: PackagePlus,
     items: [
+      { href: '/admin/stock', label: 'Stock management', icon: Package },
+      { href: '/admin/stock/arrival-watch', label: 'Arrival Watch', icon: Ship },
       { href: '/admin/suppliers', label: 'Suppliers', icon: Truck },
       { href: '/admin/purchase-orders', label: 'Purchase orders', icon: ClipboardList },
       { href: '/admin/inventory/receive', label: 'Receive stock', icon: PackagePlus },
@@ -144,7 +147,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/offers', label: 'Deals & offers', icon: Megaphone },
       { href: '/admin/subscribers', label: 'PWA subscribers', icon: Bell },
       { href: '/admin/campaigns', label: 'Campaigns', icon: MailPlus },
-      { href: '/admin/trade-config', label: 'Trade config', icon: Globe2 },
     ],
   },
   {
@@ -164,6 +166,15 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Team',
     icon: UserCog,
     items: [{ href: '/admin/users', label: 'Users', icon: UserCog }],
+  },
+  {
+    id: 'configuration',
+    label: 'Configuration',
+    icon: Settings2,
+    items: [
+      { href: '/admin/configuration', label: 'Export masters', icon: Settings2 },
+      { href: '/admin/trade-config', label: 'Trade config', icon: Globe2 },
+    ],
   },
 ];
 
@@ -187,6 +198,10 @@ export function isAdminNavActive(pathname: string, href: string, search = '') {
     if (classFilter && classFilter !== 'all' && classFilter !== 'passenger') return false;
   }
 
+  // Avoid marking /admin/stock active on arrival-watch
+  if (hrefPath === '/admin/stock') {
+    if (pathname.startsWith('/admin/stock/')) return false;
+  }
   if (pathname === hrefPath) return true;
   if (!pathname.startsWith(`${hrefPath}/`)) return false;
   // Avoid marking customer invoices active on supplier invoice routes

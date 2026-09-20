@@ -25,6 +25,7 @@ export const EXPORT_DOC_TYPES = [
   'waybill',
   'courier',
   'inspection_certificate',
+  'surrendered_bl',
 ] as const;
 export type ExportDocType = (typeof EXPORT_DOC_TYPES)[number];
 
@@ -34,6 +35,7 @@ export const EXPORT_DOC_LABELS: Record<ExportDocType, string> = {
   waybill: 'Waybill',
   courier: 'Courier Document',
   inspection_certificate: 'Inspection certificate',
+  surrendered_bl: 'Surrendered BL',
 };
 
 /** Single-slot shipping docs (one file each). Inspection certs are multi + country. */
@@ -42,7 +44,37 @@ export const SINGLE_SLOT_EXPORT_DOCS: ExportDocType[] = [
   'export_certificate',
   'waybill',
   'courier',
+  'surrendered_bl',
 ];
+
+/** Yes/No UI for VAT on reservations / invoices. */
+export type VatChoice = 'yes' | 'no';
+
+export function vatChoiceToBool(value: VatChoice | ''): boolean | null {
+  if (value === 'yes') return true;
+  if (value === 'no') return false;
+  return null;
+}
+
+export function boolToVatChoice(value: boolean | null | undefined): VatChoice | '' {
+  if (value === true) return 'yes';
+  if (value === false) return 'no';
+  return '';
+}
+
+export function vatApplicableLabel(value: boolean | null | undefined): string {
+  if (value == null) return '—';
+  return value ? 'Yes' : 'No';
+}
+
+export const REQUESTER_ROLES = ['sales', 'manager', 'admin'] as const;
+export type RequesterRole = (typeof REQUESTER_ROLES)[number];
+
+export const REQUESTER_ROLE_LABELS: Record<RequesterRole, string> = {
+  sales: 'Sales',
+  manager: 'Manager',
+  admin: 'Admin',
+};
 
 export function isPriceTerm(value: string | null | undefined): value is PriceTerm {
   return !!value && (PRICE_TERMS as readonly string[]).includes(value);

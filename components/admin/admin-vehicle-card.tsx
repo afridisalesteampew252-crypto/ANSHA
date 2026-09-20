@@ -37,6 +37,8 @@ const auctionSheetBadgeClass =
 type Props = {
   vehicle: VehicleWithPhotos;
   fieldAgent: boolean;
+  reservedByLabel?: string | null;
+  salesStatusLabel?: string | null;
   onUpdate?: (id: string, changes: Record<string, unknown>, success: string) => void;
   onSetListing?: (vehicle: VehicleWithPhotos, publish: boolean) => void;
   onDelete?: (vehicle: VehicleWithPhotos) => void;
@@ -128,6 +130,8 @@ function AuctionSheetTag({
 export function AdminVehicleCard({
   vehicle,
   fieldAgent,
+  reservedByLabel,
+  salesStatusLabel,
   onUpdate,
   onSetListing,
   onDelete,
@@ -157,6 +161,11 @@ export function AdminVehicleCard({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
+                {salesStatusLabel && salesStatusLabel.toLowerCase() !== status ? (
+                  <Badge variant="outline" className="font-normal">
+                    {salesStatusLabel}
+                  </Badge>
+                ) : null}
                 {isMachineryClass(vehicle.vehicle_class) ? (
                   <Badge variant="outline" className="font-normal">
                     {vehicleClassBadgeLabel(vehicle.vehicle_class)}
@@ -182,6 +191,11 @@ export function AdminVehicleCard({
                     Inspection: {inspectionRequiredLabel(vehicle.reservation_inspection_required)}
                   </Badge>
                 ) : null}
+                {status === 'reserved' && vehicle.reservation_vat_applicable != null ? (
+                  <Badge variant="outline" className="font-normal">
+                    VAT: {vehicle.reservation_vat_applicable ? 'Yes' : 'No'}
+                  </Badge>
+                ) : null}
               </div>
               <h2 className="mt-2 truncate text-base font-bold tracking-tight">{vehicle.title}</h2>
               <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">
@@ -195,6 +209,12 @@ export function AdminVehicleCard({
                     {[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' · ') || '—'}
                   </dd>
                 </div>
+                {reservedByLabel ? (
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold text-foreground/70">Reserved by</dt>
+                    <dd className="truncate">{reservedByLabel}</dd>
+                  </div>
+                ) : null}
               </dl>
             </div>
           </div>
@@ -240,10 +260,14 @@ export function AdminVehicleCard({
             <div className="flex flex-wrap gap-2">
               <Badge className={stageClass[stage]}>{lifecycleStageLabel(stage)}</Badge>
               <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
+              {salesStatusLabel && salesStatusLabel.toLowerCase() !== status ? (
+                <Badge variant="outline">{salesStatusLabel}</Badge>
+              ) : null}
               {isMachineryClass(vehicle.vehicle_class) ? (
                 <Badge variant="outline">{vehicleClassBadgeLabel(vehicle.vehicle_class)}</Badge>
               ) : null}
               {vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}
+              {reservedByLabel ? <Badge variant="outline">Agent: {reservedByLabel}</Badge> : null}
               <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
             </div>
             <h2 className="mt-2 truncate font-bold">{vehicle.title}</h2>

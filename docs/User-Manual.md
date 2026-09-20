@@ -158,16 +158,16 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 
 **Reserve vehicle** — `/admin/reservations` (field agents + ops)
 
-1. Select an available vehicle and customer.
-2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), and **inspection** (Yes / No). These store on the reserved stock and clear on release.
-3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line.
+1. Select an available vehicle and customer. Field agents only see **available** units plus vehicles **they** reserved.
+2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release.
+3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. VAT No expects zero tax rates on the draft.
 4. Release (with republish when appropriate) if the deal does not proceed.
 
 **Invoices** — `/admin/invoices`
 
 1. **Field agents:** create/edit **draft proforma only**. Accounts or ops mark drafts as **sent**.
 2. **Accounts / ops:** all document types; approve draft→sent; record payments.
-3. Set document **price term** and **shipment term** on the invoice header (shown on A4 print and `/verify/invoice/[code]`). Linked stock lines can carry a per-line price term when the unit price came from an Incoterm quote.
+3. Set document **price term**, **shipment term**, and **VAT applicable** on the invoice header (shown on A4 print and `/verify/invoice/[code]`). Linked stock lines can carry a per-line price term when the unit price came from an Incoterm quote.
 4. Print A4 — denser layout; verification code + QR on the face when verification is enabled; header shows price/shipment terms when set.
 5. Tax/commercial lines can apply sold status on linked stock when issued.
 
@@ -178,13 +178,20 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 1. Record pending or confirmed customer funds; attach evidence if needed.
 2. Allocate across invoices (partial allocations supported); reverse allocations carefully when correcting.
 
-### 5.5 Export shipments + vehicle lifecycle
+### 5.5 Stock management + export shipments + lifecycle
+
+**Stock management** — `/admin/stock` (ops)
+
+1. Review inventory with dual columns: **payment/stock status** (Available / Reserved / Partial Paid / Paid / Unpaid / Sold) and **shipment status** (Not Booked / Booked / Shipped / Delivered).
+2. Use summary chips and filters; open a vehicle for detail.
+3. **Arrival Watch** (`/admin/stock/arrival-watch`) — units with ETD/ETA or in-transit shipment focus.
 
 **Export shipments** — `/admin/export-shipments` (ops)
 
 1. Create a shipment (EXP- number); choose mode **DHL** (small parts), **RoRo**, **20 feet container**, or **40 feet container**.
-2. Add/remove vehicles; update status (may log lifecycle events and soft-move toward **port** when rules allow).
-3. Upload shipping PDFs/images: **Bill of Lading**, **Export Certificate**, **Waybill**, **Courier** (one file each) plus **Inspection certificates** per destination country. Downloads use short-lived signed URLs.
+2. Pick destination country / ports / vessel / voyage from **Configuration** masters (or type freely where allowed).
+3. Add/remove vehicles; update status (may log lifecycle events and soft-move toward **port** when rules allow). Uploading **Bill of Lading** can auto-advance toward shipped/sailed; **Waybill** / surrendered docs toward delivered/arrived.
+4. Upload shipping PDFs/images: **Bill of Lading**, **Export Certificate**, **Waybill**, **Courier** (one file each) plus **Inspection certificates** per destination country. Downloads use short-lived signed URLs.
 
 **Lifecycle** (on `/admin/vehicles/[id]`)
 
@@ -226,6 +233,7 @@ Header **notification center**: team messages, mail, inquiries, part requests, r
 | Campaigns | `/admin/campaigns` (ops) | Draft campaigns (push / email / offer channel) → **Send now**. |
 | PWA subscribers | `/admin/subscribers` (ops) | List push opt-ins (deals/insights), filter, remove stale rows. |
 | Trade config | `/admin/trade-config` (ops) | FX reference rates, freight notes, per-country import policies for `/markets/[code]`. |
+| Configuration | `/admin/configuration` (ops) | Maintain export master lists: destination countries, loading/destination ports, vessels, voyages used on export shipments. |
 
 ### 5.9 HR
 

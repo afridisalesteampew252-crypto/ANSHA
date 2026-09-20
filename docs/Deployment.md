@@ -115,6 +115,14 @@ App-only ship after schema already applied on Supabase `ydrnilquojvalhgifest`:
 - No new Vercel or Edge Function secrets for this phase. Shared labels live in `lib/trade-terms.ts`.
 - After production READY: spot-check `/admin/export-shipments` doc upload, reservation terms, invoice print header terms, public Incoterm strip + invoice verify.
 
+## Phase 62 (stock ops + export masters + VAT)
+
+App-only ship after schema already applied:
+
+- Migration in git: `20260920200000_phase_62_sales_assignment_export_masters_vat.sql` — **do not re-apply** if already in `schema_migrations`.
+- No new Vercel or Edge Function secrets. Routes: `/admin/stock`, `/admin/stock/arrival-watch`, `/admin/configuration`.
+- After production READY: spot-check stock dual-status columns, Arrival Watch, Configuration masters on export shipments, field-agent own-reservation visibility, VAT Yes/No on reserve/proforma, BOL/waybill status automation.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.

@@ -1,6 +1,6 @@
 # Current State
 
-Verified checkpoint: **2026-09-20** (Phase 61/61b export docs + Incoterms + reservation/invoice terms; Phase 58 Tawk + Phase 60 Team Chat presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery).
+Verified checkpoint: **2026-09-20** (Phase 62 stock ops dashboard + export masters + sales assignment RLS + VAT Yes/No + shipment status automation; Phase 61/61b export docs + Incoterms; Phase 58 Tawk + Phase 60 presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery).
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
@@ -11,15 +11,15 @@ Hosting: Vercel project `anshanew`
 | Area | Approx. done | Notes |
 |---|---|---|
 | Public catalog + SEO exporter site | **~96%** | Parts/vehicles/**machinery**/categories/blog+SEO/`/reviews`/offers/markets; FOB/C&F/CIF quote strip when set; **GSC verification meta**; favicon/OG; cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
-| Staff ERP (purchase → GL → VAT/payroll) | **~95%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**; field agents + accounts + HR; export PDF docs; invoice header terms |
+| Staff ERP (purchase → GL → VAT/payroll) | **~96%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**, **62**; stock dashboard; export masters; field-agent reservation RLS; VAT Yes/No; doc-driven shipment status |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~80%** | Push **Edge VAPID secrets** often invalid until re-set correctly |
 | Customer portal | **~75%** | Invoices + SOA; no remittance UX for customers |
 | PWA / Capacitor | **~85%** | Named **Anshatradingco APP**; install CTAs; Capacitor shell docs; SW precaches favicon |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–61 + stock loads + SEO/GSC) |
+| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–62 + stock loads + SEO/GSC) |
 
-**Overall product maturity (shipping ERP + public exporter):** roughly **89–94%** of the Phase 1–61 roadmap that was chosen and built. Remaining work is polish, secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, and test coverage — not a greenfield rewrite.
+**Overall product maturity (shipping ERP + public exporter):** roughly **90–95%** of the Phase 1–62 roadmap that was chosen and built. Remaining work is polish, secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, and test coverage — not a greenfield rewrite.
 
 ## What exists now (high signal)
 
@@ -41,12 +41,14 @@ Hosting: Vercel project `anshanew`
 
 ### Staff ERP (`/admin`)
 - Catalog (parts / vehicles / **Machinery & trucks** filter), customers, reservations, invoices, remittances
+- **Stock management** (`/admin/stock`) + **Arrival Watch** (`/admin/stock/arrival-watch`) — dual columns: payment/stock status × shipment view status; inventory summary (`lib/stock-ops.ts`)
 - Purchase: suppliers, PO, GRN, supplier payments
-- **Export shipments** (`/admin/export-shipments`) — modes **DHL / RoRo / 20ft / 40ft**; PDF/image docs: BOL, export certificate, waybill, courier (one each) + **per-country inspection certificates** (`export_shipment_documents`, bucket `export-shipment-documents`)
+- **Export shipments** (`/admin/export-shipments`) — modes **DHL / RoRo / 20ft / 40ft**; PDF/image docs: BOL, export certificate, waybill, courier (one each) + **per-country inspection certificates**; Phase 62 **export master selects** (country/ports/vessel/voyage) + **document-driven status** (BOL → shipped/sailed, waybill/surrendered → delivered/arrived)
+- **Configuration** (`/admin/configuration`) — CRUD for `export_master_options`; Trade config remains at `/admin/trade-config`
 - Landed cost
 - Catalog Incoterm sell quotes: `price_fob` / `price_cf` / `price_cif` on parts & vehicles (admin create/edit + public strip)
-- Reservations: **price term** (FOB/C&F/CIF), **shipment term** (same modes as export), **inspection Yes/No** (`reservation_*` on reserved stock; cleared on release)
-- Invoices (Phase 61b): header `price_term` + `shipment_term`; optional per-line `price_term`; A4 print + verify show both
+- Reservations: **price term** (FOB/C&F/CIF), **shipment term**, **inspection Yes/No**, Phase 62 **VAT Yes/No**, requester name/role, ETD/ETA; `reserved_by` ownership
+- Invoices (Phase 61b/62): header `price_term` + `shipment_term`; optional per-line `price_term`; `vat_applicable`; A4 print + verify show terms
 - Bank accounts (+ CSV feed stub), expenses, VAT return, payroll/EOS, GL + reports + auto-post
 - Requests, chat, mail, notifications
 - **Team Chat** (`/admin/chat`) — green online dots + last-seen labels (Phase 60: Realtime presence channel `workspace-presence`, `admin_profiles.last_seen_at`, `touch_admin_last_seen`, `AdminPresenceProvider`)
@@ -55,7 +57,7 @@ Hosting: Vercel project `anshanew`
 - Analytics, AI assistant, audit log (admin SELECT), WhatsApp, outbound email
 - Admin chrome: Pakistan + Dubai clocks + FX strip
 - Roles: `admin` | `staff` | `sales` | `freelancer` | `manager` | `accounts` (account-admin gates; Phases 54–55)
-- Field agents (`sales` / `freelancer`): catalog lists, own-book customers, reserve, **draft proforma only**
+- Field agents (`sales` / `freelancer`): catalog lists, own-book customers, reserve, **draft proforma only**; Phase 62 RLS — see **available** + **own `reserved_by`** vehicles only
 - Accounts: receivables (approve draft→sent), remittances, related finance views — not full admin
 - HR MVP: shift locations, Morning/Night assignments, attendance (`/admin/hr*`); manager = HR viewer
 - Catalog audit: part/vehicle activity in `audit_logs` (admin SELECT only)
@@ -87,7 +89,7 @@ Script: `scripts/import-japan-stock-vehicles.mjs` (+ one-off batch runners under
 `admin-create-user`, `admin-update-user`, `portal-create-access`, `send-web-push`, `send-outbound-email`, `send-whatsapp`, `remind-request-dues`, `tawk-webhook` (Phase 58; deploy with `--no-verify-jwt`)
 
 ### Migrations
-Through **Phase 61b**. Phase 61: export modes + `export_shipment_documents` + catalog Incoterm columns + reservation price/shipment terms (`20260920100000_phase_61_export_docs_incoterms_reservations.sql`). Phase 61b: reservation inspection Yes/No + invoice/`invoice_items` price/shipment terms (`20260920150000_phase_61b_reservation_inspection_invoice_terms.sql`). Earlier: Phase 60 presence; Phase 58 Tawk; Phase 53–57. **Migrations already applied on remote** — app deploy ships code only. See `supabase/migrations/`.
+Through **Phase 62**. Phase 62: `vehicles.reserved_by` + reservation VAT/ETD/ETA/requester; field-agent scoped vehicle SELECT; `export_master_options`; invoice `vat_applicable`; document-driven shipment status hooks (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`). Phase 61/61b: export docs + Incoterms + reservation/invoice terms. Earlier: Phase 60 presence; Phase 58 Tawk; Phase 53–57. **Migrations already applied on remote** — app deploy ships code only. See `supabase/migrations/`.
 
 ## Known gaps / operator actions
 
@@ -111,7 +113,8 @@ Through **Phase 61b**. Phase 61: export modes + `export_shipment_documents` + ca
 5. Verify Tawk webhook end-to-end (test chat → Needs attention row); rotate Tawk account password if it was ever shared in chat.
 6. Spot-check Team Chat presence: two admin sessions → green dots + last-seen when one leaves.
 7. Spot-check Phase 61: export shipment PDF uploads; reservation price/shipment/inspection; invoice print + verify terms; public FOB/C&F/CIF strip.
-8. Add Playwright smoke for public catalog + admin login when ready for quality gates.
+8. Spot-check Phase 62: `/admin/stock` + Arrival Watch; Configuration export masters; field-agent only sees own reserved units; VAT Yes/No on reserve/proforma; BOL/waybill auto-advancing shipment status.
+9. Add Playwright smoke for public catalog + admin login when ready for quality gates.
 
 ## Doc map
 

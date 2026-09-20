@@ -20,6 +20,7 @@ import {
   priceForTerm,
   type PriceTerm,
   type ShipmentMode,
+  type VatChoice,
 } from '@/lib/trade-terms';
 
 type Customer = { id: string; full_name: string; company_name: string | null; email: string | null; phone: string | null; address: string | null; tax_registration_number: string | null };
@@ -116,6 +117,7 @@ export default function NewInvoicePage() {
   const [terms, setTerms] = useState('Payment is due by the date shown on the invoice.');
   const [priceTerm, setPriceTerm] = useState<PriceTerm | ''>('');
   const [shipmentTerm, setShipmentTerm] = useState<ShipmentMode | ''>('');
+  const [vatApplicable, setVatApplicable] = useState<VatChoice>('yes');
   const [lines, setLines] = useState<Line[]>([newLine()]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -135,7 +137,7 @@ export default function NewInvoicePage() {
       supabase.from('customers').select('id,full_name,company_name,email,phone,address,tax_registration_number').eq('is_active', true).order('company_name').order('full_name'),
       supabase.from('parts').select('id,part_code,name,price,price_fob,price_cf,price_cif,currency,stock_status').neq('stock_status', 'sold').order('part_code').limit(500),
       supabase.from('vehicles').select('id,stock_number,chassis_number,chassis_code,title,price,price_fob,price_cf,price_cif,currency,stock_status').neq('stock_status', 'sold').order('stock_number').limit(500),
-      invoiceId ? supabase.from('invoices').select('id,invoice_number,document_type,customer_id,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,reference,notes,terms,status,price_term,shipment_term').eq('id', invoiceId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      invoiceId ? supabase.from('invoices').select('id,invoice_number,document_type,customer_id,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,reference,notes,terms,status,price_term,shipment_term,vat_applicable').eq('id', invoiceId).maybeSingle() : Promise.resolve({ data: null, error: null }),
       invoiceId ? supabase.from('invoice_items').select('description,quantity,unit_price,discount_percent,tax_rate,inventory_type,part_id,vehicle_id,inventory_reference,price_term').eq('invoice_id', invoiceId).order('sort_order') : Promise.resolve({ data: [], error: null }),
     ]);
     setCustomers((customerResult.data || []) as Customer[]);
@@ -183,6 +185,7 @@ export default function NewInvoicePage() {
       setReference(invoice.reference || ''); setNotes(invoice.notes || ''); setTerms(invoice.terms || '');
       setPriceTerm((invoice.price_term as PriceTerm) || '');
       setShipmentTerm((invoice.shipment_term as ShipmentMode) || '');
+      setVatApplicable((invoice as { vat_applicable?: boolean }).vat_applicable === false ? 'no' : 'yes');
       const existingLines = (itemResult.data || []) as EditableItem[];
       setLines(existingLines.length ? existingLines.map((item) => ({
         ...item,
@@ -271,6 +274,7 @@ export default function NewInvoicePage() {
     const validLines = lines.filter((line) => line.description.trim());
     if (!customer.name.trim()) { setBusy(false); return setMessage('Customer name is required.'); }
     if (!validLines.length) { setBusy(false); return setMessage('Add at least one line item.'); }
+    const applyVat = vatApplicable !== 'no';
     const resolvedType = fieldAgent ? 'proforma_invoice' : documentType;
     const payload = {
       p_invoice_number: invoiceNumber.trim() || null,
@@ -295,7 +299,7 @@ export default function NewInvoicePage() {
         quantity: line.quantity,
         unit_price: line.unit_price,
         discount_percent: line.discount_percent,
-        tax_rate: line.tax_rate,
+        tax_rate: applyVat ? line.tax_rate : 0,
         inventory_type: line.inventory_type || null,
         part_id: line.part_id,
         vehicle_id: line.vehicle_id,
@@ -306,8 +310,12 @@ export default function NewInvoicePage() {
     const { data, error } = editingId
       ? await supabase.rpc('update_invoice_v4', { ...payload, p_invoice_id: editingId })
       : await supabase.rpc('create_invoice_v3', payload);
+    if (error || !data) {
+      setBusy(false);
+      return setMessage(error?.message || `Could not ${editingId ? 'update' : 'create'} invoice.`);
+    }
+    await supabase.from('invoices').update({ vat_applicable: applyVat }).eq('id', data);
     setBusy(false);
-    if (error || !data) return setMessage(error?.message || `Could not ${editingId ? 'update' : 'create'} invoice.`);
     router.push(`/admin/invoices/${data}`);
   };
 
@@ -344,7 +352,7 @@ export default function NewInvoicePage() {
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`quantity-${line.key}`}>Quantity</Label><Input id={`quantity-${line.key}`} type="number" min="0.001" step="0.001" value={line.quantity} onChange={(event) => updateLine(line.key, 'quantity', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`price-${line.key}`}>Unit price</Label><Input id={`price-${line.key}`} type="number" min="0" step="0.01" value={line.unit_price} onChange={(event) => updateLine(line.key, 'unit_price', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`discount-${line.key}`}>Discount %</Label><Input id={`discount-${line.key}`} type="number" min="0" max="100" step="0.01" value={line.discount_percent} onChange={(event) => updateLine(line.key, 'discount_percent', event.target.value)} /></div>
-            <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`tax-${line.key}`}>VAT %</Label><Input id={`tax-${line.key}`} type="number" min="0" max="100" step="0.01" value={line.tax_rate} onChange={(event) => updateLine(line.key, 'tax_rate', event.target.value)} /></div>
+            <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`tax-${line.key}`}>VAT %</Label><Input id={`tax-${line.key}`} type="number" min="0" max="100" step="0.01" value={line.tax_rate} disabled={vatApplicable === 'no'} onChange={(event) => updateLine(line.key, 'tax_rate', event.target.value)} /></div>
             <Button type="button" variant="ghost" size="icon" className="text-destructive" disabled={lines.length === 1} onClick={() => setLines((current) => current.filter((item) => item.key !== line.key))} aria-label="Remove line"><Trash2 className="h-4 w-4" /></Button>
           </div>)}
         </CardContent></Card>
@@ -385,6 +393,28 @@ export default function NewInvoicePage() {
               {SHIPMENT_MODES.map((mode) => (
                 <option key={mode} value={mode}>{SHIPMENT_MODE_LABELS[mode]}</option>
               ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="vat-applicable">VAT</Label>
+            <select
+              id="vat-applicable"
+              value={vatApplicable}
+              onChange={(event) => {
+                const next = event.target.value as VatChoice;
+                setVatApplicable(next);
+                if (next === 'no') {
+                  setLines((current) => current.map((line) => ({ ...line, tax_rate: 0 })));
+                } else {
+                  setLines((current) =>
+                    current.map((line) => ({ ...line, tax_rate: line.tax_rate === 0 ? 5 : line.tax_rate }))
+                  );
+                }
+              }}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="yes">Yes — apply VAT</option>
+              <option value="no">No — exclude VAT (0%)</option>
             </select>
           </div>
           <div className="space-y-1.5"><Label htmlFor="reference">Reference / PO</Label><Input id="reference" value={reference} onChange={(event) => setReference(event.target.value)} /></div>

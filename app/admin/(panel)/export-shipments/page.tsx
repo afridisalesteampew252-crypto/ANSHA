@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, Plus, Search, Ship, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExportMasterSelect } from '@/components/admin/export-master-select';
 import { ExportShipmentDocumentsPanel } from '@/components/admin/export-shipment-documents';
 import { SearchableSelect, customerSelectOption, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import { SHIPMENT_MODE_LABELS, SHIPMENT_MODES, type ShipmentMode } from '@/lib/trade-terms';
+import { exportShipmentStatusLabel } from '@/lib/vehicle-sales-status';
 import type { Customer, ExportShipment, ExportShipmentMode, ExportShipmentStatus, ExportShipmentVehicle } from '@/lib/types';
 
 type StockOption = {
@@ -37,6 +39,8 @@ const statusBadge: Record<ExportShipmentStatus, string> = {
   completed: 'bg-emerald-200 text-emerald-900',
   cancelled: 'bg-zinc-200 text-zinc-700',
 };
+
+const statusLabel = (status: ExportShipmentStatus) => exportShipmentStatusLabel(status);
 
 const modeLabel = (mode: ExportShipmentMode) => SHIPMENT_MODE_LABELS[mode as ShipmentMode] || mode;
 
@@ -355,16 +359,21 @@ export default function ExportShipmentsPage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label>Destination country</Label>
-                <Input value={destinationCountry} onChange={(e) => setDestinationCountry(e.target.value)} />
+                <ExportMasterSelect
+                  kind="destination_country"
+                  value={destinationCountry}
+                  onChange={setDestinationCountry}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label>Loading port</Label>
-                <Input value={loadingPort} onChange={(e) => setLoadingPort(e.target.value)} />
+                <ExportMasterSelect kind="loading_port" value={loadingPort} onChange={setLoadingPort} />
               </div>
               <div className="space-y-1.5">
-                <Label>Destination port</Label>
-                <Input value={destinationPort} onChange={(e) => setDestinationPort(e.target.value)} />
+                <ExportMasterSelect
+                  kind="destination_port"
+                  value={destinationPort}
+                  onChange={setDestinationPort}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Booking ref</Label>
@@ -375,12 +384,10 @@ export default function ExportShipmentsPage() {
                 <Input value={blNumber} onChange={(e) => setBlNumber(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Vessel</Label>
-                <Input value={vesselName} onChange={(e) => setVesselName(e.target.value)} />
+                <ExportMasterSelect kind="vessel" value={vesselName} onChange={setVesselName} />
               </div>
               <div className="space-y-1.5">
-                <Label>Voyage</Label>
-                <Input value={voyageNo} onChange={(e) => setVoyageNo(e.target.value)} />
+                <ExportMasterSelect kind="voyage" value={voyageNo} onChange={setVoyageNo} />
               </div>
               <div className="space-y-1.5">
                 <Label>ETD</Label>
@@ -475,7 +482,7 @@ export default function ExportShipmentsPage() {
                       {row.destination_country ? ` · ${row.destination_country}` : ''}
                     </p>
                   </div>
-                  <Badge className={statusBadge[row.status]}>{row.status}</Badge>
+                  <Badge className={statusBadge[row.status]}>{statusLabel(row.status)}</Badge>
                 </button>
               ))
             )}
@@ -497,10 +504,10 @@ export default function ExportShipmentsPage() {
             ) : (
               <>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className={statusBadge[selected.status]}>{selected.status}</Badge>
+                  <Badge className={statusBadge[selected.status]}>{statusLabel(selected.status)}</Badge>
                   {nextStatuses(selected.status).map((status) => (
                     <Button key={status} type="button" size="sm" variant={status === 'cancelled' ? 'outline' : 'default'} disabled={busy} onClick={() => void setStatus(selected.id, status)}>
-                      Mark {status}
+                      Mark {statusLabel(status)}
                     </Button>
                   ))}
                 </div>
@@ -530,28 +537,48 @@ export default function ExportShipmentsPage() {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Destination country</Label>
-                    <Input value={selected.destination_country || ''} disabled={['completed', 'cancelled'].includes(selected.status)} onChange={(e) => patchSelected({ destination_country: e.target.value || null })} />
+                    <ExportMasterSelect
+                      kind="destination_country"
+                      value={selected.destination_country || ''}
+                      disabled={['completed', 'cancelled'].includes(selected.status)}
+                      onChange={(value) => patchSelected({ destination_country: value || null })}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>BL number</Label>
                     <Input value={selected.bl_number || ''} disabled={['completed', 'cancelled'].includes(selected.status)} onChange={(e) => patchSelected({ bl_number: e.target.value || null })} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Loading port</Label>
-                    <Input value={selected.loading_port || ''} disabled={['completed', 'cancelled'].includes(selected.status)} onChange={(e) => patchSelected({ loading_port: e.target.value || null })} />
+                    <ExportMasterSelect
+                      kind="loading_port"
+                      value={selected.loading_port || ''}
+                      disabled={['completed', 'cancelled'].includes(selected.status)}
+                      onChange={(value) => patchSelected({ loading_port: value || null })}
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Destination port</Label>
-                    <Input value={selected.destination_port || ''} disabled={['completed', 'cancelled'].includes(selected.status)} onChange={(e) => patchSelected({ destination_port: e.target.value || null })} />
+                    <ExportMasterSelect
+                      kind="destination_port"
+                      value={selected.destination_port || ''}
+                      disabled={['completed', 'cancelled'].includes(selected.status)}
+                      onChange={(value) => patchSelected({ destination_port: value || null })}
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Vessel</Label>
-                    <Input value={selected.vessel_name || ''} disabled={['completed', 'cancelled'].includes(selected.status)} onChange={(e) => patchSelected({ vessel_name: e.target.value || null })} />
+                    <ExportMasterSelect
+                      kind="vessel"
+                      value={selected.vessel_name || ''}
+                      disabled={['completed', 'cancelled'].includes(selected.status)}
+                      onChange={(value) => patchSelected({ vessel_name: value || null })}
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Voyage</Label>
-                    <Input value={selected.voyage_no || ''} disabled={['completed', 'cancelled'].includes(selected.status)} onChange={(e) => patchSelected({ voyage_no: e.target.value || null })} />
+                    <ExportMasterSelect
+                      kind="voyage"
+                      value={selected.voyage_no || ''}
+                      disabled={['completed', 'cancelled'].includes(selected.status)}
+                      onChange={(value) => patchSelected({ voyage_no: value || null })}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label>Booking ref</Label>
@@ -619,6 +646,10 @@ export default function ExportShipmentsPage() {
                 <ExportShipmentDocumentsPanel
                   shipmentId={selected.id}
                   readOnly={['completed', 'cancelled'].includes(selected.status)}
+                  onDocumentsChanged={async () => {
+                    await load();
+                    await openShipment(selected.id);
+                  }}
                 />
               </>
             )}

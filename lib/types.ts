@@ -177,12 +177,20 @@ export interface Vehicle {
   supplier_invoice_id: string | null;
   landed_cost: number | null;
   reserved_customer_id: string | null;
+  /** Admin who reserved; field agents only see own reserved units. */
+  reserved_by: string | null;
   /** Incoterm on active reservation: FOB / C&F / CIF. */
   reservation_price_term: 'fob' | 'cf' | 'cif' | null;
   /** Shipment mode on active reservation (same as export_shipments.mode). */
   reservation_shipment_term: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
   /** Whether inspection is required for the active reservation; cleared on release. */
   reservation_inspection_required: boolean | null;
+  /** Whether VAT applies on the reservation proforma; cleared on release. */
+  reservation_vat_applicable: boolean | null;
+  reservation_etd: string | null;
+  reservation_eta: string | null;
+  reservation_requester_name: string | null;
+  reservation_requester_role: 'sales' | 'manager' | 'admin' | null;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -689,6 +697,8 @@ export interface Invoice {
   price_term: 'fob' | 'cf' | 'cif' | null;
   /** Document shipment mode shown on print/PDF. */
   shipment_term: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
+  /** When false, VAT is not applied (line tax rates should be 0). */
+  vat_applicable: boolean;
   provider_name: string | null;
   provider_submission_id: string | null;
   provider_status: InvoiceProviderStatus;
@@ -949,7 +959,8 @@ export type ExportShipmentDocType =
   | 'export_certificate'
   | 'waybill'
   | 'courier'
-  | 'inspection_certificate';
+  | 'inspection_certificate'
+  | 'surrendered_bl';
 
 export interface ExportShipment {
   id: string;
@@ -1555,6 +1566,7 @@ export interface Database {
       eos_estimate_logs: TableDef<EosEstimateLog>;
       expense_categories: TableDef<ExpenseCategory>;
       expenses: TableDef<Expense>;
+      export_master_options: TableDef<import('./export-masters').ExportMasterOption>;
       export_shipment_documents: TableDef<ExportShipmentDocument>;
       export_shipment_vehicles: TableDef<ExportShipmentVehicle>;
       export_shipments: TableDef<ExportShipment>;
