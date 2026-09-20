@@ -27,7 +27,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Payroll | no | /admin/payroll (ops) | employees, leave_requests, payroll_runs, payroll_lines, eos_estimate_logs |
 | Audit log | no | `/admin/audit-log` (**admin only**) | `audit_logs` (append-only; invoice status, part/vehicle catalog activity, remittance allocate) |
 | HR / workforce | no | `/admin/hr`, `/admin/hr/locations`, `/admin/hr/shifts`, `/admin/hr/attendance` (ops manage; manager view + own attendance) | `shift_locations`, `shift_assignments`, `attendance_records` |
-| Blog | `/blog` | `/admin/blog` (Write / HTML / Preview) | `blog_*` |
+| Blog | `/blog`, `/blog/[slug]` (SEO + JSON-LD) | `/admin/blog` (Write / HTML / Preview) | `blog_*` |
+| Reviews / testimonials | `/reviews` (+ home strip) | — | static `lib/content/testimonials.ts` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
 | Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
 | Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments, due reminders |

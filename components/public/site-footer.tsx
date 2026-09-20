@@ -56,6 +56,7 @@ export function SiteFooter() {
               <li><Link href="/categories" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Categories</Link></li>
               <li><Link href="/about" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">About Us</Link></li>
               <li><Link href="/blog" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Insights</Link></li>
+              <li><Link href="/reviews" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Reviews</Link></li>
               <li><Link href="/offers" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Deals &amp; Offers</Link></li>
               <li><Link href="/contact" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Contact</Link></li>
               <li><Link href="/banking" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Banking Details</Link></li>

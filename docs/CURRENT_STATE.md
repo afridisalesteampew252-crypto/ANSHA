@@ -1,6 +1,6 @@
 # Current State
 
-Verified checkpoint: **2026-09-20** (Phase 57 machinery + Tawk live chat + inventory ops).
+Verified checkpoint: **2026-09-20** (Phase 57 machinery + Tawk + inventory; blog SEO + public `/reviews` testimonials).
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
@@ -10,14 +10,14 @@ Hosting: Vercel project `anshanew`
 
 | Area | Approx. done | Notes |
 |---|---|---|
-| Public catalog + SEO exporter site | **~93%** | Parts/vehicles/**machinery**/categories/blog/offers/markets; cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
+| Public catalog + SEO exporter site | **~94%** | Parts/vehicles/**machinery**/categories/blog+SEO/`/reviews`/offers/markets; cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
 | Staff ERP (purchase → GL → VAT/payroll) | **~94%** | Phases 28–38, 46–48, 50, 53–57; field agents + accounts + HR |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~88%** | Tawk public widget + admin Live chat (**admin + manager only**); other secrets optional |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~80%** | Push **Edge VAPID secrets** often invalid until re-set correctly |
 | Customer portal | **~75%** | Invoices + SOA; no remittance UX for customers |
 | PWA / Capacitor | **~85%** | Named **Anshatradingco APP**; install CTAs; Capacitor shell docs |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–57 + Tawk + inventory) |
+| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–57 + Tawk + inventory + blog/reviews) |
 
 **Overall product maturity (shipping ERP + public exporter):** roughly **88–93%** of the Phase 1–57 roadmap that was chosen and built. Remaining work is polish, secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, and test coverage — not a greenfield rewrite.
 
@@ -29,7 +29,8 @@ Hosting: Vercel project `anshanew`
 - Deals: `/offers`, inventory-linked discounts on cards + detail (`site_offers.vehicle_id` / `part_id`)
 - Markets: `/markets/[code]` + admin Trade config (rates / freight / import policy)
 - Cart + favorites (localStorage inquiry list)
-- Blog, banking, about, contact, invoice verify
+- Blog (`/blog`, `/blog/[slug]` SEO metadata + Article JSON-LD), banking, about, contact, invoice verify
+- Testimonials on home + `/reviews` (curated static quotes in `lib/content/testimonials.ts`; footer + sitemap)
 - PWA: manifest **Anshatradingco APP**, SW, install CTAs, push opt-in
 - Header: live Dubai time + AED→USD/EUR/JPY/PKR via `/api/fx`
 - Vehicle galleries hide auction-sheet photos (`vehicle_photos.is_auction_sheet`); public RLS excludes them

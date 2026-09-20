@@ -48,7 +48,7 @@ Most catalog/ERP pages are Client Components talking to PostgREST with the anon/
 
 **Fact — routes**
 
-`/`, `/parts`, `/parts/[slug]`, `/vehicles`, `/vehicles/[slug]`, `/machinery`, `/categories`, `/categories/[slug]`, `/about`, `/contact`, `/blog`, `/blog/[slug]`, `/offers`, `/markets/[code]`, `/cart`, `/favorites`, `/banking`, `/cookie-policy`, `/offline`, `/verify/invoice/[code]`
+`/`, `/parts`, `/parts/[slug]`, `/vehicles`, `/vehicles/[slug]`, `/machinery`, `/categories`, `/categories/[slug]`, `/about`, `/contact`, `/blog`, `/blog/[slug]`, `/reviews`, `/offers`, `/markets/[code]`, `/cart`, `/favorites`, `/banking`, `/cookie-policy`, `/offline`, `/verify/invoice/[code]`
 
 **Fact — product UX (recent)**
 
@@ -63,6 +63,7 @@ Most catalog/ERP pages are Client Components talking to PostgREST with the anon/
 - Auction-sheet vehicle photos excluded from public gallery (RLS + `lib/vehicle-photos.ts`)
 - Heavy machinery & trucks browse at `/machinery` (`vehicle_class`)
 - Tawk.to public chat widget when `NEXT_PUBLIC_TAWK_*` set
+- Blog SEO metadata + Article JSON-LD; home testimonials + `/reviews` page
 
 **Gap**
 

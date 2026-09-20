@@ -32,6 +32,7 @@ import { VehicleCard } from '@/components/public/vehicle-card';
 import { BlogCard } from '@/components/public/blog-card';
 import { ExportMarketsStrip } from '@/components/public/export-markets-strip';
 import { PartRequestForm } from '@/components/public/part-request-form';
+import { TestimonialsSection } from '@/components/public/testimonials-section';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import {
@@ -536,6 +537,8 @@ export default function HomePageClient() {
           </div>
         </section>
       )}
+
+      <TestimonialsSection limit={4} />
 
       <section className="border-t border-accent/20 bg-[#101114] py-8 text-white sm:py-10">
         <div className="container-page flex min-w-0 flex-col items-center justify-between gap-4 text-center md:flex-row md:gap-5 md:text-left">
