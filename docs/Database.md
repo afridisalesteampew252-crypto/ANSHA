@@ -11,7 +11,9 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, Phase 61/61b (export docs + Incoterms), Phase 62 (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`), Phase 63 parts stock ops, Phase 64 invoice unallocate-delete (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`), Phase 65 vehicle stock pool (`20260920230000_phase_65_vehicle_stock_pool.sql`), Phase 66 marketing `sent_count` + manager `allowed_stock_origins` (`20260920240000_phase_66_marketing_manager_locations.sql`), Phase 67 portal reservations (`20260920250000_phase_67_portal_reservations.sql`), Phase 68 export/request hard-delete (`20260920260000_phase_68_export_request_delete.sql`), Phases 69–70 remittances offices/shifts + profile office (`20260921010000` / `20260921011000` / `20260921020000`), Phase 71 allocate/unallocate fix (`20260921030000_phase_71_allocate_unallocate_fix.sql`), clear reservation on available (`20260921040000_clear_reservation_on_available.sql`), and SOA reservation sync (`20260921050000_soa_sync_on_reservation_release.sql`). These are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
+Latest migrations in the repository include Phases **72–78** (commission claims, remittance auto-confirm, auction yards, shipping companies, freight charges, bulk reserve, customer auto ID) plus Phases 69–71 remittances / allocate / clear-reservation / SOA sync. These are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases remain under `supabase/migrations/`.
+
+Key recent files: `20260921060000_phase_72_commission_claims.sql`, `20260921070000_phase_73_remittance_auto_confirm.sql`, `20260921090000_phase_74_yards_config.sql`, `20260921100000_phase_75_shipping_companies.sql`, `20260921110000_phase_76_freight_charges.sql`, `20260921120000_phase_77_bulk_reserve_stock.sql`, `20260921130000_phase_78_customer_auto_id.sql`, plus `20260921050000_soa_sync_on_reservation_release.sql` and `20260921040000_clear_reservation_on_available.sql`.
 
 ## Entity groups
 
@@ -35,7 +37,10 @@ Latest migrations in the repository include Phase 51–52 (offers / trade config
 - `export_shipments` / `export_shipment_vehicles` / `export_shipment_parts` — booking/BL header (EXP- numbers) + vehicle lines + Phase 63 part lines; ops RLS; status hooks into lifecycle events; Phase 61 `mode` ∈ `dhl`|`roro`|`container_20ft`|`container_40ft`; Phase 62 document-driven status automation; `create_export_shipment` accepts `part_ids`; Phase 68 `delete_export_shipment(uuid, boolean)` (ops draft/cancelled; account-admin `p_force`; cascades children + storage)
 - `export_shipment_documents` — Phase 61 PDF/image metadata (`bill_of_lading`|`export_certificate`|`waybill`|`courier`|`inspection_certificate`); inspection rows require `country_code`; single-slot unique index for non-inspection types; storage bucket `export-shipment-documents`; ops RLS
 - `export_master_options` — Phase 62 Configuration masters (`destination_country`|`loading_port`|`destination_port`|`vessel`|`voyage`); workspace read; ops write
-- `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` �?? import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
+- `auction_yards` — Phase 74 Configuration | Yards (`auction_name`, `port`, `yard`, `tentative_days`); workspace read; ops write
+- `shipping_companies` — Phase 75 Configuration | Shipping Companies (`company_name` + `vessel_name` pairs); workspace read; ops write
+- `freight_charges` — Phase 76 route/mode rates (`source_*` / `destination_*`, `shipment_type` dhl|roro|container_20ft|container_40ft, `freight_charge`, currency, contact fields); workspace read; receivables write (`can_manage_receivables`)
+- `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` — import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
 - `bank_accounts` / `bank_transactions` �?? ops bank ledger (BNK-/BTXN-); reconcile flags; ops RLS
 - `bank_feed_connections` - Phase 50 feed placeholders (`manual`|`pending_provider`); not live Open Banking; ops RLS
 - `expense_categories` / `expenses` �?? operating expenses (OPEX- numbers); draft/posted/cancelled; optional soft `bank_account_id`; ops RLS
@@ -83,8 +88,10 @@ Intake rows stay as submitted. One ticket per inquiry and per part request (uniq
 
 ### CRM and imports
 
-- `customers` �?? `customer_code`, contact fields, `is_active`, optional `avatar_url`
-- `import_jobs`, `import_rows` �?? Excel/ZIP audit
+- `customers` — `customer_code` (Phase 78: default from `customer_code_seq`, human range ~48001+; existing codes preserved), contact fields, `is_active`, optional `avatar_url`, optional consignee fields (`consignee_name` / `company` / `phone` / `email` / `address` / `country` / `notes`); BEFORE INSERT trigger `private.prepare_customer`
+- `import_jobs`, `import_rows` — Excel/ZIP audit
+- `commission_claims` — Phase 72 sales commission on sold vehicles/parts (`pending`|`approved`|`paid`|`rejected`); claimant SELECT own; ops/accounts/manager SELECT; writes via `claim_stock_commission` / `review_commission_claim` only
+- `bulk_reserve_stock(vehicle_ids, part_ids, …)` — Phase 77 SECURITY DEFINER; loops `reserve_vehicle_stock` / `reserve_part_stock`; returns succeeded/failed arrays (partial success kept)
 
 ### Communications
 
@@ -108,12 +115,15 @@ Chat stays one product. Links are additive metadata; mutations go through `link_
 - `remittance_sequences`, `remittances`, `remittance_documents`, `remittance_allocations`
 - Phase 69 remittance module: `remittance_offices` / `remittance_shifts` (workspace SELECT; receivables write — picklists, not HR); `remittances.received_by`, `office_id`, `shift_id`, `is_unknown`; status includes `unknown`; RLS SELECT = receivables **or** `received_by = auth.uid()`; RPCs `create_remittance(..., p_received_by, p_office_id, p_shift_id)` (null customer ⇒ unknown; office/shift default from profile), `link_remittance`, `count_unknown_remittances`; `allocate_remittance` requires receivables and refuses unknown. Migrations `20260921010000_phase_69_remittance_module_offices_shifts.sql`, `20260921011000_phase_69_drop_create_remittance_14arg.sql`.
 - Phase 70: `admin_profiles.office_id` / `shift_id` → remittance picklists; Users UI assigns them; remittance dashboard filters by `remittances.office_id`. Migration `20260921020000_phase_70_admin_profile_office_shift.sql`.
+- Phase 73 remittance confirmation: known create (customer set) defaults to **confirmed**; unknown stays unconfirmed; `link_remittance` requires customer + agent (`received_by`) and **auto-confirms**; trigger also confirms when an unknown row gains both. Migration `20260921070000_phase_73_remittance_auto_confirm.sql`.
 - Clear reservation on available: `private.sync_catalog_sold_state` nulls `reserved_*` / `reservation_*` whenever parts/vehicles transition to `available`; release RPCs still clear explicitly; one-shot UPDATE cleans stale available rows. Migration `20260921040000_clear_reservation_on_available.sql` (applied remote).
-- SOA reservation sync: on stock → `available`, `private.clear_reservation_buying_documents` cancels unpaid open reservation proformas (no payments/allocations) so customer Buying clears; field-agent invoice trigger allows that system cancel via `ansha.clearing_reservation_soa`; portal `get_my_customer_soa` returns `buying` (active reserved stock + open invoice lines). Migration `20260921050000_soa_sync_on_reservation_release.sql` (applied remote; also recorded as `soa_sync_on_reservation_release` + `soa_sync_portal_buying_and_cleanup`).
+- SOA reservation sync: on stock → `available`, `private.clear_reservation_buying_documents` cancels unpaid open reservation proformas (no payments/allocations) so customer Buying clears; field-agent invoice trigger allows that system cancel via `ansha.clearing_reservation_soa`; portal `get_my_customer_soa` returns `buying` (active reserved stock + open invoice lines). Migration `20260921050000_soa_sync_on_reservation_release.sql` (applied remote).
 - `supplier_invoices` — private file metadata
 - `bank_accounts` / `bank_transactions` — ops bank ledger (BNK-/BTXN-); opening balance + manual in/out; reconcile flags; optional remittance/supplier_payment/expense links; ops RLS
 
 Triggers recalculate invoice balances and sync remittance-linked payments. Do not bypass them with ad-hoc SQL in the app.
+
+App money display: `lib/money.ts` `formatMoneyBreakdown` lists per-currency totals without converting (no FX mixing across currencies).
 
 ## Stock model (vehicles and parts)
 
@@ -137,4 +147,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, Phase 60 `last_seen_at`, Phase 61/61b Incoterm + export document + reservation/invoice term columns, Phase 62 `reserved_by` / `export_master_options` / `vat_applicable`, Phase 65 `stock_pool`, Phase 69 `RemittanceOffice` / `RemittanceShift` + remittance `received_by` / `is_unknown`, and Phase 70 `AdminProfile.office_id` / `shift_id`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`.
+Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through Phase **78**, including Phase 72 `CommissionClaim`, Phase 74–76 `AuctionYard` / `ShippingCompany` / `FreightCharge`, Phase 69–70 remittance offices/shifts + profile office, Phase 65 `stock_pool`, Phase 57 `vehicle_class`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`, `lib/money.ts`, `lib/export-excel.ts`, `lib/reports/*`, `lib/stock-linked-invoice.ts`, `lib/freight-charges.ts`.

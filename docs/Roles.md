@@ -33,11 +33,12 @@ There is no department role and no `domain.action` permission matrix in code. Cu
 
 | Area | Allowed |
 |---|---|
-| Routes (`proxy.ts`) | `/admin/dashboard`, `/admin/parts` + `/admin/vehicles` **lists only**, `/admin/customers`, `/admin/reservations`, `/admin/invoices` (list/new/detail; no supplier), `/admin/chat`, `/admin/profile` |
+| Routes (`proxy.ts`) | `/admin/dashboard`, `/admin/parts` + `/admin/vehicles` + `/admin/auction-stock` **lists only**, `/admin/customers`, `/admin/reservations`, `/admin/invoices` (list/new/detail; no supplier), `/admin/commissions`, `/admin/remittances/mine`, `/admin/chat`, `/admin/profile` |
 | Nav | Same allowlist via `FIELD_AGENT_NAV_HREFS` |
-| Catalog UI | Ops-oriented reservation cards — no Add/Import |
+| Catalog UI | Ops-oriented reservation cards — no Add/Import; **bulk reserve** available units; **Actions** (claim commission on sold) |
 | Catalog writes | Ops-only RLS; field agents blocked at route + UI |
 | Customers | Own-book (`owner_id = auth.uid()`) via `is_field_agent()` |
+| Commissions | Claim own commission on sold stock they reserved/requested/sold (`claim_stock_commission`) |
 | Invoices | **Draft `proforma_invoice` only** (`create_invoice_v3` + RLS + trigger). Cannot set status to sent / paid paths |
 | After vehicle reserve | Opens the draft proforma detail |
 
@@ -45,16 +46,18 @@ There is no department role and no `domain.action` permission matrix in code. Cu
 
 | Area | Allowed |
 |---|---|
-| Routes | Dashboard, customers, invoices (incl. supplier), remittances, bank accounts, expenses, ledger, reports, VAT, chat, profile |
+| Routes | Dashboard, customers, invoices (incl. supplier), remittances, commissions (review), bank accounts, expenses, ledger, **reports hub**, VAT, freight charges, chat, profile |
 | Invoices | Create all document types; **approve draft→sent**; record payments |
 | Remittances / expenses / bank txns | Yes (not create/delete bank accounts — still account-admin) |
+| Commissions | Review / approve / pay / reject claims |
+| Freight charges | Full CRUD (receivables write RLS) |
 | Not allowed | Users, audit log, catalog writes, purchase/PO/GRN, marketing, HR |
 
 ## Managers (Phase 54 + 66 location scope)
 
-- Can open **catalog** (parts/vehicles/auction-stock), **stock dashboards**, **reservations**, **export shipments** (read), **HR**, **Live chat**, Team Chat.
+- Can open **catalog** (parts/vehicles/auction-stock), **stock dashboards**, **reservations**, **export shipments** (read), **freight charges** (read), **commissions** (view), **HR**, **Live chat**, Team Chat, **My remittances**.
 - Inventory is filtered by `admin_profiles.allowed_stock_origins` (RLS + UI). Assign under **Users** when role = manager.
-- Cannot open **payroll** (ops RLS), finance, marketing, users, PO/GRN/imports, or delete catalog (ops-only delete).
+- Cannot open **payroll** (ops RLS), finance remittance module (except mine), marketing, users, PO/GRN/imports, reports hub, or delete catalog (ops-only delete).
 - HR locations/assignments writes stay ops (`is_ops_user()`). Location-scoped HR approvals still deferred.
 
 ## Live chat / Tawk (admin + manager only)
@@ -116,4 +119,4 @@ A Supabase Auth user without `admin_profiles` cannot use the ERP. Login signs th
 
 ## Future RBAC
 
-Further splits (e.g. HR location-scoped approvals) need schema + policy + UI changes. Phase 69 remittance SELECT is already split: receivables see all; tagged `received_by` users see own (My remittances). Do **not** reuse `public.is_admin()` for `role = 'admin'` — use `private.is_account_admin()`.
+Further splits (e.g. HR location-scoped approvals) need schema + policy + UI changes. Phase 69 remittance SELECT is already split: receivables see all; tagged `received_by` users see own (My remittances). Phase 72 commissions: claimants see own; ops/accounts review; managers view. Do **not** reuse `public.is_admin()` for `role = 'admin'` — use `private.is_account_admin()`.

@@ -177,6 +177,23 @@ App-only ship after schema already applied:
 - Also this ship: clear reservation on available (`20260921040000_clear_reservation_on_available.sql`); export markets **20→70** (`lib/export-markets.ts`); edit-part UI completeness (reservation/VAT/SEO/OEM).
 - No new Vercel secrets. Redeploy Edge `admin-create-user` / `admin-update-user` if not already updated for Phase 70 office/shift.
 
+## Phases 72–78 (commissions → customer auto ID)
+
+Migrations already applied on production — deploy app code only; do not re-apply if present in `schema_migrations`:
+
+| Phase | Migration | Notes |
+|---|---|---|
+| 72 | `20260921060000_phase_72_commission_claims.sql` | `/admin/commissions`; claim/review RPCs |
+| SOA | `20260921050000_soa_sync_on_reservation_release.sql` | Buying clears on release |
+| 73 | `20260921070000_phase_73_remittance_auto_confirm.sql` | Link customer+agent → confirmed |
+| 74 | `20260921090000_phase_74_yards_config.sql` | `/admin/configuration/yards` |
+| 75 | `20260921100000_phase_75_shipping_companies.sql` | `/admin/configuration/shipping-companies` |
+| 76 | `20260921110000_phase_76_freight_charges.sql` | `/admin/freight-charges` |
+| 77 | `20260921120000_phase_77_bulk_reserve_stock.sql` | Catalog bulk reserve |
+| 78 | `20260921130000_phase_78_customer_auto_id.sql` | `customer_code_seq` ~48001+; consignee |
+
+App-only (no new secrets): Allocate To Stocks; remittance Excel/CSV export; reports hub + Excel; vehicles Export Excel; stock invoice badges; multi-currency `formatMoneyBreakdown`.
+
 ## Admin UI polish (post-65, no migration)
 
 App-only: Configuration search/inactive filter; Reserve + Receive Stock `NativeSelect` forms; SearchableSelect chevron; responsive admin shell (`admin-shell` / `admin-table-scroll`). No schema or secrets.

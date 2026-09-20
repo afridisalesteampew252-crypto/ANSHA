@@ -139,13 +139,33 @@ Done (Phase 71): remittance allocate/unallocate fix — unallocate RPCs SECURITY
 
 Also shipped (clear reservation on available): `private.sync_catalog_sold_state` nulls reservation metadata whenever parts/vehicles become `available` (list dropdown, release RPCs, invoice restore); release RPCs still clear fields explicitly; one-shot cleanup of stale available rows; admin cards show requester badges **only when reserved**. Migration `20260921040000_clear_reservation_on_available.sql` (applied remote).
 
-Also shipped (export markets expansion, no migration): `lib/export-markets.ts` expanded **20 → 70** destination markets (Middle East, Africa, Asia, Europe, Americas, Oceania) driving `/markets/[code]` + public flag strip.
+Also shipped (SOA sync on reservation release): unpaid open reservation proformas cancel when stock → available so customer **Buying** clears; portal SOA returns active reserved buying lines. Migration `20260921050000_soa_sync_on_reservation_release.sql`.
+
+Done (Phase 72): commission claims — `commission_claims` table; RPCs `claim_stock_commission` / `review_commission_claim`; UI `/admin/commissions` + **Claim commission** on sold stock Actions menus. Migration `20260921060000_phase_72_commission_claims.sql`.
+
+Done (Phase 73): remittance auto-confirm — known create defaults confirmed; Unknown TTS stays unconfirmed until linked to **customer + agent**, then auto-confirms (RPC + trigger). Migration `20260921070000_phase_73_remittance_auto_confirm.sql`.
+
+Also shipped (remittance UX, no/partial migration): **Allocate To Stocks** form on remittance list; **Excel/CSV export** dropdown (`components/admin/remittance-export-panel.tsx`); multi-currency KPI breakdowns without FX mixing (`lib/money.ts`).
+
+Done (Phase 74): auction yards config — `auction_yards`; `/admin/configuration/yards`. Migration `20260921090000_phase_74_yards_config.sql`.
+
+Done (Phase 75): shipping companies config — `shipping_companies` (company + vessel pairs); `/admin/configuration/shipping-companies`. Migration `20260921100000_phase_75_shipping_companies.sql`.
+
+Done (Phase 76): freight charges config — `freight_charges`; `/admin/freight-charges` (ops + accounts write; manager read). Migration `20260921110000_phase_76_freight_charges.sql`.
+
+Done (Phase 77): bulk reserve — RPC `bulk_reserve_stock`; catalog multi-select + dialog on parts/vehicles/auction lists. Migration `20260921120000_phase_77_bulk_reserve_stock.sql`.
+
+Done (Phase 78): customer auto ID — `customer_code_seq` starting ~48001; consignee columns; Customers list **Actions** menu. Migration `20260921130000_phase_78_customer_auto_id.sql`.
+
+Also shipped (reports + exports, no dedicated phase migration): reports hub `/admin/reports` with 7 operational reports + financial statements + Excel; vehicles **Export Excel** on inventory lists; stock list **linked invoice badges**.
+
+Also shipped (export markets expansion, no migration): `lib/export-markets.ts` expanded **20 → 70** destination markets.
 
 Also shipped (edit-part UI completeness, no migration): `/admin/parts/[id]` edit covers identity/OEM, reservation terms, VAT, SEO meta, Incoterm quotes, plus `StockLinkedInvoices`.
 
-Also shipped (admin UI polish, post-65, no migration): Configuration export-masters list search + inactive filter; Reserve + Receive Stock form layout with shared `NativeSelect` (`components/ui/native-select.tsx`); SearchableSelect chevron alignment; admin shell responsive tweaks (`admin-shell` / `admin-table-scroll`, mobile nav overflow lock); invoice/stock/parts filter bars wrap on small screens.
+Also shipped (admin UI polish, post-65, no migration): Configuration export-masters list search + inactive filter; Reserve + Receive Stock form layout with shared `NativeSelect`; SearchableSelect chevron alignment; admin shell responsive tweaks; invoice/stock/parts filter bars wrap on small screens.
 
-Also shipped (VAPID ops path, no migration): `/admin/subscribers` Subscribe this device + Send test push; shared `lib/pwa-push-subscribe.ts`; offers/blog/campaigns skip push gracefully when `NEXT_PUBLIC_VAPID_PUBLIC_KEY` unset; `.env.example` documents public vs Edge private keys. Production Vercel + Edge secrets already hold the matching pair — redeploy bakes the public key.
+Also shipped (VAPID ops path, no migration): `/admin/subscribers` Subscribe this device + Send test push; shared `lib/pwa-push-subscribe.ts`; offers/blog/campaigns skip push gracefully when `NEXT_PUBLIC_VAPID_PUBLIC_KEY` unset.
 
 ## 7. Mobile / PWA
 

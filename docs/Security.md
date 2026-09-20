@@ -11,6 +11,7 @@
 7. `role = 'admin'` is required for Edge Function user create/update and portal-create-access
 8. Public `vehicle_photos` SELECT excludes `is_auction_sheet = true` (Phase 56)
 9. `/admin/live-chat` is **admin + manager only** (`canAccessLiveChat` in `proxy.ts` + nav) — not staff/sales/freelancer/accounts
+10. Commission claims (Phase 72): SELECT own or ops/accounts/manager; mutations only via `claim_stock_commission` / `review_commission_claim`
 
 Treat every browser query as hostile. Policies are the API.
 

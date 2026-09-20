@@ -70,15 +70,29 @@ Export shipment delete (Phase 68):
 
 - `delete_export_shipment(p_shipment_id, p_force default false)` — ops hard-delete draft/cancelled; account-admin `p_force` for other statuses; cascades vehicle/part/doc rows; cleans `export-shipment-documents` storage
 
-Remittances (Phase 69):
+Remittances (Phase 69–73):
 
-- `create_remittance(..., p_received_by?, p_office_id?, p_shift_id?)` — receivables; unmatched customer ⇒ `is_unknown` / status `unknown`
-- `link_remittance(p_remittance_id, p_customer_id, ...)` — resolve Unknown TTS (receivables)
+- `create_remittance(..., p_received_by?, p_office_id?, p_shift_id?)` — receivables; unmatched customer ⇒ `is_unknown` / status `unknown`; known customer defaults to **confirmed** (Phase 73)
+- `link_remittance(p_remittance_id, p_customer_id, …)` — resolve Unknown TTS; requires customer + agent; **auto-confirms** (Phase 73)
 - `count_unknown_remittances()` — finance unknown queue count
 - `allocate_remittance` — receivables only; refuses unknown
 - `reverse_remittance_allocation` — receivables; SECURITY DEFINER (Phase 71)
 - `unallocate_invoice_remittances` — receivables; SECURITY DEFINER (Phase 71); returns funds to remittance pool
 - `unallocate_and_delete_invoice` — unallocate then `delete_invoice_safely`
+
+Commissions (Phase 72):
+
+- `claim_stock_commission(p_amount, p_currency?, p_vehicle_id?, p_part_id?, p_invoice_id?, p_notes?, p_claimant_id?)` — sold stock only; claimant must be `reserved_by`, `sold_by`, or matching requester name
+- `review_commission_claim(p_claim_id, p_status, p_review_notes?)` — ops/accounts set `approved`|`paid`|`rejected`
+
+Bulk reserve (Phase 77):
+
+- `bulk_reserve_stock(p_vehicle_ids?, p_part_ids?, p_customer_id, …terms)` — workspace; loops single reserve RPCs; returns JSON succeeded/failed (partial OK)
+
+Customer portal RPCs (Phases 23/27/67):
+
+- `get_my_customer_soa()` — portal SOA including `buying` (active reserved stock)
+- `get_my_reservations()` — portal reservation list
 
 Chat linking RPCs (Phase 20):
 

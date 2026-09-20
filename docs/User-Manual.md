@@ -24,9 +24,9 @@ Staff ERP and the portal need a live internet connection (not cached offline). F
 | Role | Login | Can do | Cannot do |
 |---|---|---|---|
 | **Visitor** | None | Browse available published stock, inquire, request parts, verify invoice by QR code | Staff tools, portal; auction-sheet photos |
-| **Sales / Freelancer** (field agent) | `/admin` | Parts/vehicles **lists**, own-book customers, reserve vehicles, **draft proforma only**, chat, light dashboard, **My remittances** (tagged only) | Catalog create/edit/import, mark invoices sent, full remittance module, finance, HR, marketing |
-| **Accounts** | `/admin` | Customer invoices (all types; approve draft→sent), remittances, expenses, bank txns/views, supplier invoices, ledger/reports/VAT views | Users, audit log, catalog writes, PO/GRN, marketing, HR |
-| **Manager** | `/admin` | Location-scoped catalog/stock/reservations; export shipments (read); HR view + own check-in/out; live chat; **My remittances** (tagged only) | Finance module, payroll, marketing, users, PO/GRN/imports, catalog delete |
+| **Sales / Freelancer** (field agent) | `/admin` | Parts/vehicles/auction **lists**, own-book customers, reserve (+ bulk reserve), **draft proforma only**, **claim commission**, chat, light dashboard, **My remittances** (tagged only) | Catalog create/edit/import, mark invoices sent, full remittance module, finance, HR, marketing |
+| **Accounts** | `/admin` | Customer invoices (all types; approve draft→sent), remittances, commissions review, expenses, bank txns/views, supplier invoices, ledger/**reports hub**/VAT, freight charges | Users, audit log, catalog writes, PO/GRN, marketing, HR |
+| **Manager** | `/admin` | Location-scoped catalog/stock/reservations; export shipments (read); freight charges (read); commissions (view); HR view + own check-in/out; live chat; **My remittances** (tagged only) | Full finance remittance module, payroll, marketing, users, PO/GRN/imports, reports hub, catalog delete |
 | **Staff** | `/admin` | Day-to-day ops: PO, GRN, invoices, remittances, bank txns, expenses, shipments, landed cost, draft GL, payroll drafts, HR admin, email/WhatsApp/AI, etc. | User management, portal enable, reverse posted GL, create/delete bank accounts, post payroll, hard-delete suppliers, force lifecycle stage jumps |
 | **Admin** | `/admin` | Everything staff can do, plus account-admin actions above; audit log | — |
 | **Customer (portal)** | `/portal` | Read own reservations, non-draft invoices; view account statement | Remittances, chat, staff ERP |
@@ -106,7 +106,9 @@ Open `/admin` after login. Menu groups match the sidebar.
 1. Open Parts → **New part** (or edit an existing row).
 2. Fill identifiers (part code, OEM, slug), pricing (including optional **FOB / C&F / CIF** sell quotes), stock origin/status, publish flags, SEO meta, photos.
 3. On edit: reservation terms (price/shipment/inspection/VAT, requester, ETD/ETA) when reserved; purchase cost fields for ops; **Invoices & documents** lists linked invoice lines.
-4. Save. Public detail shows Incoterm quotes when set. List cards show requester badges **only while status is Reserved** — setting Available clears reservation metadata automatically.
+4. List cards show **linked invoice badges** when invoices reference the part; requester badges **only while Reserved**.
+5. Select available rows → **Bulk reserve** to one customer (shared terms). Use card **Actions** on reserved/sold rows (open invoices, claim commission when sold).
+6. Save. Public detail shows Incoterm quotes when set. Setting Available clears reservation metadata automatically.
 
 **Vehicles (owned)** — `/admin/vehicles` and `/admin/vehicles/[id]`
 
@@ -116,6 +118,7 @@ Open `/admin` after login. Menu groups match the sidebar.
 4. On the detail page, advance **lifecycle** along the recommended path (Auction → Yard → Port → Sold). Record workflow events; attach private files per event.
 5. Skipping stages requires an **admin** force override with a reason.
 6. Transfer to **Auction stock** when the unit is third-party (not purchased inventory).
+7. List: **Export Excel**, **bulk reserve**, invoice badges, and **Actions** menus (same pattern as parts).
 
 **Auction stock** — `/admin/auction-stock`
 
@@ -160,16 +163,22 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 
 **Customers** — `/admin/customers`
 
-1. Create or search customers.
-2. Open a customer for statement of account (invoices, remittances, allocations, **Buying details** including currently reserved stock).
-3. **Admin only:** enable portal access from the customer SOA page (sends portal credentials via the provision flow).
+1. Create or search customers. New rows get an auto **Customer ID** (`customer_code`, sequence starting ~48001). Existing codes are kept.
+2. Use the row **Actions** menu for SOA, invoices, remittances, consignee, edit, or deactivate.
+3. Open a customer for statement of account (invoices, remittances, allocations, **Buying details** including currently reserved stock). Optional **consignee** shipping contact fields.
+4. **Admin only:** enable portal access from the customer SOA page.
 
-**Reserve stock** — `/admin/reservations` (field agents + ops)
+**Reserve stock** — `/admin/reservations` (field agents + ops) or catalog **Bulk reserve**
 
-1. Select an available **vehicle or part** and customer. Field agents only see **available** units plus stock **they** reserved.
-2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release **or** when stock is set to Available (including the list status dropdown). Sales/freelancer requester fields are locked to their profile.
-3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. VAT No expects zero tax rates on the draft. The customer SOA **Buying details** updates for the reserved unit.
+1. Select an available **vehicle or part** and customer (or multi-select on catalog lists → Bulk reserve). Field agents only see **available** units plus stock **they** reserved.
+2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release **or** when stock is set to Available. Sales/freelancer requester fields are locked to their profile.
+3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Bulk reserve keeps successful rows even if some fail. Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. The customer SOA **Buying details** updates for the reserved unit.
 4. Release (with republish when appropriate) if the deal does not proceed — unpaid open reservation proformas cancel automatically so SOA Buying clears.
+
+**Commissions** — `/admin/commissions`
+
+1. After stock is **sold**, eligible agents (reserved_by / sold_by / matching requester) open **Actions → Claim commission** or use the Commissions page.
+2. Ops / accounts **approve**, mark **paid**, or **reject**. Managers can view team claims.
 
 **Invoices** — `/admin/invoices`
 
@@ -183,22 +192,23 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 
 **Supplier invoices** — `/admin/invoices/supplier` (ops + accounts) — archive files linked to purchase (not available to field agents).
 
-**Remittances** — Phases 69–71 (ops + accounts for finance pages; tagged users for My remittances)
+**Remittances** — Phases 69–73 (ops + accounts for finance pages; tagged users for My remittances)
 
 | Page | Path | Who |
 |---|---|---|
-| Dashboard | `/admin/remittances/dashboard` | Ops / accounts — date range + **office filter** (e.g. Karachi) + office-wise received / allocated / unallocated |
-| List / receive | `/admin/remittances` | Ops / accounts — record pending/confirmed/unknown; **Link user** auto-fills office/shift from profile (override optional); **Allocate remaining** + per-row **Unallocate** |
-| My remittances | `/admin/remittances/mine` | Any workspace user tagged as receiver (field agents + managers included) — read own rows |
-| Unknown TTS | `/admin/remittances/unknown` | Ops / accounts — unmatched funds; **link** customer + user (office/shift from profile) |
+| Dashboard | `/admin/remittances/dashboard` | Ops / accounts — date range + **office filter** + office-wise received / allocated / unallocated (**per currency**, no FX mixing) |
+| List / receive | `/admin/remittances` | Ops / accounts — record pending/confirmed/unknown; **Link user** auto-fills office/shift; **Allocate To Stocks** / Allocate remaining / Unallocate; **Export Excel or CSV** |
+| My remittances | `/admin/remittances/mine` | Any workspace user tagged as receiver |
+| Unknown TTS | `/admin/remittances/unknown` | Ops / accounts — unmatched funds; **link** customer + agent → **auto-confirm** |
 
-Office and shift live on **Users** (`/admin/users`). Remittances nav does not expose Offices/Shifts as HR-style config. Picklist routes remain at `/admin/remittances/offices` and `/shifts` for rare seed edits only.
+Office and shift live on **Users** (`/admin/users`). Remittances nav does not expose Offices/Shifts as primary config.
 
 1. Assign each collector's office/shift on **Users**.
-2. Prefer receiving with a customer; leave customer empty to save as **Unknown TTS** until linked.
-3. Tag **received by** — office/shift fill from that user; staff can open **My remittances**.
-4. Allocate only after confirmed and customer-linked (unknown cannot allocate). Use **Allocate remaining** or invoice-detail allocate; any receivables user can **Unallocate**.
-5. Use the dashboard office filter for office-wise totals.
+2. Prefer receiving with a customer (defaults **confirmed**); leave customer empty to save as **Unknown TTS**.
+3. Tag **received by** — office/shift fill from that user.
+4. Link Unknown TTS to customer + agent → status becomes **confirmed** automatically.
+5. Allocate only after confirmed and customer-linked. Use **Allocate To Stocks** (pick stock invoices by amount/%), **Allocate remaining**, or invoice-detail allocate; any receivables user can **Unallocate**.
+6. Export filtered remittances via the Excel/CSV dropdown.
 
 ### 5.5 Stock management + export shipments + lifecycle
 
@@ -234,8 +244,9 @@ Office and shift live on **Users** (`/admin/users`). Remittances nav does not ex
 | Bank accounts | `/admin/bank-accounts` | Ops: post in/out transactions, reconcile, CSV import. **Admin** creates/deletes accounts. |
 | Expenses | `/admin/expenses` | Create → post or cancel operating expenses (OPEX-). Optional bank link. |
 | General ledger | `/admin/ledger` | Draft/post journals (JE-). **Admin** reverses posted journals and edits chart of accounts. Auto-posts may appear from remittances, expenses, invoices, supplier payments. |
-| Reports | `/admin/reports` | Trial balance, P&L, balance sheet for a period. |
+| Reports hub | `/admin/reports` | Hub for **Customer Balance Payments**, **Customer Sales Value Stats**, **Customer Registrations**, **Office Sales Stats**, **Purchase Statistics**, **Resource Sales Stats**, **Resource Sales Value Stats**, plus **Financial statements** (trial balance / P&L / balance sheet). Each report supports filters and **Excel** download. Multi-currency columns stay separate (no FX conversion). |
 | VAT return | `/admin/vat-return` | Pick dates → review summary → optional snapshot → CSV export. Reporting-first. |
+| Freight charges | `/admin/freight-charges` | Ops/accounts maintain route/mode rates; managers may view. |
 | Payroll | `/admin/payroll` | Employees, leave approve/reject, draft runs. **Admin** posts payroll and cancels posted runs. EOS calculator is **indicative only**, not legal advice. |
 
 ### 5.7 Inbox
@@ -261,7 +272,9 @@ Header **notification center**: team messages, mail, inquiries, part requests, r
 | Campaigns | `/admin/campaigns` (ops) | Draft/edit campaigns (push / email / offer) → **Send now**, email **Send test** / **Send to segment** (customer country). Tracks `sent_count`. |
 | PWA subscribers | `/admin/subscribers` (ops) | List push opt-ins (deals/insights), filter, remove stale rows; **Subscribe this device** + **Send test push** when VAPID is configured (see Deployment / PWA docs). |
 | Trade config | `/admin/trade-config` (ops) | FX reference rates, freight notes, per-country import policies for `/markets/[code]`. |
-| Configuration | `/admin/configuration` (ops) | Maintain export master lists: destination countries, loading/destination ports, vessels, voyages used on export shipments. Search the list; toggle inactive rows. Seeded countries/ports ship with Phase 62/63 migrations. |
+| Configuration | `/admin/configuration` (ops) | Export master lists: destination countries, loading/destination ports, vessels, voyages. Search; toggle inactive. |
+| Yards | `/admin/configuration/yards` (ops) | Auction house + port + yard + tentative transit days (`auction_yards`). |
+| Shipping Companies | `/admin/configuration/shipping-companies` (ops) | Company + vessel name pairings. |
 
 ### 5.9 HR
 
@@ -279,7 +292,7 @@ Manager inventory/ops is **location-scoped** via stock origins assigned under Us
 | Page | Path | Who |
 |---|---|---|
 | Payroll | `/admin/payroll` | Ops drafts; admin posts (see Finance). Admin can delete employees / draft-cancelled runs (Phase 53). |
-| Users | `/admin/users` | **Admin only** — create/update workspace users and roles; for **manager**, assign **stock locations** (`allowed_stock_origins`); deactivate. |
+| Users | `/admin/users` | **Admin only** — create/update workspace users and roles; for **manager**, assign **stock locations** (`allowed_stock_origins`); assign remittance **office/shift** for collectors; deactivate. |
 | Profile | `/admin/profile` | Anyone signed in — own name, avatar, password. |
 
 ---
@@ -310,6 +323,7 @@ Portal access is enabled by an **admin** from the customer page in ERP. Remittan
 9. **Banking page** — Point customers to `/banking` for official AED/USD payment details rather than pasting ad-hoc numbers in chat.
 10. **Auction sheets** — Admin-only; never appear on the public vehicle gallery.
 11. **Owned vs auction stock** — `/admin/vehicles` is purchased inventory; Japan/third-party listings live under **Auction stock** until transferred to owned.
+12. **Money by currency** — dashboards and reports show AED / USD / … separately; the UI does not convert or sum across currencies.
 
 ---
 

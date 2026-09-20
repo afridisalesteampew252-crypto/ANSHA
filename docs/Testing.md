@@ -27,7 +27,13 @@ Do not treat a green lint as proof of hook correctness.
 - Auth gate: no `admin_profiles` → no ERP
 - RLS: unpublished catalog invisible to anon
 - Invoice `verify_invoice` returns only public fields
-- Remittance allocation does not over-allocate
+- Remittance allocation does not over-allocate; unknown cannot allocate until linked
+- Unknown TTS link with customer + agent auto-confirms
+- Commission claim only on sold stock for eligible claimant
+- Bulk reserve partial success keeps succeeded rows
+- Customer create without `customer_code` gets seq ≥ ~48001
+- Money breakdowns never sum across currencies
+- Role allowlists: field agents / accounts / manager / live-chat
 - Stock `sold` trigger stamps/clears `sold_at`
 - Chat/mail Storage paths deny non-members
 - Request attachments only under `requests/{request_id}/` for workspace users

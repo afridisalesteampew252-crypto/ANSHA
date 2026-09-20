@@ -12,7 +12,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 
 ## Project status
 
-Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)** (~**88–93%** of the chosen Phase 1–57 ERP + public + platform MVP).
+Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)** (~**96–98%** of the chosen Phase 1–78 ERP + public + platform MVP).
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -24,9 +24,13 @@ Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE
 | 39–45 | Email, WhatsApp, analytics, AI, audit, Capacitor, RBAC | Complete (secrets optional) |
 | 46–50 | GL auto-post, lifecycle harden, EOS, campaigns, bank CSV stub | Complete |
 | 51–52 | Inventory-linked deals; trade config / markets | Complete |
-| 53–56 | Payroll deletes; field agents/HR/audit; accounts + draft proforma; auction sheets | Complete |
-| 57 | Vehicle class / machinery & trucks catalog | Complete |
-| Product UX | PWA **Anshatradingco APP**, cart/fav, FX/clocks, featured rotation, Tawk live chat, subscribers, blog editor | Complete (push needs valid VAPID Edge secrets) |
+| 53–57 | Field agents/HR/accounts; auction sheets; machinery | Complete |
+| 58–68 | Tawk; presence; export docs/Incoterms; stock ops; pools; portal reservations; hard-delete | Complete |
+| 69–73 | Remittances (offices/shifts, allocate, Unknown TTS auto-confirm, Allocate To Stocks, Excel export) | Complete |
+| 72 | Commission claims | Complete |
+| 74–76 | Config: yards, shipping companies, freight charges | Complete |
+| 77–78 | Bulk reserve; customer auto ID (~48001+) | Complete |
+| Product UX | PWA **Anshatradingco APP**, reports hub + Excel, multi-currency breakdowns, stock invoice badges, Tawk, subscribers | Complete |
 
 Module matrix: [docs/Modules.md](./docs/Modules.md). Full audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md).
 
@@ -77,7 +81,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migrations include Phase 53–57 (payroll deletes, field agents/HR, accounts/proforma, auction sheets, vehicle class/machinery) and earlier ERP phases under `supabase/migrations/`. See [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md).
+Latest migrations include Phase **72–78** (commissions, remittance auto-confirm, yards, shipping companies, freight charges, bulk reserve, customer auto ID) and earlier ERP phases under `supabase/migrations/`. See [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md).
 
 ## Phase 4: global SEO and exporter schema
 

@@ -2,47 +2,53 @@
 
 ## Product (current)
 
-ANSHA Trading is a live global vehicle and automotive-parts exporter site plus a staff operations workspace.
+ANSHA Trading is a live global vehicle and automotive-parts exporter site plus a staff ERP and customer portal on one Next.js + Supabase stack.
 
-Canonical public site: `https://www.anshatradingco.com`.
+Canonical public site: `https://www.anshatradingco.com`.  
+Live checkpoint: [CURRENT_STATE.md](./CURRENT_STATE.md). Module matrix: [Modules.md](./Modules.md).
 
 ### Public outcomes
 
-- Search and browse published parts and vehicles
-- Submit inquiries and part-sourcing requests
-- Read blog/about/contact
-- View official banking details
-- Verify invoice authenticity by QR UUID
+- Search and browse published **available** parts, vehicles, and machinery
+- Submit inquiries and part-sourcing requests; cart/favorites (localStorage)
+- Deals, markets (70 destinations), blog, reviews, about/contact
+- View official banking details; verify invoice authenticity by QR UUID
+- Installable PWA (**Anshatradingco APP**) with optional Web Push; Tawk widget when configured
 
 ### Staff outcomes
 
-- Manage catalog, customers, invoices, remittances, imports
-- Internal chat, mail, and notifications
-- Assign request tickets (intake, BL, inspection, shipping) with due dates and private ticket files
-- Link team chat conversations to vehicles, customers, invoices, and requests
-- Provision staff users (admin role)
+- Catalog (owned vs auction pools), purchase (PO/GRN), stock ops, export shipments, landed cost
+- Customers (auto Customer ID), reservations (incl. bulk), invoices, remittances, commissions
+- Finance: bank, expenses, GL, VAT, payroll/EOS, **reports hub** (7 ops + financial) + Excel
+- Configuration: export masters, yards, shipping companies, freight charges
+- Inbox: inquiries, requests, Team Chat (+ presence), mail, email, WhatsApp, Live chat (admin+manager)
+- Marketing: blog, offers, campaigns, PWA subscribers, trade config
+- HR MVP; role-gated workspace (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`)
+- AI ops assistant (optional keys); audit log (admin)
+
+### Customer portal outcomes
+
+- Login via `customer_profiles`; own reservations, non-draft invoices, SOA (incl. Buying details)
 
 ### Out of current product
 
-Native admin rewrite, AI automation, outbound email.
-
-Customer portal first slice is live (Phase 23): login + own invoices only. Public catalog is installable as a PWA (Phase 22) with Web Push for insights and deals (Phase 24). Capacitor shell MVP wraps the public production URL for iOS/Android (Phase 44); see `docs/Mobile.md`. Staff ERP remains online-only and is not cached offline.
+- Native admin rewrite (Capacitor wraps **public** URL only)
+- Live Open Banking OAuth (CSV bank import stub only)
+- Full ESP automation (open/click tracking, drip cron)
+- Separate email newsletter list
+- Automated E2E/unit test suite
 
 ## Users
 
 - Anonymous buyers/importers
-- Staff (`admin_profiles`)
-- Admin staff (user management)
+- Staff (`admin_profiles` with roles above)
+- Portal customers (`customer_profiles` → `customers`)
 
-Customers in `customers` are CRM records, not logins.
+CRM `customers` are not logins until portal access is enabled by an admin.
 
 ## Constraints
 
-- Production data must be preserved
-- One business database
-- Incremental change; no full rewrite
-- Documented in `docs/Rules.md`
-
-## Later vision (not committed scope)
-
-Unified platform: public website + staff ERP + customer portal + PWA/native wrappers + notifications + export operations + AI, still on this Supabase project. See `docs/Roadmap.md`.
+- Single Supabase project (`ydrnilquojvalhgifest`); no second database for a new surface
+- RLS is the API; no Server Actions
+- Forward-only migrations; never reset production
+- Secrets never in `NEXT_PUBLIC_*` or docs

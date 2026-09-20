@@ -15,6 +15,13 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - Field agents / HR / accounts (Phases 54–55): roles `sales`|`freelancer`|`manager`|`accounts`; HR `/admin/hr*`; draft proforma workflow
 - Auction sheets (Phase 56): `vehicle_photos.is_auction_sheet` — public RLS hides; admin badge + lightbox
 - Heavy machinery & trucks (Phase 57): `vehicles.vehicle_class` + public `/machinery` + admin class filters (`lib/vehicle-class.ts`)
+- Remittances module (Phases 69–73): offices/shifts on users; Unknown TTS auto-confirm; Allocate To Stocks; Excel/CSV export
+- Commissions (Phase 72): `commission_claims` + `/admin/commissions`
+- Config masters (Phases 74–76): `auction_yards`, `shipping_companies`, `freight_charges`
+- Bulk reserve (Phase 77): `bulk_reserve_stock` from catalog lists
+- Customer auto ID (Phase 78): `customer_code_seq` (~48001+) + consignee fields
+- Reports hub: `/admin/reports` (7 operational + financial) + Excel (`lib/reports/*`, `lib/export-excel.ts`)
+- Multi-currency display: `lib/money.ts` `formatMoneyBreakdown` (no FX mixing)
 - Home featured rotation: `lib/featured-rotation.ts` (10-minute buckets; 8 parts / 4 vehicles)
 - Tawk.to: public widget + admin Live chat Needs attention (**admin + manager only**; Phase 58 webhook mirror)
 - PWA subscribers admin: `/admin/subscribers` (ops) over `push_subscriptions`
@@ -41,7 +48,7 @@ Browser or Capacitor WebView
 ## Dependency direction
 
 - UI (`app/`, `components/`) may call `lib/supabase` and domain helpers
-- Domain helpers (`lib/stock.ts`, `lib/catalog-image.ts`, `lib/site-config.ts`, `lib/vehicle-lifecycle.ts`, `lib/workspace-requests.ts`, `lib/chat-links.ts`, `lib/featured-rotation.ts`, `lib/vehicle-photos.ts`, `lib/vehicle-class.ts`) must not import UI
+- Domain helpers (`lib/stock.ts`, `lib/catalog-image.ts`, `lib/site-config.ts`, `lib/vehicle-lifecycle.ts`, `lib/workspace-requests.ts`, `lib/chat-links.ts`, `lib/featured-rotation.ts`, `lib/vehicle-photos.ts`, `lib/vehicle-class.ts`, `lib/money.ts`, `lib/export-excel.ts`, `lib/reports/*`, `lib/stock-linked-invoice.ts`, `lib/freight-charges.ts`) must not import UI
 - Privileged Auth administration stays in `supabase/functions/*`
 - Schema changes stay in `supabase/migrations/`
 - Do not add a second ORM or a second database for a new surface
