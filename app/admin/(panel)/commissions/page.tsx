@@ -235,7 +235,10 @@ export default function AdminCommissionsPage() {
       p_claimant_id: null,
     });
     setClaimBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success('Commission claim submitted.');
     setClaimOpen(false);
     setClaimStockId('');

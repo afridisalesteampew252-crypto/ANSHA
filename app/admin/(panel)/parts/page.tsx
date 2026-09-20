@@ -313,7 +313,10 @@ export default function AdminPartsPage() {
       p_claimant_id: null,
     });
     setActionBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success('Commission claim submitted.');
     setClaimTarget(null);
   }
@@ -332,7 +335,10 @@ export default function AdminPartsPage() {
       })
       .eq('id', requesterTarget.id);
     setActionBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success('Requester updated.');
     setRequesterTarget(null);
     await fetchParts();
