@@ -12,12 +12,13 @@ App name: **Anshatradingco APP** (`app/manifest.ts` + Apple web-app title).
 - **Update available — Refresh** banner when a new service worker is waiting (`SKIP_WAITING`).
 - Install UX: sticky banner, header/footer **Install app**, iOS “Add to Home Screen” hints when `beforeinstallprompt` is unavailable.
 - Web Push opt-in (`components/pwa/push-opt-in.tsx`) for deals / insights topics → `push_subscriptions`.
-- Staff send via Edge `send-web-push` (Deno `@negrel/webpush`). Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — must be real URL-safe base64 matching Vercel `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (no `…` placeholders).
+- Staff can **Subscribe this device** and **Send test push** on Marketing → PWA subscribers (`/admin/subscribers`).
+- Staff send via Edge `send-web-push` (Deno `@negrel/webpush`). Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — must be real URL-safe base64 matching Vercel `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (no `…` placeholders). Client send helpers no-op when the public key is unset. Production Vercel + Edge already hold a matching pair; redeploy bakes `NEXT_PUBLIC_VAPID_PUBLIC_KEY`.
 - Brand icons / favicon regenerate via `scripts/generate-brand-icons.mjs` → `/favicon.ico`, `/icons/*`, and default OG `/images/og-default.jpg` (also used by Search / social share — see `docs/Deployment.md` SEO section).
 
-Files: `public/sw.js`, `components/pwa/*`, `app/manifest.ts`, `app/api` excluded from SW cache.
+Files: `public/sw.js`, `components/pwa/*`, `lib/pwa-push-subscribe.ts`, `lib/web-push.ts`, `app/manifest.ts`, `app/api` excluded from SW cache.
 
-Admin Marketing → **PWA subscribers** (`/admin/subscribers`) lists opt-ins.
+Admin Marketing → **PWA subscribers** (`/admin/subscribers`) lists opt-ins and offers staff subscribe + test.
 
 ## Later ideas
 

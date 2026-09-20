@@ -1,13 +1,28 @@
 import { siteConfig } from '@/lib/site-config';
+import { isWebPushConfigured } from '@/lib/pwa-push-subscribe';
 
 export type PushTopic = 'insights' | 'deals' | 'all';
+
+export type SendWebPushResult = {
+  sent: number;
+  failed: number;
+  subscribers: number;
+  removed_stale: number;
+  skipped?: boolean;
+};
+
+export { isWebPushConfigured };
 
 export async function sendWebPush(input: {
   topic: PushTopic;
   title: string;
   body: string;
   url: string;
-}) {
+}): Promise<SendWebPushResult> {
+  if (!isWebPushConfigured()) {
+    return { sent: 0, failed: 0, subscribers: 0, removed_stale: 0, skipped: true };
+  }
+
   const { supabase } = await import('@/lib/supabase/client');
   const { data, error } = await supabase.functions.invoke('send-web-push', {
     body: {
@@ -24,5 +39,5 @@ export async function sendWebPush(input: {
   if (error || bodyError) {
     throw new Error(bodyError || error?.message || 'Push send failed.');
   }
-  return data as { sent: number; failed: number; subscribers: number; removed_stale: number };
+  return data as SendWebPushResult;
 }

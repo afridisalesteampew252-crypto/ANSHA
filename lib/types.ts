@@ -317,6 +317,11 @@ export interface AdminProfile {
   is_active: boolean;
   /** Present after phase_60 presence migration; null/undefined when never seen. */
   last_seen_at?: string | null;
+  /**
+   * Phase 66: stock_origin values a manager may see/manage.
+   * Empty array = no inventory access. Ignored for non-manager roles.
+   */
+  allowed_stock_origins?: StockOrigin[] | string[] | null;
   created_at: string;
 }
 
@@ -445,7 +450,7 @@ export interface SiteOffer {
 }
 
 
-/** Phase 49 — marketing campaign records (ops-only MVP). */
+/** Phase 49 — marketing campaign records (ops-only MVP). Phase 66 adds audience + links + sent_count. */
 export type MarketingCampaignChannel = 'push' | 'email' | 'offer';
 export type MarketingCampaignStatus = 'draft' | 'scheduled' | 'sent';
 
@@ -460,6 +465,17 @@ export type MarketingCampaignPayload = {
   offer_title?: string;
   summary?: string | null;
   href?: string;
+  /** Audience: customer countries (email segment). */
+  audience_countries?: string[];
+  /** Audience hint: stock origins featured in link / copy (not a separate subscriber list). */
+  audience_stock_origins?: string[];
+  blog_post_id?: string;
+  blog_slug?: string;
+  blog_title?: string;
+  vehicle_id?: string;
+  vehicle_title?: string;
+  part_id?: string;
+  part_name?: string;
   [key: string]: unknown;
 };
 
@@ -470,6 +486,8 @@ export interface MarketingCampaign {
   status: MarketingCampaignStatus;
   payload: MarketingCampaignPayload;
   sent_at: string | null;
+  /** Phase 66: successful delivery count (devices or emails). No open tracking. */
+  sent_count?: number;
   created_by: string | null;
   created_at: string;
   updated_at: string;

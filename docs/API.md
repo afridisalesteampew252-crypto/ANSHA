@@ -133,8 +133,9 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - Caller must exist in `admin_profiles` (admin or staff)
 - Body: `{ topic: 'insights'|'deals'|'all', title, body, url }`
 - Sends Web Push to rows in `push_subscriptions` filtered by topic flags
-- Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, optional `VAPID_SUBJECT`
+- Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, optional `VAPID_SUBJECT` (must match Vercel `NEXT_PUBLIC_VAPID_PUBLIC_KEY`)
 - Removes stale endpoints (HTTP 404/410)
+- Staff verify path: `/admin/subscribers` Subscribe this device + Send test push; Next.js helpers no-op when public key unset
 
 
 ### `send-whatsapp`
@@ -159,10 +160,13 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - Missing API key → HTTP 503 with configuration error (no silent fail)
 - Also invoked from `/admin/campaigns` (Phase 49) for email-channel campaigns
 
-### Marketing campaigns (Phase 49)
+### Marketing campaigns (Phase 49 + 66)
 
 - Table `marketing_campaigns` (ops RLS); admin UI `/admin/campaigns`
-- Send now: channel `push` → `send-web-push`; `email` → `send-outbound-email`; `offer` → `send-web-push` topic `deals` for linked `site_offers` row
+- Payload may include audience countries, stock-origin hints, blog/vehicle/part links
+- Send now: channel `push` → `send-web-push`; `email` → `send-outbound-email` (single or country segment); `offer` → `send-web-push` topic `deals`
+- `sent_count` increments on successful deliveries; no open/click events
+- Email requires Edge `RESEND_API_KEY` (HTTP 503 with clear error when missing — no fake sends)
 - No new Edge Function; not list blast / drip automation
 
 ### `remind-request-dues`

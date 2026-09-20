@@ -5,63 +5,22 @@ import { Bell, BellOff, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/lib/supabase/client';
+import { ensurePushSubscription, getVapidPublicKey, isWebPushConfigured } from '@/lib/pwa-push-subscribe';
 
 const DISMISS_KEY = 'ansha-push-prompt-dismissed';
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64);
-  const output = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i += 1) output[i] = raw.charCodeAt(i);
-  return output;
-}
-
-async function saveSubscription(
-  subscription: PushSubscription,
-  topics: { insights: boolean; deals: boolean }
-) {
-  const json = subscription.toJSON();
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-    throw new Error('Browser did not return a complete push subscription.');
-  }
-  await supabase.from('push_subscriptions').delete().eq('endpoint', json.endpoint);
-  const { error } = await supabase.from('push_subscriptions').insert({
-    endpoint: json.endpoint,
-    p256dh: json.keys.p256dh,
-    auth: json.keys.auth,
-    notify_insights: topics.insights,
-    notify_deals: topics.deals,
-    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 300) : null,
-  });
-  if (error) throw error;
-}
-
-async function ensureSubscription(vapidPublic: string) {
-  const registration = await navigator.serviceWorker.ready;
-  const existing = await registration.pushManager.getSubscription();
-  const subscription =
-    existing ||
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidPublic),
-    }));
-  await saveSubscription(subscription, { insights: true, deals: true });
-}
 
 export function PushOptIn() {
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
-  const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
+  const vapidReady = isWebPushConfigured();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    if (!vapidPublic) return;
+    if (!vapidReady) return;
 
     if (Notification.permission === 'granted') {
-      void ensureSubscription(vapidPublic).catch(() => {
+      void ensurePushSubscription().catch(() => {
         // Silent: visitor may be offline or RLS not applied yet.
       });
       return;
@@ -70,9 +29,9 @@ export function PushOptIn() {
     if (Notification.permission === 'denied') return;
     if (localStorage.getItem(DISMISS_KEY) === '1') return;
     setVisible(true);
-  }, [vapidPublic]);
+  }, [vapidReady]);
 
-  if (!visible || !vapidPublic) return null;
+  if (!visible || !vapidReady) return null;
 
   const dismiss = () => {
     localStorage.setItem(DISMISS_KEY, '1');
@@ -82,13 +41,26 @@ export function PushOptIn() {
   const enable = async () => {
     setBusy(true);
     try {
+      if (!getVapidPublicKey()) {
+        toast.message('Push alerts are not configured yet.');
+        dismiss();
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         toast.error('Notifications were blocked. You can enable them in browser settings.');
         dismiss();
         return;
       }
-      await ensureSubscription(vapidPublic);
+      const result = await ensurePushSubscription();
+      if (!result.subscribed) {
+        toast.error(
+          result.reason === 'unsupported'
+            ? 'This browser does not support Web Push.'
+            : 'Push alerts are not configured yet.'
+        );
+        return;
+      }
       toast.success('You will get alerts for new insights and deals.');
       dismiss();
     } catch (error) {

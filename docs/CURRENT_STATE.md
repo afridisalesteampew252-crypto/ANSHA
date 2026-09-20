@@ -1,6 +1,6 @@
 # Current State
 
-Verified checkpoint: **2026-09-20** (admin UI polish on export masters / reserve / GRN + responsive shell; Phases **64–65**: invoice unallocate-delete + stock restore; `vehicles.stock_pool` owned vs auction stock + `/admin/auction-stock`; Phase 63 parts stock ops + reserve/RLS + export_shipment_parts + redesigned catalog lists; Phase 62 stock ops + export masters + VAT; Phase 61/61b Incoterms; Phase 58 Tawk + Phase 60 presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery).
+Verified checkpoint: **2026-09-20** (Phases **66–67** + VAPID ops path: deeper marketing + manager `allowed_stock_origins` + Users UI; portal `/portal/reservations` + `get_my_reservations`; admin subscribers Subscribe/Test + graceful VAPID no-op; Phases **64–65** invoice unallocate-delete + owned/auction stock pools; Phase 63 parts stock ops; Phase 62 stock ops + export masters + VAT; Phase 61/61b Incoterms; Phase 58 Tawk + Phase 60 presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery; admin UI polish).
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
@@ -11,15 +11,15 @@ Hosting: Vercel project `anshanew`
 | Area | Approx. done | Notes |
 |---|---|---|
 | Public catalog + SEO exporter site | **~96%** | Parts/vehicles/**machinery**/categories/blog+SEO/`/reviews`/offers/markets; FOB/C&F/CIF quote strip when set; **GSC verification meta**; favicon/OG; cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
-| Staff ERP (purchase → GL → VAT/payroll) | **~98%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**, **62–65**; owned vs auction vehicle pools; invoice unallocate-delete; vehicle + parts stock dashboards; export masters; field-agent reservation RLS; VAT Yes/No; doc-driven shipment status; **admin form polish** (Configuration / Reserve / Receive + `NativeSelect` + responsive shell) |
+| Staff ERP (purchase → GL → VAT/payroll) | **~98%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**, **62–65**, **66** manager location inventory; owned vs auction pools; invoice unallocate-delete; stock dashboards; export masters; field-agent RLS; VAT Yes/No; doc-driven shipment status; admin form polish |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror |
-| Marketing (offers, campaigns, PWA push, subscribers) | **~80%** | Push **Edge VAPID secrets** often invalid until re-set correctly |
-| Customer portal | **~75%** | Invoices + SOA; no remittance UX for customers |
-| PWA / Capacitor | **~85%** | Named **Anshatradingco APP**; install CTAs; Capacitor shell docs; SW precaches favicon |
+| Marketing (offers, campaigns, PWA push, subscribers) | **~93%** | Phase 66 campaigns (edit/audience/links/Resend test+segment/`sent_count`); subscribers Subscribe this device + Send test push; VAPID keys on Vercel + Edge (this deploy bakes `NEXT_PUBLIC_VAPID_PUBLIC_KEY`). Still no open tracking / cron ESP |
+| Customer portal | **~92%** | Invoices + SOA + **reservations** (`/portal/reservations`, `get_my_reservations` Phase 67); no remittance UX for customers |
+| PWA / Capacitor | **~88%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; graceful no-op when VAPID unset; Capacitor shell docs |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–65 + admin UI polish + stock loads + SEO/GSC) |
+| Docs (this set) | **~99%** | Audit refresh 2026-09-20 + Phases 66–67 + VAPID |
 
-**Overall product maturity (shipping ERP + public exporter):** roughly **92–95%** of the Phase 1–65 roadmap that was chosen and built. Core MVP (public catalog + staff purchase→sales→export→finance) is **shipped**. Remaining work is operator secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, automated tests, and incremental UX — not a greenfield rewrite.
+**Overall product maturity (shipping ERP + public exporter):** roughly **94–96%** of the Phase 1–67 roadmap that was chosen and built. Core MVP is **shipped**. Remaining: Auth leaked-password toggle, bank live feeds, full ESP automation, HR location-scoped approvals, automated tests — not a greenfield rewrite.
 
 ## What exists now (high signal)
 
@@ -34,10 +34,14 @@ Hosting: Vercel project `anshanew`
 - **SEO / Search:** root `verification.google` (Search Console HTML tag); stable `/favicon.ico` + `/icons/favicon-48.png`; default OG `/images/og-default.jpg` on home + listing layouts; helpers in `lib/seo.ts`
 - **Incoterm quotes (Phase 61):** public part/vehicle detail show FOB / C&F / CIF when catalog columns are set (`IncotermQuoteStrip`)
 - Invoice verify (`/verify/invoice/[code]`): shows document `price_term` + `shipment_term` and per-line price term when present (Phase 61b)
-- PWA: manifest **Anshatradingco APP**, SW, install CTAs, push opt-in
+- PWA: manifest **Anshatradingco APP**, SW, install CTAs, push opt-in (`lib/pwa-push-subscribe.ts`); client helpers no-op when `NEXT_PUBLIC_VAPID_PUBLIC_KEY` unset
 - Header: live Dubai time + AED→USD/EUR/JPY/PKR via `/api/fx`
 - Vehicle galleries hide auction-sheet photos (`vehicle_photos.is_auction_sheet`); public RLS excludes them
 - **Tawk.to** public chat widget (`components/public/tawk-to-chat.tsx`) when `NEXT_PUBLIC_TAWK_PROPERTY_ID` + `NEXT_PUBLIC_TAWK_WIDGET_ID` are set
+
+### Customer portal (`/portal`)
+- **Reservations** (`/portal/reservations`) — own reserved vehicles/parts + open/proforma-linked sold rows via `get_my_reservations` (Phase 67)
+- Invoices (non-draft) + account statement SOA (`get_my_customer_soa`)
 
 ### Staff ERP (`/admin`)
 - Catalog (parts / **owned vehicles** / **Auction stock** / **Machinery & trucks** filter), customers, reservations, invoices, remittances
@@ -54,13 +58,13 @@ Hosting: Vercel project `anshanew`
 - Requests, chat, mail, notifications
 - **Team Chat** (`/admin/chat`) — green online dots + last-seen labels (Phase 60: Realtime presence channel `workspace-presence`, `admin_profiles.last_seen_at`, `touch_admin_last_seen`, `AdminPresenceProvider`)
 - **Live chat** (`/admin/live-chat`) — Needs attention list + open-count badge + Tawk open shortcuts; **`admin` + `manager` only** (`canAccessLiveChat`; nav + `proxy.ts`). Not staff / sales / freelancer / accounts. Reply in Tawk dashboard; dismiss clears ANSHA only. Setup: `docs/Tawk.md`.
-- Marketing: blog (Write/HTML/Preview), offers, campaigns, **PWA subscribers**, trade config
+- Marketing: blog (Write/HTML/Preview), offers, campaigns (edit + audience + segment + `sent_count`), **PWA subscribers** (Subscribe this device + Send test push), trade config
 - Analytics, AI assistant, audit log (admin SELECT), WhatsApp, outbound email
 - Admin chrome: Pakistan + Dubai clocks + FX strip; **responsive shell** (`admin-shell` / `admin-table-scroll`, mobile nav body lock); shared **`NativeSelect`** + SearchableSelect chevron polish on Configuration / Reserve / Receive Stock forms
-- Roles: `admin` | `staff` | `sales` | `freelancer` | `manager` | `accounts` (account-admin gates; Phases 54–55)
+- Roles: `admin` | `staff` | `sales` | `freelancer` | `manager` | `accounts` (account-admin gates; Phases 54–55, **66** manager locations)
 - Field agents (`sales` / `freelancer`): catalog lists, own-book customers, reserve, **draft proforma only**; Phase 62–63 RLS — see **available** + **own `reserved_by`** vehicles **and parts** only
 - Accounts: receivables (approve draft→sent), remittances, related finance views — not full admin
-- HR MVP: shift locations, Morning/Night assignments, attendance (`/admin/hr*`); manager = HR viewer
+- HR MVP: shift locations, Morning/Night assignments, attendance (`/admin/hr*`); manager = HR viewer + **location-scoped inventory/ops** (`allowed_stock_origins`)
 - Catalog audit: part/vehicle activity in `audit_logs` (admin SELECT only)
 - Vehicles: `stock_pool` (Phase 65); `vehicle_class` / `equipment_category` / `operating_hours` (Phase 57); auction-sheet badge + lightbox; redesigned admin cards/lists (Phase 63) shared by owned + auction lists
 - Parts: redesigned `/admin/parts` cards/list (Phase 63); stock ops parity with vehicles
@@ -91,36 +95,33 @@ Script: `scripts/import-japan-stock-vehicles.mjs` (+ one-off batch runners under
 `admin-create-user`, `admin-update-user`, `portal-create-access`, `send-web-push`, `send-outbound-email`, `send-whatsapp`, `remind-request-dues`, `tawk-webhook` (Phase 58; deploy with `--no-verify-jwt`)
 
 ### Migrations
-Through **Phase 65**. Phase 65: `vehicles.stock_pool` (`owned`|`auction_third_party`); Japan rows backfilled to auction (`20260920230000_phase_65_vehicle_stock_pool.sql`). Phase 64: `unallocate_invoice_remittances`, `delete_invoice_safely` (restore reserved/sold stock), `unallocate_and_delete_invoice` (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`). Phase 63: parts `reserved_by` + reservation VAT/ETD/ETA/requester; field-agent scoped parts SELECT; reserve/proforma/release RPCs for parts; `export_shipment_parts` + `create_export_shipment` `part_ids`; requester_role includes `freelancer` (`20260920210000_phase_63_parts_stock_ops_sales_scope.sql`). Export master seed: `20260920210000_seed_export_master_options.sql` (+ `scripts/seed-export-masters.sql`). Phase 62: vehicle assignment + export masters + VAT + stock ops. Phase 61/61b: export docs + Incoterms. Earlier: Phase 60 presence; Phase 58 Tawk; Phase 53–57. **Migrations already applied on remote** — app deploy ships code only. See `supabase/migrations/`.
+Through **Phase 67**. Phase 67: portal own-reservation RLS + `get_my_reservations` (`20260920250000_phase_67_portal_reservations.sql`). Phase 66: `marketing_campaigns.sent_count`; `admin_profiles.allowed_stock_origins` + manager RLS helpers (`20260920240000_phase_66_marketing_manager_locations.sql`). Phase 65: `vehicles.stock_pool` (`owned`|`auction_third_party`); Japan backfill (`20260920230000_phase_65_vehicle_stock_pool.sql`). Phase 64: `unallocate_invoice_remittances`, `delete_invoice_safely`, `unallocate_and_delete_invoice` (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`). Phase 63: parts stock ops + field-agent parts RLS + `export_shipment_parts` (`20260920210000_phase_63_parts_stock_ops_sales_scope.sql`). Export master seed: `20260920210000_seed_export_master_options.sql`. Phase 62: vehicle assignment + export masters + VAT. Phase 61/61b: export docs + Incoterms. Earlier: Phase 60 presence; Phase 58 Tawk; Phase 53–57. **Migrations already applied on remote** — app deploy ships code only. See `supabase/migrations/`.
 
 ## Known gaps / operator actions
 
-1. **Google Search Console** — after this deploy, confirm ownership via the HTML tag already in `app/layout.tsx` (`verification.google`), then **Request indexing** for key URLs. Favicon in SERPs can take days to update.
-2. **VAPID Edge secrets** — push fails with invalid base64 if secrets were set with placeholders. Re-set real pair matching Vercel `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (see `docs/Deployment.md` / `docs/PWA.md`).
+1. **Google Search Console** — confirm ownership via HTML tag in `app/layout.tsx` (`verification.google`), then **Request indexing** for key URLs. Favicon in SERPs can take days.
+2. **VAPID verify** — matching keys are already on Vercel (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`) and Supabase Edge (`VAPID_*`). This production deploy bakes the public key into the browser bundle. Confirm via `/admin/subscribers` → Subscribe this device → Send test push (`Push sent to N`). Client/send helpers no-op cleanly if the public key is ever unset. Do not commit `.env.local`.
 3. **Supabase Auth leaked-password protection** — enable in dashboard (not code).
 4. **Optional secrets** — Resend, WhatsApp, AI Gateway/OpenAI if those UIs should send.
-5. **Tawk webhook (Phase 58)** — code + migration + Edge function are in-repo. Confirm Supabase secret `TAWK_WEBHOOK_SECRET`, function deploy `--no-verify-jwt`, and Tawk dashboard Webhooks (Chat Start / Chat End / New ticket) point at `…/functions/v1/tawk-webhook`. If Needs attention stays empty, the dashboard webhook step is the usual gap — see `docs/Tawk.md`.
+5. **Tawk webhook (Phase 58)** — confirm `TAWK_WEBHOOK_SECRET`, function deploy `--no-verify-jwt`, and Tawk dashboard webhooks → `…/functions/v1/tawk-webhook`. Empty Needs attention usually means the dashboard webhook step — see `docs/Tawk.md`.
 6. **Bank feeds** — CSV/manual only; no live Open Banking OAuth.
-7. **Email newsletter list** — Marketing subscribers = `push_subscriptions` only (no separate email list table).
+7. **Email newsletter list** — Marketing subscribers = `push_subscriptions` only. Campaign email segment uses `customers.email` + country.
 8. **Automated E2E/unit tests** — still thin.
 9. **Native admin app** — not built; Capacitor wraps public URL only.
-10. **Manager location scope** — HR viewer is global in v1; location-scoped approvals deferred.
+10. **Manager HR location scope** — inventory/ops scoped by `allowed_stock_origins` (Phase 66); HR shift locations remain a global viewer (approvals deferred).
+11. **Edge functions** — after this ship, ensure `admin-create-user` / `admin-update-user` are redeployed so Users UI persists `allowed_stock_origins`.
 
 ## Next recommended steps (safe order)
 
 1. In Google Search Console: verify ownership → Request indexing (home, `/parts`, `/vehicles`, `/machinery`, `/blog`, `/reviews`).
-2. Fix VAPID Edge secrets and verify Deals push toast (`Push sent to N`).
+2. After this deploy: `/admin/subscribers` Subscribe this device → Send test push; spot-check Deals/blog optional push.
 3. Enable leaked-password protection.
 4. Confirm Resend / WhatsApp / AI keys if those channels are in use.
-5. Verify Tawk webhook end-to-end (test chat → Needs attention row); rotate Tawk account password if it was ever shared in chat.
-6. Spot-check Team Chat presence: two admin sessions → green dots + last-seen when one leaves.
-7. Spot-check Phase 61: export shipment PDF uploads; reservation price/shipment/inspection; invoice print + verify terms; public FOB/C&F/CIF strip.
-8. Spot-check Phase 62: `/admin/stock` + Arrival Watch; Configuration export masters; field-agent only sees own reserved units; VAT Yes/No on reserve/proforma; BOL/waybill auto-advancing shipment status.
-9. Spot-check Phase 63: `/admin/parts/stock`; reserve/release parts; field-agent parts RLS; export shipment with parts; locked requester fields for sales/freelancer; redesigned `/admin/parts` + `/admin/vehicles`.
-10. Spot-check Phase 64: invoice delete blocked while allocations exist; Unallocate then Delete (or Unallocate & delete); linked vehicle/part returns to available.
-11. Spot-check Phase 65: `/admin/vehicles` shows owned only; `/admin/auction-stock` shows Japan/third-party auction; transfer to owned / mark auction; stock ops stay owned-only.
-12. Spot-check admin UI polish: Configuration search/inactive filter; Reserve + Receive Stock NativeSelect forms on phone + desktop; invoice/stock filter bars wrap cleanly.
-13. Add Playwright smoke for public catalog + admin login when ready for quality gates.
+5. Verify Tawk webhook end-to-end (test chat → Needs attention row).
+6. Spot-check Phase 66: campaigns edit/audience/segment; Users assign manager stock locations; manager sees only assigned origins.
+7. Spot-check Phase 67: portal customer with reserved stock → `/portal/reservations` list + invoice links.
+8. Spot-check Team Chat presence; Phase 61–65 stock/invoice/auction flows as needed.
+9. Add Playwright smoke for public catalog + admin login when ready for quality gates.
 
 ## Doc map
 

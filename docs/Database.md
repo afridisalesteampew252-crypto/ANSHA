@@ -11,15 +11,15 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, Phase 61/61b (export docs + Incoterms), Phase 62 (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`), Phase 63 parts stock ops, Phase 64 invoice unallocate-delete (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`), and Phase 65 vehicle stock pool (`20260920230000_phase_65_vehicle_stock_pool.sql`). Phases 61–65 are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
+Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, Phase 61/61b (export docs + Incoterms), Phase 62 (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`), Phase 63 parts stock ops, Phase 64 invoice unallocate-delete (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`), Phase 65 vehicle stock pool (`20260920230000_phase_65_vehicle_stock_pool.sql`), Phase 66 marketing `sent_count` + manager `allowed_stock_origins` (`20260920240000_phase_66_marketing_manager_locations.sql`), and Phase 67 portal reservations (`20260920250000_phase_67_portal_reservations.sql`). Phases 61–67 are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
 
 ## Entity groups
 
 ### Identity
 
-`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`), `email`, `avatar_url`, `is_active`, `created_at`, Phase 60 `last_seen_at` (UTC heartbeat for Team Chat offline labels). RPC `touch_admin_last_seen()` (workspace users only).
+`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`), `email`, `avatar_url`, `is_active`, `created_at`, Phase 60 `last_seen_at` (UTC heartbeat for Team Chat offline labels), Phase 66 `allowed_stock_origins` (`text[]` for managers; empty = no inventory). RPC `touch_admin_last_seen()` (workspace users only).
 
-`customer_profiles` — PK `id` = `auth.users.id`, unique `customer_id` → `customers`. Portal identity only; never place portal users in `admin_profiles`.
+`customer_profiles` — PK `id` = `auth.users.id`, unique `customer_id` → `customers`. Portal identity only; never place portal users in `admin_profiles`. Phase 67: portal customers SELECT own reserved/sold stock (`reserved_customer_id`) + photos; RPC `get_my_reservations()` (sanitized list with linked non-draft invoices).
 
 ### Catalog
 
@@ -56,9 +56,13 @@ Latest migrations in the repository include Phase 51–52 (offers / trade config
 - `export_market_configs` — per-country export market policy / notes (Phase 52); drives `/markets/[code]`
 - `site_trade_settings` — FX reference rates + freight notes (Phase 52); admin `/admin/trade-config`
 
-### Marketing campaigns (Phase 49)
+### Marketing campaigns (Phase 49 + 66)
 
-- `marketing_campaigns` ? ops-only campaign records: `name`, `channel` (`push`|`email`|`offer`), `status` (`draft`|`scheduled`|`sent`), `payload` jsonb, `sent_at`. Send now reuses Edge `send-web-push` / `send-outbound-email` (offer channel ? deals push). Not ESP automation; `scheduled` is a status label only.
+- `marketing_campaigns` — ops-only: `name`, `channel` (`push`|`email`|`offer`), `status` (`draft`|`scheduled`|`sent`), `payload` jsonb (audience countries/origins, blog/vehicle/part links), `sent_at`, `sent_count` (Phase 66 — delivery count only, no opens). Send hooks: `send-web-push` / `send-outbound-email` (test + country segment). Not full ESP; `scheduled` is a label only.
+
+### Manager location scope (Phase 66)
+
+- `admin_profiles.allowed_stock_origins` — `text[]` of `stock_origin` values for `role = manager`. Empty = no inventory rows. Helpers: `private.is_location_manager()`, `private.manager_stock_origins()`, `private.can_access_stock_origin(text)`. RLS filters vehicles/parts; managers get SELECT on export shipments linked to in-scope inventory.
 
 ### Public intake
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { Bell, Loader2, RefreshCw, Send, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { ensurePushSubscription, isWebPushConfigured } from '@/lib/pwa-push-subscribe';
+import { sendWebPush } from '@/lib/web-push';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile, PushSubscriptionRow } from '@/lib/types';
 
@@ -44,6 +46,10 @@ export default function AdminSubscribersPage() {
   const [rows, setRows] = useState<PushSubscriptionRow[]>([]);
   const [topic, setTopic] = useState<TopicFilter>('all');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [subscribing, setSubscribing] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const vapidReady = isWebPushConfigured();
+
 
   useEffect(() => {
     void (async () => {
@@ -111,6 +117,76 @@ export default function AdminSubscribersPage() {
     setDeletingId(null);
   };
 
+  const subscribeThisDevice = async () => {
+    if (!vapidReady) {
+      toast.message('Set NEXT_PUBLIC_VAPID_PUBLIC_KEY first (see docs/Deployment.md).');
+      return;
+    }
+    setSubscribing(true);
+    try {
+      if (!('Notification' in window)) {
+        toast.error('This browser does not support notifications.');
+        return;
+      }
+      const permission =
+        Notification.permission === 'granted'
+          ? 'granted'
+          : await Notification.requestPermission();
+      if (permission !== 'granted') {
+        toast.error('Notifications were blocked. Enable them in browser settings.');
+        return;
+      }
+      const result = await ensurePushSubscription();
+      if (!result.subscribed) {
+        toast.error(
+          result.reason === 'unsupported'
+            ? 'This browser does not support Web Push.'
+            : 'VAPID public key is not configured.'
+        );
+        return;
+      }
+      toast.success('This device is subscribed for deals and insights.');
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not subscribe this device.');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  const sendTestPush = async () => {
+    if (!vapidReady) {
+      toast.message('Set NEXT_PUBLIC_VAPID_PUBLIC_KEY first (see docs/Deployment.md).');
+      return;
+    }
+    setTesting(true);
+    try {
+      const result = await sendWebPush({
+        topic: 'all',
+        title: 'ANSHA test push',
+        body: 'Web Push is working. You can close this notification.',
+        url: '/admin/subscribers',
+      });
+      if (result.skipped) {
+        toast.message('Push skipped — VAPID public key is not set.');
+        return;
+      }
+      toast.success(
+        result.sent > 0
+          ? `Test push sent to ${result.sent} device${result.sent === 1 ? '' : 's'}.`
+          : `No subscribers received the test (${result.subscribers} stored). Subscribe this device first.`
+      );
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Test push failed. Check Supabase Edge VAPID_* secrets.'
+      );
+    } finally {
+      setTesting(false);
+    }
+  };
+
   if (!allowed) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
@@ -126,14 +202,47 @@ export default function AdminSubscribersPage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Marketing</p>
           <h2 className="mt-1 text-2xl font-black tracking-tight">PWA / deal subscribers</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Browser push opt-ins from the public site (insights &amp; deals). There is no separate email newsletter table yet — this list is the live push audience.
+            Browser push opt-ins from the public site (insights &amp; deals). Staff can also subscribe this browser and send a test push when VAPID keys are set.
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Refresh
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void subscribeThisDevice()}
+            disabled={subscribing || !vapidReady}
+            title={vapidReady ? undefined : 'NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set'}
+          >
+            {subscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
+            Subscribe this device
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void sendTestPush()}
+            disabled={testing || !vapidReady}
+            title={vapidReady ? undefined : 'NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set'}
+          >
+            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Send test push
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {!vapidReady ? (
+        <div className="rounded-xl border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+          Web Push is idle until <code className="text-xs">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code> is set on Vercel /{' '}
+          <code className="text-xs">.env.local</code>, and matching <code className="text-xs">VAPID_*</code> secrets
+          are set on the <code className="text-xs">send-web-push</code> Edge Function. See{' '}
+          <span className="font-medium text-foreground">docs/Deployment.md</span>.
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>

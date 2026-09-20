@@ -6,6 +6,7 @@ import {
   isAccountsRole,
   isFieldAgentAllowedPath,
   isFieldAgentRole,
+  isManagerAllowedPath,
 } from '@/lib/admin-rbac';
 
 function getSupabaseConfig() {
@@ -21,16 +22,6 @@ function getSupabaseConfig() {
   }
 
   return { url, key };
-}
-
-function isManagerAllowedPath(pathname: string): boolean {
-  return (
-    pathname === '/admin/dashboard'
-    || pathname === '/admin/profile'
-    || pathname.startsWith('/admin/hr')
-    || pathname.startsWith('/admin/chat')
-    || pathname.startsWith('/admin/live-chat')
-  );
 }
 
 export async function proxy(request: NextRequest) {

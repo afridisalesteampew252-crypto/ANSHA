@@ -127,7 +127,13 @@ Done (Phase 64): invoice unallocate-then-delete — remittance allocations must 
 
 Done (Phase 65): vehicle stock pools — `vehicles.stock_pool` (`owned`|`auction_third_party`); `/admin/vehicles` = owned only; `/admin/auction-stock` = third-party auction; transfer actions; Japan-origin defaults/backfill to auction; stock ops filter owned. Migration `20260920230000_phase_65_vehicle_stock_pool.sql` (applied remote). Helpers: `lib/stock.ts` (`STOCK_POOLS`), shared `AdminVehiclesInventoryPage`.
 
+Done (Phase 66): deeper marketing v1 — campaign edit, audience countries + stock-origin hints, blog/featured inventory links, Resend send-test + send-to-segment, `marketing_campaigns.sent_count`. Manager location scope — `admin_profiles.allowed_stock_origins`, RLS on vehicles/parts, manager SELECT on matching export shipments, Users UI assignment, expanded manager nav/proxy. Migration `20260920240000_phase_66_marketing_manager_locations.sql` (applied remote). Redeploy Edge `admin-create-user` / `admin-update-user` for location persistence. Helpers: `lib/marketing-campaigns.ts`, `lib/manager-locations.ts`.
+
+Done (Phase 67): customer portal reservations — `/portal/reservations` lists vehicles/parts reserved for the signed-in customer (`reserved_customer_id` via `customer_profiles`); RLS SELECT on stock + photos; sanitized RPC `get_my_reservations` (active reserved first, then sold with open/proforma invoices + document links). Migration `20260920250000_phase_67_portal_reservations.sql` (applied remote).
+
 Also shipped (admin UI polish, post-65, no migration): Configuration export-masters list search + inactive filter; Reserve + Receive Stock form layout with shared `NativeSelect` (`components/ui/native-select.tsx`); SearchableSelect chevron alignment; admin shell responsive tweaks (`admin-shell` / `admin-table-scroll`, mobile nav overflow lock); invoice/stock/parts filter bars wrap on small screens.
+
+Also shipped (VAPID ops path, no migration): `/admin/subscribers` Subscribe this device + Send test push; shared `lib/pwa-push-subscribe.ts`; offers/blog/campaigns skip push gracefully when `NEXT_PUBLIC_VAPID_PUBLIC_KEY` unset; `.env.example` documents public vs Edge private keys. Production Vercel + Edge secrets already hold the matching pair — redeploy bakes the public key.
 
 ## 7. Mobile / PWA
 
@@ -143,11 +149,11 @@ Done (Phase 45): tighter staff vs account-admin RBAC — `private.is_account_adm
 
 Still open (not scheduled until chosen):
 
-- AI automation and deeper ESP features — all against this PostgreSQL project
+- Full ESP automation (open/click tracking, drip sequences, cron dispatcher) — Phase 66 is deeper campaigns v1 only
 - Live bank OAuth (beyond CSV stub)
-- Email newsletter list separate from push
+- Email newsletter list separate from push / customers segment
 - Automated E2E / unit test suite
-- Manager location-scoped HR approvals (Phase 54 v1 is global viewer)
+- Manager location-scoped HR approvals (Phase 66 scopes inventory `stock_origin`; HR shift locations still global)
 - Native admin rewrite (explicitly out of scope for Capacitor shell)
 
 Stop after the current module until the next one is approved.

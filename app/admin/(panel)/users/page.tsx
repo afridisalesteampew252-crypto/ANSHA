@@ -6,6 +6,8 @@ import { Loader2, Pencil, ShieldAlert, Upload, UserPlus, UserX, X } from 'lucide
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile, AdminRole } from '@/lib/types';
 import { ADMIN_ROLE_LABEL, ADMIN_ROLE_OPTIONS } from '@/lib/admin-rbac';
+import { STOCK_ORIGINS } from '@/lib/stock';
+import { sanitizeStockOrigins } from '@/lib/manager-locations';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +21,7 @@ type UserForm = {
   role: AdminRole;
   avatar_url: string;
   is_active: boolean;
+  allowed_stock_origins: string[];
 };
 
 const emptyForm: UserForm = {
@@ -28,6 +31,7 @@ const emptyForm: UserForm = {
   role: 'staff',
   avatar_url: '',
   is_active: true,
+  allowed_stock_origins: [],
 };
 
 export default function UsersPage() {
@@ -81,8 +85,21 @@ export default function UsersPage() {
       role: user.role,
       avatar_url: user.avatar_url || '',
       is_active: user.is_active !== false,
+      allowed_stock_origins: sanitizeStockOrigins(user.allowed_stock_origins),
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleOrigin = (value: string) => {
+    setForm((current) => {
+      const has = current.allowed_stock_origins.includes(value);
+      return {
+        ...current,
+        allowed_stock_origins: has
+          ? current.allowed_stock_origins.filter((o) => o !== value)
+          : [...current.allowed_stock_origins, value],
+      };
+    });
   };
 
   const uploadAvatar = async (file: File, id: string) => {
@@ -111,6 +128,7 @@ export default function UsersPage() {
           full_name: form.full_name.trim(),
           avatar_url: avatarUrl,
           is_active: form.is_active,
+          allowed_stock_origins: form.role === 'manager' ? form.allowed_stock_origins : [],
         },
       });
       if (error) {
@@ -153,6 +171,7 @@ export default function UsersPage() {
           avatar_url: user.avatar_url,
           is_active: user.is_active === false,
           password: '',
+          allowed_stock_origins: sanitizeStockOrigins(user.allowed_stock_origins),
         },
       });
       if (error || data?.error) {
@@ -178,7 +197,7 @@ export default function UsersPage() {
       <div>
         <h1 className="text-2xl font-bold">Admin users</h1>
         <p className="text-sm text-muted-foreground">
-          Create staff, sales, freelancer, accounts, or manager accounts; deactivate access; manage passwords.
+          Create staff, sales, freelancer, accounts, or manager accounts; assign manager stock locations; deactivate access.
         </p>
       </div>
 
@@ -226,6 +245,27 @@ export default function UsersPage() {
                   ))}
                 </select>
               </div>
+              {form.role === 'manager' ? (
+                <div className="space-y-2 rounded-lg border border-border p-3 md:col-span-2">
+                  <Label>Manager stock locations</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Managers only see and manage vehicles/parts with these stock origins. Leave empty to block inventory access until assigned.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {STOCK_ORIGINS.map((origin) => (
+                      <label key={origin.value} className="inline-flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          disabled={busy}
+                          checked={form.allowed_stock_origins.includes(origin.value)}
+                          onChange={() => toggleOrigin(origin.value)}
+                        />
+                        {origin.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               {editingId ? (
                 <label className="flex items-center gap-2 text-sm md:col-span-2">
                   <input
@@ -283,6 +323,16 @@ export default function UsersPage() {
                 <div className="min-w-0">
                   <p className="truncate font-medium">{user.full_name || 'Unnamed user'}</p>
                   <p className="truncate text-xs text-muted-foreground">{user.email || user.id}</p>
+                  {user.role === 'manager' ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Locations:{' '}
+                      {sanitizeStockOrigins(user.allowed_stock_origins).length
+                        ? sanitizeStockOrigins(user.allowed_stock_origins)
+                            .map((o) => STOCK_ORIGINS.find((s) => s.value === o)?.label || o)
+                            .join(', ')
+                        : 'none assigned'}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">

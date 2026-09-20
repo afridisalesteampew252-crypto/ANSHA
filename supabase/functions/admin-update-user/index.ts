@@ -50,6 +50,8 @@ Deno.serve(async (request) => {
     if (password && password.length < 8) return json(request, { error: 'Password must contain at least 8 characters.' }, 422);
     if (id === user.id && !isActive) return json(request, { error: 'You cannot deactivate your own account.' }, 422);
 
+    const allowedOrigins = sanitizeOrigins(payload.allowed_stock_origins, role);
+
     const authUpdate: { email: string; password?: string; email_confirm: boolean; ban_duration?: string } = {
       email,
       email_confirm: true,
@@ -62,12 +64,32 @@ Deno.serve(async (request) => {
 
     const { error: profileError } = await serviceClient
       .from('admin_profiles')
-      .update({ email, full_name: fullName, role, avatar_url: payload.avatar_url || null, is_active: isActive })
+      .update({
+        email,
+        full_name: fullName,
+        role,
+        avatar_url: payload.avatar_url || null,
+        is_active: isActive,
+        allowed_stock_origins: allowedOrigins,
+      })
       .eq('id', id);
     if (profileError) return json(request, { error: profileError.message }, 500);
 
-    return json(request, { id, is_active: isActive });
+    return json(request, { id, is_active: isActive, allowed_stock_origins: allowedOrigins });
   } catch (error) {
     return json(request, { error: error instanceof Error ? error.message : 'Unknown user update error.' }, 500);
   }
 });
+
+const VALID_ORIGINS = new Set(['japan', 'dubai', 'singapore', 'china', 'thailand', 'taiwan']);
+
+function sanitizeOrigins(raw: unknown, role: string): string[] {
+  if (role !== 'manager') return [];
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const item of raw) {
+    const value = String(item || '').trim().toLowerCase();
+    if (VALID_ORIGINS.has(value) && !out.includes(value)) out.push(value);
+  }
+  return out;
+}

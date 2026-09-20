@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { LogOut, ReceiptText, WalletCards } from 'lucide-react';
+import { BookmarkCheck, LogOut, ReceiptText, WalletCards } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase/client';
 
 const nav = [
+  { href: '/portal/reservations', label: 'Reservations', icon: BookmarkCheck },
   { href: '/portal/invoices', label: 'Invoices', icon: ReceiptText },
   { href: '/portal/account', label: 'Account', icon: WalletCards },
 ] as const;

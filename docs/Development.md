@@ -50,7 +50,7 @@ There is no `test` script. Native mobile steps: `docs/Mobile.md`. Live product c
 - Types: extend `lib/types.ts` when tables change
 - Path alias: `@/*` → project root (`tsconfig.json`)
 - PWA assets: `app/manifest.ts`, `public/sw.js`, `public/icons/`; do not cache admin or auth in the service worker
-- Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in app env; private VAPID key only as Edge Function secret
+- Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in app env; private VAPID key only as Edge Function secret (local `.env.local` may hold `VAPID_PRIVATE_KEY` as a copy for `supabase secrets set` — never commit). Staff test path: `/admin/subscribers`.
 - Capacitor: `capacitor.config.ts` + `native/www`; do not commit generated `android/` or `ios/` (see `docs/Mobile.md`)
 - One-off inventory scripts (ops only, service role locally — never commit keys): `scripts/import-japan-stock-vehicles.mjs`, `scripts/import-whatsapp-parts.mjs`, `scripts/import-whatsapp-parts-dubai.mjs`, `scripts/import-whatsapp-parts-keys.mjs`, `scripts/import-dubai-whatsapp-sep20-stock.mjs`. Do not commit `_import_*` extracts, `.tmp-*`, or huge `scripts/tmp/` image dumps; small JSON reports optional.
 

@@ -47,7 +47,9 @@ export default function AdminPartsPage() {
   const [shipmentByPart, setShipmentByPart] = useState<Record<string, string>>({});
   const [invoiceByPart, setInvoiceByPart] = useState<Record<string, string>>({});
   const [role, setRole] = useState<AdminRole | null>(null);
+  const [allowedOrigins, setAllowedOrigins] = useState<string[] | null>(null);
   const fieldAgent = isFieldAgentRole(role);
+  const isManager = role === 'manager';
 
   const fetchParts = useCallback(async () => {
     setLoading(true);
@@ -140,10 +142,17 @@ export default function AdminPartsPage() {
       if (!session) return;
       const { data: prof } = await supabase
         .from('admin_profiles')
-        .select('role')
+        .select('role,allowed_stock_origins')
         .eq('id', session.user.id)
         .maybeSingle();
       setRole((prof?.role as AdminRole) || null);
+      setAllowedOrigins(
+        prof?.role === 'manager'
+          ? Array.isArray(prof.allowed_stock_origins)
+            ? (prof.allowed_stock_origins as string[])
+            : []
+          : null
+      );
     })();
   }, []);
 
@@ -244,6 +253,23 @@ export default function AdminPartsPage() {
 
   return (
     <div className="space-y-5">
+      {isManager ? (
+        <div className="rounded-lg border border-border bg-secondary/40 px-4 py-3 text-sm">
+          {allowedOrigins && allowedOrigins.length > 0 ? (
+            <p>
+              Location scope:{' '}
+              {STOCK_ORIGINS.filter((o) => allowedOrigins.includes(o.value))
+                .map((o) => o.label)
+                .join(', ')}
+              . Other stock origins are hidden by RLS.
+            </p>
+          ) : (
+            <p className="text-amber-800 dark:text-amber-200">
+              No stock locations assigned. Ask an admin to set Manager stock locations under Users — inventory will stay empty until then.
+            </p>
+          )}
+        </div>
+      ) : null}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Catalog</p>
@@ -357,7 +383,10 @@ export default function AdminPartsPage() {
                   onChange={(e) => setOrigin(e.target.value as 'all' | StockOrigin)}
                 >
                   <option value="all">All origins</option>
-                  {STOCK_ORIGINS.map((item) => (
+                  {(isManager && allowedOrigins
+                    ? STOCK_ORIGINS.filter((item) => allowedOrigins.includes(item.value))
+                    : STOCK_ORIGINS
+                  ).map((item) => (
                     <option key={item.value} value={item.value}>
                       {item.label}
                     </option>
@@ -448,8 +477,12 @@ export default function AdminPartsPage() {
                   shipmentByPart[part.id] ? exportShipmentStatusLabel(shipmentByPart[part.id]) : null
                 }
                 onUpdate={updatePart}
-                onDelete={deletePart}
-                stockOriginOptions={STOCK_ORIGINS}
+                onDelete={isManager ? undefined : deletePart}
+                stockOriginOptions={
+                  isManager && allowedOrigins
+                    ? STOCK_ORIGINS.filter((item) => allowedOrigins.includes(item.value))
+                    : STOCK_ORIGINS
+                }
               />
             ))
           )}

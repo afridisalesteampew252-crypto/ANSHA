@@ -47,10 +47,10 @@ Release gate locally: `npm run verify:release`.
 
 Public catalog is installable (`app/manifest.ts`, `/sw.js`, `/icons/*`, `/offline`). Service worker intentionally bypasses `/admin`, `/api`, and cross-origin requests. `verify:deployment` checks the manifest, service worker, offline page, and icon.
 
-Web Push (Phase 24) — generate once, then split public vs private:
+Web Push (Phase 24 + VAPID ops path) — generate once, then split public vs private:
 
-1. From the repo root: `npx web-push generate-vapid-keys` (prints Public Key + Private Key).
-2. **Next.js (browser subscribe):** set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the Public Key in local `.env.local` and on the Vercel project for **Production** and **Preview**. Redeploy Next after changing it.
+1. From the repo root (`ANSHA/`): `npx web-push generate-vapid-keys` (prints Public Key + Private Key).
+2. **Next.js (browser subscribe):** set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the Public Key in local `.env.local` and on the Vercel project (**Settings → Environment Variables**) for **Production** and **Preview**. Redeploy Next after changing it — `NEXT_PUBLIC_*` is baked at build time.
 3. **Edge Function `send-web-push` (staff send):** set secrets on Supabase project `ydrnilquojvalhgifest` — never `NEXT_PUBLIC_*`, never git:
 
 ```
@@ -58,9 +58,11 @@ supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID
 supabase functions deploy send-web-push --project-ref ydrnilquojvalhgifest
 ```
 
-`VAPID_SUBJECT` is optional (defaults to a mailto). Notifications only fire when staff opts in (offers checkbox, blog “PWA push on publish”, or campaigns Send now) — nothing auto-sends from the database.
+`VAPID_SUBJECT` is optional (defaults to a mailto). Notifications only fire when staff opts in (offers checkbox, blog “PWA push on publish”, campaigns Send now, or subscribers test) — nothing auto-sends from the database.
 
-**Common failure:** Edge logs show `VAPID_PUBLIC_KEY is not valid URL-safe base64` or `Failed to decode base64` when secrets were pasted with ellipsis placeholders (`…`) or quotes. Re-set with the real keys from `npx web-push generate-vapid-keys` (or your existing matching pair). MCP cannot set secrets — use CLI after `npx supabase login` or the Supabase Dashboard → Edge Functions → Secrets.
+**Production status (2026-09-20):** matching VAPID public + private keys are already set on Vercel and Supabase Edge. Do not commit `.env.local`. After each deploy that changes env, verify **Subscribe this device** + **Send test push** on `/admin/subscribers`. Client helpers (`lib/pwa-push-subscribe.ts`, `lib/web-push.ts`) no-op when the public key is unset.
+
+**Common failure:** Edge logs show `VAPID_PUBLIC_KEY is not valid URL-safe base64` or `Failed to decode base64` when secrets were pasted with ellipsis placeholders (`…`) or quotes. Re-set with the real keys from `npx web-push generate-vapid-keys` (or your existing matching pair). MCP cannot set secrets — use CLI after `npx supabase login` or the Supabase Dashboard → Edge Functions → Secrets. After rotating keys, visitors must opt in again (old subscriptions become invalid).
 
 Outbound email (Phase 39): set Edge Function secrets for `send-outbound-email` (not Vercel `NEXT_PUBLIC_*`, and not the Supabase service role in the Next.js app):
 

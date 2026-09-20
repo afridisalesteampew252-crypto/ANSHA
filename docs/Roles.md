@@ -10,7 +10,7 @@
 | `sales` | `admin_profiles.role` | **Field agent**: catalog browse (parts/vehicles list only), own-book customers, **vehicle reservations**, **draft proforma invoices**, team chat, light dashboard. **Cannot** create/edit catalog, send/finalise invoices, finance, HR, imports |
 | `freelancer` | `admin_profiles.role` | Same field-agent gates as `sales` (contractor label). Own-book customers + reserve + draft proforma |
 | `accounts` | `admin_profiles.role` | **Receivables / finance**: customer invoices (all types; approve draft→sent), remittances, expenses, bank txns/views, supplier invoices, GL chart SELECT, VAT/report views. **Not** full admin (no users, audit purge, catalog writes, PO/GRN) |
-| `manager` | `admin_profiles.role` | **HR viewer** (+ payroll link): shifts, locations, attendance view; own check-in/out. v1 does **not** scope by location — ops (`admin`/`staff`) write locations/assignments; manager cannot open finance/catalog |
+| `manager` | `admin_profiles.role` | **Location-scoped inventory/ops** + HR viewer (+ live chat). Sees/manages vehicles & parts whose `stock_origin` is in `allowed_stock_origins` (Phase 66). Empty assignment → no inventory. Export shipments: **read** when linked units match. Cannot open finance/payroll/marketing/users/purchase writes. HR shift locations still global viewer (ops write). |
 
 There is no department role and no `domain.action` permission matrix in code. Customer portal uses `customer_profiles`, not `admin_profiles`.
 
@@ -50,12 +50,12 @@ There is no department role and no `domain.action` permission matrix in code. Cu
 | Remittances / expenses / bank txns | Yes (not create/delete bank accounts — still account-admin) |
 | Not allowed | Users, audit log, catalog writes, purchase/PO/GRN, marketing, HR |
 
-## Managers (Phase 54 v1)
+## Managers (Phase 54 + 66 location scope)
 
-- Can open **HR** (`/admin/hr*`) and **Payroll** (related link; payroll delete unchanged Phase 48/53).
-- Can open **Live chat** (`/admin/live-chat`) with admin — Tawk agent inbox.
-- Cannot manage locations/assignments unless also ops — writes use `is_ops_user()`.
-- Location-scoped manager approvals **deferred**.
+- Can open **catalog** (parts/vehicles/auction-stock), **stock dashboards**, **reservations**, **export shipments** (read), **HR**, **Live chat**, Team Chat.
+- Inventory is filtered by `admin_profiles.allowed_stock_origins` (RLS + UI). Assign under **Users** when role = manager.
+- Cannot open **payroll** (ops RLS), finance, marketing, users, PO/GRN/imports, or delete catalog (ops-only delete).
+- HR locations/assignments writes stay ops (`is_ops_user()`). Location-scoped HR approvals still deferred.
 
 ## Live chat / Tawk (admin + manager only)
 
@@ -116,4 +116,4 @@ A Supabase Auth user without `admin_profiles` cannot use the ERP. Login signs th
 
 ## Future RBAC
 
-Further splits (e.g. staff cannot see all remittances, manager location scope) need schema + policy + UI changes. Do **not** reuse `public.is_admin()` for `role = 'admin'` — use `private.is_account_admin()`.
+Further splits (e.g. staff cannot see all remittances, HR location-scoped approvals) need schema + policy + UI changes. Do **not** reuse `public.is_admin()` for `role = 'admin'` — use `private.is_account_admin()`.

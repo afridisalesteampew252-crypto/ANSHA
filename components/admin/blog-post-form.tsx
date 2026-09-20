@@ -152,7 +152,11 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
           body: (excerpt.trim() || 'New insight from ANSHA Trading.').slice(0, 300),
           url: `/blog/${slug.trim()}`,
         });
-        toast.success(`Article published. Push sent to ${result.sent} devices.`);
+        if (result.skipped) {
+          toast.success('Article published. Push skipped — VAPID not configured.');
+        } else {
+          toast.success(`Article published. Push sent to ${result.sent} devices.`);
+        }
       } catch (pushError) {
         toast.error(
           pushError instanceof Error

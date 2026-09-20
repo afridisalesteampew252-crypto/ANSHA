@@ -34,6 +34,68 @@ export function canManageHr(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'staff';
 }
 
+export function isManagerRole(role: string | null | undefined): boolean {
+  return role === 'manager';
+}
+
+/**
+ * Manager inventory/ops routes (Phase 66) — location-scoped via allowed_stock_origins + RLS.
+ * Finance, marketing, purchase writes, and user admin stay blocked.
+ */
+export const MANAGER_NAV_HREFS = new Set([
+  '/admin/dashboard',
+  '/admin/parts',
+  '/admin/vehicles',
+  '/admin/auction-stock',
+  '/admin/stock',
+  '/admin/parts/stock',
+  '/admin/reservations',
+  '/admin/export-shipments',
+  '/admin/hr',
+  '/admin/hr/locations',
+  '/admin/hr/shifts',
+  '/admin/hr/attendance',
+  '/admin/chat',
+  '/admin/live-chat',
+]);
+
+export function isManagerAllowedPath(pathname: string): boolean {
+  if (pathname === '/admin/dashboard' || pathname === '/admin/profile') return true;
+  if (pathname === '/admin/parts' || pathname === '/admin/vehicles' || pathname === '/admin/auction-stock')
+    return true;
+  // Detail/edit/new for catalog — managers may manage within location scope (RLS enforces origin)
+  if (pathname.startsWith('/admin/parts/') || pathname.startsWith('/admin/vehicles/')) return true;
+  if (pathname.startsWith('/admin/stock')) return true;
+  if (pathname.startsWith('/admin/reservations')) return true;
+  if (pathname.startsWith('/admin/export-shipments')) return true;
+  if (pathname.startsWith('/admin/hr')) return true;
+  // Payroll stays ops-only (RLS is_ops_user) — do not allowlist for managers
+  if (pathname.startsWith('/admin/chat')) return true;
+  if (pathname.startsWith('/admin/live-chat')) return true;
+  return false;
+}
+
+/** Normalize manager allowed_stock_origins from a profile row. */
+export function managerAllowedOrigins(
+  profile: { role?: string | null; allowed_stock_origins?: string[] | null } | null | undefined
+): string[] {
+  if (!profile || profile.role !== 'manager') return [];
+  const raw = profile.allowed_stock_origins;
+  if (!Array.isArray(raw)) return [];
+  return raw.map((o) => String(o).trim().toLowerCase()).filter(Boolean);
+}
+
+/** Whether a stock_origin is visible/editable for this profile (ops unrestricted). */
+export function canAccessStockOrigin(
+  profile: { role?: string | null; allowed_stock_origins?: string[] | null } | null | undefined,
+  origin: string | null | undefined
+): boolean {
+  if (!profile || profile.role !== 'manager') return true;
+  const allowed = managerAllowedOrigins(profile);
+  if (!allowed.length || !origin) return false;
+  return allowed.includes(String(origin).trim().toLowerCase());
+}
+
 /**
  * Tawk agent inbox (`/admin/live-chat`).
  * Strict allowlist: **admin** and **manager** only.
@@ -103,7 +165,7 @@ export const ADMIN_ROLE_OPTIONS: { value: AdminRole; label: string }[] = [
   { value: 'sales', label: 'Sales agent — catalog + reservations + draft proforma' },
   { value: 'freelancer', label: 'Freelancer — catalog + reservations + draft proforma' },
   { value: 'accounts', label: 'Accounts — invoices, remittances, finance views' },
-  { value: 'manager', label: 'Manager — ops view + HR (shifts/attendance)' },
+  { value: 'manager', label: 'Manager — location-scoped inventory/ops + HR' },
   { value: 'staff', label: 'Staff — full operations' },
   { value: 'admin', label: 'Admin — full access + account admin' },
 ];

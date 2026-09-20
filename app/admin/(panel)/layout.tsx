@@ -18,6 +18,7 @@ import {
   isAccountAdminRole,
   isAccountsRole,
   isFieldAgentRole,
+  MANAGER_NAV_HREFS,
 } from '@/lib/admin-rbac';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
@@ -31,16 +32,6 @@ import {
   type AdminNavGroup,
 } from '@/components/admin/admin-sidebar-nav';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-
-const MANAGER_NAV_HREFS = new Set([
-  '/admin/dashboard',
-  '/admin/hr',
-  '/admin/hr/locations',
-  '/admin/hr/shifts',
-  '/admin/hr/attendance',
-  '/admin/chat',
-  '/admin/live-chat',
-]);
 
 function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
   const fieldAgent = isFieldAgentRole(profile.role);

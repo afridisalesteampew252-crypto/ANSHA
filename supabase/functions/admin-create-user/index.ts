@@ -44,6 +44,8 @@ Deno.serve(async (request) => {
     if (!fullName) return json(request, { error: 'Full name is required.' }, 422);
     if (!['admin', 'staff', 'sales', 'freelancer', 'manager', 'accounts'].includes(role)) return json(request, { error: 'Choose a valid role.' }, 422);
 
+    const allowedOrigins = sanitizeOrigins(payload.allowed_stock_origins, role);
+
     const { data: created, error: createError } = await serviceClient.auth.admin.createUser({
       email,
       password,
@@ -62,6 +64,7 @@ Deno.serve(async (request) => {
       role,
       avatar_url: payload.avatar_url || null,
       is_active: true,
+      allowed_stock_origins: allowedOrigins,
     }, { onConflict: 'id' });
 
     if (profileError) {
@@ -69,8 +72,21 @@ Deno.serve(async (request) => {
       return json(request, { error: `Account profile could not be created: ${profileError.message}` }, 500);
     }
 
-    return json(request, { id: created.user.id, email, full_name: fullName, role }, 201);
+    return json(request, { id: created.user.id, email, full_name: fullName, role, allowed_stock_origins: allowedOrigins }, 201);
   } catch (error) {
     return json(request, { error: error instanceof Error ? error.message : 'Unknown user creation error.' }, 500);
   }
 });
+
+const VALID_ORIGINS = new Set(['japan', 'dubai', 'singapore', 'china', 'thailand', 'taiwan']);
+
+function sanitizeOrigins(raw: unknown, role: string): string[] {
+  if (role !== 'manager') return [];
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const item of raw) {
+    const value = String(item || '').trim().toLowerCase();
+    if (VALID_ORIGINS.has(value) && !out.includes(value)) out.push(value);
+  }
+  return out;
+}

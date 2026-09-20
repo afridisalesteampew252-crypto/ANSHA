@@ -90,7 +90,7 @@ function PortalLoginInner() {
             <ReceiptText className="h-6 w-6 text-white" />
           </div>
           <CardTitle className="text-2xl">Customer portal</CardTitle>
-          <CardDescription>Sign in to view your invoices. Staff use the admin login.</CardDescription>
+          <CardDescription>Sign in to view your reservations, invoices, and account. Staff use the admin login.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">

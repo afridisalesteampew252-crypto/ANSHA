@@ -189,7 +189,11 @@ export default function AdminOffersPage() {
           body: data.summary || 'New export deal from ANSHA Trading.',
           url: data.href || '/offers',
         });
-        toast.success(`Offer published. Push sent to ${result.sent} devices.`);
+        if (result.skipped) {
+          toast.success('Offer published. Push skipped — VAPID not configured.');
+        } else {
+          toast.success(`Offer published. Push sent to ${result.sent} devices.`);
+        }
       } catch (pushError) {
         toast.error(pushError instanceof Error ? pushError.message : 'Offer saved, but push failed. Check VAPID secrets.');
       }
@@ -226,7 +230,11 @@ export default function AdminOffersPage() {
         body: row.summary || 'New export deal from ANSHA Trading.',
         url: row.href || '/offers',
       });
-      toast.success(`Push sent to ${result.sent} devices.`);
+      if (result.skipped) {
+        toast.message('Push skipped — VAPID not configured.');
+      } else {
+        toast.success(`Push sent to ${result.sent} devices.`);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Push failed.');
     } finally {

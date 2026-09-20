@@ -26,10 +26,10 @@ Staff ERP and the portal need a live internet connection (not cached offline). F
 | **Visitor** | None | Browse available published stock, inquire, request parts, verify invoice by QR code | Staff tools, portal; auction-sheet photos |
 | **Sales / Freelancer** (field agent) | `/admin` | Parts/vehicles **lists**, own-book customers, reserve vehicles, **draft proforma only**, chat, light dashboard | Catalog create/edit/import, mark invoices sent, remittances, finance, HR, marketing |
 | **Accounts** | `/admin` | Customer invoices (all types; approve draft→sent), remittances, expenses, bank txns/views, supplier invoices, ledger/reports/VAT views | Users, audit log, catalog writes, PO/GRN, marketing, HR |
-| **Manager** | `/admin` | HR view (locations/shifts/attendance), own check-in/out, payroll link | Finance, catalog, location writes (ops-only in v1) |
+| **Manager** | `/admin` | Location-scoped catalog/stock/reservations; export shipments (read); HR view + own check-in/out; live chat | Finance, payroll, marketing, users, PO/GRN/imports, catalog delete |
 | **Staff** | `/admin` | Day-to-day ops: PO, GRN, invoices, remittances, bank txns, expenses, shipments, landed cost, draft GL, payroll drafts, HR admin, email/WhatsApp/AI, etc. | User management, portal enable, reverse posted GL, create/delete bank accounts, post payroll, hard-delete suppliers, force lifecycle stage jumps |
 | **Admin** | `/admin` | Everything staff can do, plus account-admin actions above; audit log | — |
-| **Customer (portal)** | `/portal` | Read own non-draft invoices; view account statement | Remittances, chat, staff ERP |
+| **Customer (portal)** | `/portal` | Read own reservations, non-draft invoices; view account statement | Remittances, chat, staff ERP |
 
 There is no department matrix. Portal users are linked via `customer_profiles`, not staff accounts.
 
@@ -49,7 +49,7 @@ Inactive accounts are signed out automatically.
 
 1. Open `/portal`.
 2. Sign in with the credentials your ANSHA contact enabled for you.
-3. Use **Invoices** and **Account** in the portal menu.
+3. Use **Reservations**, **Invoices**, and **Account** in the portal menu.
 
 ### Install the public site as a PWA
 
@@ -243,8 +243,8 @@ Header **notification center**: team messages, mail, inquiries, part requests, r
 |---|---|---|
 | Insights / Blog | `/admin/blog` | Draft/publish with **Write** toolbar, **HTML**, or **Preview**; optional **PWA push on publish**. |
 | Deals & PWA push | `/admin/offers` | Create offers; attach vehicle/part; optional discount % / sale price; optional push. |
-| Campaigns | `/admin/campaigns` (ops) | Draft campaigns (push / email / offer channel) → **Send now**. |
-| PWA subscribers | `/admin/subscribers` (ops) | List push opt-ins (deals/insights), filter, remove stale rows. |
+| Campaigns | `/admin/campaigns` (ops) | Draft/edit campaigns (push / email / offer) → **Send now**, email **Send test** / **Send to segment** (customer country). Tracks `sent_count`. |
+| PWA subscribers | `/admin/subscribers` (ops) | List push opt-ins (deals/insights), filter, remove stale rows; **Subscribe this device** + **Send test push** when VAPID is configured (see Deployment / PWA docs). |
 | Trade config | `/admin/trade-config` (ops) | FX reference rates, freight notes, per-country import policies for `/markets/[code]`. |
 | Configuration | `/admin/configuration` (ops) | Maintain export master lists: destination countries, loading/destination ports, vessels, voyages used on export shipments. Search the list; toggle inactive rows. Seeded countries/ports ship with Phase 62/63 migrations. |
 
@@ -257,14 +257,14 @@ Header **notification center**: team messages, mail, inquiries, part requests, r
 | Shifts | `/admin/hr/shifts` | Ops assign Morning/Night (and related) shifts. |
 | Attendance | `/admin/hr/attendance` | Ops/manager view; staff check in/out as allowed. |
 
-Manager is an HR **viewer** in v1 (not location-scoped). Ops (`admin`/`staff`) write locations and assignments.
+Manager inventory/ops is **location-scoped** via stock origins assigned under Users (Phase 66). HR shift locations remain a global viewer; ops (`admin`/`staff`) write locations and assignments.
 
 ### 5.10 Team
 
 | Page | Path | Who |
 |---|---|---|
 | Payroll | `/admin/payroll` | Ops drafts; admin posts (see Finance). Admin can delete employees / draft-cancelled runs (Phase 53). |
-| Users | `/admin/users` | **Admin only** — create/update workspace users and roles (`admin` / `staff` / `sales` / `freelancer` / `manager` / `accounts`), deactivate. |
+| Users | `/admin/users` | **Admin only** — create/update workspace users and roles; for **manager**, assign **stock locations** (`allowed_stock_origins`); deactivate. |
 | Profile | `/admin/profile` | Anyone signed in — own name, avatar, password. |
 
 ---
@@ -274,6 +274,7 @@ Manager is an HR **viewer** in v1 (not location-scoped). Ops (`admin`/`staff`) w
 | Page | Path | Steps |
 |---|---|---|
 | Login | `/portal` | Sign in with portal credentials. |
+| Reservations | `/portal/reservations` | Vehicles and parts reserved in your name (photo, terms, ETD/ETA, linked proforma/invoice). |
 | Invoices | `/portal/invoices`, `/portal/invoices/[id]` | List and open your non-draft invoices. |
 | Account statement | `/portal/account` | Confirmed remittances, allocations, and outstanding KPIs (no remittance notes, drafts, or staff allocate tools). |
 

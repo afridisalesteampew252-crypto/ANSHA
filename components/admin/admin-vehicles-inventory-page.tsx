@@ -83,7 +83,9 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
   const [shipmentByVehicle, setShipmentByVehicle] = useState<Record<string, string>>({});
   const [invoiceByVehicle, setInvoiceByVehicle] = useState<Record<string, string>>({});
   const [role, setRole] = useState<AdminRole | null>(null);
+  const [allowedOrigins, setAllowedOrigins] = useState<string[] | null>(null);
   const fieldAgent = isFieldAgentRole(role);
+  const isManager = role === 'manager';
   const machineryFocus = vehicleClass === 'machinery';
 
   useEffect(() => {
@@ -196,10 +198,17 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
       if (!session) return;
       const { data: prof } = await supabase
         .from('admin_profiles')
-        .select('role')
+        .select('role,allowed_stock_origins')
         .eq('id', session.user.id)
         .maybeSingle();
       setRole((prof?.role as AdminRole) || null);
+      setAllowedOrigins(
+        prof?.role === 'manager'
+          ? Array.isArray(prof.allowed_stock_origins)
+            ? (prof.allowed_stock_origins as string[])
+            : []
+          : null
+      );
     })();
   }, []);
 
@@ -374,8 +383,26 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     ? 'Third-party auction / yard units — not yet purchased into ANSHA inventory. Transfer to inventory when bought.'
     : 'Owned / purchased units only. Japan auction listings live under Auction stock.';
 
+  const originOptions =
+    isManager && allowedOrigins
+      ? STOCK_ORIGINS.filter((item) => allowedOrigins.includes(item.value))
+      : STOCK_ORIGINS;
+
   return (
     <div className="space-y-5">
+      {isManager ? (
+        <div className="rounded-lg border border-border bg-secondary/40 px-4 py-3 text-sm">
+          {allowedOrigins && allowedOrigins.length > 0 ? (
+            <p>
+              Location scope: {originOptions.map((o) => o.label).join(', ')}. Other stock origins are hidden by RLS.
+            </p>
+          ) : (
+            <p className="text-amber-800 dark:text-amber-200">
+              No stock locations assigned. Ask an admin to set Manager stock locations under Users — inventory will stay empty until then.
+            </p>
+          )}
+        </div>
+      ) : null}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Catalog</p>
@@ -502,7 +529,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
                   onChange={(e) => setOrigin(e.target.value as 'all' | StockOrigin)}
                 >
                   <option value="all">All origins</option>
-                  {STOCK_ORIGINS.map((item) => (
+                  {originOptions.map((item) => (
                     <option key={item.value} value={item.value}>
                       {item.label}
                     </option>
@@ -638,9 +665,9 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
                 }
                 onUpdate={updateVehicle}
                 onSetListing={setListing}
-                onDelete={removeVehicle}
-                onTransferPool={transferStockPool}
-                stockOriginOptions={STOCK_ORIGINS}
+                onDelete={isManager ? undefined : removeVehicle}
+                onTransferPool={isManager ? undefined : transferStockPool}
+                stockOriginOptions={originOptions}
               />
             ))
           )}
