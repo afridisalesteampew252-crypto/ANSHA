@@ -17,6 +17,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { supabase } from '@/lib/supabase/client';
+import {
+  PRICE_TERM_LABELS,
+  PRICE_TERMS,
+  SHIPMENT_MODE_LABELS,
+  SHIPMENT_MODES,
+  inspectionChoiceToBool,
+  priceForTerm,
+  type InspectionChoice,
+  type PriceTerm,
+  type ShipmentMode,
+} from '@/lib/trade-terms';
 import type { AdminRole } from '@/lib/types';
 
 type Customer = {
@@ -35,6 +46,9 @@ type Vehicle = {
   make: string | null;
   model: string | null;
   price: number | null;
+  price_fob: number | null;
+  price_cf: number | null;
+  price_cif: number | null;
   currency: string;
   stock_status: string;
   is_published: boolean;
@@ -59,12 +73,17 @@ export default function ReservationsPage() {
   const [taxRate, setTaxRate] = useState('5');
   const [dueDate, setDueDate] = useState(defaultDue);
   const [notes, setNotes] = useState('');
+  const [priceTerm, setPriceTerm] = useState<PriceTerm | ''>('fob');
+  const [shipmentTerm, setShipmentTerm] = useState<ShipmentMode | ''>('roro');
+  const [inspectionRequired, setInspectionRequired] = useState<InspectionChoice | ''>('');
   const [busy, setBusy] = useState(false);
   const [role, setRole] = useState<AdminRole | null>(null);
   const fieldAgent = isFieldAgentRole(role);
 
   const load = useCallback(async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (session) {
       const { data: prof } = await supabase.from('admin_profiles').select('role').eq('id', session.user.id).maybeSingle();
       setRole((prof?.role as AdminRole) || null);
@@ -78,7 +97,9 @@ export default function ReservationsPage() {
         .limit(500),
       supabase
         .from('vehicles')
-        .select('id,title,stock_number,chassis_number,make,model,price,currency,stock_status,is_published')
+        .select(
+          'id,title,stock_number,chassis_number,make,model,price,price_fob,price_cf,price_cif,currency,stock_status,is_published'
+        )
         .eq('stock_status', 'available')
         .order('created_at', { ascending: false })
         .limit(500),
@@ -103,14 +124,28 @@ export default function ReservationsPage() {
 
   useEffect(() => {
     if (!selectedVehicle) return;
-    setUnitPrice(selectedVehicle.price != null ? String(selectedVehicle.price) : '');
     setCurrency(selectedVehicle.currency || 'AED');
-  }, [selectedVehicle]);
+    const term = priceTerm || 'fob';
+    const quoted = priceForTerm(term, selectedVehicle);
+    setUnitPrice(quoted != null ? String(quoted) : '');
+  }, [selectedVehicle, priceTerm]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!customerId || !vehicleId) {
       toast.error('Select a customer and an available vehicle.');
+      return;
+    }
+    if (!priceTerm) {
+      toast.error('Select a price term (FOB, C&F, or CIF).');
+      return;
+    }
+    if (!shipmentTerm) {
+      toast.error('Select a shipment term.');
+      return;
+    }
+    if (!inspectionRequired) {
+      toast.error('Select whether inspection is required (Yes or No).');
       return;
     }
     setBusy(true);
@@ -123,6 +158,9 @@ export default function ReservationsPage() {
       p_due_date: dueDate,
       p_notes: notes || null,
       p_reference: null,
+      p_price_term: priceTerm,
+      p_shipment_term: shipmentTerm,
+      p_inspection_required: inspectionChoiceToBool(inspectionRequired),
     });
     setBusy(false);
     if (error) {
@@ -135,10 +173,8 @@ export default function ReservationsPage() {
       router.push(`/admin/invoices/${result.invoice_id}`);
       return;
     }
- else {
-      await load();
-      setVehicleId('');
-    }
+    await load();
+    setVehicleId('');
   };
 
   return (
@@ -147,6 +183,7 @@ export default function ReservationsPage() {
         <h1 className="text-2xl font-bold tracking-tight">Reserve vehicle</h1>
         <p className="text-sm text-muted-foreground">
           Hold available stock for a customer, unpublish it from the website, and create a proforma invoice draft.
+          Choose price term (FOB / C&F / CIF), shipment term (DHL / RoRo / container), and inspection (Yes / No).
           {fieldAgent ? ' Ops will finalize the customer invoice after reservation.' : ''}
         </p>
       </div>
@@ -154,7 +191,10 @@ export default function ReservationsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Customer + vehicle</CardTitle>
-          <CardDescription>Only available vehicles are listed. Reserved units leave the public catalog automatically.</CardDescription>
+          <CardDescription>
+            Only available vehicles are listed. Reserved units leave the public catalog automatically. Price term,
+            shipment term, and inspection are stored on the vehicle until release.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void submit(event)}>
@@ -185,8 +225,69 @@ export default function ReservationsPage() {
               />
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="res-price-term">Price term</Label>
+              <select
+                id="res-price-term"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={priceTerm}
+                onChange={(e) => setPriceTerm(e.target.value as PriceTerm)}
+                required
+              >
+                {PRICE_TERMS.map((term) => (
+                  <option key={term} value={term}>
+                    {PRICE_TERM_LABELS[term]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="res-shipment-term">Shipment term</Label>
+              <select
+                id="res-shipment-term"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={shipmentTerm}
+                onChange={(e) => setShipmentTerm(e.target.value as ShipmentMode)}
+                required
+              >
+                {SHIPMENT_MODES.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {SHIPMENT_MODE_LABELS[mode]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="res-inspection">Inspection</Label>
+              <select
+                id="res-inspection"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={inspectionRequired}
+                onChange={(e) => setInspectionRequired(e.target.value as InspectionChoice | '')}
+                required
+              >
+                <option value="" disabled>
+                  Select Yes or No
+                </option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+            {selectedVehicle ? (
+              <div className="sm:col-span-2 rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                Catalog quotes: FOB {selectedVehicle.price_fob ?? '—'} · C&F {selectedVehicle.price_cf ?? '—'} · CIF{' '}
+                {selectedVehicle.price_cif ?? '—'} · list {selectedVehicle.price ?? '—'} ({selectedVehicle.currency})
+              </div>
+            ) : null}
+            <div className="space-y-1.5">
               <Label htmlFor="res-price">Unit price</Label>
-              <Input id="res-price" type="number" min="0" step="0.01" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
+              <Input
+                id="res-price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="res-currency">Currency</Label>
@@ -202,7 +303,13 @@ export default function ReservationsPage() {
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="res-notes">Notes</Label>
-              <Textarea id="res-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Optional reservation note on the proforma" />
+              <Textarea
+                id="res-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                placeholder="Optional reservation note on the proforma"
+              />
             </div>
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               <Button type="submit" disabled={busy}>

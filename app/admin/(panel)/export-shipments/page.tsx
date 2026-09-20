@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, Plus, Search, Ship, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExportShipmentDocumentsPanel } from '@/components/admin/export-shipment-documents';
 import { SearchableSelect, customerSelectOption, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
+import { SHIPMENT_MODE_LABELS, SHIPMENT_MODES, type ShipmentMode } from '@/lib/trade-terms';
 import type { Customer, ExportShipment, ExportShipmentMode, ExportShipmentStatus, ExportShipmentVehicle } from '@/lib/types';
 
 type StockOption = {
@@ -36,13 +38,19 @@ const statusBadge: Record<ExportShipmentStatus, string> = {
   cancelled: 'bg-zinc-200 text-zinc-700',
 };
 
-const modeLabel = (mode: ExportShipmentMode) =>
-  ({
-    roro: 'RoRo',
-    container_20ft: '20ft container',
-    container_40ft: '40ft container',
-    other: 'Other',
-  })[mode];
+const modeLabel = (mode: ExportShipmentMode) => SHIPMENT_MODE_LABELS[mode as ShipmentMode] || mode;
+
+function ModeSelectOptions() {
+  return (
+    <>
+      {SHIPMENT_MODES.map((mode) => (
+        <option key={mode} value={mode}>
+          {SHIPMENT_MODE_LABELS[mode]}
+        </option>
+      ))}
+    </>
+  );
+}
 
 export default function ExportShipmentsPage() {
   const [shipments, setShipments] = useState<ExportShipment[]>([]);
@@ -51,6 +59,7 @@ export default function ExportShipmentsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lines, setLines] = useState<LineRow[]>([]);
   const [query, setQuery] = useState('');
+  const [modeFilter, setModeFilter] = useState<'all' | ExportShipmentMode>('all');
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [addVehicleId, setAddVehicleId] = useState('');
@@ -140,19 +149,21 @@ export default function ExportShipmentsPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return shipments;
-    return shipments.filter((row) =>
-      [
+    return shipments.filter((row) => {
+      if (modeFilter !== 'all' && row.mode !== modeFilter) return false;
+      if (!q) return true;
+      return [
         row.shipment_number,
         row.status,
         row.mode,
+        modeLabel(row.mode),
         row.bl_number,
         row.vessel_name,
         row.destination_country,
         customerName(row.customer_id),
-      ].some((value) => value?.toLowerCase().includes(q))
-    );
-  }, [shipments, query, customers]);
+      ].some((value) => value?.toLowerCase().includes(q));
+    });
+  }, [shipments, query, customers, modeFilter]);
 
   const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
   const vehicleOptions = useMemo(() => vehicles.map(vehicleSelectOption), [vehicles]);
@@ -193,8 +204,8 @@ export default function ExportShipmentsPage() {
   };
 
   const createShipment = async (confirm: boolean) => {
-    if (selectedVehicleIds.length === 0) {
-      toast.error('Select at least one vehicle.');
+    if (mode !== 'dhl' && selectedVehicleIds.length === 0) {
+      toast.error('Select at least one vehicle (or choose DHL for small-parts shipments without vehicles).');
       return;
     }
     setBusy(true);
@@ -309,7 +320,7 @@ export default function ExportShipmentsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Export shipments</h1>
           <p className="text-sm text-muted-foreground">
-            Booking / BL headers linked to vehicles. Status changes log lifecycle events and can move stock to port.
+            Booking / BL headers with shipment type (DHL, RoRo, 20ft, 40ft), PDF shipping docs, and inspection certificates.
           </p>
         </div>
         <Button type="button" onClick={() => setShowForm(true)}>
@@ -338,12 +349,9 @@ export default function ExportShipmentsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Mode</Label>
+                <Label>Shipment type</Label>
                 <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={mode} onChange={(e) => setMode(e.target.value as ExportShipmentMode)}>
-                  <option value="roro">RoRo</option>
-                  <option value="container_20ft">20ft container</option>
-                  <option value="container_40ft">40ft container</option>
-                  <option value="other">Other</option>
+                  <ModeSelectOptions />
                 </select>
               </div>
               <div className="space-y-1.5">
@@ -385,7 +393,7 @@ export default function ExportShipmentsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Vehicles</Label>
+              <Label>Vehicles{mode === 'dhl' ? ' (optional for DHL / small parts)' : ''}</Label>
               <Input
                 placeholder="Filter vehicles by stock #, chassis, title…"
                 value={vehicleFormQuery}
@@ -434,9 +442,19 @@ export default function ExportShipmentsPage() {
               <Ship className="h-5 w-5" />
               Shipments
             </CardTitle>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Search EXP-, BL, vessel…" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input className="pl-9" placeholder="Search EXP-, BL, vessel…" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </div>
+              <select
+                className="h-10 rounded-md border bg-background px-3 text-sm"
+                value={modeFilter}
+                onChange={(e) => setModeFilter(e.target.value as 'all' | ExportShipmentMode)}
+              >
+                <option value="all">All types</option>
+                <ModeSelectOptions />
+              </select>
             </div>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -501,17 +519,14 @@ export default function ExportShipmentsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Mode</Label>
+                    <Label>Shipment type</Label>
                     <select
                       className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                       value={selected.mode}
                       disabled={['completed', 'cancelled'].includes(selected.status)}
                       onChange={(e) => patchSelected({ mode: e.target.value as ExportShipmentMode })}
                     >
-                      <option value="roro">RoRo</option>
-                      <option value="container_20ft">20ft container</option>
-                      <option value="container_40ft">40ft container</option>
-                      <option value="other">Other</option>
+                      <ModeSelectOptions />
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -600,6 +615,11 @@ export default function ExportShipmentsPage() {
                     </div>
                   ) : null}
                 </div>
+
+                <ExportShipmentDocumentsPanel
+                  shipmentId={selected.id}
+                  readOnly={['completed', 'cancelled'].includes(selected.status)}
+                />
               </>
             )}
           </CardContent>

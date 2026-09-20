@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { InvoiceBankingDetails } from '@/components/invoices/invoice-banking-details';
 import { InvoiceQrCode } from '@/components/invoices/invoice-qr-code';
 import { siteConfig } from '@/lib/site-config';
+import { PRICE_TERM_LABELS, SHIPMENT_MODE_LABELS, isPriceTerm, isShipmentMode } from '@/lib/trade-terms';
 
 export type InvoicePrintItem = {
   id: string;
@@ -12,6 +13,7 @@ export type InvoicePrintItem = {
   discount_percent: number;
   tax_rate: number;
   line_total: number;
+  price_term?: 'fob' | 'cf' | 'cif' | null;
 };
 
 export type InvoicePrintData = {
@@ -30,6 +32,8 @@ export type InvoicePrintData = {
   due_date: string;
   currency: string;
   reference: string | null;
+  price_term?: 'fob' | 'cf' | 'cif' | null;
+  shipment_term?: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
   subtotal: number;
   discount_amount: number;
   tax_amount: number;
@@ -73,6 +77,10 @@ export function InvoicePrintDocument({
   const sellerAddress = invoice.seller_address?.trim() || siteConfig.address;
   const sellerTrn = invoice.seller_tax_registration_number?.trim() || siteConfig.taxRegistrationNumber;
   const verificationUrl = `${siteConfig.url}/verify/invoice/${invoice.verification_code}`;
+  const priceTermLabel = isPriceTerm(invoice.price_term) ? PRICE_TERM_LABELS[invoice.price_term] : null;
+  const shipmentTermLabel = isShipmentMode(invoice.shipment_term)
+    ? SHIPMENT_MODE_LABELS[invoice.shipment_term]
+    : null;
 
   return (
     <article className="invoice-print invoice-a4 bg-white text-[#111827]">
@@ -111,6 +119,18 @@ export function InvoicePrintDocument({
               <div className="flex justify-end gap-2.5">
                 <dt className="text-[#6b7280]">Ref</dt>
                 <dd className="min-w-[6.25rem] text-right font-medium text-[#111827]">{invoice.reference}</dd>
+              </div>
+            )}
+            {priceTermLabel && (
+              <div className="flex justify-end gap-2.5">
+                <dt className="text-[#6b7280]">Price term</dt>
+                <dd className="min-w-[6.25rem] text-right font-semibold text-[#111827]">{priceTermLabel}</dd>
+              </div>
+            )}
+            {shipmentTermLabel && (
+              <div className="flex justify-end gap-2.5">
+                <dt className="text-[#6b7280]">Shipment</dt>
+                <dd className="min-w-[6.25rem] text-right font-semibold text-[#111827]">{shipmentTermLabel}</dd>
               </div>
             )}
             <div className="flex justify-end gap-2.5">
@@ -172,6 +192,11 @@ export function InvoicePrintDocument({
                       Ref {item.inventory_reference}
                     </p>
                   )}
+                  {isPriceTerm(item.price_term) ? (
+                    <p className="mt-0.5 text-[8.5px] font-semibold leading-none text-[#374151]">
+                      {PRICE_TERM_LABELS[item.price_term]} {money(item.unit_price, invoice.currency)}
+                    </p>
+                  ) : null}
                 </td>
                 <td className="border-t border-[#e5e7eb] px-1.5 py-1.5 text-right tabular-nums text-[#111827]">
                   {item.quantity}

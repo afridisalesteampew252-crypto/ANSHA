@@ -14,6 +14,7 @@ import { compressCatalogImage } from '@/lib/catalog-image';
 import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { toast } from 'sonner';
 import { STOCK_ORIGINS } from '@/lib/stock';
+import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 import {
   EQUIPMENT_CATEGORIES,
   isMachineryClass,
@@ -62,6 +63,9 @@ function AddVehiclePageInner() {
   const [mileage, setMileage] = useState('');
   const [color, setColor] = useState('');
   const [price, setPrice] = useState('');
+  const [priceFob, setPriceFob] = useState('');
+  const [priceCf, setPriceCf] = useState('');
+  const [priceCif, setPriceCif] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [showPrice, setShowPrice] = useState(false);
   const [description, setDescription] = useState('');
@@ -134,6 +138,9 @@ function AddVehiclePageInner() {
         mileage: mileage ? parseInt(mileage, 10) : null,
         color: color.trim() || null,
         price: price ? parseFloat(price) : null,
+        price_fob: parseOptionalPrice(priceFob),
+        price_cf: parseOptionalPrice(priceCf),
+        price_cif: parseOptionalPrice(priceCif),
         currency,
         show_price: showPrice,
         description: description.trim() || null,
@@ -437,6 +444,15 @@ function AddVehiclePageInner() {
               <Switch id="show-price" checked={showPrice} onCheckedChange={setShowPrice} />
               <Label htmlFor="show-price">Show price publicly</Label>
             </div>
+            <IncotermPriceFields
+              currency={currency}
+              values={{ priceFob, priceCf, priceCif }}
+              onChange={(patch) => {
+                if (patch.priceFob !== undefined) setPriceFob(patch.priceFob);
+                if (patch.priceCf !== undefined) setPriceCf(patch.priceCf);
+                if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
+              }}
+            />
           </CardContent>
         </Card>
 

@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53 payroll deletes, Phase 54 field agents/HR/catalog audit, Phase 55 accounts + draft proforma, Phase 56 `vehicle_photos.is_auction_sheet`, Phase 57 `vehicles.vehicle_class` / `equipment_category` / `operating_hours`, Phase 58 Tawk webhook mirror, Phase 60 Team Chat `last_seen_at`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
+Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, plus Phase 61 (`20260920100000_phase_61_export_docs_incoterms_reservations.sql`) and Phase 61b (`20260920150000_phase_61b_reservation_inspection_invoice_terms.sql`). Both 61/61b are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
 
 ## Entity groups
 
@@ -24,15 +24,16 @@ Latest migrations in the repository include Phase 51–52 (offers / trade config
 ### Catalog
 
 - `categories` — name/slug unique, `sort_order`, optional `image_url`
-- `parts` — unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`
+- `parts` — unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`; Phase 61 Incoterm quotes `price_fob`/`price_cf`/`price_cif`; reservation terms `reservation_price_term`/`reservation_shipment_term`/`reservation_inspection_required` (61b)
 - `part_photos`, `part_compatibility`
-- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts; Phase 57 `vehicle_class` (`passenger`\|`commercial_truck`\|`heavy_machinery`, default `passenger`), optional `equipment_category`, optional `operating_hours`
+- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts; Phase 57 `vehicle_class` (`passenger`\|`commercial_truck`\|`heavy_machinery`, default `passenger`), optional `equipment_category`, optional `operating_hours`; Phase 61/61b same Incoterm + reservation term columns as parts
 - `vehicle_photos` — includes `is_auction_sheet` (Phase 56; Japanese auction sheets / typically `A.*`); public SELECT policy requires `is_auction_sheet = false`
 - `suppliers` �?? master (`supplier_code`, TRN, country, currency, �?�); ops RLS
 - `purchase_orders` / `purchase_order_lines` �?? PO number, VAT, terms; match snapshot vs GRN/supplier invoices/payments
 - `supplier_payments` / `supplier_payment_allocations` �?? AP payments allocated to PO or supplier invoice file
 - `inventory_receipts` / `inventory_receipt_lines` �?? GRN into existing vehicle/part rows; optional `supplier_invoice_id` and `purchase_order_id`
-- `export_shipments` / `export_shipment_vehicles` �?? booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events
+- `export_shipments` / `export_shipment_vehicles` — booking/BL header (EXP- numbers) + vehicle lines; ops RLS; status hooks into lifecycle events; Phase 61 `mode` ∈ `dhl`|`roro`|`container_20ft`|`container_40ft`
+- `export_shipment_documents` — Phase 61 PDF/image metadata (`bill_of_lading`|`export_certificate`|`waybill`|`courier`|`inspection_certificate`); inspection rows require `country_code`; single-slot unique index for non-inspection types; storage bucket `export-shipment-documents`; ops RLS
 - `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` �?? import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
 - `bank_accounts` / `bank_transactions` �?? ops bank ledger (BNK-/BTXN-); reconcile flags; ops RLS
 - `bank_feed_connections` - Phase 50 feed placeholders (`manual`|`pending_provider`); not live Open Banking; ops RLS
@@ -94,8 +95,8 @@ Chat stays one product. Links are additive metadata; mutations go through `link_
 ### Finance
 
 - `invoice_company_settings`, `invoice_sequences`
-- `invoices` �?? sequential `invoice_number`, document types, tax/payment totals, QR verification fields (Phase 14), provider submission fields
-- `invoice_items` �?? optional `part_id` / `vehicle_id` / `inventory_reference`
+- `invoices` — sequential `invoice_number`, document types, tax/payment totals, QR verification fields (Phase 14), provider submission fields; Phase 61b `price_term` (`fob`|`cf`|`cif`) + `shipment_term` (`dhl`|`roro`|`container_20ft`|`container_40ft`)
+- `invoice_items` — optional `part_id` / `vehicle_id` / `inventory_reference`; Phase 61b optional `price_term`
 - `invoice_payments`
 - `remittance_sequences`, `remittances`, `remittance_documents`, `remittance_allocations`
 - `supplier_invoices` �?? private file metadata
@@ -123,4 +124,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, and Phase 60 `last_seen_at`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`.
+Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, Phase 60 `last_seen_at`, and Phase 61/61b Incoterm + export document + reservation/invoice term columns. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`.

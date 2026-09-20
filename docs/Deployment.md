@@ -106,6 +106,15 @@ Leave property/widget blank to disable the public widget. Admin Live chat is **a
 
 **Phase 58 (activated):** Tawk webhook mirror — Edge secret `TAWK_WEBHOOK_SECRET`, migration `20260920070000_phase_58_tawk_chat_events.sql`, Edge Function `tawk-webhook` deployed with `--no-verify-jwt`, Tawk dashboard → Webhooks → URL `https://ydrnilquojvalhgifest.supabase.co/functions/v1/tawk-webhook` (Chat Start, Chat End, New ticket). Full steps: `docs/Tawk.md`. Never commit the webhook secret.
 
+## Phase 61 / 61b (export docs + Incoterms)
+
+App-only ship after schema already applied on Supabase `ydrnilquojvalhgifest`:
+
+- Migrations in git: `20260920100000_phase_61_export_docs_incoterms_reservations.sql`, `20260920150000_phase_61b_reservation_inspection_invoice_terms.sql` — **do not re-apply** if already in `schema_migrations`.
+- Storage bucket `export-shipment-documents` (private; signed URLs from admin UI) is created by the Phase 61 migration.
+- No new Vercel or Edge Function secrets for this phase. Shared labels live in `lib/trade-terms.ts`.
+- After production READY: spot-check `/admin/export-shipments` doc upload, reservation terms, invoice print header terms, public Incoterm strip + invoice verify.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.

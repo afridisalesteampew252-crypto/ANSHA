@@ -20,6 +20,7 @@ import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { VehiclePhotoGallery } from '@/components/public/vehicle-photo-gallery';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
+import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
@@ -235,6 +236,14 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
               </div>
             </div>
           </div>
+
+          <IncotermQuoteStrip
+            currency={vehicle.currency}
+            showPrice={Boolean(vehicle.show_price)}
+            priceFob={vehicle.price_fob}
+            priceCf={vehicle.price_cf}
+            priceCif={vehicle.price_cif}
+          />
 
           {specs.length > 0 && (
             <div className="grid grid-cols-2 gap-3">

@@ -11,13 +11,13 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Dashboard | no | `/admin/dashboard` | counts, charts; enriched via `get_ops_analytics_summary` |
 | Analytics | no | `/admin/analytics` | date-range KPIs (sales/stock/purchase/requests); sales get own-book subset |
 | AI assistant | no | `/admin/ai` (ops) | `ai_chat_threads` / `ai_chat_messages` + `get_ai_ops_grounding` + `POST /api/ai/chat` |
-| Parts catalog | `/parts` | `/admin/parts` (+ purchase cost on edit) | `parts`, photos, compatibility, cost columns |
-| Vehicles catalog | `/vehicles` (no auction sheets); `/machinery` (trucks + heavy equipment) | `/admin/vehicles` (+ `?class=machinery`), `/admin/vehicles/[id]` lifecycle + attachments + purchase/reserve; class fields; auction-sheet badge/lightbox | `vehicles` (`vehicle_class`, `equipment_category`, `operating_hours`), `vehicle_photos` (`is_auction_sheet`), lifecycle tables, cost columns |
+| Parts catalog | `/parts` (+ FOB/C&F/CIF quote strip when set) | `/admin/parts` (+ purchase cost + Incoterm sell quotes on edit) | `parts` (+ `price_fob`/`price_cf`/`price_cif`), photos, compatibility, cost columns |
+| Vehicles catalog | `/vehicles` (no auction sheets; Incoterm strip); `/machinery` (trucks + heavy equipment) | `/admin/vehicles` (+ `?class=machinery`), `/admin/vehicles/[id]` lifecycle + attachments + purchase/reserve + Incoterm quotes; class fields; auction-sheet badge/lightbox | `vehicles` (`vehicle_class`, `equipment_category`, `operating_hours`, Incoterm + reservation term columns), `vehicle_photos` (`is_auction_sheet`), lifecycle tables, cost columns |
 | Categories | `/categories` | `/admin/categories` | `categories` |
 | Suppliers | no | `/admin/suppliers`, SOA `/admin/suppliers/[id]` (ops) | `suppliers`, payments, allocations |
 | Purchase orders | no | `/admin/purchase-orders` (ops) | `purchase_orders`, `purchase_order_lines` |
 | Receive stock (GRN) | no | `/admin/inventory/receive` (ops) | `inventory_receipts`, `inventory_receipt_lines` |
-| Export shipments | no | `/admin/export-shipments` (ops) | `export_shipments`, `export_shipment_vehicles` |
+| Export shipments | no | `/admin/export-shipments` (ops; modes DHL/RoRo/20ft/40ft; PDF docs BOL/export cert/waybill/courier + per-country inspection) | `export_shipments`, `export_shipment_vehicles`, `export_shipment_documents` (Phase 61; storage bucket `export-shipment-documents`) |
 | Landed cost | no | `/admin/landed-cost` (ops) | `landed_cost_packs`, `landed_cost_charges`, `landed_cost_allocations` |
 | Bank accounts | no | `/admin/bank-accounts` (ops + accounts views) | `bank_accounts`, `bank_transactions`, `bank_feed_connections` + CSV import |
 | Expenses | no | `/admin/expenses` (ops + accounts) | `expense_categories`, `expenses` |
@@ -34,8 +34,8 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments, due reminders |
 | Customer portal | `/portal` | `/portal/invoices`, `/portal/account` | `customer_profiles` + own invoices + sanitized SOA RPC |
 | Customers | no | `/admin/customers`, SOA `[id]` (+ enable portal) | `customers`, invoices, remittances, allocations |
-| Reserve vehicle | no | `/admin/reservations` (field agents + ops) | reserve + proforma RPC |
-| Invoices | `/verify/invoice/[code]` | `/admin/invoices` (field agents: draft proforma; accounts/ops: full + approve sent) | `invoices*` |
+| Reserve vehicle | no | `/admin/reservations` (field agents + ops; price term + shipment term + inspection Yes/No) | reserve + proforma RPC; `reservation_price_term` / `reservation_shipment_term` / `reservation_inspection_required` |
+| Invoices | `/verify/invoice/[code]` (shows price/shipment terms) | `/admin/invoices` (field agents: draft proforma; accounts/ops: full + approve sent; header + line Incoterm; A4 print shows terms) | `invoices*` (+ `price_term`/`shipment_term`); `invoice_items.price_term` (Phase 61b) |
 | Supplier invoices | no | `/admin/invoices/supplier` (ops + accounts) | `supplier_invoices` |
 | Remittances | no | `/admin/remittances` (ops + accounts) | `remittances*` |
 | Users | `/admin` login | `/admin/users`, `/admin/profile` | Auth + `admin_profiles` |

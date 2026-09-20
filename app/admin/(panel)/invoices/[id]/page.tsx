@@ -20,6 +20,8 @@ type Invoice = {
   seller_address: string; issue_date: string; due_date: string; currency: string; reference: string | null;
   status: string; subtotal: number; discount_amount: number; tax_amount: number; total_amount: number;
   amount_paid: number; balance_due: number; notes: string | null; terms: string | null;
+  price_term: 'fob' | 'cf' | 'cif' | null;
+  shipment_term: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
   provider_name: string | null; provider_submission_id: string | null; provider_status: string; reported_at: string | null;
   document_type: 'delivery_note' | 'tax_invoice' | 'proforma_invoice' | 'quotation' | 'purchase_invoice' | 'commercial_invoice'; verification_code: string;
   verification_enabled: boolean; verification_issued_at: string;
@@ -27,7 +29,7 @@ type Invoice = {
 type Item = {
   id: string; description: string; inventory_reference: string | null; quantity: number; unit_price: number;
   discount_percent: number; tax_rate: number; line_subtotal: number; line_discount: number; line_tax: number;
-  line_total: number; sort_order: number;
+  line_total: number; sort_order: number; price_term: 'fob' | 'cf' | 'cif' | null;
 };
 type Payment = { id: string; payment_date: string; amount: number; method: string; reference: string | null; notes: string | null; created_at: string };
 

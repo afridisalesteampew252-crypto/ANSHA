@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
+import { PRICE_TERM_LABELS, SHIPMENT_MODE_LABELS, inspectionRequiredLabel } from '@/lib/trade-terms';
 import { auctionSheetPhotos, pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
 import { isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
 import type { StockStatus, VehiclePhoto, VehicleWithPhotos } from '@/lib/types';
@@ -166,6 +167,21 @@ export function AdminVehicleCard({
                 </Badge>
                 <StockOriginBadge origin={vehicle.stock_origin} compact />
                 <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
+                {status === 'reserved' && vehicle.reservation_price_term ? (
+                  <Badge variant="outline" className="font-normal">
+                    {PRICE_TERM_LABELS[vehicle.reservation_price_term]}
+                  </Badge>
+                ) : null}
+                {status === 'reserved' && vehicle.reservation_shipment_term ? (
+                  <Badge variant="outline" className="font-normal">
+                    {SHIPMENT_MODE_LABELS[vehicle.reservation_shipment_term]}
+                  </Badge>
+                ) : null}
+                {status === 'reserved' && vehicle.reservation_inspection_required != null ? (
+                  <Badge variant="outline" className="font-normal">
+                    Inspection: {inspectionRequiredLabel(vehicle.reservation_inspection_required)}
+                  </Badge>
+                ) : null}
               </div>
               <h2 className="mt-2 truncate text-base font-bold tracking-tight">{vehicle.title}</h2>
               <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">

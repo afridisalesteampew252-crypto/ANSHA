@@ -104,13 +104,13 @@ Open `/admin` after login. Menu groups match the sidebar.
 **Parts** — `/admin/parts`
 
 1. Open Parts → **New part** (or edit an existing row).
-2. Fill identifiers, pricing, stock origin/status, publish flags, photos.
-3. Save. Purchase cost fields appear on edit for ops users.
+2. Fill identifiers, pricing (including optional **FOB / C&F / CIF** sell quotes), stock origin/status, publish flags, photos.
+3. Save. Purchase cost fields appear on edit for ops users. Public detail shows Incoterm quotes when set.
 
 **Vehicles** — `/admin/vehicles` and `/admin/vehicles/[id]`
 
 1. Create or open a vehicle.
-2. On the detail page, manage photos (upload, set cover, reorder, replace, delete), purchase/reserve fields, and public listing (publish only when stock is **available**).
+2. On the detail page, manage photos (upload, set cover, reorder, replace, delete), purchase/reserve fields, optional **FOB / C&F / CIF** quotes, and public listing (publish only when stock is **available**).
 3. Mark Japanese auction sheets (`A.*` / `is_auction_sheet`) — they stay admin-only. On list cards, the **Auction sheet** badge opens a lightbox of those images.
 4. On the detail page, advance **lifecycle** along the recommended path (Auction → Yard → Port → Sold). Record workflow events; attach private files per event.
 5. Skipping stages requires an **admin** force override with a reason.
@@ -159,15 +159,17 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 **Reserve vehicle** — `/admin/reservations` (field agents + ops)
 
 1. Select an available vehicle and customer.
-2. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft).
-3. Release (with republish when appropriate) if the deal does not proceed.
+2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), and **inspection** (Yes / No). These store on the reserved stock and clear on release.
+3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line.
+4. Release (with republish when appropriate) if the deal does not proceed.
 
 **Invoices** — `/admin/invoices`
 
 1. **Field agents:** create/edit **draft proforma only**. Accounts or ops mark drafts as **sent**.
 2. **Accounts / ops:** all document types; approve draft→sent; record payments.
-3. Print A4 — denser layout; verification code + QR on the face when verification is enabled (`/verify/invoice/[code]`).
-4. Tax/commercial lines can apply sold status on linked stock when issued.
+3. Set document **price term** and **shipment term** on the invoice header (shown on A4 print and `/verify/invoice/[code]`). Linked stock lines can carry a per-line price term when the unit price came from an Incoterm quote.
+4. Print A4 — denser layout; verification code + QR on the face when verification is enabled; header shows price/shipment terms when set.
+5. Tax/commercial lines can apply sold status on linked stock when issued.
 
 **Supplier invoices** — `/admin/invoices/supplier` (ops + accounts) — archive files linked to purchase (not available to field agents).
 
@@ -180,8 +182,9 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 
 **Export shipments** — `/admin/export-shipments` (ops)
 
-1. Create a shipment (EXP- number); add/remove vehicles.
-2. Update status; system may log lifecycle events and soft-move toward **port** when rules allow.
+1. Create a shipment (EXP- number); choose mode **DHL** (small parts), **RoRo**, **20 feet container**, or **40 feet container**.
+2. Add/remove vehicles; update status (may log lifecycle events and soft-move toward **port** when rules allow).
+3. Upload shipping PDFs/images: **Bill of Lading**, **Export Certificate**, **Waybill**, **Courier** (one file each) plus **Inspection certificates** per destination country. Downloads use short-lived signed URLs.
 
 **Lifecycle** (on `/admin/vehicles/[id]`)
 

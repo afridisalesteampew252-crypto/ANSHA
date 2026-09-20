@@ -12,16 +12,91 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { isFieldAgentRole } from '@/lib/admin-rbac';
+import {
+  PRICE_TERM_LABELS,
+  PRICE_TERMS,
+  SHIPMENT_MODE_LABELS,
+  SHIPMENT_MODES,
+  priceForTerm,
+  type PriceTerm,
+  type ShipmentMode,
+} from '@/lib/trade-terms';
 
 type Customer = { id: string; full_name: string; company_name: string | null; email: string | null; phone: string | null; address: string | null; tax_registration_number: string | null };
-type Line = { key: string; description: string; quantity: number; unit_price: number; discount_percent: number; tax_rate: number; inventory_type: '' | 'part' | 'vehicle'; part_id: string | null; vehicle_id: string | null; inventory_reference: string };
-type StockItem = { id: string; type: 'part' | 'vehicle'; reference: string; label: string; price: number | null; currency: string; status: string; keywords?: (string | null)[] };
-type EditableInvoice = { id: string; invoice_number: string; document_type: string; customer_id: string | null; customer_name: string; customer_company: string | null; customer_email: string | null; customer_phone: string | null; customer_address: string | null; customer_tax_registration_number: string | null; issue_date: string; due_date: string; currency: string; reference: string | null; notes: string | null; terms: string | null };
-type EditableItem = { description: string; quantity: number; unit_price: number; discount_percent: number; tax_rate: number; inventory_type: '' | 'part' | 'vehicle' | null; part_id: string | null; vehicle_id: string | null; inventory_reference: string | null };
+type Line = {
+  key: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  discount_percent: number;
+  tax_rate: number;
+  inventory_type: '' | 'part' | 'vehicle';
+  part_id: string | null;
+  vehicle_id: string | null;
+  inventory_reference: string;
+  price_term: PriceTerm | '';
+};
+type StockItem = {
+  id: string;
+  type: 'part' | 'vehicle';
+  reference: string;
+  label: string;
+  price: number | null;
+  price_fob: number | null;
+  price_cf: number | null;
+  price_cif: number | null;
+  currency: string;
+  status: string;
+  keywords?: (string | null)[];
+};
+type EditableInvoice = {
+  id: string;
+  invoice_number: string;
+  document_type: string;
+  customer_id: string | null;
+  customer_name: string;
+  customer_company: string | null;
+  customer_email: string | null;
+  customer_phone: string | null;
+  customer_address: string | null;
+  customer_tax_registration_number: string | null;
+  issue_date: string;
+  due_date: string;
+  currency: string;
+  reference: string | null;
+  notes: string | null;
+  terms: string | null;
+  price_term: PriceTerm | null;
+  shipment_term: ShipmentMode | null;
+};
+type EditableItem = {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  discount_percent: number;
+  tax_rate: number;
+  inventory_type: '' | 'part' | 'vehicle' | null;
+  part_id: string | null;
+  vehicle_id: string | null;
+  inventory_reference: string | null;
+  price_term: PriceTerm | null;
+};
 
 const today = new Date().toISOString().slice(0, 10);
 const defaultDue = (() => { const date = new Date(); date.setDate(date.getDate() + 30); return date.toISOString().slice(0, 10); })();
-const newLine = (): Line => ({ key: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0, discount_percent: 0, tax_rate: 5, inventory_type: '', part_id: null, vehicle_id: null, inventory_reference: '' });
+const newLine = (): Line => ({
+  key: crypto.randomUUID(),
+  description: '',
+  quantity: 1,
+  unit_price: 0,
+  discount_percent: 0,
+  tax_rate: 5,
+  inventory_type: '',
+  part_id: null,
+  vehicle_id: null,
+  inventory_reference: '',
+  price_term: '',
+});
 const money = (value: number, currency: string) => new Intl.NumberFormat('en-AE', { style: 'currency', currency }).format(value || 0);
 
 export default function NewInvoicePage() {
@@ -39,6 +114,8 @@ export default function NewInvoicePage() {
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('Payment is due by the date shown on the invoice.');
+  const [priceTerm, setPriceTerm] = useState<PriceTerm | ''>('');
+  const [shipmentTerm, setShipmentTerm] = useState<ShipmentMode | ''>('');
   const [lines, setLines] = useState<Line[]>([newLine()]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -56,14 +133,38 @@ export default function NewInvoicePage() {
     const invoiceId = new URLSearchParams(window.location.search).get('edit') || '';
     const [customerResult, partsResult, vehiclesResult, invoiceResult, itemResult] = await Promise.all([
       supabase.from('customers').select('id,full_name,company_name,email,phone,address,tax_registration_number').eq('is_active', true).order('company_name').order('full_name'),
-      supabase.from('parts').select('id,part_code,name,price,currency,stock_status').neq('stock_status', 'sold').order('part_code').limit(500),
-      supabase.from('vehicles').select('id,stock_number,chassis_number,chassis_code,title,price,currency,stock_status').neq('stock_status', 'sold').order('stock_number').limit(500),
-      invoiceId ? supabase.from('invoices').select('id,invoice_number,document_type,customer_id,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,reference,notes,terms,status').eq('id', invoiceId).maybeSingle() : Promise.resolve({ data: null, error: null }),
-      invoiceId ? supabase.from('invoice_items').select('description,quantity,unit_price,discount_percent,tax_rate,inventory_type,part_id,vehicle_id,inventory_reference').eq('invoice_id', invoiceId).order('sort_order') : Promise.resolve({ data: [], error: null }),
+      supabase.from('parts').select('id,part_code,name,price,price_fob,price_cf,price_cif,currency,stock_status').neq('stock_status', 'sold').order('part_code').limit(500),
+      supabase.from('vehicles').select('id,stock_number,chassis_number,chassis_code,title,price,price_fob,price_cf,price_cif,currency,stock_status').neq('stock_status', 'sold').order('stock_number').limit(500),
+      invoiceId ? supabase.from('invoices').select('id,invoice_number,document_type,customer_id,customer_name,customer_company,customer_email,customer_phone,customer_address,customer_tax_registration_number,issue_date,due_date,currency,reference,notes,terms,status,price_term,shipment_term').eq('id', invoiceId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      invoiceId ? supabase.from('invoice_items').select('description,quantity,unit_price,discount_percent,tax_rate,inventory_type,part_id,vehicle_id,inventory_reference,price_term').eq('invoice_id', invoiceId).order('sort_order') : Promise.resolve({ data: [], error: null }),
     ]);
     setCustomers((customerResult.data || []) as Customer[]);
-    const parts: StockItem[] = (partsResult.data || []).map((item) => ({ id: item.id, type: 'part', reference: item.part_code, label: item.name, price: item.price, currency: item.currency, status: item.stock_status, keywords: [item.part_code, item.name] }));
-    const vehicles: StockItem[] = (vehiclesResult.data || []).map((item) => ({ id: item.id, type: 'vehicle', reference: item.stock_number || item.chassis_number || item.chassis_code || item.id.slice(0, 8), label: item.title, price: item.price, currency: item.currency, status: item.stock_status, keywords: [item.stock_number, item.chassis_number, item.chassis_code, item.title] }));
+    const parts: StockItem[] = (partsResult.data || []).map((item) => ({
+      id: item.id,
+      type: 'part',
+      reference: item.part_code,
+      label: item.name,
+      price: item.price,
+      price_fob: item.price_fob,
+      price_cf: item.price_cf,
+      price_cif: item.price_cif,
+      currency: item.currency,
+      status: item.stock_status,
+      keywords: [item.part_code, item.name],
+    }));
+    const vehicles: StockItem[] = (vehiclesResult.data || []).map((item) => ({
+      id: item.id,
+      type: 'vehicle',
+      reference: item.stock_number || item.chassis_number || item.chassis_code || item.id.slice(0, 8),
+      label: item.title,
+      price: item.price,
+      price_fob: item.price_fob,
+      price_cf: item.price_cf,
+      price_cif: item.price_cif,
+      currency: item.currency,
+      status: item.stock_status,
+      keywords: [item.stock_number, item.chassis_number, item.chassis_code, item.title],
+    }));
     setStockItems([...vehicles, ...parts]);
     if (invoiceId) {
       if (invoiceResult.error || !invoiceResult.data) {
@@ -80,8 +181,16 @@ export default function NewInvoicePage() {
       setCustomer({ name: invoice.customer_name, company: invoice.customer_company || '', email: invoice.customer_email || '', phone: invoice.customer_phone || '', address: invoice.customer_address || '', trn: invoice.customer_tax_registration_number || '' });
       setIssueDate(invoice.issue_date); setDueDate(invoice.due_date); setCurrency(invoice.currency);
       setReference(invoice.reference || ''); setNotes(invoice.notes || ''); setTerms(invoice.terms || '');
+      setPriceTerm((invoice.price_term as PriceTerm) || '');
+      setShipmentTerm((invoice.shipment_term as ShipmentMode) || '');
       const existingLines = (itemResult.data || []) as EditableItem[];
-      setLines(existingLines.length ? existingLines.map((item) => ({ ...item, key: crypto.randomUUID(), inventory_type: item.inventory_type || '', inventory_reference: item.inventory_reference || '' })) : [newLine()]);
+      setLines(existingLines.length ? existingLines.map((item) => ({
+        ...item,
+        key: crypto.randomUUID(),
+        inventory_type: item.inventory_type || '',
+        inventory_reference: item.inventory_reference || '',
+        price_term: (item.price_term as PriceTerm) || '',
+      })) : [newLine()]);
     }
   })(); }, []);
 
@@ -100,17 +209,42 @@ export default function NewInvoicePage() {
     const selected = stockItems.find((item) => `${item.type}:${item.id}` === value);
     setLines((current) => current.map((line) => {
       if (line.key !== key) return line;
-      if (!selected) return { ...line, inventory_type: '', part_id: null, vehicle_id: null, inventory_reference: '' };
+      if (!selected) return { ...line, inventory_type: '', part_id: null, vehicle_id: null, inventory_reference: '', price_term: '' };
+      const term: PriceTerm = 'fob';
+      const quoted = priceForTerm(term, selected);
       return {
         ...line,
         inventory_type: selected.type,
         part_id: selected.type === 'part' ? selected.id : null,
         vehicle_id: selected.type === 'vehicle' ? selected.id : null,
         inventory_reference: selected.reference,
-        description: `${selected.label}\nReference: ${selected.reference}`,
-        unit_price: selected.price || line.unit_price,
+        description: `${selected.label}\nReference: ${selected.reference}\nPrice term: ${PRICE_TERM_LABELS[term]}`,
+        unit_price: quoted ?? selected.price ?? line.unit_price,
+        price_term: term,
       };
     }));
+    if (selected) {
+      setCurrency(selected.currency || currency);
+      setPriceTerm((current) => current || 'fob');
+    }
+  };
+
+  const applyPriceTerm = (key: string, term: PriceTerm | '') => {
+    setLines((current) => current.map((line) => {
+      if (line.key !== key) return line;
+      const stockId = line.part_id || line.vehicle_id;
+      const selected = stockItems.find((item) => item.id === stockId && item.type === line.inventory_type);
+      if (!term || !selected) return { ...line, price_term: term };
+      const quoted = priceForTerm(term, selected);
+      const baseDesc = line.description.replace(/\nPrice term:.*$/m, '').trimEnd();
+      return {
+        ...line,
+        price_term: term,
+        unit_price: quoted ?? line.unit_price,
+        description: `${baseDesc}\nPrice term: ${PRICE_TERM_LABELS[term]}`,
+      };
+    }));
+    if (term) setPriceTerm((current) => current || term);
   };
 
   const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
@@ -154,7 +288,20 @@ export default function NewInvoicePage() {
       p_reference: reference.trim(),
       p_notes: notes.trim(),
       p_terms: terms.trim(),
-      p_items: validLines.map((line) => ({ description: line.description, quantity: line.quantity, unit_price: line.unit_price, discount_percent: line.discount_percent, tax_rate: line.tax_rate, inventory_type: line.inventory_type || null, part_id: line.part_id, vehicle_id: line.vehicle_id, inventory_reference: line.inventory_reference || null })),
+      p_price_term: priceTerm || null,
+      p_shipment_term: shipmentTerm || null,
+      p_items: validLines.map((line) => ({
+        description: line.description,
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        discount_percent: line.discount_percent,
+        tax_rate: line.tax_rate,
+        inventory_type: line.inventory_type || null,
+        part_id: line.part_id,
+        vehicle_id: line.vehicle_id,
+        inventory_reference: line.inventory_reference || null,
+        price_term: line.price_term || null,
+      })),
     };
     const { data, error } = editingId
       ? await supabase.rpc('update_invoice_v4', { ...payload, p_invoice_id: editingId })
@@ -193,7 +340,7 @@ export default function NewInvoicePage() {
         <Card><CardHeader className="flex-row items-center justify-between"><CardTitle className="text-lg">Line items</CardTitle><Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, newLine()])}><Plus className="h-4 w-4" />Add line</Button></CardHeader><CardContent className="space-y-3">
           <div className="hidden grid-cols-[minmax(15rem,1fr)_5rem_7rem_5rem_5rem_2.5rem] gap-2 px-1 text-xs font-medium text-muted-foreground md:grid"><span>Description</span><span>Qty</span><span>Unit price</span><span>Discount %</span><span>VAT %</span><span /></div>
           {lines.map((line, index) => <div key={line.key} className="grid gap-3 rounded-lg border p-3 md:grid-cols-[minmax(15rem,1fr)_5rem_7rem_5rem_5rem_2.5rem] md:items-end md:border-0 md:p-0">
-            <div className="space-y-2"><Label className="md:sr-only" htmlFor={`description-${line.key}`}>Description</Label><SearchableSelect size="sm" value={line.inventory_type ? `${line.inventory_type}:${line.part_id || line.vehicle_id}` : ''} onValueChange={(value) => chooseInventory(line.key, value)} options={stockOptions} placeholder="Manual line / no stock link" searchPlaceholder="Search stock #, chassis, part code…" clearLabel="Manual line / no stock link" /><Textarea id={`description-${line.key}`} required={index === 0} rows={4} value={line.description} onChange={(event) => updateLine(line.key, 'description', event.target.value)} placeholder={index === 0 ? "Select a stock reference above or enter vehicle/part details" : "Part, vehicle, shipping, or service"} />{line.inventory_reference && <p className="text-[11px] font-medium text-primary">Linked stock: {line.inventory_reference}</p>}</div>
+            <div className="space-y-2"><Label className="md:sr-only" htmlFor={`description-${line.key}`}>Description</Label><SearchableSelect size="sm" value={line.inventory_type ? `${line.inventory_type}:${line.part_id || line.vehicle_id}` : ''} onValueChange={(value) => chooseInventory(line.key, value)} options={stockOptions} placeholder="Manual line / no stock link" searchPlaceholder="Search stock #, chassis, part code…" clearLabel="Manual line / no stock link" />{line.inventory_type ? <select className="h-9 w-full rounded-md border bg-background px-2 text-xs" value={line.price_term} onChange={(e) => applyPriceTerm(line.key, e.target.value as PriceTerm | '')} aria-label="Price term"><option value="">Price term…</option>{PRICE_TERMS.map((term) => <option key={term} value={term}>{PRICE_TERM_LABELS[term]}</option>)}</select> : null}<Textarea id={`description-${line.key}`} required={index === 0} rows={4} value={line.description} onChange={(event) => updateLine(line.key, 'description', event.target.value)} placeholder={index === 0 ? "Select a stock reference above or enter vehicle/part details" : "Part, vehicle, shipping, or service"} />{line.inventory_reference && <p className="text-[11px] font-medium text-primary">Linked stock: {line.inventory_reference}</p>}</div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`quantity-${line.key}`}>Quantity</Label><Input id={`quantity-${line.key}`} type="number" min="0.001" step="0.001" value={line.quantity} onChange={(event) => updateLine(line.key, 'quantity', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`price-${line.key}`}>Unit price</Label><Input id={`price-${line.key}`} type="number" min="0" step="0.01" value={line.unit_price} onChange={(event) => updateLine(line.key, 'unit_price', event.target.value)} /></div>
             <div className="space-y-1 md:space-y-0"><Label className="md:sr-only" htmlFor={`discount-${line.key}`}>Discount %</Label><Input id={`discount-${line.key}`} type="number" min="0" max="100" step="0.01" value={line.discount_percent} onChange={(event) => updateLine(line.key, 'discount_percent', event.target.value)} /></div>
@@ -212,6 +359,34 @@ export default function NewInvoicePage() {
           <div className="space-y-1.5"><Label htmlFor="issue-date">Issue date</Label><Input id="issue-date" type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="due-date">Due date</Label><Input id="due-date" type="date" min={issueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="currency">Currency</Label><select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="AED">AED</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select></div>
+          <div className="space-y-1.5">
+            <Label htmlFor="price-term">Price term</Label>
+            <select
+              id="price-term"
+              value={priceTerm}
+              onChange={(event) => setPriceTerm(event.target.value as PriceTerm | '')}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">Not set</option>
+              {PRICE_TERMS.map((term) => (
+                <option key={term} value={term}>{PRICE_TERM_LABELS[term]}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="shipment-term">Shipment term</Label>
+            <select
+              id="shipment-term"
+              value={shipmentTerm}
+              onChange={(event) => setShipmentTerm(event.target.value as ShipmentMode | '')}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="">Not set</option>
+              {SHIPMENT_MODES.map((mode) => (
+                <option key={mode} value={mode}>{SHIPMENT_MODE_LABELS[mode]}</option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-1.5"><Label htmlFor="reference">Reference / PO</Label><Input id="reference" value={reference} onChange={(event) => setReference(event.target.value)} /></div>
         </CardContent></Card>
 

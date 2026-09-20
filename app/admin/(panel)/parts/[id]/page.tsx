@@ -18,6 +18,7 @@ import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import type { Category, PartCondition, PartCompatibility, PartPhoto, PartWithRelations } from '@/lib/types';
+import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 
 export default function EditPartPage(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
@@ -38,6 +39,9 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
   const [oemNumber, setOemNumber] = useState('');
   const [condition, setCondition] = useState<PartCondition>('used');
   const [price, setPrice] = useState('');
+  const [priceFob, setPriceFob] = useState('');
+  const [priceCf, setPriceCf] = useState('');
+  const [priceCif, setPriceCif] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [quantity, setQuantity] = useState('0');
   const [location, setLocation] = useState('');
@@ -86,6 +90,9 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
       setOemNumber(p.oem_number || '');
       setCondition(p.condition);
       setPrice(p.price?.toString() || '');
+      setPriceFob(p.price_fob != null ? String(p.price_fob) : '');
+      setPriceCf(p.price_cf != null ? String(p.price_cf) : '');
+      setPriceCif(p.price_cif != null ? String(p.price_cif) : '');
       setCurrency(p.currency);
       setQuantity(p.quantity.toString());
       setLocation(p.location || '');
@@ -146,6 +153,9 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
         oem_number: oemNumber.trim() || null,
         condition,
         price: price ? parseFloat(price) : null,
+        price_fob: parseOptionalPrice(priceFob),
+        price_cf: parseOptionalPrice(priceCf),
+        price_cif: parseOptionalPrice(priceCif),
         currency,
         quantity: parseInt(quantity, 10) || 0,
         location: location.trim() || null,
@@ -516,6 +526,15 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
                 </div>
               </div>
             </div>
+            <IncotermPriceFields
+              currency={currency}
+              values={{ priceFob, priceCf, priceCif }}
+              onChange={(patch) => {
+                if (patch.priceFob !== undefined) setPriceFob(patch.priceFob);
+                if (patch.priceCf !== undefined) setPriceCf(patch.priceCf);
+                if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
+              }}
+            />
           </CardContent>
         </Card>
 

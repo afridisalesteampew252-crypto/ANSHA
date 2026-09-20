@@ -115,6 +115,10 @@ Done (Phase 58): Tawk webhook mirror for Live chat Needs attention — tables `t
 
 Done (Phase 60): Team Chat presence — `admin_profiles.last_seen_at`, RPC `touch_admin_last_seen`, Realtime channel `workspace-presence`, `AdminPresenceProvider` in admin layout; green online dots + last-seen labels on `/admin/chat`. Migration `20260920090000_phase_60_team_chat_presence.sql`.
 
+Done (Phase 61): export shipment docs + Incoterms + reservation terms — `export_shipments.mode` constrained to `dhl`|`roro`|`container_20ft`|`container_40ft` (legacy `other` → `dhl`); `export_shipment_documents` (BOL / export certificate / waybill / courier single-slot + multi per-country `inspection_certificate`) with private storage bucket `export-shipment-documents`; catalog `price_fob`/`price_cf`/`price_cif` on parts & vehicles; reservation `reservation_price_term` / `reservation_shipment_term`; public `IncotermQuoteStrip`; admin docs panel. Migration `20260920100000_phase_61_export_docs_incoterms_reservations.sql` (applied remote).
+
+Done (Phase 61b): reservation `reservation_inspection_required` (Yes/No); invoice header `price_term` + `shipment_term`; optional `invoice_items.price_term`; A4 print + public verify show terms; reserve/proforma RPCs accept inspection. Migration `20260920150000_phase_61b_reservation_inspection_invoice_terms.sql` (applied remote). Shared labels: `lib/trade-terms.ts`.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.

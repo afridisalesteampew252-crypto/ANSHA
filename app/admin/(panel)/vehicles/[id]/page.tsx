@@ -21,16 +21,30 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
+import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { compressCatalogImage } from '@/lib/catalog-image';
 import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
+import {
+  PRICE_TERM_LABELS,
+  PRICE_TERMS,
+  SHIPMENT_MODE_LABELS,
+  SHIPMENT_MODES,
+  boolToInspectionChoice,
+  inspectionChoiceToBool,
+  inspectionRequiredLabel,
+  type InspectionChoice,
+  type PriceTerm,
+  type ShipmentMode,
+} from '@/lib/trade-terms';
 import {
   EQUIPMENT_CATEGORIES,
   isMachineryClass,
@@ -111,6 +125,15 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [purchaseCurrency, setPurchaseCurrency] = useState('AED');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [landedCost, setLandedCost] = useState('');
+  const [price, setPrice] = useState('');
+  const [priceFob, setPriceFob] = useState('');
+  const [priceCf, setPriceCf] = useState('');
+  const [priceCif, setPriceCif] = useState('');
+  const [currency, setCurrency] = useState('USD');
+  const [showPrice, setShowPrice] = useState(false);
+  const [reservePriceTerm, setReservePriceTerm] = useState<PriceTerm | ''>('fob');
+  const [reserveShipmentTerm, setReserveShipmentTerm] = useState<ShipmentMode | ''>('roro');
+  const [reserveInspection, setReserveInspection] = useState<InspectionChoice | ''>('');
   const [suppliers, setSuppliers] = useState<Array<{ id: string; label: string }>>([]);
   const [supplierId, setSupplierId] = useState('');
   const [customers, setCustomers] = useState<
@@ -179,6 +202,15 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setPurchaseCurrency(row.purchase_currency || 'AED');
     setPurchaseDate(row.purchase_date || '');
     setLandedCost(row.landed_cost != null ? String(row.landed_cost) : '');
+    setPrice(row.price != null ? String(row.price) : '');
+    setPriceFob(row.price_fob != null ? String(row.price_fob) : '');
+    setPriceCf(row.price_cf != null ? String(row.price_cf) : '');
+    setPriceCif(row.price_cif != null ? String(row.price_cif) : '');
+    setCurrency(row.currency || 'USD');
+    setShowPrice(Boolean(row.show_price));
+    setReservePriceTerm((row.reservation_price_term as PriceTerm) || 'fob');
+    setReserveShipmentTerm((row.reservation_shipment_term as ShipmentMode) || 'roro');
+    setReserveInspection(boolToInspectionChoice(row.reservation_inspection_required));
     setSupplierId(row.supplier_id || '');
     setReserveCustomerId(row.reserved_customer_id || '');
     setNextStage(RECOMMENDED_NEXT_STAGE[row.lifecycle_stage || 'unassigned'] || 'auction');
@@ -252,6 +284,12 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         purchase_date: purchaseDate || null,
         landed_cost: landedCost === '' ? null : Number(landedCost),
         supplier_id: supplierId || null,
+        price: parseOptionalPrice(price),
+        price_fob: parseOptionalPrice(priceFob),
+        price_cf: parseOptionalPrice(priceCf),
+        price_cif: parseOptionalPrice(priceCif),
+        currency: currency.trim().toUpperCase() || 'USD',
+        show_price: showPrice,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);
@@ -385,10 +423,21 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       toast.error('Select a customer to reserve for.');
       return;
     }
+    if (!reservePriceTerm || !reserveShipmentTerm) {
+      toast.error('Select price term and shipment term.');
+      return;
+    }
+    if (!reserveInspection) {
+      toast.error('Select whether inspection is required (Yes or No).');
+      return;
+    }
     setReserveBusy(true);
     const { error } = await supabase.rpc('reserve_vehicle_stock', {
       p_vehicle_id: id,
       p_customer_id: reserveCustomerId,
+      p_price_term: reservePriceTerm,
+      p_shipment_term: reserveShipmentTerm,
+      p_inspection_required: inspectionChoiceToBool(reserveInspection),
     });
     setReserveBusy(false);
     if (error) return toast.error(error.message);
@@ -859,6 +908,67 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
               <Button type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save purchase details</Button>
             </div>
           </form>
+          <div className="grid gap-3 border-t pt-4 sm:grid-cols-2">
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Price term</span>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={reservePriceTerm}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReservePriceTerm(e.target.value as PriceTerm)}
+              >
+                {PRICE_TERMS.map((term) => (
+                  <option key={term} value={term}>
+                    {PRICE_TERM_LABELS[term]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Shipment term</span>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={reserveShipmentTerm}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReserveShipmentTerm(e.target.value as ShipmentMode)}
+              >
+                {SHIPMENT_MODES.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {SHIPMENT_MODE_LABELS[mode]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="font-medium">Inspection</span>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={reserveInspection}
+                disabled={vehicle.stock_status === 'reserved' || vehicle.stock_status === 'sold'}
+                onChange={(e) => setReserveInspection(e.target.value as InspectionChoice | '')}
+                required
+              >
+                <option value="" disabled>
+                  Select Yes or No
+                </option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </label>
+            {vehicle.stock_status === 'reserved' ? (
+              <p className="sm:col-span-2 text-xs text-muted-foreground">
+                Active reservation:{' '}
+                {vehicle.reservation_price_term
+                  ? PRICE_TERM_LABELS[vehicle.reservation_price_term]
+                  : 'no price term'}{' '}
+                ·{' '}
+                {vehicle.reservation_shipment_term
+                  ? SHIPMENT_MODE_LABELS[vehicle.reservation_shipment_term]
+                  : 'no shipment term'}{' '}
+                · Inspection: {inspectionRequiredLabel(vehicle.reservation_inspection_required)}
+              </p>
+            ) : null}
+          </div>
           <div className="grid gap-3 border-t pt-4 sm:grid-cols-[1fr_auto_auto]">
             <label className="space-y-1.5 text-sm">
               <span className="font-medium">Reserve for customer</span>
@@ -1280,6 +1390,31 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                   <option value="reserved">Reserved</option>
                   <option value="sold">Sold</option>
                 </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sell-price">List price</Label>
+                <Input id="sell-price" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sell-currency">Currency</Label>
+                <Input id="sell-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} />
+              </div>
+              <div className="flex items-end sm:col-span-2">
+                <div className="flex items-center gap-2 pb-2">
+                  <Switch id="show-sell-price" checked={showPrice} onCheckedChange={setShowPrice} />
+                  <Label htmlFor="show-sell-price">Show prices publicly</Label>
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <IncotermPriceFields
+                  currency={currency}
+                  values={{ priceFob, priceCf, priceCif }}
+                  onChange={(patch) => {
+                    if (patch.priceFob !== undefined) setPriceFob(patch.priceFob);
+                    if (patch.priceCf !== undefined) setPriceCf(patch.priceCf);
+                    if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
+                  }}
+                />
               </div>
             </div>
             <Button type="submit" disabled={saving}>

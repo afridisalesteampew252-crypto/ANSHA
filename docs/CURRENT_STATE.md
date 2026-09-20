@@ -1,6 +1,6 @@
 # Current State
 
-Verified checkpoint: **2026-09-20** (Phase 58 Tawk webhook Needs attention + Phase 60 Team Chat presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery; blog/`/reviews`).
+Verified checkpoint: **2026-09-20** (Phase 61/61b export docs + Incoterms + reservation/invoice terms; Phase 58 Tawk + Phase 60 Team Chat presence; Japan Aug ZIP + Dubai WA Sep 20 stock; SEO/GSC + Phase 57 machinery).
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
@@ -10,16 +10,16 @@ Hosting: Vercel project `anshanew`
 
 | Area | Approx. done | Notes |
 |---|---|---|
-| Public catalog + SEO exporter site | **~96%** | Parts/vehicles/**machinery**/categories/blog+SEO/`/reviews`/offers/markets; **GSC verification meta**; `/favicon.ico` + brand icons; default OG `/images/og-default.jpg`; cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
-| Staff ERP (purchase → GL → VAT/payroll) | **~94%** | Phases 28–38, 46–48, 50, 53–57; field agents + accounts + HR |
+| Public catalog + SEO exporter site | **~96%** | Parts/vehicles/**machinery**/categories/blog+SEO/`/reviews`/offers/markets; FOB/C&F/CIF quote strip when set; **GSC verification meta**; favicon/OG; cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
+| Staff ERP (purchase → GL → VAT/payroll) | **~95%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**; field agents + accounts + HR; export PDF docs; invoice header terms |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~80%** | Push **Edge VAPID secrets** often invalid until re-set correctly |
 | Customer portal | **~75%** | Invoices + SOA; no remittance UX for customers |
 | PWA / Capacitor | **~85%** | Named **Anshatradingco APP**; install CTAs; Capacitor shell docs; SW precaches favicon |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–60 + stock loads + SEO/GSC) |
+| Docs (this set) | **~99%** | Audit refresh 2026-09-20 (Phases 53–61 + stock loads + SEO/GSC) |
 
-**Overall product maturity (shipping ERP + public exporter):** roughly **88–93%** of the Phase 1–60 roadmap that was chosen and built. Remaining work is polish, secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, and test coverage — not a greenfield rewrite.
+**Overall product maturity (shipping ERP + public exporter):** roughly **89–94%** of the Phase 1–61 roadmap that was chosen and built. Remaining work is polish, secrets hygiene, bank live feeds, deeper ESP/automation, manager location scope, and test coverage — not a greenfield rewrite.
 
 ## What exists now (high signal)
 
@@ -32,6 +32,8 @@ Hosting: Vercel project `anshanew`
 - Blog (`/blog`, `/blog/[slug]` SEO metadata + Article JSON-LD), banking, about, contact, invoice verify
 - Testimonials on home + `/reviews` (DB-backed + static fallback; footer + sitemap)
 - **SEO / Search:** root `verification.google` (Search Console HTML tag); stable `/favicon.ico` + `/icons/favicon-48.png`; default OG `/images/og-default.jpg` on home + listing layouts; helpers in `lib/seo.ts`
+- **Incoterm quotes (Phase 61):** public part/vehicle detail show FOB / C&F / CIF when catalog columns are set (`IncotermQuoteStrip`)
+- Invoice verify (`/verify/invoice/[code]`): shows document `price_term` + `shipment_term` and per-line price term when present (Phase 61b)
 - PWA: manifest **Anshatradingco APP**, SW, install CTAs, push opt-in
 - Header: live Dubai time + AED→USD/EUR/JPY/PKR via `/api/fx`
 - Vehicle galleries hide auction-sheet photos (`vehicle_photos.is_auction_sheet`); public RLS excludes them
@@ -40,7 +42,11 @@ Hosting: Vercel project `anshanew`
 ### Staff ERP (`/admin`)
 - Catalog (parts / vehicles / **Machinery & trucks** filter), customers, reservations, invoices, remittances
 - Purchase: suppliers, PO, GRN, supplier payments
-- Export shipments, landed cost
+- **Export shipments** (`/admin/export-shipments`) — modes **DHL / RoRo / 20ft / 40ft**; PDF/image docs: BOL, export certificate, waybill, courier (one each) + **per-country inspection certificates** (`export_shipment_documents`, bucket `export-shipment-documents`)
+- Landed cost
+- Catalog Incoterm sell quotes: `price_fob` / `price_cf` / `price_cif` on parts & vehicles (admin create/edit + public strip)
+- Reservations: **price term** (FOB/C&F/CIF), **shipment term** (same modes as export), **inspection Yes/No** (`reservation_*` on reserved stock; cleared on release)
+- Invoices (Phase 61b): header `price_term` + `shipment_term`; optional per-line `price_term`; A4 print + verify show both
 - Bank accounts (+ CSV feed stub), expenses, VAT return, payroll/EOS, GL + reports + auto-post
 - Requests, chat, mail, notifications
 - **Team Chat** (`/admin/chat`) — green online dots + last-seen labels (Phase 60: Realtime presence channel `workspace-presence`, `admin_profiles.last_seen_at`, `touch_admin_last_seen`, `AdminPresenceProvider`)
@@ -54,7 +60,7 @@ Hosting: Vercel project `anshanew`
 - HR MVP: shift locations, Morning/Night assignments, attendance (`/admin/hr*`); manager = HR viewer
 - Catalog audit: part/vehicle activity in `audit_logs` (admin SELECT only)
 - Vehicles: `vehicle_class` / `equipment_category` / `operating_hours` (Phase 57); auction-sheet badge + lightbox
-- A4 invoice print: denser layout; verification code on the document face (with QR)
+- A4 invoice print: denser layout; verification code on the document face (with QR); Phase 61b price/shipment terms in header
 
 ### Inventory ops (data loads, not schema phases)
 
@@ -81,7 +87,7 @@ Script: `scripts/import-japan-stock-vehicles.mjs` (+ one-off batch runners under
 `admin-create-user`, `admin-update-user`, `portal-create-access`, `send-web-push`, `send-outbound-email`, `send-whatsapp`, `remind-request-dues`, `tawk-webhook` (Phase 58; deploy with `--no-verify-jwt`)
 
 ### Migrations
-Through **Phase 60** (`admin_profiles.last_seen_at` + `touch_admin_last_seen`). Also Phase 58 Tawk mirror tables; Phase 53–57 (payroll deletes, field agents/HR, accounts/proforma, auction sheets, machinery class). See `supabase/migrations/`.
+Through **Phase 61b**. Phase 61: export modes + `export_shipment_documents` + catalog Incoterm columns + reservation price/shipment terms (`20260920100000_phase_61_export_docs_incoterms_reservations.sql`). Phase 61b: reservation inspection Yes/No + invoice/`invoice_items` price/shipment terms (`20260920150000_phase_61b_reservation_inspection_invoice_terms.sql`). Earlier: Phase 60 presence; Phase 58 Tawk; Phase 53–57. **Migrations already applied on remote** — app deploy ships code only. See `supabase/migrations/`.
 
 ## Known gaps / operator actions
 
@@ -104,7 +110,8 @@ Through **Phase 60** (`admin_profiles.last_seen_at` + `touch_admin_last_seen`). 
 4. Confirm Resend / WhatsApp / AI keys if those channels are in use.
 5. Verify Tawk webhook end-to-end (test chat → Needs attention row); rotate Tawk account password if it was ever shared in chat.
 6. Spot-check Team Chat presence: two admin sessions → green dots + last-seen when one leaves.
-7. Add Playwright smoke for public catalog + admin login when ready for quality gates.
+7. Spot-check Phase 61: export shipment PDF uploads; reservation price/shipment/inspection; invoice print + verify terms; public FOB/C&F/CIF strip.
+8. Add Playwright smoke for public catalog + admin login when ready for quality gates.
 
 ## Doc map
 

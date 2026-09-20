@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import { AlertTriangle, CheckCircle2, FileCheck2, ShieldCheck } from 'lucide-react';
 import { siteConfig } from '@/lib/site-config';
+import { PRICE_TERM_LABELS, SHIPMENT_MODE_LABELS, isPriceTerm, isShipmentMode } from '@/lib/trade-terms';
 
 export const metadata: Metadata = {
   title: 'Verify Invoice Authenticity',
@@ -10,7 +11,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true },
 };
 
-type VerificationItem = { description: string; inventory_reference?: string | null; quantity: number; unit_price: number; tax_rate: number; line_total: number };
+type VerificationItem = {
+  description: string;
+  inventory_reference?: string | null;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  line_total: number;
+  price_term?: string | null;
+};
 type Verification = {
   valid: boolean; invoice_number?: string; document_type?: string; issue_date?: string; due_date?: string;
   seller_name?: string; seller_tax_registration_number?: string; seller_address?: string;
@@ -18,6 +27,10 @@ type Verification = {
   currency?: string; subtotal?: number; discount_amount?: number; tax_amount?: number; total_amount?: number;
   amount_paid?: number; balance_due?: number; status?: string; provider_status?: string;
   verification_issued_at?: string; line_items?: VerificationItem[];
+  price_term?: string | null; shipment_term?: string | null;
+  items?: VerificationItem[];
+  seller?: { name?: string; tax_registration_number?: string; address?: string };
+  customer?: { name?: string; company?: string; tax_registration_number?: string };
 };
 
 const money = (value: number | undefined, currency = 'AED') =>
@@ -49,6 +62,15 @@ export default async function VerifyInvoicePage({ params }: { params: Promise<{ 
   }
 
   const currency = result.currency || 'AED';
+  const priceTermLabel = isPriceTerm(result.price_term) ? PRICE_TERM_LABELS[result.price_term] : null;
+  const shipmentTermLabel = isShipmentMode(result.shipment_term) ? SHIPMENT_MODE_LABELS[result.shipment_term] : null;
+  const lineItems = result.items || result.line_items || [];
+  const sellerName = result.seller?.name || result.seller_name;
+  const sellerAddress = result.seller?.address || result.seller_address;
+  const sellerTrn = result.seller?.tax_registration_number || result.seller_tax_registration_number;
+  const customerName = result.customer?.name || result.customer_name;
+  const customerCompany = result.customer?.company || result.customer_company;
+  const customerTrn = result.customer?.tax_registration_number || result.customer_tax_registration_number;
   return (
     <main className="bg-secondary/20 py-10 sm:py-16">
       <div className="container-page">
@@ -66,16 +88,18 @@ export default async function VerifyInvoicePage({ params }: { params: Promise<{ 
               <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Invoice number</p><p className="mt-1 font-bold">{result.invoice_number}</p></div>
               <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Issue date</p><p className="mt-1 font-medium">{result.issue_date}</p></div>
               <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p><p className="mt-1 font-bold capitalize">{result.status?.replaceAll('_', ' ')}</p></div>
+              {priceTermLabel ? <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Price term</p><p className="mt-1 font-bold">{priceTermLabel}</p></div> : null}
+              {shipmentTermLabel ? <div><p className="text-xs uppercase tracking-wide text-muted-foreground">Shipment term</p><p className="mt-1 font-bold">{shipmentTermLabel}</p></div> : null}
             </section>
 
             <section className="grid gap-5 rounded-xl border bg-secondary/20 p-4 sm:grid-cols-2 sm:p-5">
-              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued by</p><p className="font-bold">{result.seller_name}</p><p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{result.seller_address}</p><p className="mt-1 text-sm">TRN: {result.seller_tax_registration_number}</p></div>
-              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued to</p><p className="font-bold">{result.customer_company || result.customer_name}</p>{result.customer_company && <p className="text-sm text-muted-foreground">{result.customer_name}</p>}{result.customer_tax_registration_number && <p className="mt-1 text-sm">TRN: {result.customer_tax_registration_number}</p>}</div>
+              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued by</p><p className="font-bold">{sellerName}</p><p className="mt-1 whitespace-pre-line text-sm text-muted-foreground">{sellerAddress}</p><p className="mt-1 text-sm">TRN: {sellerTrn}</p></div>
+              <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">Issued to</p><p className="font-bold">{customerCompany || customerName}</p>{customerCompany && <p className="text-sm text-muted-foreground">{customerName}</p>}{customerTrn && <p className="mt-1 text-sm">TRN: {customerTrn}</p>}</div>
             </section>
 
             <section>
               <h2 className="mb-3 flex items-center gap-2 text-lg font-bold"><FileCheck2 className="h-5 w-5 text-primary" />Invoice details</h2>
-              <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[560px] text-sm"><thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Description</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Unit price</th><th className="p-3 text-right">VAT</th><th className="p-3 text-right">Total</th></tr></thead><tbody>{(result.line_items || []).map((item, index) => <tr key={index} className="border-t"><td className="whitespace-pre-line p-3">{item.description}{item.inventory_reference && <span className="mt-1 block font-mono text-[10px] text-primary">Stock ref: {item.inventory_reference}</span>}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{money(item.unit_price, currency)}</td><td className="p-3 text-right">{item.tax_rate}%</td><td className="p-3 text-right font-medium">{money(item.line_total, currency)}</td></tr>)}</tbody></table></div>
+              <div className="overflow-x-auto rounded-xl border"><table className="w-full min-w-[560px] text-sm"><thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Description</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Unit price</th><th className="p-3 text-right">VAT</th><th className="p-3 text-right">Total</th></tr></thead><tbody>{lineItems.map((item, index) => <tr key={index} className="border-t"><td className="whitespace-pre-line p-3">{item.description}{item.inventory_reference && <span className="mt-1 block font-mono text-[10px] text-primary">Stock ref: {item.inventory_reference}</span>}{isPriceTerm(item.price_term) ? <span className="mt-1 block text-[10px] font-semibold">{PRICE_TERM_LABELS[item.price_term]}</span> : null}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{money(item.unit_price, currency)}</td><td className="p-3 text-right">{item.tax_rate}%</td><td className="p-3 text-right font-medium">{money(item.line_total, currency)}</td></tr>)}</tbody></table></div>
             </section>
 
             <section className="ml-auto max-w-sm space-y-2 text-sm">

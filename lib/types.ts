@@ -57,6 +57,12 @@ export interface Part {
   oem_number: string | null;
   condition: PartCondition;
   price: number | null;
+  /** FOB sell quote in catalog currency. */
+  price_fob: number | null;
+  /** C&F (CFR) sell quote in catalog currency. */
+  price_cf: number | null;
+  /** CIF sell quote in catalog currency. */
+  price_cif: number | null;
   currency: string;
   quantity: number;
   location: string | null;
@@ -75,6 +81,10 @@ export interface Part {
   supplier_invoice_id: string | null;
   landed_cost: number | null;
   reserved_customer_id: string | null;
+  reservation_price_term: 'fob' | 'cf' | 'cif' | null;
+  reservation_shipment_term: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
+  /** Whether inspection is required for the active reservation; cleared on release. */
+  reservation_inspection_required: boolean | null;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -143,6 +153,12 @@ export interface Vehicle {
   /** Optional subtype e.g. excavator, dump_truck */
   equipment_category: string | null;
   price: number | null;
+  /** FOB sell quote in catalog currency. */
+  price_fob: number | null;
+  /** C&F (CFR) sell quote in catalog currency. */
+  price_cf: number | null;
+  /** CIF sell quote in catalog currency. */
+  price_cif: number | null;
   currency: string;
   show_price: boolean;
   description: string | null;
@@ -161,6 +177,12 @@ export interface Vehicle {
   supplier_invoice_id: string | null;
   landed_cost: number | null;
   reserved_customer_id: string | null;
+  /** Incoterm on active reservation: FOB / C&F / CIF. */
+  reservation_price_term: 'fob' | 'cf' | 'cif' | null;
+  /** Shipment mode on active reservation (same as export_shipments.mode). */
+  reservation_shipment_term: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
+  /** Whether inspection is required for the active reservation; cleared on release. */
+  reservation_inspection_required: boolean | null;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -663,6 +685,10 @@ export interface Invoice {
   balance_due: number;
   notes: string | null;
   terms: string | null;
+  /** Document Incoterm shown on print/PDF. */
+  price_term: 'fob' | 'cf' | 'cif' | null;
+  /** Document shipment mode shown on print/PDF. */
+  shipment_term: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
   provider_name: string | null;
   provider_submission_id: string | null;
   provider_status: InvoiceProviderStatus;
@@ -693,6 +719,8 @@ export interface InvoiceItem {
   part_id: string | null;
   vehicle_id: string | null;
   inventory_reference: string | null;
+  /** Optional Incoterm for this line when priced from a catalog quote. */
+  price_term: 'fob' | 'cf' | 'cif' | null;
   created_at: string;
 }
 
@@ -914,7 +942,14 @@ export type ExportShipmentStatus =
   | 'completed'
   | 'cancelled';
 
-export type ExportShipmentMode = 'roro' | 'container_20ft' | 'container_40ft' | 'other';
+export type ExportShipmentMode = 'dhl' | 'roro' | 'container_20ft' | 'container_40ft';
+
+export type ExportShipmentDocType =
+  | 'bill_of_lading'
+  | 'export_certificate'
+  | 'waybill'
+  | 'courier'
+  | 'inspection_certificate';
 
 export interface ExportShipment {
   id: string;
@@ -944,6 +979,21 @@ export interface ExportShipmentVehicle {
   vehicle_id: string;
   sort_order: number;
   notes: string | null;
+  created_at: string;
+}
+
+export interface ExportShipmentDocument {
+  id: string;
+  export_shipment_id: string;
+  doc_type: ExportShipmentDocType;
+  country_code: string | null;
+  country_name: string | null;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  notes: string | null;
+  uploaded_by: string | null;
   created_at: string;
 }
 
@@ -1505,6 +1555,7 @@ export interface Database {
       eos_estimate_logs: TableDef<EosEstimateLog>;
       expense_categories: TableDef<ExpenseCategory>;
       expenses: TableDef<Expense>;
+      export_shipment_documents: TableDef<ExportShipmentDocument>;
       export_shipment_vehicles: TableDef<ExportShipmentVehicle>;
       export_shipments: TableDef<ExportShipment>;
       gl_accounts: TableDef<GlAccount>;

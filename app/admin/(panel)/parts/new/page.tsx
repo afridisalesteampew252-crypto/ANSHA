@@ -16,6 +16,7 @@ import { compressCatalogImage } from '@/lib/catalog-image';
 import { toast } from 'sonner';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import type { Category, PartCondition, PartCompatibility } from '@/lib/types';
+import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 
 interface PendingPhoto {
   file: File;
@@ -36,6 +37,9 @@ export default function AddPartPage() {
   const [oemNumber, setOemNumber] = useState('');
   const [condition, setCondition] = useState<PartCondition>('used');
   const [price, setPrice] = useState('');
+  const [priceFob, setPriceFob] = useState('');
+  const [priceCf, setPriceCf] = useState('');
+  const [priceCif, setPriceCif] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [quantity, setQuantity] = useState('0');
   const [location, setLocation] = useState('');
@@ -134,6 +138,9 @@ export default function AddPartPage() {
         oem_number: oemNumber.trim() || null,
         condition,
         price: price ? parseFloat(price) : null,
+        price_fob: parseOptionalPrice(priceFob),
+        price_cf: parseOptionalPrice(priceCf),
+        price_cif: parseOptionalPrice(priceCif),
         currency,
         quantity: parseInt(quantity, 10) || 0,
         location: location.trim() || null,
@@ -456,6 +463,15 @@ export default function AddPartPage() {
                 </div>
               </div>
             </div>
+            <IncotermPriceFields
+              currency={currency}
+              values={{ priceFob, priceCf, priceCif }}
+              onChange={(patch) => {
+                if (patch.priceFob !== undefined) setPriceFob(patch.priceFob);
+                if (patch.priceCf !== undefined) setPriceCf(patch.priceCf);
+                if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
+              }}
+            />
           </CardContent>
         </Card>
 

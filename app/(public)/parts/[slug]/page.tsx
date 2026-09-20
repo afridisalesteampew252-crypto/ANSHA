@@ -34,6 +34,7 @@ import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { BrandLogo } from '@/components/public/brand-logo';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
+import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
 import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
@@ -384,6 +385,14 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
               )}
             </div>
           </div>
+
+          <IncotermQuoteStrip
+            currency={part.currency}
+            showPrice={Boolean(part.show_price)}
+            priceFob={part.price_fob}
+            priceCf={part.price_cf}
+            priceCif={part.price_cif}
+          />
 
           {/* Location */}
           {part.location && (
