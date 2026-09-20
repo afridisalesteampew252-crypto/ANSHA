@@ -205,6 +205,7 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 2. Pick destination country / ports / vessel / voyage from **Configuration** masters (or type freely where allowed).
 3. Add/remove vehicles; update status (may log lifecycle events and soft-move toward **port** when rules allow). Uploading **Bill of Lading** can auto-advance toward shipped/sailed; **Waybill** / surrendered docs toward delivered/arrived.
 4. Upload shipping PDFs/images: **Bill of Lading**, **Export Certificate**, **Waybill**, **Courier** (one file each) plus **Inspection certificates** per destination country. Downloads use short-lived signed URLs.
+5. **Delete** (Phase 68): draft/cancelled shipments can be permanently deleted (lines + docs + storage). Other statuses require cancel first, or an **account admin** may force-delete. Cannot be undone.
 
 **Lifecycle** (on `/admin/vehicles/[id]`)
 
@@ -229,7 +230,7 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 |---|---|---|
 | Inquiries | `/admin/inquiries` | Work website inquiry forms. |
 | Live chat | `/admin/live-chat` | **Admin + manager only.** Needs attention list (open chats/tickets from webhooks), open-count badge, dismiss handled items. Reply in Tawk (new tab / popup). Needs `NEXT_PUBLIC_TAWK_*` + Phase 58 webhook (`docs/Tawk.md`). |
-| Requests | `/admin/requests`, `/admin/requests/[id]` | Assign tickets, set due dates, attach private files, follow events. Due-soon/overdue appear in the notification center. |
+| Requests | `/admin/requests`, `/admin/requests/[id]` | Assign tickets, set due dates, attach private files, follow events. Due-soon/overdue appear in the notification center. **Delete ticket** (Phase 68) permanently removes the workspace ticket, activity, and attachments; website intake (`inquiries` / `part_requests`) is kept. |
 | Team Chat | `/admin/chat` | Direct/group chat; link conversations to vehicle / customer / inquiry / invoice / request; filter via query params. **Presence (Phase 60):** green dot = online (Realtime); offline shows last-seen. Heartbeat runs while any admin page is open (`AdminPresenceProvider`). |
 | Internal Mail | `/admin/mail` | Inbox / sent / archive; To/CC/BCC; attachments. |
 | Outbound email | `/admin/email` (ops) | Compose customer-facing email (Resend). Needs `RESEND_API_KEY`. |

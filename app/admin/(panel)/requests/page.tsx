@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { ClipboardList, Loader2, Plus, Search } from 'lucide-react';
+import { ClipboardList, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SearchableSelect, vehicleSelectOption } from '@/components/admin/searchable-select';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +59,7 @@ function AdminRequestsPageInner() {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(Boolean(vehicleFromQuery));
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [newType, setNewType] = useState<Exclude<RequestType, 'inquiry' | 'part_request'>>('shipping');
   const [newTitle, setNewTitle] = useState('');
@@ -155,6 +156,19 @@ function AdminRequestsPageInner() {
     await load();
     const created = (Array.isArray(data) ? data[0] : data) as { id?: string } | null;
     if (created?.id) router.push(`/admin/requests/${created.id}`);
+  };
+
+  const deleteRequest = async (row: RequestRow) => {
+    const ok = window.confirm(
+      `Delete request “${row.title}”?\n\nThis permanently removes the ticket, activity, and attachments. Website intake rows are kept. This cannot be undone.`
+    );
+    if (!ok) return;
+    setDeletingId(row.id);
+    const { error } = await supabase.rpc('delete_workspace_request', { p_request_id: row.id });
+    setDeletingId(null);
+    if (error) return toast.error(error.message);
+    toast.success('Request deleted.');
+    await load();
   };
 
   return (
@@ -306,30 +320,41 @@ function AdminRequestsPageInner() {
           {filtered.map((row) => {
             const overdue = isRequestOverdue(row.due_at, row.status);
             return (
-              <Link key={row.id} href={`/admin/requests/${row.id}`} className="block">
-                <Card className="transition-shadow hover:shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold">{row.title}</h3>
-                          <Badge variant="outline">{requestTypeLabel(row.request_type)}</Badge>
-                          <Badge variant="outline" className={requestStatusClass[row.status as RequestStatus]}>
-                            {requestStatusLabel(row.status)}
-                          </Badge>
-                          {overdue ? <Badge variant="destructive">Overdue</Badge> : null}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {row.assigned?.full_name || row.assigned?.email || 'Unassigned'}
-                          {row.vehicles?.title ? ` · ${row.vehicles.title}` : ''}
-                          {row.due_at ? ` · due ${format(new Date(row.due_at), 'dd MMM yyyy HH:mm')}` : ''}
-                        </p>
+              <Card key={row.id} className="transition-shadow hover:shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <Link href={`/admin/requests/${row.id}`} className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold">{row.title}</h3>
+                        <Badge variant="outline">{requestTypeLabel(row.request_type)}</Badge>
+                        <Badge variant="outline" className={requestStatusClass[row.status as RequestStatus]}>
+                          {requestStatusLabel(row.status)}
+                        </Badge>
+                        {overdue ? <Badge variant="destructive">Overdue</Badge> : null}
                       </div>
+                      <p className="text-sm text-muted-foreground">
+                        {row.assigned?.full_name || row.assigned?.email || 'Unassigned'}
+                        {row.vehicles?.title ? ` · ${row.vehicles.title}` : ''}
+                        {row.due_at ? ` · due ${format(new Date(row.due_at), 'dd MMM yyyy HH:mm')}` : ''}
+                      </p>
+                    </Link>
+                    <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{format(new Date(row.created_at), 'dd MMM yyyy')}</span>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        disabled={deletingId === row.id}
+                        aria-label={`Delete ${row.title}`}
+                        onClick={() => void deleteRequest(row)}
+                      >
+                        {deletingId === row.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

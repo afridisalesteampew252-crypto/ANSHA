@@ -64,6 +64,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
   const [noting, setNoting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -208,6 +209,20 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
     await load();
   };
 
+  const deleteRequest = async () => {
+    if (!row) return;
+    const ok = window.confirm(
+      `Delete request “${row.title}”?\n\nThis permanently removes the ticket, activity, and attachments. Website intake rows are kept. This cannot be undone.`
+    );
+    if (!ok) return;
+    setDeleting(true);
+    const { error } = await supabase.rpc('delete_workspace_request', { p_request_id: id });
+    setDeleting(false);
+    if (error) return toast.error(error.message);
+    toast.success('Request deleted.');
+    router.push('/admin/requests');
+  };
+
   const formatBytes = (value: number | null) => {
     if (!value) return '';
     if (value < 1024) return `${value} B`;
@@ -238,6 +253,10 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
             <Link href={`/admin/chat?request=${row.id}`}>Open linked chat</Link>
+          </Button>
+          <Button type="button" variant="destructive" size="sm" disabled={deleting} onClick={() => void deleteRequest()}>
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Delete ticket
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">

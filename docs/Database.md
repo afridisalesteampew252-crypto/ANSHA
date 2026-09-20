@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, Phase 61/61b (export docs + Incoterms), Phase 62 (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`), Phase 63 parts stock ops, Phase 64 invoice unallocate-delete (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`), Phase 65 vehicle stock pool (`20260920230000_phase_65_vehicle_stock_pool.sql`), Phase 66 marketing `sent_count` + manager `allowed_stock_origins` (`20260920240000_phase_66_marketing_manager_locations.sql`), and Phase 67 portal reservations (`20260920250000_phase_67_portal_reservations.sql`). Phases 61–67 are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
+Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, Phase 61/61b (export docs + Incoterms), Phase 62 (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`), Phase 63 parts stock ops, Phase 64 invoice unallocate-delete (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`), Phase 65 vehicle stock pool (`20260920230000_phase_65_vehicle_stock_pool.sql`), Phase 66 marketing `sent_count` + manager `allowed_stock_origins` (`20260920240000_phase_66_marketing_manager_locations.sql`), Phase 67 portal reservations (`20260920250000_phase_67_portal_reservations.sql`), and Phase 68 export/request hard-delete (`20260920260000_phase_68_export_request_delete.sql`). Phases 61–68 are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
 
 ## Entity groups
 
@@ -32,7 +32,7 @@ Latest migrations in the repository include Phase 51–52 (offers / trade config
 - `purchase_orders` / `purchase_order_lines` — PO number, VAT, terms; match snapshot vs GRN/supplier invoices/payments
 - `supplier_payments` / `supplier_payment_allocations` — AP payments allocated to PO or supplier invoice file
 - `inventory_receipts` / `inventory_receipt_lines` — GRN into existing vehicle/part rows; optional `supplier_invoice_id` and `purchase_order_id`
-- `export_shipments` / `export_shipment_vehicles` / `export_shipment_parts` — booking/BL header (EXP- numbers) + vehicle lines + Phase 63 part lines; ops RLS; status hooks into lifecycle events; Phase 61 `mode` ∈ `dhl`|`roro`|`container_20ft`|`container_40ft`; Phase 62 document-driven status automation; `create_export_shipment` accepts `part_ids`
+- `export_shipments` / `export_shipment_vehicles` / `export_shipment_parts` — booking/BL header (EXP- numbers) + vehicle lines + Phase 63 part lines; ops RLS; status hooks into lifecycle events; Phase 61 `mode` ∈ `dhl`|`roro`|`container_20ft`|`container_40ft`; Phase 62 document-driven status automation; `create_export_shipment` accepts `part_ids`; Phase 68 `delete_export_shipment(uuid, boolean)` (ops draft/cancelled; account-admin `p_force`; cascades children + storage)
 - `export_shipment_documents` — Phase 61 PDF/image metadata (`bill_of_lading`|`export_certificate`|`waybill`|`courier`|`inspection_certificate`); inspection rows require `country_code`; single-slot unique index for non-inspection types; storage bucket `export-shipment-documents`; ops RLS
 - `export_master_options` — Phase 62 Configuration masters (`destination_country`|`loading_port`|`destination_port`|`vessel`|`voyage`); workspace read; ops write
 - `landed_cost_packs` / `landed_cost_charges` / `landed_cost_allocations` �?? import charge packs (LC- numbers); post rolls into stock `landed_cost`; ops RLS
@@ -75,7 +75,7 @@ Latest migrations in the repository include Phase 51–52 (offers / trade config
 - `workspace_request_events` �?? append-only opened/status/assignment/due/note/title/attachment history
 - `workspace_request_attachments` �?? private file metadata for ticket documents (storage prefix `requests/{request_id}/` in `internal-files`)
 
-Intake rows stay as submitted. One ticket per inquiry and per part request (unique indexes). Mutations go through RPCs `create_workspace_request`, `update_workspace_request`, `record_workspace_request_event`, `register_workspace_request_attachment`, and `delete_workspace_request_attachment`.
+Intake rows stay as submitted. One ticket per inquiry and per part request (unique indexes). Mutations go through RPCs `create_workspace_request`, `update_workspace_request`, `record_workspace_request_event`, `register_workspace_request_attachment`, `delete_workspace_request_attachment`, and Phase 68 `delete_workspace_request` (hard-delete ticket; events/attachments/reminders CASCADE; storage cleaned best-effort; linked `inquiries` / `part_requests` kept).
 
 ### Content
 

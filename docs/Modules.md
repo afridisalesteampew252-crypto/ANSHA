@@ -18,7 +18,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Purchase orders | no | `/admin/purchase-orders` (ops) | `purchase_orders`, `purchase_order_lines` |
 | Receive stock (GRN) | no | `/admin/inventory/receive` (ops; polished form + `NativeSelect`) | `inventory_receipts`, `inventory_receipt_lines` |
 | Stock management | no | `/admin/stock`, `/admin/parts/stock`, `/admin/stock/arrival-watch` (ops; dual payment×shipment status; vehicle rows = owned pool) | vehicles (owned) + parts + linked invoices/shipments via `lib/stock-ops*`, `lib/parts-stock-ops-data.ts` (Phase 62–63) |
-| Export shipments | no | `/admin/export-shipments` (ops; modes DHL/RoRo/20ft/40ft; PDF docs; export master selects; doc-driven status; vehicles + parts) | `export_shipments`, `export_shipment_vehicles`, `export_shipment_parts` (Phase 63), `export_shipment_documents` (Phase 61–62; storage bucket `export-shipment-documents`); `export_master_options` |
+| Export shipments | no | `/admin/export-shipments` (ops; modes DHL/RoRo/20ft/40ft; PDF docs; export master selects; doc-driven status; vehicles + parts; Phase 68 hard-delete draft/cancelled or account-admin force) | `export_shipments`, `export_shipment_vehicles`, `export_shipment_parts` (Phase 63), `export_shipment_documents` (Phase 61–62; storage bucket `export-shipment-documents`); `export_master_options`; RPC `delete_export_shipment` |
 | Landed cost | no | `/admin/landed-cost` (ops) | `landed_cost_packs`, `landed_cost_charges`, `landed_cost_allocations` |
 | Bank accounts | no | `/admin/bank-accounts` (ops + accounts views) | `bank_accounts`, `bank_transactions`, `bank_feed_connections` + CSV import |
 | Expenses | no | `/admin/expenses` (ops + accounts) | `expense_categories`, `expenses` |
@@ -32,7 +32,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Reviews / testimonials | `/reviews` (+ home strip) | — | static `lib/content/testimonials.ts` |
 | Inquiries | forms on public pages | `/admin/inquiries` | `inquiries` |
 | Part requests | `PartRequestForm` on public pages | queued on `/admin/requests` | `part_requests` |
-| Requests | no | `/admin/requests`, `/admin/requests/[id]` | `workspace_requests`, events, attachments, due reminders |
+| Requests | no | `/admin/requests`, `/admin/requests/[id]` (Phase 68 hard-delete ticket; intake kept) | `workspace_requests`, events, attachments, due reminders; RPC `delete_workspace_request` |
 | Customer portal | `/portal` | `/portal/reservations`, `/portal/invoices`, `/portal/account` | `customer_profiles` + own reserved stock RLS + `get_my_reservations` + own invoices + sanitized SOA RPC |
 | Customers | no | `/admin/customers`, SOA `[id]` (+ enable portal) | `customers`, invoices, remittances, allocations |
 | Reserve stock | no | `/admin/reservations` (field agents + ops; vehicles + parts; price/shipment/inspection/VAT Yes/No; sales/freelancer requester locked; own-book RLS; polished form + `NativeSelect`) | reserve + proforma RPCs; `reserved_by` + `reservation_*` on vehicles (Phase 62) and parts (Phase 63) |

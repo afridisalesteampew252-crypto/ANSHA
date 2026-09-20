@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { isAccountAdminRole, isOpsRole } from '@/lib/admin-rbac';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import { SHIPMENT_MODE_LABELS, SHIPMENT_MODES, type ShipmentMode } from '@/lib/trade-terms';
@@ -69,6 +70,8 @@ export default function ExportShipmentsPage() {
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [addVehicleId, setAddVehicleId] = useState('');
+  const [isOps, setIsOps] = useState(false);
+  const [isAccountAdmin, setIsAccountAdmin] = useState(false);
 
   const [customerId, setCustomerId] = useState('');
   const [mode, setMode] = useState<ExportShipmentMode>('roro');
@@ -88,7 +91,8 @@ export default function ExportShipmentsPage() {
   const [partFormQuery, setPartFormQuery] = useState('');
 
   const load = useCallback(async () => {
-    const [shipRes, custRes, vehRes, partRes] = await Promise.all([
+    const [{ data: sessionData }, shipRes, custRes, vehRes, partRes] = await Promise.all([
+      supabase.auth.getSession(),
       supabase.from('export_shipments').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('customers').select('*').eq('is_active', true).order('full_name').limit(400),
       supabase
@@ -125,6 +129,15 @@ export default function ExportShipmentsPage() {
         label: `${row.part_code} — ${row.name}`,
       }))
     );
+    const uid = sessionData.session?.user.id;
+    if (uid) {
+      const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', uid).maybeSingle();
+      setIsOps(isOpsRole(profile?.role));
+      setIsAccountAdmin(isAccountAdminRole(profile?.role));
+    } else {
+      setIsOps(false);
+      setIsAccountAdmin(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -363,6 +376,34 @@ export default function ExportShipmentsPage() {
     await openShipment(selected.id);
   };
 
+  const deleteShipment = async () => {
+    if (!selected || !isOps) return;
+    const softStatuses: ExportShipmentStatus[] = ['draft', 'cancelled'];
+    const needsForce = !softStatuses.includes(selected.status);
+    if (needsForce && !isAccountAdmin) {
+      toast.error('Cancel this shipment before deleting, or ask an account admin to force-delete.');
+      return;
+    }
+    const ok = window.confirm(
+      needsForce
+        ? `Force-delete ${selected.shipment_number}?\n\nStatus is ${statusLabel(selected.status)}. This permanently removes the shipment, vehicle/part lines, and documents. This cannot be undone.`
+        : `Delete ${selected.shipment_number}?\n\nThis permanently removes the shipment, vehicle/part lines, and documents. This cannot be undone.`
+    );
+    if (!ok) return;
+    setBusy(true);
+    const { error } = await supabase.rpc('delete_export_shipment', {
+      p_shipment_id: selected.id,
+      p_force: needsForce,
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Deleted ${selected.shipment_number}.`);
+    setSelectedId(null);
+    setLines([]);
+    setPartLines([]);
+    await load();
+  };
+
   const patchSelected = (patch: Partial<ExportShipment>) => {
     if (!selectedId) return;
     setShipments((rows) => rows.map((row) => (row.id === selectedId ? { ...row, ...patch } : row)));
@@ -591,13 +632,25 @@ export default function ExportShipmentsPage() {
               <p className="text-sm text-muted-foreground">Nothing selected.</p>
             ) : (
               <>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge className={statusBadge[selected.status]}>{statusLabel(selected.status)}</Badge>
                   {nextStatuses(selected.status).map((status) => (
                     <Button key={status} type="button" size="sm" variant={status === 'cancelled' ? 'outline' : 'default'} disabled={busy} onClick={() => void setStatus(selected.id, status)}>
                       Mark {statusLabel(status)}
                     </Button>
                   ))}
+                  {isOps && (['draft', 'cancelled'].includes(selected.status) || isAccountAdmin) ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={busy}
+                      onClick={() => void deleteShipment()}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {['draft', 'cancelled'].includes(selected.status) ? 'Delete' : 'Force delete'}
+                    </Button>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">

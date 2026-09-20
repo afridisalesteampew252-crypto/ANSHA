@@ -64,6 +64,11 @@ Request workflow RPCs (Phase 19):
 - `record_workspace_request_event(p_request_id, p_notes)` — append-only note
 - `register_workspace_request_attachment(p_request_id, p_storage_path, p_file_name, p_mime_type?, p_size_bytes?)` — metadata after a private upload; path must be `requests/{request_id}/...`
 - `delete_workspace_request_attachment(p_attachment_id)` — remove metadata and write an activity row; UI deletes the Storage object first
+- `delete_workspace_request(p_request_id)` — Phase 68 hard-delete ticket (events/attachments/reminders CASCADE; `internal-files` cleaned best-effort; intake rows kept)
+
+Export shipment delete (Phase 68):
+
+- `delete_export_shipment(p_shipment_id, p_force default false)` — ops hard-delete draft/cancelled; account-admin `p_force` for other statuses; cascades vehicle/part/doc rows; cleans `export-shipment-documents` storage
 
 Chat linking RPCs (Phase 20):
 
