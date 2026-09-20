@@ -104,7 +104,7 @@ Tawk.to live chat (public widget + admin agent inbox): set on the **Vercel** pro
 
 Leave property/widget blank to disable the public widget. Admin Live chat is **admin + manager only** (see `docs/Roles.md`). Redeploy Next.js after changing Vercel env.
 
-**Later (Phase 58 — not part of current production activate):** Tawk webhook mirror (`TAWK_WEBHOOK_SECRET` Edge secret, migration `20260920070000_phase_58_tawk_chat_events.sql`, Edge Function `tawk-webhook` with `--no-verify-jwt`, Tawk dashboard → Webhooks). Do not set webhook secrets or deploy the function until that pass is scheduled.
+**Phase 58 (activated):** Tawk webhook mirror — Edge secret `TAWK_WEBHOOK_SECRET`, migration `20260920070000_phase_58_tawk_chat_events.sql`, Edge Function `tawk-webhook` deployed with `--no-verify-jwt`, Tawk dashboard → Webhooks → URL `https://ydrnilquojvalhgifest.supabase.co/functions/v1/tawk-webhook` (Chat Start, Chat End, New ticket). Full steps: `docs/Tawk.md`. Never commit the webhook secret.
 
 ## Rollback
 
@@ -120,4 +120,4 @@ Supabase project backups are an infrastructure concern, not an in-repo script. D
 
 ## Edge Functions
 
-`admin-create-user`, `admin-update-user`, `send-outbound-email`, `send-whatsapp`, and related functions deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy both functions together so they keep the same origin allowlist and anon-key caller verification. (`tawk-webhook` is **later** — Phase 58.)
+`admin-create-user`, `admin-update-user`, `send-outbound-email`, `send-whatsapp`, `tawk-webhook`, and related functions deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy JWT-protected functions together so they keep the same origin allowlist and anon-key caller verification. Deploy `tawk-webhook` with `--no-verify-jwt` (Tawk cannot send a Supabase JWT; HMAC is verified in-function).

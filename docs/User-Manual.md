@@ -205,9 +205,9 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 | Page | Path | How to use |
 |---|---|---|
 | Inquiries | `/admin/inquiries` | Work website inquiry forms. |
-| Live chat | `/admin/live-chat` | **Admin + manager only.** Open the Tawk agent inbox (new tab / popup). Answer public-site visitors. Needs `NEXT_PUBLIC_TAWK_*` on Vercel. |
+| Live chat | `/admin/live-chat` | **Admin + manager only.** Needs attention list (open chats/tickets from webhooks), open-count badge, dismiss handled items. Reply in Tawk (new tab / popup). Needs `NEXT_PUBLIC_TAWK_*` + Phase 58 webhook (`docs/Tawk.md`). |
 | Requests | `/admin/requests`, `/admin/requests/[id]` | Assign tickets, set due dates, attach private files, follow events. Due-soon/overdue appear in the notification center. |
-| Team Chat | `/admin/chat` | Direct/group chat; link conversations to vehicle / customer / inquiry / invoice / request; filter via query params. |
+| Team Chat | `/admin/chat` | Direct/group chat; link conversations to vehicle / customer / inquiry / invoice / request; filter via query params. **Presence (Phase 60):** green dot = online (Realtime); offline shows last-seen. Heartbeat runs while any admin page is open (`AdminPresenceProvider`). |
 | Internal Mail | `/admin/mail` | Inbox / sent / archive; To/CC/BCC; attachments. |
 | Outbound email | `/admin/email` (ops) | Compose customer-facing email (Resend). Needs `RESEND_API_KEY`. |
 | WhatsApp | `/admin/whatsapp` (ops) | Send text/template to a customer phone or E.164 number; review send log. Needs WhatsApp secrets. |

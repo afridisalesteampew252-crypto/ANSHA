@@ -40,14 +40,14 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Remittances | no | `/admin/remittances` (ops + accounts) | `remittances*` |
 | Users | `/admin` login | `/admin/users`, `/admin/profile` | Auth + `admin_profiles` |
 | Bulk import | no | `/admin/imports` | `import_jobs`, `import_rows` |
-| Team chat | no | `/admin/chat` (+ entity filters) | `chat_*`, `chat_conversation_links`, Realtime |
+| Team chat | no | `/admin/chat` (+ entity filters; online dots + last-seen) | `chat_*`, `chat_conversation_links`, Realtime; Phase 60 `admin_profiles.last_seen_at`, `touch_admin_last_seen`, presence channel `workspace-presence` via `AdminPresenceProvider` |
 | Internal mail | no | `/admin/mail` | `internal_mail*` |
 | Outbound email | no | `/admin/email` (ops) | `outbound_email_log` + Edge `send-outbound-email` |
 | Marketing campaigns | no | `/admin/campaigns` (ops) | `marketing_campaigns` + send hooks to push/email/offer |
 | PWA subscribers | no | `/admin/subscribers` (ops) | `push_subscriptions` (deals/insights topics) |
 | Trade config | `/markets/[code]` | `/admin/trade-config` (ops) | `export_market_configs`, `site_trade_settings` |
 | WhatsApp | no | `/admin/whatsapp` (ops) | `whatsapp_message_log` + Edge `send-whatsapp` |
-| Live chat (Tawk) | public widget on site layout | `/admin/live-chat` (**admin + manager only**) | `NEXT_PUBLIC_TAWK_*` env; no DB table |
+| Live chat (Tawk) | public widget on site layout | `/admin/live-chat` (**admin + manager only**; Needs attention) | `NEXT_PUBLIC_TAWK_*`; Phase 58 `tawk_chat_sessions` / `tawk_ticket_events` / `tawk_webhook_receipts`; Edge `tawk-webhook` — `docs/Tawk.md` |
 | Notifications | no | header center | `admin_notifications` |
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |
 | Company pages | `/`, `/about`, `/contact` | — | static + catalog queries; home featured rotation via `lib/featured-rotation.ts` |

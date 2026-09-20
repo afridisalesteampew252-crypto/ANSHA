@@ -34,6 +34,7 @@ import {
   chatLinkEntityLabel,
   chatLinkHref,
 } from '@/lib/chat-links';
+import { useAdminPresence } from '@/components/admin/admin-presence-provider';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -122,10 +123,29 @@ function initials(profile?: AdminProfile) {
     .toUpperCase();
 }
 
-function ProfileAvatar({ profile, url, className }: { profile?: AdminProfile; url?: string; className?: string }) {
+function ProfileAvatar({
+  profile,
+  url,
+  className,
+  online,
+}: {
+  profile?: AdminProfile;
+  url?: string;
+  className?: string;
+  online?: boolean;
+}) {
   return (
-    <span className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 font-bold text-primary', className)}>
-      {url ? <img src={url} alt={personName(profile)} className="h-full w-full object-cover" /> : initials(profile)}
+    <span className={cn('relative inline-flex shrink-0', className)}>
+      <span className="flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-primary/10 font-bold text-primary">
+        {url ? <img src={url} alt={personName(profile)} className="h-full w-full object-cover" /> : initials(profile)}
+      </span>
+      {online ? (
+        <span
+          className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500"
+          aria-label="Online"
+          title="Online"
+        />
+      ) : null}
     </span>
   );
 }
@@ -231,6 +251,7 @@ export default function ChatPage() {
 
 function ChatPageInner() {
   const searchParams = useSearchParams();
+  const { isOnline, presenceLabel, setKnownLastSeen } = useAdminPresence();
   const entityFilter = useMemo(() => {
     for (const item of CHAT_LINK_ENTITY_TYPES) {
       const id = searchParams.get(item.value);
@@ -386,6 +407,9 @@ function ChatPageInner() {
         if (!active) return;
         const profileList = (profileData || []) as AdminProfile[];
         setProfiles(Object.fromEntries(profileList.map((profile) => [profile.id, profile])));
+        for (const profile of profileList) {
+          setKnownLastSeen(profile.id, profile.last_seen_at ?? null);
+        }
         const signed = await Promise.all(profileList.filter((profile) => profile.avatar_url).map(async (profile) => {
           const { data } = await supabase.storage.from('profile-images').createSignedUrl(profile.avatar_url!, 3600);
           return [profile.id, data?.signedUrl || ''] as const;
@@ -399,7 +423,7 @@ function ChatPageInner() {
       }
     })();
     return () => { active = false; };
-  }, [loadConversations]);
+  }, [loadConversations, setKnownLastSeen]);
 
   useEffect(() => {
     if (!activeId || !currentUserId) return;
@@ -717,11 +741,21 @@ function ChatPageInner() {
                 ) : null}
                 <span className="shrink-0">
                   {conversation.conversation_type === 'group' ? (
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <span className="relative flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Users className="h-5 w-5" />
+                      {conversation.participants.some(
+                        (participant) => participant.user_id !== currentUserId && isOnline(participant.user_id)
+                      ) ? (
+                        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" aria-hidden />
+                      ) : null}
                     </span>
                   ) : (
-                    <ProfileAvatar profile={profile} url={profile ? avatarUrls[profile.id] : ''} className="h-11 w-11 text-xs" />
+                    <ProfileAvatar
+                      profile={profile}
+                      url={profile ? avatarUrls[profile.id] : ''}
+                      className="h-11 w-11 text-xs"
+                      online={Boolean(profile && isOnline(profile.id))}
+                    />
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -801,22 +835,36 @@ function ChatPageInner() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
                 {activeConversation.conversation_type === 'group' ? (
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Users className="h-5 w-5" />
+                    {activeConversation.participants.some(
+                      (participant) => participant.user_id !== currentUserId && isOnline(participant.user_id)
+                    ) ? (
+                      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" aria-hidden />
+                    ) : null}
                   </span>
                 ) : (
                   <ProfileAvatar
                     profile={activeOtherProfile}
                     url={activeOtherProfile ? avatarUrls[activeOtherProfile.id] : ''}
                     className="h-10 w-10 shrink-0 text-xs"
+                    online={Boolean(activeOtherProfile && isOnline(activeOtherProfile.id))}
                   />
                 )}
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate font-display text-base font-semibold tracking-tight">{activeTitle(activeConversation)}</h2>
                   <p className="truncate text-xs text-muted-foreground">
                     {activeConversation.conversation_type === 'group'
-                      ? `${activeConversation.participants.length} participants`
-                      : (activeOtherProfile?.email || 'Direct message')}
+                      ? (() => {
+                          const onlineCount = activeConversation.participants.filter(
+                            (participant) => participant.user_id !== currentUserId && isOnline(participant.user_id)
+                          ).length;
+                          const total = activeConversation.participants.length;
+                          return onlineCount
+                            ? `${total} participants · ${onlineCount} online`
+                            : `${total} participants`;
+                        })()
+                      : presenceLabel(activeOtherProfile?.id, activeOtherProfile?.last_seen_at ?? null)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
@@ -1077,10 +1125,18 @@ function ChatPageInner() {
               {colleagues.map((profile) => (
                 <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent">
                   <Checkbox checked={selectedPeople.includes(profile.id)} onCheckedChange={() => togglePerson(profile.id)} />
-                  <ProfileAvatar profile={profile} url={avatarUrls[profile.id]} className="h-9 w-9 text-xs" />
+                  <ProfileAvatar
+                    profile={profile}
+                    url={avatarUrls[profile.id]}
+                    className="h-9 w-9 text-xs"
+                    online={isOnline(profile.id)}
+                  />
                   <span>
                     <span className="block text-sm font-medium">{personName(profile)}</span>
-                    <span className="block text-xs text-muted-foreground">{profile.email}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {presenceLabel(profile.id, profile.last_seen_at ?? null)}
+                      {profile.email ? ` · ${profile.email}` : ''}
+                    </span>
                   </span>
                 </label>
               ))}
@@ -1111,10 +1167,18 @@ function ChatPageInner() {
               {colleagues.map((profile) => (
                 <label key={profile.id} className="flex cursor-pointer items-center gap-3 border-b p-3 last:border-0 hover:bg-accent">
                   <Checkbox checked={managePeople.includes(profile.id)} onCheckedChange={() => setManagePeople((current) => (current.includes(profile.id) ? current.filter((id) => id !== profile.id) : [...current, profile.id]))} />
-                  <ProfileAvatar profile={profile} url={avatarUrls[profile.id]} className="h-9 w-9 text-xs" />
+                  <ProfileAvatar
+                    profile={profile}
+                    url={avatarUrls[profile.id]}
+                    className="h-9 w-9 text-xs"
+                    online={isOnline(profile.id)}
+                  />
                   <span>
                     <span className="block text-sm font-medium">{personName(profile)}</span>
-                    <span className="block text-xs text-muted-foreground">{profile.email}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {presenceLabel(profile.id, profile.last_seen_at ?? null)}
+                      {profile.email ? ` · ${profile.email}` : ''}
+                    </span>
                   </span>
                 </label>
               ))}

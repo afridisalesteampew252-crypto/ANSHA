@@ -216,12 +216,28 @@ function writeStoredOpenIds(ids: string[]) {
   window.localStorage.setItem(OPEN_STORAGE_KEY, JSON.stringify(ids));
 }
 
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
+function navItemBadge(href: string, chatUnread: number, liveChatOpen: number) {
+  if (href === '/admin/chat') return chatUnread;
+  if (href === '/admin/live-chat') return liveChatOpen;
+  return 0;
+}
+
 function NavLinkRow({
   item,
   active,
   collapsed,
   mobile,
   chatUnread,
+  liveChatOpen,
   nested = false,
 }: {
   item: AdminNavItem;
@@ -229,8 +245,10 @@ function NavLinkRow({
   collapsed: boolean;
   mobile: boolean;
   chatUnread: number;
+  liveChatOpen: number;
   nested?: boolean;
 }) {
+  const badge = navItemBadge(item.href, chatUnread, liveChatOpen);
   return (
     <Link
       href={item.href}
@@ -247,11 +265,7 @@ function NavLinkRow({
       <item.icon className={cn('h-[1.125rem] w-[1.125rem] shrink-0', active && 'text-accent')} />
       <span className={cn('flex min-w-0 flex-1 items-center justify-between gap-2', !mobile && collapsed && 'sr-only')}>
         <span className="truncate">{item.label}</span>
-        {item.href === '/admin/chat' && chatUnread > 0 ? (
-          <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white">
-            {chatUnread > 99 ? '99+' : chatUnread}
-          </span>
-        ) : null}
+        <NavBadge count={badge} />
       </span>
     </Link>
   );
@@ -262,11 +276,13 @@ function GroupFlyoutLinks({
   pathname,
   search,
   chatUnread,
+  liveChatOpen,
 }: {
   group: AdminNavGroup;
   pathname: string;
   search: string;
   chatUnread: number;
+  liveChatOpen: number;
 }) {
   return (
     <div className="space-y-0.5 p-1">
@@ -275,6 +291,7 @@ function GroupFlyoutLinks({
       </p>
       {group.items.map((item) => {
         const active = isAdminNavActive(pathname, item.href, search);
+        const badge = navItemBadge(item.href, chatUnread, liveChatOpen);
         return (
           <Link
             key={item.href}
@@ -289,11 +306,7 @@ function GroupFlyoutLinks({
             <item.icon className={cn('h-4 w-4 shrink-0', active && 'text-accent')} />
             <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate">{item.label}</span>
-              {item.href === '/admin/chat' && chatUnread > 0 ? (
-                <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {chatUnread > 99 ? '99+' : chatUnread}
-                </span>
-              ) : null}
+              <NavBadge count={badge} />
             </span>
           </Link>
         );
@@ -307,6 +320,7 @@ type AdminSidebarNavProps = {
   collapsed?: boolean;
   mobile?: boolean;
   chatUnread?: number;
+  liveChatOpen?: number;
 };
 
 export function AdminSidebarNav({
@@ -314,6 +328,7 @@ export function AdminSidebarNav({
   collapsed = false,
   mobile = false,
   chatUnread = 0,
+  liveChatOpen = 0,
 }: AdminSidebarNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -386,7 +401,13 @@ export function AdminSidebarNav({
                 </button>
               </HoverCardTrigger>
               <HoverCardContent side="right" align="start" sideOffset={10} className="w-56 p-1.5">
-                <GroupFlyoutLinks group={group} pathname={pathname} search={search} chatUnread={chatUnread} />
+                <GroupFlyoutLinks
+                  group={group}
+                  pathname={pathname}
+                  search={search}
+                  chatUnread={chatUnread}
+                  liveChatOpen={liveChatOpen}
+                />
               </HoverCardContent>
             </HoverCard>
           );
@@ -406,6 +427,7 @@ export function AdminSidebarNav({
                 collapsed={collapsed}
                 mobile={mobile}
                 chatUnread={chatUnread}
+                liveChatOpen={liveChatOpen}
               />
             </div>
           );
@@ -428,11 +450,13 @@ export function AdminSidebarNav({
             >
               <GroupIcon className={cn('h-4 w-4 shrink-0', groupActive && 'text-accent')} />
               <span className="min-w-0 flex-1 truncate text-[13px]">{group.label}</span>
-              {group.items.some((item) => item.href === '/admin/chat') && chatUnread > 0 ? (
-                <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {chatUnread > 99 ? '99+' : chatUnread}
-                </span>
-              ) : null}
+              {(() => {
+                const groupBadge = group.items.reduce(
+                  (sum, item) => sum + navItemBadge(item.href, chatUnread, liveChatOpen),
+                  0
+                );
+                return <NavBadge count={groupBadge} />;
+              })()}
               <ChevronDown
                 className={cn(
                   'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
@@ -450,6 +474,7 @@ export function AdminSidebarNav({
                   collapsed={false}
                   mobile={mobile}
                   chatUnread={chatUnread}
+                  liveChatOpen={liveChatOpen}
                   nested
                 />
               ))}

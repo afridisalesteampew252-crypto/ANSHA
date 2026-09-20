@@ -276,6 +276,8 @@ export interface AdminProfile {
   role: AdminRole;
   avatar_url: string | null;
   is_active: boolean;
+  /** Present after phase_60 presence migration; null/undefined when never seen. */
+  last_seen_at?: string | null;
   created_at: string;
 }
 
@@ -1396,6 +1398,49 @@ export interface AuditLog {
 export type OfficeShift = 'morning' | 'night';
 export type AttendanceStatus = 'present' | 'absent' | 'leave' | 'remote';
 
+/** Phase 58 — Tawk webhook mirror for admin Live chat */
+export interface TawkChatSession {
+  id: string;
+  chat_id: string;
+  property_id: string | null;
+  status: 'open' | 'ended';
+  visitor_name: string | null;
+  visitor_email: string | null;
+  visitor_city: string | null;
+  visitor_country: string | null;
+  domain: string | null;
+  referrer: string | null;
+  first_message: string | null;
+  started_at: string;
+  ended_at: string | null;
+  last_event_at: string;
+  dismissed_at: string | null;
+  last_hook_event_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TawkTicketEvent {
+  id: string;
+  ticket_id: string;
+  human_id: number | null;
+  subject: string | null;
+  message_preview: string | null;
+  requester_name: string | null;
+  requester_email: string | null;
+  property_id: string | null;
+  event_time: string;
+  hook_event_id: string | null;
+  dismissed_at: string | null;
+  created_at: string;
+}
+
+export interface TawkWebhookReceipt {
+  hook_event_id: string;
+  event_type: string;
+  received_at: string;
+}
+
 /** Phase 54 — HR workforce */
 export interface ShiftLocation {
   id: string;
@@ -1505,6 +1550,9 @@ export interface Database {
       supplier_payment_allocations: TableDef<SupplierPaymentAllocation>;
       supplier_payments: TableDef<SupplierPayment>;
       suppliers: TableDef<Supplier>;
+      tawk_chat_sessions: TableDef<TawkChatSession>;
+      tawk_ticket_events: TableDef<TawkTicketEvent>;
+      tawk_webhook_receipts: TableDef<TawkWebhookReceipt>;
       vehicle_photos: TableDef<VehiclePhoto>;
       vehicle_lifecycle_event_attachments: TableDef<VehicleLifecycleEventAttachment>;
       vehicle_lifecycle_events: TableDef<VehicleLifecycleEvent>;

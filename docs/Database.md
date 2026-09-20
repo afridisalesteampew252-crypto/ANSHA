@@ -11,13 +11,13 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53 payroll deletes, Phase 54 field agents/HR/catalog audit, Phase 55 accounts + draft proforma, Phase 56 `vehicle_photos.is_auction_sheet`, Phase 57 `vehicles.vehicle_class` / `equipment_category` / `operating_hours`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
+Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53 payroll deletes, Phase 54 field agents/HR/catalog audit, Phase 55 accounts + draft proforma, Phase 56 `vehicle_photos.is_auction_sheet`, Phase 57 `vehicles.vehicle_class` / `equipment_category` / `operating_hours`, Phase 58 Tawk webhook mirror, Phase 60 Team Chat `last_seen_at`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
 
 ## Entity groups
 
 ### Identity
 
-`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`), `email`, `avatar_url`, `is_active`, `created_at`.
+`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`), `email`, `avatar_url`, `is_active`, `created_at`, Phase 60 `last_seen_at` (UTC heartbeat for Team Chat offline labels). RPC `touch_admin_last_seen()` (workspace users only).
 
 `customer_profiles` — PK `id` = `auth.users.id`, unique `customer_id` → `customers`. Portal identity only; never place portal users in `admin_profiles`.
 
@@ -83,12 +83,13 @@ Intake rows stay as submitted. One ticket per inquiry and per part request (uniq
 ### Communications
 
 - `chat_conversations` (`direct`|`group`), `chat_participants`, `chat_messages`, `chat_attachments`
-- `chat_conversation_links` �?? optional links from a conversation to vehicle/customer/inquiry/invoice/request
+- `chat_conversation_links` — optional links from a conversation to vehicle/customer/inquiry/invoice/request
 - `internal_mail`, `internal_mail_recipients`, `internal_mail_attachments`
-- `whatsapp_message_log` ? Cloud API send log (E.164 phone, text/template, Meta message id, status); ops RLS; Edge Function `send-whatsapp` (Phase 40)
+- `whatsapp_message_log` — Cloud API send log (E.164 phone, text/template, Meta message id, status); ops RLS; Edge Function `send-whatsapp` (Phase 40)
+- `tawk_chat_sessions` / `tawk_ticket_events` / `tawk_webhook_receipts` — Phase 58 Tawk webhook mirror for `/admin/live-chat` Needs attention; RLS `private.can_access_live_chat()` (admin|manager); Edge `tawk-webhook`
 - `admin_notifications`
 
-Chat stays one product. Links are additive metadata; mutations go through `link_chat_conversation` / `unlink_chat_conversation`.
+Chat stays one product. Links are additive metadata; mutations go through `link_chat_conversation` / `unlink_chat_conversation`. Presence (Phase 60) is Realtime channel `workspace-presence` plus `last_seen_at` heartbeats — not a second chat product.
 
 ### Finance
 
@@ -122,4 +123,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, and Phase 57 `vehicle_class`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`.
+Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, and Phase 60 `last_seen_at`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`.

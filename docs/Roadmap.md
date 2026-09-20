@@ -107,11 +107,13 @@ Also shipped (inventory ops, scripts — data already in live Supabase): Japan A
 
 Done (Phase 57): vehicle class for heavy machinery & trucks — `vehicles.vehicle_class` (`passenger`|`commercial_truck`|`heavy_machinery`), optional `equipment_category` + `operating_hours`; public `/machinery`; admin class filters + nav “Machinery & trucks”; helpers in `lib/vehicle-class.ts`. Migration `20260920060000_phase_57_vehicle_class_machinery.sql`.
 
-Also shipped (Tawk.to): public site widget via `NEXT_PUBLIC_TAWK_PROPERTY_ID` / `NEXT_PUBLIC_TAWK_WIDGET_ID`; admin `/admin/live-chat` agent inbox surface — **admin + manager only** (`canAccessLiveChat` + nav filter + `proxy.ts`). Optional `NEXT_PUBLIC_TAWK_DASHBOARD_URL`.
+Also shipped (Tawk.to widget, with Phase 57): public site widget via `NEXT_PUBLIC_TAWK_PROPERTY_ID` / `NEXT_PUBLIC_TAWK_WIDGET_ID`; admin `/admin/live-chat` surface — **admin + manager only** (`canAccessLiveChat` + nav filter + `proxy.ts`). Optional `NEXT_PUBLIC_TAWK_DASHBOARD_URL`. No official Tawk→Cursor MCP.
 
 Also shipped (SEO ops): Google Search Console `verification.google` in root layout; stable `/favicon.ico` + `/icons/favicon-48.png` + regenerated PWA icons; default OG `/images/og-default.jpg` (`lib/seo.ts`); after deploy → verify ownership + Request indexing (favicon can take days).
 
-**Later (Phase 58):** Tawk webhook mirror (`tawk-webhook` + `tawk_chat_sessions`) — deferred; not activated with the SEO ship.
+Done (Phase 58): Tawk webhook mirror for Live chat Needs attention — tables `tawk_chat_sessions` / `tawk_ticket_events` / `tawk_webhook_receipts`, RLS via `private.can_access_live_chat()`, Edge Function `tawk-webhook` (HMAC `TAWK_WEBHOOK_SECRET`, deploy `--no-verify-jwt`), admin inbox UI + open-count badge. Migration `20260920070000_phase_58_tawk_chat_events.sql`. Operator setup: `docs/Tawk.md`.
+
+Done (Phase 60): Team Chat presence — `admin_profiles.last_seen_at`, RPC `touch_admin_last_seen`, Realtime channel `workspace-presence`, `AdminPresenceProvider` in admin layout; green online dots + last-seen labels on `/admin/chat`. Migration `20260920090000_phase_60_team_chat_presence.sql`.
 
 ## 7. Mobile / PWA
 

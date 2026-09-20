@@ -23,6 +23,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
 import { AdminMarketChrome } from '@/components/admin/admin-market-chrome';
+import { AdminPresenceProvider } from '@/components/admin/admin-presence-provider';
 import {
   ADMIN_NAV_GROUPS,
   AdminSidebarNav,
@@ -93,6 +94,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const [liveChatOpen, setLiveChatOpen] = useState(0);
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem('ansha-admin-sidebar') === 'collapsed');
@@ -123,6 +125,20 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           const lastRead = readAt.get(message.conversation_id);
           return !lastRead || message.created_at > lastRead;
         }).length);
+      }
+      if (canAccessLiveChat(prof.role)) {
+        const [openSessions, openTickets] = await Promise.all([
+          supabase
+            .from('tawk_chat_sessions')
+            .select('id', { count: 'exact', head: true })
+            .eq('status', 'open')
+            .is('dismissed_at', null),
+          supabase
+            .from('tawk_ticket_events')
+            .select('id', { count: 'exact', head: true })
+            .is('dismissed_at', null),
+        ]);
+        setLiveChatOpen((openSessions.count || 0) + (openTickets.count || 0));
       }
       setLoading(false);
     })();
@@ -157,14 +173,15 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       : findAdminNavLabel(visibleGroups, pathname, searchParams?.toString() ?? '') || 'Admin workspace';
 
   return (
-    <div className="admin-shell flex min-h-screen min-w-0">
+    <AdminPresenceProvider userId={profile.id}>
+      <div className="admin-shell flex min-h-screen min-w-0">
       <aside className={cn('admin-sidebar relative hidden shrink-0 flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
         <div className={cn('flex h-24 items-center border-b border-border/80', collapsed ? 'justify-center px-2' : 'px-4')}>
           <Link href="/admin/dashboard" className="flex min-w-0 items-center" aria-label="ANSHA operations dashboard">
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
           </Link>
         </div>
-        <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} />
+        <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} liveChatOpen={liveChatOpen} />
         <div className="space-y-2 border-t border-border/80 p-3">
           {!collapsed && <div className="flex items-center justify-between px-2"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Appearance</span><ThemeToggle /></div>}
           {collapsed && <div className="flex justify-center"><ThemeToggle /></div>}
@@ -182,7 +199,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className="h-16 w-auto max-w-[220px] object-contain" />
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close admin menu"><X className="h-5 w-5" /></Button>
           </div>
-          <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} />
+          <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} liveChatOpen={liveChatOpen} />
           <div className="space-y-2 border-t border-border/80 p-3"><div className="flex items-center justify-between px-2"><span className="text-xs text-muted-foreground">Appearance</span><ThemeToggle /></div><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
         </aside>
       </>}
@@ -256,6 +273,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
         <main className="min-w-0 flex-1 overflow-x-hidden p-3 sm:p-5 md:p-6 xl:p-8">{children}</main>
       </div>
-    </div>
+      </div>
+    </AdminPresenceProvider>
   );
 }
