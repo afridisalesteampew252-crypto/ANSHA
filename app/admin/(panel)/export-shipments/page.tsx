@@ -60,8 +60,10 @@ export default function ExportShipmentsPage() {
   const [shipments, setShipments] = useState<ExportShipment[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<StockOption[]>([]);
+  const [parts, setParts] = useState<StockOption[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [lines, setLines] = useState<LineRow[]>([]);
+  const [partLines, setPartLines] = useState<Array<{ id: string; part_id: string; label: string }>>([]);
   const [query, setQuery] = useState('');
   const [modeFilter, setModeFilter] = useState<'all' | ExportShipmentMode>('all');
   const [busy, setBusy] = useState(false);
@@ -81,15 +83,23 @@ export default function ExportShipmentsPage() {
   const [eta, setEta] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<string[]>([]);
+  const [selectedPartIds, setSelectedPartIds] = useState<string[]>([]);
   const [vehicleFormQuery, setVehicleFormQuery] = useState('');
+  const [partFormQuery, setPartFormQuery] = useState('');
 
   const load = useCallback(async () => {
-    const [shipRes, custRes, vehRes] = await Promise.all([
+    const [shipRes, custRes, vehRes, partRes] = await Promise.all([
       supabase.from('export_shipments').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('customers').select('*').eq('is_active', true).order('full_name').limit(400),
       supabase
         .from('vehicles')
         .select('id,title,stock_number,chassis_number')
+        .neq('stock_status', 'sold')
+        .order('created_at', { ascending: false })
+        .limit(400),
+      supabase
+        .from('parts')
+        .select('id,name,part_code')
         .neq('stock_status', 'sold')
         .order('created_at', { ascending: false })
         .limit(400),
@@ -104,6 +114,15 @@ export default function ExportShipmentsPage() {
         stock_number: row.stock_number,
         chassis_number: row.chassis_number,
         label: `${row.stock_number || row.chassis_number || row.id.slice(0, 8)} — ${row.title}`,
+      }))
+    );
+    setParts(
+      (partRes.data || []).map((row) => ({
+        id: row.id,
+        title: row.name,
+        stock_number: row.part_code,
+        chassis_number: null,
+        label: `${row.part_code} — ${row.name}`,
       }))
     );
   }, []);
@@ -122,33 +141,55 @@ export default function ExportShipmentsPage() {
   const openShipment = async (id: string) => {
     setSelectedId(id);
     setAddVehicleId('');
-    const { data, error } = await supabase
-      .from('export_shipment_vehicles')
-      .select('*, vehicles(id,title,stock_number,chassis_number)')
-      .eq('export_shipment_id', id)
-      .order('sort_order');
-    if (error) {
-      toast.error(error.message);
+    const [vehLink, partLink] = await Promise.all([
+      supabase
+        .from('export_shipment_vehicles')
+        .select('*, vehicles(id,title,stock_number,chassis_number)')
+        .eq('export_shipment_id', id)
+        .order('sort_order'),
+      supabase
+        .from('export_shipment_parts')
+        .select('*, parts(id,name,part_code)')
+        .eq('export_shipment_id', id)
+        .order('sort_order'),
+    ]);
+    if (vehLink.error) {
+      toast.error(vehLink.error.message);
       setLines([]);
-      return;
+    } else {
+      setLines(
+        (vehLink.data || []).map((row) => {
+          const vehicle = Array.isArray(row.vehicles) ? row.vehicles[0] : row.vehicles;
+          const label = vehicle
+            ? `${vehicle.stock_number || vehicle.chassis_number || vehicle.id.slice(0, 8)} — ${vehicle.title}`
+            : row.vehicle_id.slice(0, 8);
+          return {
+            id: row.id,
+            export_shipment_id: row.export_shipment_id,
+            vehicle_id: row.vehicle_id,
+            sort_order: row.sort_order,
+            notes: row.notes,
+            created_at: row.created_at,
+            label,
+          } as LineRow;
+        })
+      );
     }
-    setLines(
-      (data || []).map((row) => {
-        const vehicle = Array.isArray(row.vehicles) ? row.vehicles[0] : row.vehicles;
-        const label = vehicle
-          ? `${vehicle.stock_number || vehicle.chassis_number || vehicle.id.slice(0, 8)} — ${vehicle.title}`
-          : row.vehicle_id.slice(0, 8);
-        return {
-          id: row.id,
-          export_shipment_id: row.export_shipment_id,
-          vehicle_id: row.vehicle_id,
-          sort_order: row.sort_order,
-          notes: row.notes,
-          created_at: row.created_at,
-          label,
-        } as LineRow;
-      })
-    );
+    if (partLink.error) {
+      // Table may not exist until migration; ignore schema-missing soft errors
+      if (!/does not exist|schema cache|export_shipment_parts/i.test(partLink.error.message)) {
+        toast.error(partLink.error.message);
+      }
+      setPartLines([]);
+    } else {
+      setPartLines(
+        (partLink.data || []).map((row) => {
+          const part = Array.isArray(row.parts) ? row.parts[0] : row.parts;
+          const label = part ? `${part.part_code} — ${part.name}` : row.part_id.slice(0, 8);
+          return { id: row.id, part_id: row.part_id, label };
+        })
+      );
+    }
   };
 
   const filtered = useMemo(() => {
@@ -182,6 +223,13 @@ export default function ExportShipmentsPage() {
       ),
     [vehicles, vehicleFormQuery]
   );
+  const formParts = useMemo(
+    () =>
+      parts.filter((row) =>
+        matchesQuery(partFormQuery, [row.label, row.title, row.stock_number])
+      ),
+    [parts, partFormQuery]
+  );
 
   const resetForm = () => {
     setShowForm(false);
@@ -198,11 +246,19 @@ export default function ExportShipmentsPage() {
     setEta('');
     setNotes('');
     setSelectedVehicleIds([]);
+    setSelectedPartIds([]);
     setVehicleFormQuery('');
+    setPartFormQuery('');
   };
 
   const toggleVehicle = (id: string) => {
     setSelectedVehicleIds((current) =>
+      current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
+    );
+  };
+
+  const togglePart = (id: string) => {
+    setSelectedPartIds((current) =>
       current.includes(id) ? current.filter((v) => v !== id) : [...current, id]
     );
   };
@@ -228,6 +284,7 @@ export default function ExportShipmentsPage() {
       p_notes: notes || null,
       p_vehicle_ids: selectedVehicleIds,
       p_confirm: confirm,
+      p_part_ids: selectedPartIds.length ? selectedPartIds : null,
     });
     setBusy(false);
     if (error) {
@@ -420,6 +477,37 @@ export default function ExportShipmentsPage() {
               </div>
               <p className="text-xs text-muted-foreground">{selectedVehicleIds.length} selected</p>
             </div>
+
+            {(mode === 'dhl' || selectedPartIds.length > 0) && (
+              <div className="space-y-2">
+                <Label>Parts (DHL / small parts packing list)</Label>
+                <Input
+                  placeholder="Filter parts by code or name…"
+                  value={partFormQuery}
+                  onChange={(e) => setPartFormQuery(e.target.value)}
+                />
+                <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {formParts.length === 0 ? (
+                    <p className="px-2 py-1.5 text-sm text-muted-foreground">No matches</p>
+                  ) : (
+                    formParts.map((row) => (
+                      <label
+                        key={row.id}
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-secondary/60"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPartIds.includes(row.id)}
+                          onChange={() => togglePart(row.id)}
+                        />
+                        <span className="truncate">{row.label}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{selectedPartIds.length} parts selected</p>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Notes</Label>
@@ -641,6 +729,29 @@ export default function ExportShipmentsPage() {
                       </Button>
                     </div>
                   ) : null}
+                </div>
+
+                <div className="space-y-3 border-t pt-4">
+                  <p className="text-sm font-semibold">Parts on shipment</p>
+                  {partLines.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No parts linked (use DHL create form to attach).</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {partLines.map((line) => (
+                        <li
+                          key={line.id}
+                          className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
+                        >
+                          <Link
+                            href={`/admin/parts/${line.part_id}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {line.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 <ExportShipmentDocumentsPanel

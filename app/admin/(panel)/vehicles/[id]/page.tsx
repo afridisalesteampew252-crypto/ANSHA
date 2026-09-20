@@ -40,10 +40,12 @@ import {
   REQUESTER_ROLES,
   SHIPMENT_MODE_LABELS,
   SHIPMENT_MODES,
+  accountRoleToRequesterRole,
   boolToInspectionChoice,
   boolToVatChoice,
   inspectionChoiceToBool,
   inspectionRequiredLabel,
+  profileRequesterName,
   vatApplicableLabel,
   vatChoiceToBool,
   type InspectionChoice,
@@ -184,7 +186,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         .eq('vehicle_id', id)
         .order('created_at', { ascending: false }),
       user
-        ? supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle()
+        ? supabase.from('admin_profiles').select('role,full_name,email').eq('id', user.id).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
     ]);
 
@@ -224,8 +226,16 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setReserveShipmentTerm((row.reservation_shipment_term as ShipmentMode) || 'roro');
     setReserveInspection(boolToInspectionChoice(row.reservation_inspection_required));
     setReserveVat(boolToVatChoice(row.reservation_vat_applicable) || 'yes');
-    setReserveRequesterName(row.reservation_requester_name || '');
-    setReserveRequesterRole((row.reservation_requester_role as RequesterRole) || 'admin');
+    const profileRole = (profileRes.data?.role as string) || null;
+    if (row.stock_status === 'available' && !row.reservation_requester_name) {
+      setReserveRequesterName(profileRequesterName(profileRes.data));
+      setReserveRequesterRole(accountRoleToRequesterRole(profileRole));
+    } else {
+      setReserveRequesterName(row.reservation_requester_name || '');
+      setReserveRequesterRole(
+        (row.reservation_requester_role as RequesterRole) || accountRoleToRequesterRole(profileRole)
+      );
+    }
     setReserveEtd(row.reservation_etd || '');
     setReserveEta(row.reservation_eta || '');
     setSupplierId(row.supplier_id || '');

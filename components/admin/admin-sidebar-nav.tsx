@@ -91,6 +91,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: PackagePlus,
     items: [
       { href: '/admin/stock', label: 'Stock management', icon: Package },
+      { href: '/admin/parts/stock', label: 'Parts stock', icon: Package },
       { href: '/admin/stock/arrival-watch', label: 'Arrival Watch', icon: Ship },
       { href: '/admin/suppliers', label: 'Suppliers', icon: Truck },
       { href: '/admin/purchase-orders', label: 'Purchase orders', icon: ClipboardList },
@@ -105,7 +106,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: Users,
     items: [
       { href: '/admin/customers', label: 'Customers & portal', icon: Users },
-      { href: '/admin/reservations', label: 'Reserve vehicle', icon: BookmarkPlus },
+      { href: '/admin/reservations', label: 'Reserve stock', icon: BookmarkPlus },
       { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
       { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
     ],
@@ -201,6 +202,10 @@ export function isAdminNavActive(pathname: string, href: string, search = '') {
   // Avoid marking /admin/stock active on arrival-watch
   if (hrefPath === '/admin/stock') {
     if (pathname.startsWith('/admin/stock/')) return false;
+  }
+  // Avoid marking Parts catalog active on parts stock ops / edit routes
+  if (hrefPath === '/admin/parts') {
+    if (pathname.startsWith('/admin/parts/')) return false;
   }
   if (pathname === hrefPath) return true;
   if (!pathname.startsWith(`${hrefPath}/`)) return false;

@@ -67,14 +67,33 @@ export function vatApplicableLabel(value: boolean | null | undefined): string {
   return value ? 'Yes' : 'No';
 }
 
-export const REQUESTER_ROLES = ['sales', 'manager', 'admin'] as const;
+export const REQUESTER_ROLES = ['sales', 'freelancer', 'manager', 'admin'] as const;
 export type RequesterRole = (typeof REQUESTER_ROLES)[number];
 
 export const REQUESTER_ROLE_LABELS: Record<RequesterRole, string> = {
   sales: 'Sales',
+  freelancer: 'Freelancer',
   manager: 'Manager',
   admin: 'Admin',
 };
+
+/** Map workspace account role → reservation requester role. */
+export function accountRoleToRequesterRole(
+  role: string | null | undefined
+): RequesterRole {
+  if (role === 'freelancer') return 'freelancer';
+  if (role === 'manager') return 'manager';
+  if (role === 'admin') return 'admin';
+  return 'sales';
+}
+
+/** Display name for locked / default requester fields. */
+export function profileRequesterName(profile: {
+  full_name?: string | null;
+  email?: string | null;
+} | null | undefined): string {
+  return (profile?.full_name || profile?.email || '').trim();
+}
 
 export function isPriceTerm(value: string | null | undefined): value is PriceTerm {
   return !!value && (PRICE_TERMS as readonly string[]).includes(value);

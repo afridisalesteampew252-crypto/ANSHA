@@ -6,14 +6,19 @@ import Link from 'next/link';
 import { BookmarkPlus, Car, CheckCircle2, ChevronLeft, ChevronRight, Edit, Eye, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
-import { PRICE_TERM_LABELS, SHIPMENT_MODE_LABELS, inspectionRequiredLabel } from '@/lib/trade-terms';
+import {
+  PRICE_TERM_LABELS,
+  SHIPMENT_MODE_LABELS,
+  inspectionRequiredLabel,
+  vatApplicableLabel,
+} from '@/lib/trade-terms';
 import { auctionSheetPhotos, pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
 import { isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
+import { stockOriginLabel } from '@/lib/stock';
 import type { StockStatus, VehiclePhoto, VehicleWithPhotos } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +44,7 @@ type Props = {
   fieldAgent: boolean;
   reservedByLabel?: string | null;
   salesStatusLabel?: string | null;
+  shipmentStatusLabel?: string | null;
   onUpdate?: (id: string, changes: Record<string, unknown>, success: string) => void;
   onSetListing?: (vehicle: VehicleWithPhotos, publish: boolean) => void;
   onDelete?: (vehicle: VehicleWithPhotos) => void;
@@ -127,11 +133,25 @@ function AuctionSheetTag({
   );
 }
 
+function money(amount: number | null | undefined, currency: string | null | undefined) {
+  if (amount == null) return null;
+  try {
+    return new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: currency || 'USD',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${amount} ${currency || ''}`.trim();
+  }
+}
+
 export function AdminVehicleCard({
   vehicle,
   fieldAgent,
   reservedByLabel,
   salesStatusLabel,
+  shipmentStatusLabel,
   onUpdate,
   onSetListing,
   onDelete,
@@ -142,218 +162,188 @@ export function AdminVehicleCard({
   const status = vehicle.stock_status || 'available';
   const stage = (vehicle.lifecycle_stage || 'unassigned') as LifecycleStage;
   const canReserve = status === 'available';
-  const stockRef = vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || 'No stock reference';
-
-  if (fieldAgent) {
-    return (
-      <Card className="overflow-hidden border-border/80">
-        <CardContent className="p-0">
-          <div className="flex gap-4 p-4">
-            <div className="h-24 w-32 shrink-0 overflow-hidden rounded-md bg-secondary">
-              {photoUrl ? (
-                <img src={photoUrl} alt={vehicle.title} className="h-full w-full object-cover" />
-              ) : (
-                <span className="grid h-full place-items-center">
-                  <Car className="h-7 w-7 text-muted-foreground/30" />
-                </span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
-                {salesStatusLabel && salesStatusLabel.toLowerCase() !== status ? (
-                  <Badge variant="outline" className="font-normal">
-                    {salesStatusLabel}
-                  </Badge>
-                ) : null}
-                {isMachineryClass(vehicle.vehicle_class) ? (
-                  <Badge variant="outline" className="font-normal">
-                    {vehicleClassBadgeLabel(vehicle.vehicle_class)}
-                  </Badge>
-                ) : null}
-                <Badge variant="outline" className="font-normal">
-                  {lifecycleStageLabel(stage)}
-                </Badge>
-                <StockOriginBadge origin={vehicle.stock_origin} compact />
-                <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
-                {status === 'reserved' && vehicle.reservation_price_term ? (
-                  <Badge variant="outline" className="font-normal">
-                    {PRICE_TERM_LABELS[vehicle.reservation_price_term]}
-                  </Badge>
-                ) : null}
-                {status === 'reserved' && vehicle.reservation_shipment_term ? (
-                  <Badge variant="outline" className="font-normal">
-                    {SHIPMENT_MODE_LABELS[vehicle.reservation_shipment_term]}
-                  </Badge>
-                ) : null}
-                {status === 'reserved' && vehicle.reservation_inspection_required != null ? (
-                  <Badge variant="outline" className="font-normal">
-                    Inspection: {inspectionRequiredLabel(vehicle.reservation_inspection_required)}
-                  </Badge>
-                ) : null}
-                {status === 'reserved' && vehicle.reservation_vat_applicable != null ? (
-                  <Badge variant="outline" className="font-normal">
-                    VAT: {vehicle.reservation_vat_applicable ? 'Yes' : 'No'}
-                  </Badge>
-                ) : null}
-              </div>
-              <h2 className="mt-2 truncate text-base font-bold tracking-tight">{vehicle.title}</h2>
-              <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">
-                <div className="flex gap-2">
-                  <dt className="shrink-0 font-semibold text-foreground/70">Stock / VIN</dt>
-                  <dd className="truncate font-mono">{stockRef}</dd>
-                </div>
-                <div className="flex gap-2">
-                  <dt className="shrink-0 font-semibold text-foreground/70">Spec</dt>
-                  <dd className="truncate">
-                    {[vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' · ') || '—'}
-                  </dd>
-                </div>
-                {reservedByLabel ? (
-                  <div className="flex gap-2">
-                    <dt className="shrink-0 font-semibold text-foreground/70">Reserved by</dt>
-                    <dd className="truncate">{reservedByLabel}</dd>
-                  </div>
-                ) : null}
-              </dl>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 border-t border-border/70 bg-secondary/40 px-3 py-2.5">
-            {canReserve ? (
-              <Button asChild size="sm" variant="accent" className="gap-1.5">
-                <Link href={`/admin/reservations?vehicle=${vehicle.id}`}>
-                  <BookmarkPlus className="h-4 w-4" />
-                  Reserve
-                </Link>
-              </Button>
-            ) : (
-              <span className="text-xs font-medium text-muted-foreground">
-                {status === 'reserved' ? 'Reserved — open Reservations to manage' : 'Not available'}
-              </span>
-            )}
-            <Button asChild variant="ghost" size="sm" className="ml-auto gap-1">
-              <Link href={`/vehicles/${vehicle.slug}`} target="_blank">
-                <Eye className="h-4 w-4" />
-                View
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const stockRef =
+    vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || vehicle.id.slice(0, 8);
+  const fob = money(vehicle.price_fob ?? vehicle.price, vehicle.currency);
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="flex gap-4 p-4">
-          <div className="h-24 w-32 shrink-0 overflow-hidden rounded-lg bg-secondary">
-            {photoUrl ? (
-              <img src={photoUrl} alt={vehicle.title} className="h-full w-full object-cover" />
+    <div className="grid gap-3 rounded-lg border bg-card p-3 shadow-sm sm:grid-cols-[7rem_minmax(0,1fr)_auto] lg:grid-cols-[7rem_minmax(12rem,1.3fr)_minmax(8rem,0.9fr)_minmax(9rem,1fr)_minmax(10rem,1.1fr)]">
+      <div className="h-20 w-28 overflow-hidden rounded-md bg-secondary">
+        {photoUrl ? (
+          <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid h-full place-items-center">
+            <Car className="h-6 w-6 text-muted-foreground/30" />
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 space-y-1 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
+          {salesStatusLabel ? (
+            <Badge variant="outline" className="font-normal">
+              {salesStatusLabel}
+            </Badge>
+          ) : null}
+          {shipmentStatusLabel ? (
+            <Badge className="bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200">
+              {shipmentStatusLabel}
+            </Badge>
+          ) : null}
+          {!fieldAgent ? <Badge className={stageClass[stage]}>{lifecycleStageLabel(stage)}</Badge> : null}
+          {isMachineryClass(vehicle.vehicle_class) ? (
+            <Badge variant="outline" className="font-normal">
+              {vehicleClassBadgeLabel(vehicle.vehicle_class)}
+            </Badge>
+          ) : null}
+          {!fieldAgent ? (
+            vehicle.is_published ? (
+              <Badge variant="outline">Public</Badge>
             ) : (
-              <span className="grid h-full place-items-center">
-                <Car className="h-7 w-7 text-muted-foreground/30" />
-              </span>
+              <Badge variant="secondary">Draft</Badge>
+            )
+          ) : null}
+          <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
+        </div>
+        {fieldAgent ? (
+          <p className="truncate text-sm font-bold tracking-tight">{vehicle.title}</p>
+        ) : (
+          <Link
+            href={`/admin/vehicles/${vehicle.id}`}
+            className="block truncate text-sm font-bold tracking-tight text-primary hover:underline"
+          >
+            {vehicle.title}
+          </Link>
+        )}
+        <p className="font-mono text-[11px] text-muted-foreground">{stockRef}</p>
+        <p className="truncate text-muted-foreground">
+          {[vehicle.year, vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(' · ') || '—'}
+        </p>
+      </div>
+
+      <div className="hidden space-y-0.5 text-xs text-muted-foreground lg:block">
+        <p>{stockOriginLabel(vehicle.stock_origin)}</p>
+        <p>{vehicle.location || '—'}</p>
+        {fob ? <p className="font-medium text-foreground">FOB {fob}</p> : null}
+        <StockOriginBadge origin={vehicle.stock_origin} compact />
+      </div>
+
+      <div className="hidden space-y-0.5 text-xs lg:block">
+        {reservedByLabel || vehicle.reservation_requester_name ? (
+          <Badge className="bg-sky-600 text-white">
+            {vehicle.reservation_requester_name || reservedByLabel}
+          </Badge>
+        ) : (
+          <p className="text-muted-foreground">No agent</p>
+        )}
+        {status === 'reserved' && vehicle.reservation_price_term ? (
+          <p>{PRICE_TERM_LABELS[vehicle.reservation_price_term]}</p>
+        ) : null}
+        {status === 'reserved' && vehicle.reservation_shipment_term ? (
+          <p>{SHIPMENT_MODE_LABELS[vehicle.reservation_shipment_term]}</p>
+        ) : null}
+        {status === 'reserved' && vehicle.reservation_inspection_required != null ? (
+          <p className="text-muted-foreground">
+            Inspection: {inspectionRequiredLabel(vehicle.reservation_inspection_required)}
+          </p>
+        ) : null}
+        {status === 'reserved' && vehicle.reservation_vat_applicable != null ? (
+          <p
+            className={cn(
+              'font-semibold',
+              vehicle.reservation_vat_applicable ? 'text-emerald-700' : 'text-red-700'
             )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap gap-2">
-              <Badge className={stageClass[stage]}>{lifecycleStageLabel(stage)}</Badge>
-              <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
-              {salesStatusLabel && salesStatusLabel.toLowerCase() !== status ? (
-                <Badge variant="outline">{salesStatusLabel}</Badge>
-              ) : null}
-              {isMachineryClass(vehicle.vehicle_class) ? (
-                <Badge variant="outline">{vehicleClassBadgeLabel(vehicle.vehicle_class)}</Badge>
-              ) : null}
-              {vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}
-              {reservedByLabel ? <Badge variant="outline">Agent: {reservedByLabel}</Badge> : null}
-              <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
-            </div>
-            <h2 className="mt-2 truncate font-bold">{vehicle.title}</h2>
-            <p className="text-xs text-muted-foreground">{stockRef}</p>
-            <p className="mt-1">
-              <StockOriginBadge origin={vehicle.stock_origin} compact />
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-3 border-t p-4 sm:grid-cols-2">
-          <label className="text-xs font-medium text-muted-foreground">
-            Stock location
-            <select
-              value={vehicle.stock_origin || 'dubai'}
-              onChange={(event) =>
-                onUpdate?.(vehicle.id, { stock_origin: event.target.value }, 'Stock location updated.')
-              }
-              className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"
-            >
-              {(stockOriginOptions || []).map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-medium text-muted-foreground">
-            Availability
-            <select
-              value={status}
-              onChange={(event) =>
-                onUpdate?.(
-                  vehicle.id,
-                  { stock_status: event.target.value },
-                  event.target.value === 'sold' ? 'Vehicle marked sold.' : 'Availability updated.'
-                )
-              }
-              className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground"
-            >
-              <option value="available">Available</option>
-              <option value="reserved">Reserved</option>
-              <option value="sold">Sold</option>
-            </select>
-          </label>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t p-3">
-          {status === 'available' && !vehicle.is_published ? (
-            <Button variant="outline" size="sm" onClick={() => onSetListing?.(vehicle, true)}>
-              <CheckCircle2 className="h-4 w-4" />
-              Publish when available
+          >
+            VAT: {vatApplicableLabel(vehicle.reservation_vat_applicable)}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2 sm:col-span-3 lg:col-span-1 lg:items-end">
+        <div className="flex flex-wrap gap-1.5 lg:justify-end">
+          {canReserve ? (
+            <Button asChild size="sm" variant="accent">
+              <Link href={`/admin/reservations?vehicle=${vehicle.id}`}>
+                <BookmarkPlus className="h-3.5 w-3.5" />
+                Reserve
+              </Link>
             </Button>
           ) : null}
-          {vehicle.is_published ? (
-            <Button variant="outline" size="sm" onClick={() => onSetListing?.(vehicle, false)}>
-              <CheckCircle2 className="h-4 w-4" />
+          {!fieldAgent && status === 'available' && !vehicle.is_published ? (
+            <Button size="sm" variant="outline" onClick={() => onSetListing?.(vehicle, true)}>
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Publish
+            </Button>
+          ) : null}
+          {!fieldAgent && vehicle.is_published ? (
+            <Button size="sm" variant="outline" onClick={() => onSetListing?.(vehicle, false)}>
               Unpublish
             </Button>
           ) : null}
-          {(status === 'reserved' || status === 'sold') && vehicle.is_published ? (
-            <Button variant="outline" size="sm" onClick={() => onSetListing?.(vehicle, false)}>
-              Unpublish when reserved
-            </Button>
-          ) : null}
-          <Button asChild variant="ghost" size="sm">
+          <Button asChild size="sm" variant="ghost">
             <Link href={`/vehicles/${vehicle.slug}`} target="_blank">
-              <Eye className="h-4 w-4" />
-              View
+              <Eye className="h-3.5 w-3.5" />
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link href={`/admin/vehicles/${vehicle.id}`}>
-              <Edit className="h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-auto text-destructive"
-            onClick={() => onDelete?.(vehicle)}
-            aria-label={`Delete ${vehicle.title}`}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {!fieldAgent ? (
+            <>
+              <Button asChild size="sm" variant="ghost">
+                <Link href={`/admin/vehicles/${vehicle.id}`}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-destructive"
+                onClick={() => onDelete?.(vehicle)}
+                aria-label={`Delete ${vehicle.title}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          ) : null}
         </div>
-      </CardContent>
-    </Card>
+        {!fieldAgent ? (
+          <div className="grid w-full gap-2 sm:grid-cols-2 lg:max-w-xs">
+            <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Origin
+              <select
+                value={vehicle.stock_origin || 'dubai'}
+                onChange={(event) =>
+                  onUpdate?.(vehicle.id, { stock_origin: event.target.value }, 'Stock location updated.')
+                }
+                className="mt-0.5 h-8 w-full rounded-md border bg-background px-2 text-xs text-foreground"
+              >
+                {(stockOriginOptions || []).map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Stock
+              <select
+                value={status}
+                onChange={(event) =>
+                  onUpdate?.(
+                    vehicle.id,
+                    { stock_status: event.target.value },
+                    event.target.value === 'sold' ? 'Vehicle marked sold.' : 'Availability updated.'
+                  )
+                }
+                className="mt-0.5 h-8 w-full rounded-md border bg-background px-2 text-xs text-foreground"
+              >
+                <option value="available">Available</option>
+                <option value="reserved">Reserved</option>
+                <option value="sold">Sold</option>
+              </select>
+            </label>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }

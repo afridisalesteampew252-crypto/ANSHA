@@ -81,10 +81,16 @@ export interface Part {
   supplier_invoice_id: string | null;
   landed_cost: number | null;
   reserved_customer_id: string | null;
+  reserved_by: string | null;
   reservation_price_term: 'fob' | 'cf' | 'cif' | null;
   reservation_shipment_term: 'dhl' | 'roro' | 'container_20ft' | 'container_40ft' | null;
   /** Whether inspection is required for the active reservation; cleared on release. */
   reservation_inspection_required: boolean | null;
+  reservation_vat_applicable: boolean | null;
+  reservation_etd: string | null;
+  reservation_eta: string | null;
+  reservation_requester_name: string | null;
+  reservation_requester_role: 'sales' | 'freelancer' | 'manager' | 'admin' | null;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -190,7 +196,7 @@ export interface Vehicle {
   reservation_etd: string | null;
   reservation_eta: string | null;
   reservation_requester_name: string | null;
-  reservation_requester_role: 'sales' | 'manager' | 'admin' | null;
+  reservation_requester_role: 'sales' | 'freelancer' | 'manager' | 'admin' | null;
   meta_title: string | null;
   meta_description: string | null;
   search_keywords: string[];
@@ -993,6 +999,16 @@ export interface ExportShipmentVehicle {
   created_at: string;
 }
 
+export interface ExportShipmentPart {
+  id: string;
+  export_shipment_id: string;
+  part_id: string;
+  quantity: number;
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface ExportShipmentDocument {
   id: string;
   export_shipment_id: string;
@@ -1568,6 +1584,7 @@ export interface Database {
       expenses: TableDef<Expense>;
       export_master_options: TableDef<import('./export-masters').ExportMasterOption>;
       export_shipment_documents: TableDef<ExportShipmentDocument>;
+      export_shipment_parts: TableDef<ExportShipmentPart>;
       export_shipment_vehicles: TableDef<ExportShipmentVehicle>;
       export_shipments: TableDef<ExportShipment>;
       gl_accounts: TableDef<GlAccount>;

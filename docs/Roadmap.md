@@ -121,6 +121,8 @@ Done (Phase 61b): reservation `reservation_inspection_required` (Yes/No); invoic
 
 Done (Phase 62): stock ops dashboard — `/admin/stock` + `/admin/stock/arrival-watch` (payment/stock × shipment dual status); `/admin/configuration` CRUD for `export_master_options` (destination country / loading port / destination port / vessel / voyage) wired into export shipments; field-agent vehicle SELECT scoped to available + own `reserved_by`; reservation VAT Yes/No + requester + ETD/ETA; invoice `vat_applicable`; document-driven shipment status (BOL → shipped/sailed, waybill/surrendered → delivered/arrived). Migration `20260920200000_phase_62_sales_assignment_export_masters_vat.sql` (applied remote). Helpers: `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`.
 
+Done (Phase 63): parts stock ops parity — `/admin/parts/stock`; parts `reserved_by` + reservation VAT/ETD/ETA/requester; field-agent parts SELECT (available + own reserved); reserve/proforma/release RPCs for parts; `export_shipment_parts` + `create_export_shipment` `part_ids`; requester_role includes `freelancer` with locked requester fields for sales/freelancer; redesigned `/admin/parts` + `/admin/vehicles` cards/lists. Migration `20260920210000_phase_63_parts_stock_ops_sales_scope.sql` (applied remote). Seed: `20260920210000_seed_export_master_options.sql` + `scripts/seed-export-masters.sql`. Helpers: `lib/parts-stock-ops-data.ts`, `lib/part-sales-status.ts`.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.
