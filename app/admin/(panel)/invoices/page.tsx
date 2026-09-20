@@ -130,7 +130,7 @@ export default function InvoicesPage() {
     overdue: invoices.filter((invoice) => invoice.currency === 'AED' && effectiveStatus(invoice) === 'overdue').reduce((sum, invoice) => sum + Math.max(Number(invoice.balance_due || 0), 0), 0),
   }), [invoices]);
 
-  const remove = async (invoice: Invoice, forceUnallocate = false) => {
+  const remove = async (invoice: Invoice, forceUnallocate = false): Promise<void> => {
     const confirmText = forceUnallocate
       ? `Delete ${invoice.invoice_number}? ${INVOICE_UNALLOCATE_DELETE_CONFIRM}`
       : `Delete ${invoice.invoice_number}? ${INVOICE_DELETE_CONFIRM}`;

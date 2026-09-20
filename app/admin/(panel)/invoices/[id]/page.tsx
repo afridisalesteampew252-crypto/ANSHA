@@ -162,7 +162,7 @@ export default function InvoiceDetailPage() {
     void load();
   };
 
-  const removeInvoice = async (forceUnallocate = false) => {
+  const removeInvoice = async (forceUnallocate = false): Promise<void> => {
     if (!invoice) return;
     const confirmText = forceUnallocate
       ? INVOICE_UNALLOCATE_DELETE_CONFIRM
