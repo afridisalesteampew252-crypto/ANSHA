@@ -70,6 +70,13 @@ Export shipment delete (Phase 68):
 
 - `delete_export_shipment(p_shipment_id, p_force default false)` — ops hard-delete draft/cancelled; account-admin `p_force` for other statuses; cascades vehicle/part/doc rows; cleans `export-shipment-documents` storage
 
+Remittances (Phase 69):
+
+- `create_remittance(..., p_received_by?, p_office_id?, p_shift_id?)` — receivables; unmatched customer ⇒ `is_unknown` / status `unknown`
+- `link_remittance(p_remittance_id, p_customer_id, ...)` — resolve Unknown TTS (receivables)
+- `count_unknown_remittances()` — finance unknown queue count
+- `allocate_remittance` — receivables only; refuses unknown
+
 Chat linking RPCs (Phase 20):
 
 - `link_chat_conversation(p_conversation_id, p_entity_type, p_entity_id)` — attach conversation to vehicle/customer/inquiry/invoice/request

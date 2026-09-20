@@ -24,9 +24,9 @@ Staff ERP and the portal need a live internet connection (not cached offline). F
 | Role | Login | Can do | Cannot do |
 |---|---|---|---|
 | **Visitor** | None | Browse available published stock, inquire, request parts, verify invoice by QR code | Staff tools, portal; auction-sheet photos |
-| **Sales / Freelancer** (field agent) | `/admin` | Parts/vehicles **lists**, own-book customers, reserve vehicles, **draft proforma only**, chat, light dashboard | Catalog create/edit/import, mark invoices sent, remittances, finance, HR, marketing |
+| **Sales / Freelancer** (field agent) | `/admin` | Parts/vehicles **lists**, own-book customers, reserve vehicles, **draft proforma only**, chat, light dashboard, **My remittances** (tagged only) | Catalog create/edit/import, mark invoices sent, full remittance module, finance, HR, marketing |
 | **Accounts** | `/admin` | Customer invoices (all types; approve draft→sent), remittances, expenses, bank txns/views, supplier invoices, ledger/reports/VAT views | Users, audit log, catalog writes, PO/GRN, marketing, HR |
-| **Manager** | `/admin` | Location-scoped catalog/stock/reservations; export shipments (read); HR view + own check-in/out; live chat | Finance, payroll, marketing, users, PO/GRN/imports, catalog delete |
+| **Manager** | `/admin` | Location-scoped catalog/stock/reservations; export shipments (read); HR view + own check-in/out; live chat; **My remittances** (tagged only) | Finance module, payroll, marketing, users, PO/GRN/imports, catalog delete |
 | **Staff** | `/admin` | Day-to-day ops: PO, GRN, invoices, remittances, bank txns, expenses, shipments, landed cost, draft GL, payroll drafts, HR admin, email/WhatsApp/AI, etc. | User management, portal enable, reverse posted GL, create/delete bank accounts, post payroll, hard-delete suppliers, force lifecycle stage jumps |
 | **Admin** | `/admin` | Everything staff can do, plus account-admin actions above; audit log | — |
 | **Customer (portal)** | `/portal` | Read own reservations, non-draft invoices; view account statement | Remittances, chat, staff ERP |
@@ -181,10 +181,21 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 
 **Supplier invoices** — `/admin/invoices/supplier` (ops + accounts) — archive files linked to purchase (not available to field agents).
 
-**Remittances** — `/admin/remittances` (ops + accounts)
+**Remittances** — Phase 69 module (ops + accounts for finance pages; tagged users for My remittances)
 
-1. Record pending or confirmed customer funds; attach evidence if needed.
-2. Allocate across invoices (partial allocations supported); reverse allocations carefully when correcting.
+| Page | Path | Who |
+|---|---|---|
+| Dashboard | `/admin/remittances/dashboard` | Ops / accounts — date range KPIs + **office-wise** received / allocated / unallocated |
+| List / receive | `/admin/remittances` | Ops / accounts — record pending/confirmed/unknown; set office, shift, **received by**; attach evidence; allocate |
+| My remittances | `/admin/remittances/mine` | Any workspace user tagged as receiver (field agents + managers included) — read own rows |
+| Unknown TTS | `/admin/remittances/unknown` | Ops / accounts — unmatched funds; **link** to a customer via `link_remittance` |
+| Offices | `/admin/remittances/offices` | Ops / accounts — collection office master (not HR locations) |
+| Shifts | `/admin/remittances/shifts` | Ops / accounts — desk shifts (optional office + hours label) |
+
+1. Prefer receiving with a customer; leave customer empty to save as **Unknown TTS** until linked.
+2. Tag **received by** so that staff can open **My remittances**.
+3. Allocate only after confirmed and customer-linked (unknown cannot allocate).
+4. Reverse allocations carefully when correcting.
 
 ### 5.5 Stock management + export shipments + lifecycle
 

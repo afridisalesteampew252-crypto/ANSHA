@@ -55,6 +55,7 @@ export const MANAGER_NAV_HREFS = new Set([
   '/admin/hr/locations',
   '/admin/hr/shifts',
   '/admin/hr/attendance',
+  '/admin/remittances/mine',
   '/admin/chat',
   '/admin/live-chat',
 ]);
@@ -69,6 +70,8 @@ export function isManagerAllowedPath(pathname: string): boolean {
   if (pathname.startsWith('/admin/reservations')) return true;
   if (pathname.startsWith('/admin/export-shipments')) return true;
   if (pathname.startsWith('/admin/hr')) return true;
+  // Tagged remittances only (not full finance remittance module)
+  if (pathname === '/admin/remittances/mine') return true;
   // Payroll stays ops-only (RLS is_ops_user) — do not allowlist for managers
   if (pathname.startsWith('/admin/chat')) return true;
   if (pathname.startsWith('/admin/live-chat')) return true;
@@ -114,6 +117,7 @@ export const FIELD_AGENT_NAV_HREFS = new Set([
   '/admin/customers',
   '/admin/reservations',
   '/admin/invoices',
+  '/admin/remittances/mine',
   '/admin/chat',
 ]);
 
@@ -128,6 +132,8 @@ export function isFieldAgentAllowedPath(pathname: string): boolean {
   // Draft proforma only — list / new / detail / edit query on new
   if (pathname === '/admin/invoices' || pathname === '/admin/invoices/new') return true;
   if (pathname.startsWith('/admin/invoices/') && !pathname.startsWith('/admin/invoices/supplier')) return true;
+  // Remittances tagged to this user only
+  if (pathname === '/admin/remittances/mine') return true;
   if (pathname.startsWith('/admin/chat')) return true;
   return false;
 }
@@ -139,6 +145,11 @@ export const ACCOUNTS_NAV_HREFS = new Set([
   '/admin/invoices',
   '/admin/invoices/supplier',
   '/admin/remittances',
+  '/admin/remittances/dashboard',
+  '/admin/remittances/mine',
+  '/admin/remittances/unknown',
+  '/admin/remittances/offices',
+  '/admin/remittances/shifts',
   '/admin/bank-accounts',
   '/admin/expenses',
   '/admin/ledger',

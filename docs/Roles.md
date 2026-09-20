@@ -116,4 +116,4 @@ A Supabase Auth user without `admin_profiles` cannot use the ERP. Login signs th
 
 ## Future RBAC
 
-Further splits (e.g. staff cannot see all remittances, HR location-scoped approvals) need schema + policy + UI changes. Do **not** reuse `public.is_admin()` for `role = 'admin'` — use `private.is_account_admin()`.
+Further splits (e.g. HR location-scoped approvals) need schema + policy + UI changes. Phase 69 remittance SELECT is already split: receivables see all; tagged `received_by` users see own (My remittances). Do **not** reuse `public.is_admin()` for `role = 'admin'` — use `private.is_account_admin()`.

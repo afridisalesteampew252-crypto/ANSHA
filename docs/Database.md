@@ -105,8 +105,9 @@ Chat stays one product. Links are additive metadata; mutations go through `link_
 - Phase 64 delete path: `unallocate_invoice_remittances(invoice_id)` reverses remittance allocations (receivables access); `delete_invoice_safely` refuses while allocations/payments remain, then calls `private.restore_invoice_linked_stock` (reserved/sold linked vehicles/parts → `available`, reservation fields cleared; sold parts quantity restored); `unallocate_and_delete_invoice` chains both. App helpers: `lib/invoice-delete.ts`.
 - `invoice_payments`
 - `remittance_sequences`, `remittances`, `remittance_documents`, `remittance_allocations`
-- `supplier_invoices` �?? private file metadata
-- `bank_accounts` / `bank_transactions` �?? ops bank ledger (BNK-/BTXN-); opening balance + manual in/out; reconcile flags; optional remittance/supplier_payment/expense links; ops RLS
+- Phase 69 remittance module: `remittance_offices` / `remittance_shifts` (workspace SELECT; receivables write — separate from HR `shift_locations`); `remittances.received_by`, `office_id`, `shift_id`, `is_unknown`; status includes `unknown`; RLS SELECT = receivables **or** `received_by = auth.uid()`; documents/allocations/storage SELECT same tagged path; RPCs `create_remittance(..., p_received_by, p_office_id, p_shift_id)` (null customer ⇒ unknown), `link_remittance`, `count_unknown_remittances`; `allocate_remittance` requires receivables and refuses unknown. Migrations `20260921010000_phase_69_remittance_module_offices_shifts.sql`, `20260921011000_phase_69_drop_create_remittance_14arg.sql`.
+- `supplier_invoices` — private file metadata
+- `bank_accounts` / `bank_transactions` — ops bank ledger (BNK-/BTXN-); opening balance + manual in/out; reconcile flags; optional remittance/supplier_payment/expense links; ops RLS
 
 Triggers recalculate invoice balances and sync remittance-linked payments. Do not bypass them with ad-hoc SQL in the app.
 
@@ -132,4 +133,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, Phase 60 `last_seen_at`, Phase 61/61b Incoterm + export document + reservation/invoice term columns, Phase 62 `reserved_by` / `export_master_options` / `vat_applicable`, and Phase 65 `stock_pool`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`.
+Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, Phase 60 `last_seen_at`, Phase 61/61b Incoterm + export document + reservation/invoice term columns, Phase 62 `reserved_by` / `export_master_options` / `vat_applicable`, Phase 65 `stock_pool`, and Phase 69 `RemittanceOffice` / `RemittanceShift` + remittance `received_by` / `is_unknown`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`.

@@ -39,6 +39,7 @@ function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
   const isAccountAdmin = isAccountAdminRole(profile.role);
   const isManager = profile.role === 'manager';
   const hrAccess = canAccessHr(profile.role);
+  const receivables = canManageReceivables(profile.role);
 
   const hrefAllowed = (allowed: Set<string>, href: string) =>
     allowed.has(href) || allowed.has(href.split('?')[0]);
@@ -49,6 +50,12 @@ function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
       if (item.href === '/admin/users' && !isAccountAdmin) return false;
       if (item.href === '/admin/audit-log' && !isAccountAdmin) return false;
       if (item.href === '/admin/live-chat' && !canAccessLiveChat(profile.role)) return false;
+      // Remittances: finance sees full group; others only My remittances
+      if (group.id === 'remittances') {
+        if (receivables) return true;
+        if (item.href === '/admin/remittances/mine') return true;
+        return false;
+      }
       // HR section + payroll (now nested under HR)
       if ((group.id === 'hr' || item.href.startsWith('/admin/hr') || item.href === '/admin/payroll') && !hrAccess) {
         return false;
@@ -86,6 +93,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [liveChatOpen, setLiveChatOpen] = useState(0);
+  const [unknownRemittances, setUnknownRemittances] = useState(0);
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem('ansha-admin-sidebar') === 'collapsed');
@@ -130,6 +138,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             .is('dismissed_at', null),
         ]);
         setLiveChatOpen((openSessions.count || 0) + (openTickets.count || 0));
+      }
+      if (canManageReceivables(prof.role)) {
+        const { data: unknownCount } = await supabase.rpc('count_unknown_remittances');
+        setUnknownRemittances(Number(unknownCount || 0));
       }
       setLoading(false);
     })();
@@ -177,7 +189,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
           </Link>
         </div>
-        <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} liveChatOpen={liveChatOpen} />
+        <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
         <div className="space-y-2 border-t border-border/80 p-3">
           {!collapsed && <div className="flex items-center justify-between px-2"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Appearance</span><ThemeToggle /></div>}
           {collapsed && <div className="flex justify-center"><ThemeToggle /></div>}
@@ -195,7 +207,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className="h-16 w-auto max-w-[220px] object-contain" />
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close admin menu"><X className="h-5 w-5" /></Button>
           </div>
-          <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} liveChatOpen={liveChatOpen} />
+          <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
           <div className="space-y-2 border-t border-border/80 p-3"><div className="flex items-center justify-between px-2"><span className="text-xs text-muted-foreground">Appearance</span><ThemeToggle /></div><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
         </aside>
       </>}

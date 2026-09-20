@@ -147,6 +147,22 @@ App-only ship after schema already applied:
 - Migration: `20260920230000_phase_65_vehicle_stock_pool.sql` (Japan backfill to `auction_third_party`).
 - Routes: `/admin/vehicles` (owned), `/admin/auction-stock` (third-party). Stock ops stay owned-only.
 
+## Phase 68 (export / request hard-delete)
+
+App-only ship after schema already applied:
+
+- Migration: `20260920260000_phase_68_export_request_delete.sql`.
+- RPCs: `delete_export_shipment`, `delete_workspace_request`. Spot-check draft/cancelled delete + account-admin force.
+
+## Phase 69 (remittances module)
+
+App-only ship after schema already applied on Supabase `ydrnilquojvalhgifest`:
+
+- Migrations: `20260921010000_phase_69_remittance_module_offices_shifts.sql`, `20260921011000_phase_69_drop_create_remittance_14arg.sql` — **do not re-apply** if already in `schema_migrations`.
+- No new Vercel or Edge Function secrets.
+- Routes: `/admin/remittances/dashboard`, `/admin/remittances`, `/admin/remittances/mine`, `/admin/remittances/unknown`, `/admin/remittances/offices`, `/admin/remittances/shifts`.
+- After production READY: seed Offices/Shifts; receive with office + `received_by`; Unknown TTS → link; dashboard office breakdown; field agent/manager **My remittances** only (no finance nav).
+
 ## Admin UI polish (post-65, no migration)
 
 App-only: Configuration search/inactive filter; Reserve + Receive Stock `NativeSelect` forms; SearchableSelect chevron; responsive admin shell (`admin-shell` / `admin-table-scroll`). No schema or secrets.

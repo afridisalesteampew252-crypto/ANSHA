@@ -110,7 +110,19 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/customers', label: 'Customers & portal', icon: Users },
       { href: '/admin/reservations', label: 'Reserve stock', icon: BookmarkPlus },
       { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
+    ],
+  },
+  {
+    id: 'remittances',
+    label: 'Remittances',
+    icon: WalletCards,
+    items: [
+      { href: '/admin/remittances/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
+      { href: '/admin/remittances/mine', label: 'My remittances', icon: UserCog },
+      { href: '/admin/remittances/unknown', label: 'Unknown TTS', icon: Inbox },
+      { href: '/admin/remittances/offices', label: 'Offices', icon: Building2 },
+      { href: '/admin/remittances/shifts', label: 'Shifts', icon: Clock3 },
     ],
   },
   {
@@ -213,6 +225,10 @@ export function isAdminNavActive(pathname: string, href: string, search = '') {
   if (!pathname.startsWith(`${hrefPath}/`)) return false;
   // Avoid marking customer invoices active on supplier invoice routes
   if (hrefPath === '/admin/invoices' && pathname.startsWith('/admin/invoices/supplier')) return false;
+  // Remittances list vs nested dashboard / unknown / offices / shifts / mine
+  if (hrefPath === '/admin/remittances') {
+    if (pathname !== '/admin/remittances') return false;
+  }
   // Avoid marking /admin/hr active on nested HR pages that have their own nav items
   if (hrefPath === '/admin/hr') {
     const nested = ['/admin/hr/locations', '/admin/hr/shifts', '/admin/hr/attendance'];
@@ -247,9 +263,10 @@ function NavBadge({ count }: { count: number }) {
   );
 }
 
-function navItemBadge(href: string, chatUnread: number, liveChatOpen: number) {
+function navItemBadge(href: string, chatUnread: number, liveChatOpen: number, unknownRemittances = 0) {
   if (href === '/admin/chat') return chatUnread;
   if (href === '/admin/live-chat') return liveChatOpen;
+  if (href === '/admin/remittances/unknown') return unknownRemittances;
   return 0;
 }
 
@@ -260,6 +277,7 @@ function NavLinkRow({
   mobile,
   chatUnread,
   liveChatOpen,
+  unknownRemittances = 0,
   nested = false,
 }: {
   item: AdminNavItem;
@@ -268,9 +286,10 @@ function NavLinkRow({
   mobile: boolean;
   chatUnread: number;
   liveChatOpen: number;
+  unknownRemittances?: number;
   nested?: boolean;
 }) {
-  const badge = navItemBadge(item.href, chatUnread, liveChatOpen);
+  const badge = navItemBadge(item.href, chatUnread, liveChatOpen, unknownRemittances);
   return (
     <Link
       href={item.href}
@@ -299,12 +318,14 @@ function GroupFlyoutLinks({
   search,
   chatUnread,
   liveChatOpen,
+  unknownRemittances = 0,
 }: {
   group: AdminNavGroup;
   pathname: string;
   search: string;
   chatUnread: number;
   liveChatOpen: number;
+  unknownRemittances?: number;
 }) {
   return (
     <div className="space-y-0.5 p-1">
@@ -313,7 +334,7 @@ function GroupFlyoutLinks({
       </p>
       {group.items.map((item) => {
         const active = isAdminNavActive(pathname, item.href, search);
-        const badge = navItemBadge(item.href, chatUnread, liveChatOpen);
+        const badge = navItemBadge(item.href, chatUnread, liveChatOpen, unknownRemittances);
         return (
           <Link
             key={item.href}
@@ -343,6 +364,7 @@ type AdminSidebarNavProps = {
   mobile?: boolean;
   chatUnread?: number;
   liveChatOpen?: number;
+  unknownRemittances?: number;
 };
 
 export function AdminSidebarNav({
@@ -351,6 +373,7 @@ export function AdminSidebarNav({
   mobile = false,
   chatUnread = 0,
   liveChatOpen = 0,
+  unknownRemittances = 0,
 }: AdminSidebarNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -429,6 +452,7 @@ export function AdminSidebarNav({
                   search={search}
                   chatUnread={chatUnread}
                   liveChatOpen={liveChatOpen}
+                  unknownRemittances={unknownRemittances}
                 />
               </HoverCardContent>
             </HoverCard>
@@ -450,6 +474,7 @@ export function AdminSidebarNav({
                 mobile={mobile}
                 chatUnread={chatUnread}
                 liveChatOpen={liveChatOpen}
+                unknownRemittances={unknownRemittances}
               />
             </div>
           );
@@ -474,7 +499,7 @@ export function AdminSidebarNav({
               <span className="min-w-0 flex-1 truncate text-[13px]">{group.label}</span>
               {(() => {
                 const groupBadge = group.items.reduce(
-                  (sum, item) => sum + navItemBadge(item.href, chatUnread, liveChatOpen),
+                  (sum, item) => sum + navItemBadge(item.href, chatUnread, liveChatOpen, unknownRemittances),
                   0
                 );
                 return <NavBadge count={groupBadge} />;
@@ -497,6 +522,7 @@ export function AdminSidebarNav({
                   mobile={mobile}
                   chatUnread={chatUnread}
                   liveChatOpen={liveChatOpen}
+                  unknownRemittances={unknownRemittances}
                   nested
                 />
               ))}

@@ -773,12 +773,37 @@ export interface InvoicePayment {
   created_at: string;
 }
 
-export type RemittanceStatus = 'pending' | 'confirmed' | 'rejected' | 'reversed';
+export type RemittanceStatus = 'pending' | 'confirmed' | 'rejected' | 'reversed' | 'unknown';
 export type RemittanceMethod = 'bank_transfer' | 'cash' | 'card' | 'cheque' | 'remittance_company' | 'other';
 
 export interface RemittanceSequence {
   fiscal_year: number;
   next_number: number;
+}
+
+/** Phase 69 — remittance collection office master */
+export interface RemittanceOffice {
+  id: string;
+  name: string;
+  code: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Phase 69 — remittance desk shift master */
+export interface RemittanceShift {
+  id: string;
+  name: string;
+  office_id: string | null;
+  hours_label: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Remittance {
@@ -797,6 +822,11 @@ export interface Remittance {
   receiving_bank: string | null;
   status: RemittanceStatus;
   notes: string | null;
+  /** Staff tagged as receiver — can view via My remittances */
+  received_by: string | null;
+  office_id: string | null;
+  shift_id: string | null;
+  is_unknown: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -1641,7 +1671,9 @@ export interface Database {
       push_subscriptions: TableDef<PushSubscriptionRow>;
       remittance_allocations: TableDef<RemittanceAllocation>;
       remittance_documents: TableDef<RemittanceDocument>;
+      remittance_offices: TableDef<RemittanceOffice>;
       remittance_sequences: TableDef<RemittanceSequence>;
+      remittance_shifts: TableDef<RemittanceShift>;
       remittances: TableDef<Remittance>;
       reviews: TableDef<Review>;
       shift_assignments: TableDef<ShiftAssignment>;
