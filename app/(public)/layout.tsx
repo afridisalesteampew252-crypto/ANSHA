@@ -3,6 +3,7 @@ import { PushOptIn } from '@/components/pwa/push-opt-in';
 import { SiteHeader } from '@/components/public/site-header';
 import { SiteFooter } from '@/components/public/site-footer';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
+import { TawkToChat } from '@/components/public/tawk-to-chat';
 
 export default function PublicLayout({
   children,
@@ -19,6 +20,7 @@ export default function PublicLayout({
       <MobileBottomNav />
       <InstallPrompt />
       <PushOptIn />
+      <TawkToChat />
     </div>
   );
 }

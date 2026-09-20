@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Ship,
   Tag,
+  Truck,
   Wrench,
 } from 'lucide-react';
 import { CatalogImage } from '@/components/public/catalog-image';
@@ -34,6 +35,8 @@ import { PartRequestForm } from '@/components/public/part-request-form';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import {
+  HOME_FEATURED_MACHINERY_LIMIT,
+  HOME_FEATURED_MACHINERY_POOL,
   HOME_FEATURED_PARTS_LIMIT,
   HOME_FEATURED_PARTS_POOL,
   HOME_FEATURED_VEHICLES_LIMIT,
@@ -43,6 +46,7 @@ import {
 } from '@/lib/featured-rotation';
 import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
+import { isMachineryClass, MACHINERY_VEHICLE_CLASSES } from '@/lib/vehicle-class';
 import type { BlogPostWithCategory, Category, PartWithRelations, VehicleWithPhotos } from '@/lib/types';
 
 interface MakeStat {
@@ -60,6 +64,7 @@ export default function HomePageClient() {
   const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>([]);
   const [latestParts, setLatestParts] = useState<PartWithRelations[]>([]);
   const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>([]);
+  const [featuredMachinery, setFeaturedMachinery] = useState<VehicleWithPhotos[]>([]);
   const [latestPosts, setLatestPosts] = useState<BlogPostWithCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +75,7 @@ export default function HomePageClient() {
     const loadHome = async (isInitial: boolean) => {
       if (isInitial) setLoading(true);
 
-      const [catRes, partsPoolRes, vehiclesPoolRes, postsRes] = await Promise.all([
+      const [catRes, partsPoolRes, vehiclesPoolRes, machineryPoolRes, postsRes] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order').limit(12),
         supabase
           .from('parts')
@@ -89,6 +94,15 @@ export default function HomePageClient() {
           .order('created_at', { ascending: false })
           .limit(HOME_FEATURED_VEHICLES_POOL),
         supabase
+          .from('vehicles')
+          .select('*, vehicle_photos(*)')
+          .eq('is_published', true)
+          .eq('stock_status', 'available')
+          .in('vehicle_class', [...MACHINERY_VEHICLE_CLASSES])
+          .order('is_featured', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(HOME_FEATURED_MACHINERY_POOL),
+        supabase
           .from('blog_posts')
           .select('*, blog_categories(*)')
           .eq('status', 'published')
@@ -99,12 +113,16 @@ export default function HomePageClient() {
 
       const nowMs = Date.now();
       const partsPool = (partsPoolRes.data || []) as unknown as PartWithRelations[];
-      const vehiclesPool = (vehiclesPoolRes.data || []) as unknown as VehicleWithPhotos[];
+      const vehiclesPool = ((vehiclesPoolRes.data || []) as unknown as VehicleWithPhotos[]).filter(
+        (vehicle) => !isMachineryClass(vehicle.vehicle_class || 'passenger')
+      );
+      const machineryPool = (machineryPoolRes.data || []) as unknown as VehicleWithPhotos[];
 
       setCategories((catRes.data || []) as Category[]);
       setFeaturedParts(selectRotatingFeatured(partsPool, HOME_FEATURED_PARTS_LIMIT, nowMs));
       setLatestParts(partsPool.slice(0, HOME_FEATURED_PARTS_LIMIT));
       setFeaturedVehicles(selectRotatingFeatured(vehiclesPool, HOME_FEATURED_VEHICLES_LIMIT, nowMs));
+      setFeaturedMachinery(selectRotatingFeatured(machineryPool, HOME_FEATURED_MACHINERY_LIMIT, nowMs));
       setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
       setLoading(false);
 
@@ -165,6 +183,9 @@ export default function HomePageClient() {
             <div className="animate-fade-up-delay-2 mt-6 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-3">
               <Button asChild variant="accent" size="lg" className="h-11 w-full rounded-full px-6 text-sm font-bold sm:h-12 sm:w-auto sm:px-7">
                 <Link href="/vehicles">Browse vehicles <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+              <Button asChild size="lg" className="h-11 w-full rounded-full border border-white/25 bg-white/10 px-6 text-sm font-bold text-white hover:bg-white/15 sm:h-12 sm:w-auto sm:px-7">
+                <Link href="/machinery">Machinery &amp; trucks</Link>
               </Button>
               <Button asChild size="lg" className="h-11 w-full rounded-full border border-white/25 bg-white/10 px-6 text-sm font-bold text-white hover:bg-white/15 sm:h-12 sm:w-auto sm:px-7">
                 <Link href="/parts">Explore parts</Link>
@@ -430,6 +451,44 @@ export default function HomePageClient() {
               <Link href="/contact" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-white">
                 Send requirements <ArrowRight className="h-4 w-4 text-accent" />
               </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="surface-cool border-y border-accent/10 py-14 sm:py-20">
+        <div className="container-page min-w-0">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <span className="eyebrow">Construction &amp; commercial</span>
+              <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+                Heavy machinery &amp; trucks
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Excavators, loaders, dump trucks, and commercial equipment — inspected stock ready for export coordination.
+              </p>
+            </div>
+            <Button asChild variant="outline" className="h-11 w-full rounded-full sm:w-auto">
+              <Link href="/machinery">View all machinery <ArrowRight className="h-4 w-4" /></Link>
+            </Button>
+          </div>
+
+          {featuredMachinery.length ? (
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredMachinery.map((vehicle, index) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} deal={dealForVehicle(vehicle.id)} />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-8 rounded-[28px] border border-dashed border-border bg-card/60 px-6 py-12 text-center">
+              <Truck className="mx-auto h-10 w-10 text-accent" />
+              <h3 className="mt-4 font-display text-xl font-extrabold">Need a specific machine?</h3>
+              <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">
+                Tell us the type, hours, and destination. We will check availability across our stock network.
+              </p>
+              <Button asChild variant="accent" className="mt-5 h-11 rounded-full">
+                <Link href="/contact">Request machinery</Link>
+              </Button>
             </div>
           )}
         </div>

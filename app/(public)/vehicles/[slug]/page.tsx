@@ -28,6 +28,11 @@ import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { publicVehiclePhotos } from '@/lib/vehicle-photos';
+import {
+  equipmentCategoryLabel,
+  isMachineryClass,
+  vehicleClassLabel,
+} from '@/lib/vehicle-class';
 
 export default function VehicleDetailPage(props: { params: Promise<{ slug: string }> }) {
   const params = use(props.params);
@@ -98,15 +103,34 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
   const hasPrice = vehicle.show_price && vehicle.price && vehicle.price > 0;
   const dealPrice = deal ? effectiveDealPrice(hasPrice ? vehicle.price : null, deal) : null;
 
+  const machineryUnit = isMachineryClass(vehicle.vehicle_class);
   const specs = [
     { icon: Calendar, label: 'Year', value: vehicle.year?.toString() },
     { icon: Cog, label: 'Transmission', value: vehicle.transmission },
     { icon: Fuel, label: 'Fuel Type', value: vehicle.fuel_type },
-    { icon: Gauge, label: 'Mileage', value: vehicle.mileage != null ? `${vehicle.mileage.toLocaleString()} km` : null },
+    {
+      icon: Gauge,
+      label: machineryUnit && vehicle.operating_hours != null ? 'Operating hours' : 'Mileage',
+      value:
+        vehicle.operating_hours != null
+          ? `${vehicle.operating_hours.toLocaleString()} hrs`
+          : vehicle.mileage != null
+            ? `${vehicle.mileage.toLocaleString()} km`
+            : null,
+    },
     { icon: Palette, label: 'Color', value: vehicle.color },
     { icon: Hash, label: 'Chassis', value: vehicle.chassis_code },
     { icon: Cog, label: 'Engine', value: vehicle.engine_code },
     { icon: Car, label: 'Variant', value: vehicle.variant },
+    {
+      icon: Car,
+      label: 'Class',
+      value: machineryUnit
+        ? [vehicleClassLabel(vehicle.vehicle_class), equipmentCategoryLabel(vehicle.equipment_category)]
+            .filter(Boolean)
+            .join(' · ')
+        : null,
+    },
   ].filter((s) => s.value);
 
   return (
@@ -116,7 +140,9 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/55">
             <Link href="/" className="shrink-0 hover:text-white">Home</Link>
             <ChevronRight className="h-4 w-4 shrink-0" />
-            <Link href="/vehicles" className="shrink-0 hover:text-white">Vehicles</Link>
+            <Link href={machineryUnit ? '/machinery' : '/vehicles'} className="shrink-0 hover:text-white">
+              {machineryUnit ? 'Machinery' : 'Vehicles'}
+            </Link>
             <ChevronRight className="h-4 w-4 shrink-0" />
             <span className="truncate font-medium text-white">{vehicle.title}</span>
           </nav>
@@ -133,6 +159,9 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           description: vehicle.description || `${vehicle.year || ''} ${vehicle.make} ${vehicle.model} for export`,
           brand: { '@type': 'Brand', name: vehicle.make },
           model: vehicle.model,
+          category: machineryUnit
+            ? equipmentCategoryLabel(vehicle.equipment_category) || vehicleClassLabel(vehicle.vehicle_class)
+            : undefined,
           vehicleModelDate: vehicle.year?.toString(),
           vehicleIdentificationNumber: vehicle.chassis_code || undefined,
           mileageFromOdometer: vehicle.mileage != null ? { '@type': 'QuantitativeValue', value: vehicle.mileage, unitCode: 'KMT' } : undefined,

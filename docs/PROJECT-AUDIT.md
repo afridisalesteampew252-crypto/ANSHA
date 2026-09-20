@@ -1,6 +1,6 @@
 # ANSHA System Audit
 
-Audit date: **2026-09-19** (refresh). Earlier 2026-09-18 snapshot is superseded.
+Audit date: **2026-09-20** (refresh). Earlier 2026-09-19 snapshot is superseded.
 
 Scope: repository `ANSHA/` vs live product at `www.anshatradingco.com` + Supabase `ydrnilquojvalhgifest`. Documentation-only pass; no production secrets were read.
 
@@ -20,6 +20,7 @@ Legend: **Fact** | **Gap** | **Recommendation**
 - PWA: `app/manifest.ts`, `public/sw.js`, install + push components
 - AI: Vercel AI SDK route `POST /api/ai/chat`
 - FX proxy: `GET /api/fx` (cached open.er-api.com)
+- Home featured rotation: `lib/featured-rotation.ts` (10-minute buckets; no cron)
 - CI: lint, typecheck, `verify:brands`, build (Node 24)
 - **Gap:** no Vitest/Jest/Playwright suite in repo
 
@@ -33,10 +34,11 @@ Legend: **Fact** | **Gap** | **Recommendation**
 | Admin panel | `app/admin/(panel)/` |
 | Portal | `app/portal/` |
 | API | `app/api/{health,fx,ai/chat,cron/request-dues}` |
-| Domain libs | `lib/` (`types`, `site-offers`, `export-markets`, `fx`, …) |
+| Domain libs | `lib/` (`types`, `site-offers`, `export-markets`, `fx`, `featured-rotation`, `vehicle-photos`, …) |
 | Hooks | `hooks/` (`use-inventory-deals`, `use-fx-rates`, `use-live-clock`, …) |
-| Migrations | `supabase/migrations/` (through Phase 52) |
+| Migrations | `supabase/migrations/` (through Phase 57) |
 | Edge Functions | `supabase/functions/*` |
+| One-off import scripts | `scripts/import-japan-stock-vehicles.mjs`, `scripts/import-whatsapp-parts*.mjs` |
 
 Most catalog/ERP pages are Client Components talking to PostgREST with the anon/authenticated JWT. RLS is the authorization backstop.
 
@@ -46,17 +48,21 @@ Most catalog/ERP pages are Client Components talking to PostgREST with the anon/
 
 **Fact — routes**
 
-`/`, `/parts`, `/parts/[slug]`, `/vehicles`, `/vehicles/[slug]`, `/categories`, `/categories/[slug]`, `/about`, `/contact`, `/blog`, `/blog/[slug]`, `/offers`, `/markets/[code]`, `/cart`, `/favorites`, `/banking`, `/cookie-policy`, `/offline`, `/verify/invoice/[code]`
+`/`, `/parts`, `/parts/[slug]`, `/vehicles`, `/vehicles/[slug]`, `/machinery`, `/categories`, `/categories/[slug]`, `/about`, `/contact`, `/blog`, `/blog/[slug]`, `/offers`, `/markets/[code]`, `/cart`, `/favorites`, `/banking`, `/cookie-policy`, `/offline`, `/verify/invoice/[code]`
 
 **Fact — product UX (recent)**
 
 - Deals in feature strip, mobile drawer, bottom nav, home featured strip
+- Home featured: 8 parts / 4 vehicles, 10-minute time-bucketed rotation (`lib/featured-rotation.ts`)
 - Inventory-linked deal % / sale price on cards + detail pages
 - Export markets strip (PNG flags) → market policy pages
 - Inquiry cart + heart favorites (localStorage)
 - Dubai clock + AED FX strip (desktop dedicated; mobile compact)
 - Colour system: ink/red surfaces (not flat white-only)
 - PWA display name **Anshatradingco APP** + Install CTAs
+- Auction-sheet vehicle photos excluded from public gallery (RLS + `lib/vehicle-photos.ts`)
+- Heavy machinery & trucks browse at `/machinery` (`vehicle_class`)
+- Tawk.to public chat widget when `NEXT_PUBLIC_TAWK_*` set
 
 **Gap**
 
@@ -67,26 +73,36 @@ Most catalog/ERP pages are Client Components talking to PostgREST with the anon/
 
 ## 4. Admin / ERP
 
-**Fact — nav areas (ops vs sales gated in layout)**
+**Fact — nav areas (role-gated in layout + `proxy.ts`)**
 
-Overview: dashboard, analytics, AI, audit-log  
-Catalog: parts, vehicles, categories, imports, suppliers  
+Overview: dashboard, analytics, AI, audit-log (admin)  
+Catalog: parts, vehicles, Machinery & trucks filter, categories, imports, suppliers  
 Purchase/stock: purchase-orders, inventory/receive, reservations  
 Sales/finance: customers, invoices, remittances, bank-accounts, expenses, ledger, reports, vat-return  
 Logistics: export-shipments, landed-cost  
-Inbox: inquiries, requests, chat, mail, email, whatsapp  
+Inbox: inquiries, **live-chat (admin+manager only)**, requests, chat, mail, email, whatsapp  
 Marketing: blog, offers, campaigns, **subscribers**, **trade-config**  
+HR: `/admin/hr*` (ops manage; manager view)  
 Team: payroll, users, profile
 
 **Fact — admin chrome**
 
 Live Pakistan + Dubai clocks and compact AED FX in the admin header.
 
+**Fact — vehicles / invoices (Phases 54–57)**
+
+- Auction sheet badge; clickable tag → lightbox of `is_auction_sheet` images
+- `vehicle_class` / equipment category / operating hours; public `/machinery`
+- Field agents: draft proforma only; accounts/ops approve sent
+- A4 print: denser layout; verification code on face with QR
+- Tawk Live chat: **admin + manager only**
+
 **Gap**
 
 - Bank feeds are CSV/manual stub only
 - Campaigns are MVP (not full ESP)
 - AI is grounded ops chat, not autonomous agents
+- Manager HR is not location-scoped (v1)
 
 ---
 
@@ -94,11 +110,16 @@ Live Pakistan + Dubai clocks and compact AED FX in the admin header.
 
 **Fact**
 
-- Staff: Supabase email/password + `admin_profiles` (`admin` | `staff` | `sales`)
+- Staff: Supabase email/password + `admin_profiles`
+- Roles: `admin` | `staff` | `sales` | `freelancer` | `manager` | `accounts`
 - Account-admin gates via `private.is_account_admin()` for sensitive RPCs/routes
 - Ops gates via `private.is_ops_user()` (admin|staff)
-- Sales allowlist in `proxy.ts` + nav + RLS
+- Field agents via `private.is_field_agent()` (sales|freelancer)
+- Receivables via `private.can_manage_receivables()` (admin|staff|accounts)
+- HR viewers via `private.is_hr_viewer()` (admin|staff|manager)
 - Portal: `customer_profiles` separate from staff
+
+See [Roles](./Roles.md).
 
 **Recommendation**
 
@@ -110,9 +131,12 @@ Enable Supabase leaked-password protection (dashboard).
 
 **Fact**
 
-- Additive migrations Phase 1 → **52** under `supabase/migrations/`
-- Phase 51: offer inventory links (`vehicle_id`, `part_id`, discount/sale)
-- Phase 52: `export_market_configs`, `site_trade_settings`
+- Additive migrations Phase 1 → **57** under `supabase/migrations/`
+- Phase 53: payroll delete RPCs (account-admin)
+- Phase 54: field agents / HR / catalog audit
+- Phase 55: accounts role + draft proforma RBAC
+- Phase 56: `vehicle_photos.is_auction_sheet`
+- Phase 57: `vehicles.vehicle_class` / `equipment_category` / `operating_hours`
 - Stock master remains `vehicles` / `parts` (no second catalog)
 
 See [Database](./Database.md) for schema detail.
@@ -123,7 +147,7 @@ See [Database](./Database.md) for schema detail.
 
 | Function | Purpose |
 |---|---|
-| `admin-create-user` / `admin-update-user` | Staff user admin |
+| `admin-create-user` / `admin-update-user` | Staff user admin (roles include freelancer / manager / accounts) |
 | `portal-create-access` | Enable customer portal login |
 | `send-web-push` | Deno Web Push (`@negrel/webpush`) |
 | `send-outbound-email` | Resend |
@@ -143,8 +167,9 @@ See [Database](./Database.md) for schema detail.
 
 - Admin/portal noindex + no-store headers
 - SW never caches admin/api/portal
-- Service role only on Edge / server routes, not `NEXT_PUBLIC_*`
+- Service role only on Edge / server routes / one-off import scripts, not `NEXT_PUBLIC_*`
 - CORS on admin Edge functions origin-allowlisted
+- Public vehicle photo policy excludes `is_auction_sheet = true`
 
 **Recommendation**
 
@@ -156,7 +181,7 @@ Keep VAPID private key only in Supabase secrets; rotate if ever pasted into chat
 
 See [CURRENT_STATE](./CURRENT_STATE.md) for the live % snapshot and [Roadmap](./Roadmap.md) for phase history.
 
-Roughly **85–90%** of the chosen ERP + public + platform MVP is shipped. Remaining: secrets hygiene, bank live integration, deeper marketing automation, automated tests, native admin (explicitly out of scope).
+Roughly **88–92%** of the chosen ERP + public + platform MVP is shipped. Remaining: secrets hygiene, bank live integration, deeper marketing automation, automated tests, manager location scope, native admin (explicitly out of scope).
 
 ---
 
@@ -164,14 +189,17 @@ Roughly **85–90%** of the chosen ERP + public + platform MVP is shipped. Remai
 
 | Doc | Status after this audit |
 |---|---|
-| CURRENT_STATE.md | **New** checkpoint (~85–90% overall) |
+| CURRENT_STATE.md | Checkpoint tip `e76df97` / Phases 53–56 |
 | Modules.md | Updated |
-| Roadmap.md | Updated (51–52 + product slices) |
-| PWA.md | Updated |
-| User-Manual.md | Updated (public + Marketing §5.8) |
-| Deployment.md | VAPID warning clarified |
-| Architecture.md | Surfaces + CURRENT_STATE link |
-| Database.md | Phase 51–52 entities |
-| API.md | `/api/fx` documented |
-| README.md | Status table extended |
+| Roadmap.md | Phases 53–56 + open later-platform list |
+| Roles.md | Field / accounts / manager (already current) |
+| User-Manual.md | Roles + HR + auction sheets + field/accounts flows |
+| PWA.md | Prior VAPID guidance still valid |
+| Deployment.md | Prior VAPID warning still valid |
+| Architecture.md | Surfaces through Phase 56 |
+| Database.md | Phase 53–56 entities |
+| Security.md | Role helpers + auction-sheet RLS |
+| Development.md | Import scripts note |
+| API.md | Prior surface still accurate |
+| README.md | Status table through Phase 56 |
 | PROJECT-AUDIT.md | This file |

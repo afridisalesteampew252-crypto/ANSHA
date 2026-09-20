@@ -34,6 +34,15 @@ export function canManageHr(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'staff';
 }
 
+/**
+ * Tawk agent inbox (`/admin/live-chat`).
+ * Strict allowlist: **admin** and **manager** only.
+ * Do not broaden to staff, sales, freelancer, or accounts.
+ */
+export function canAccessLiveChat(role: string | null | undefined): boolean {
+  return role === 'admin' || role === 'manager';
+}
+
 /** Nav + proxy allowlist for sales/freelancer. */
 export const FIELD_AGENT_NAV_HREFS = new Set([
   '/admin/dashboard',

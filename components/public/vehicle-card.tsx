@@ -8,6 +8,7 @@ import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
 import { siteConfig } from '@/lib/site-config';
+import { equipmentCategoryLabel, isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
 import { pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
 import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 
@@ -86,6 +87,11 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
 
       <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-5">
         <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-1">
+          {isMachineryClass(vehicle.vehicle_class) ? (
+            <Badge variant="outline" className="h-5 w-fit px-1.5 text-[9px] sm:text-[10px]">
+              {equipmentCategoryLabel(vehicle.equipment_category) || vehicleClassBadgeLabel(vehicle.vehicle_class)}
+            </Badge>
+          ) : null}
           {vehicle.is_featured && vehicle.stock_status !== 'sold' ? (
             <Badge className="h-5 w-fit border-0 bg-accent px-1.5 text-[9px] text-accent-foreground sm:text-[10px]">
               Featured
@@ -117,7 +123,9 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
           {vehicle.transmission ? (
             <span className="inline-flex items-center gap-1"><Car className="h-3.5 w-3.5 text-accent" />{vehicle.transmission}</span>
           ) : null}
-          {vehicle.mileage != null ? (
+          {vehicle.operating_hours != null ? (
+            <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-accent" />{vehicle.operating_hours.toLocaleString()} hrs</span>
+          ) : vehicle.mileage != null ? (
             <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-accent" />{vehicle.mileage.toLocaleString()} km</span>
           ) : null}
         </div>

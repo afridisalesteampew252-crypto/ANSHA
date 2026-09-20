@@ -12,18 +12,18 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Analytics | no | `/admin/analytics` | date-range KPIs (sales/stock/purchase/requests); sales get own-book subset |
 | AI assistant | no | `/admin/ai` (ops) | `ai_chat_threads` / `ai_chat_messages` + `get_ai_ops_grounding` + `POST /api/ai/chat` |
 | Parts catalog | `/parts` | `/admin/parts` (+ purchase cost on edit) | `parts`, photos, compatibility, cost columns |
-| Vehicles catalog | `/vehicles` | `/admin/vehicles`, `/admin/vehicles/[id]` lifecycle + attachments + purchase/reserve | `vehicles`, photos, `vehicle_lifecycle_events`, `vehicle_lifecycle_event_attachments`, cost columns |
+| Vehicles catalog | `/vehicles` (no auction sheets); `/machinery` (trucks + heavy equipment) | `/admin/vehicles` (+ `?class=machinery`), `/admin/vehicles/[id]` lifecycle + attachments + purchase/reserve; class fields; auction-sheet badge/lightbox | `vehicles` (`vehicle_class`, `equipment_category`, `operating_hours`), `vehicle_photos` (`is_auction_sheet`), lifecycle tables, cost columns |
 | Categories | `/categories` | `/admin/categories` | `categories` |
 | Suppliers | no | `/admin/suppliers`, SOA `/admin/suppliers/[id]` (ops) | `suppliers`, payments, allocations |
 | Purchase orders | no | `/admin/purchase-orders` (ops) | `purchase_orders`, `purchase_order_lines` |
 | Receive stock (GRN) | no | `/admin/inventory/receive` (ops) | `inventory_receipts`, `inventory_receipt_lines` |
 | Export shipments | no | `/admin/export-shipments` (ops) | `export_shipments`, `export_shipment_vehicles` |
 | Landed cost | no | `/admin/landed-cost` (ops) | `landed_cost_packs`, `landed_cost_charges`, `landed_cost_allocations` |
-| Bank accounts | no | `/admin/bank-accounts` (ops) | `bank_accounts`, `bank_transactions`, `bank_feed_connections` + CSV import |
-| Expenses | no | `/admin/expenses` (ops) | `expense_categories`, `expenses` |
-| General ledger | no | `/admin/ledger` (ops) | `gl_accounts`, `gl_journals`, `gl_journal_lines` (Phase 46 auto-post from remittance/expense/invoice/supplier payment) |
-| Financial reports | no | `/admin/reports` (ops) | trial balance / P&L / balance sheet RPCs |
-| VAT return | no | `/admin/vat-return` (ops) | `vat_return_periods` + `get_vat_return_summary` |
+| Bank accounts | no | `/admin/bank-accounts` (ops + accounts views) | `bank_accounts`, `bank_transactions`, `bank_feed_connections` + CSV import |
+| Expenses | no | `/admin/expenses` (ops + accounts) | `expense_categories`, `expenses` |
+| General ledger | no | `/admin/ledger` (ops + accounts SELECT views) | `gl_accounts`, `gl_journals`, `gl_journal_lines` (Phase 46 auto-post from remittance/expense/invoice/supplier payment) |
+| Financial reports | no | `/admin/reports` (ops + accounts) | trial balance / P&L / balance sheet RPCs |
+| VAT return | no | `/admin/vat-return` (ops + accounts) | `vat_return_periods` + `get_vat_return_summary` |
 | Payroll | no | /admin/payroll (ops) | employees, leave_requests, payroll_runs, payroll_lines, eos_estimate_logs |
 | Audit log | no | `/admin/audit-log` (**admin only**) | `audit_logs` (append-only; invoice status, part/vehicle catalog activity, remittance allocate) |
 | HR / workforce | no | `/admin/hr`, `/admin/hr/locations`, `/admin/hr/shifts`, `/admin/hr/attendance` (ops manage; manager view + own attendance) | `shift_locations`, `shift_assignments`, `attendance_records` |
@@ -46,9 +46,10 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | PWA subscribers | no | `/admin/subscribers` (ops) | `push_subscriptions` (deals/insights topics) |
 | Trade config | `/markets/[code]` | `/admin/trade-config` (ops) | `export_market_configs`, `site_trade_settings` |
 | WhatsApp | no | `/admin/whatsapp` (ops) | `whatsapp_message_log` + Edge `send-whatsapp` |
+| Live chat (Tawk) | public widget on site layout | `/admin/live-chat` (**admin + manager only**) | `NEXT_PUBLIC_TAWK_*` env; no DB table |
 | Notifications | no | header center | `admin_notifications` |
 | Banking page | `/banking` | footer link | static `lib/banking-details.ts` |
-| Company pages | `/`, `/about`, `/contact` | — | static + catalog queries |
+| Company pages | `/`, `/about`, `/contact` | — | static + catalog queries; home featured rotation via `lib/featured-rotation.ts` |
 | Cart / favorites | `/cart`, `/favorites` | — | browser localStorage inquiry list |
 | Markets / FX | header clock+FX, `/markets/[code]` | trade-config | `/api/fx` + market policies |
 | Health | `/api/health` | — | REST ping |
@@ -64,4 +65,4 @@ Live Open Banking OAuth (CSV bank import stub only).
 
 Separate email newsletter list (Marketing subscribers = PWA push rows only).
 
-Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.
+Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Auction-sheet photos are admin-only. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.

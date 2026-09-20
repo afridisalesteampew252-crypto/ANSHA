@@ -57,6 +57,11 @@ export default function VehiclesPage() {
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
             Browse verified ANSHA stock across Japan, Dubai, Singapore, China, Thailand, and Taiwan — then inquire for export.
+            Looking for excavators or trucks? See{' '}
+            <Link href="/machinery" className="font-semibold text-accent underline-offset-2 hover:underline">
+              heavy machinery &amp; trucks
+            </Link>
+            .
           </p>
         </div>
       </section>

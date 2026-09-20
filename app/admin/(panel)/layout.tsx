@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookmarkPlus, ChevronLeft, ChevronRight, ExternalLink, Loader2, Menu, Plus, X } from 'lucide-react';
@@ -12,6 +12,7 @@ import type { AdminProfile } from '@/lib/types';
 import {
   ACCOUNTS_NAV_HREFS,
   canAccessHr,
+  canAccessLiveChat,
   canManageReceivables,
   FIELD_AGENT_NAV_HREFS,
   isAccountAdminRole,
@@ -37,6 +38,7 @@ const MANAGER_NAV_HREFS = new Set([
   '/admin/hr/shifts',
   '/admin/hr/attendance',
   '/admin/chat',
+  '/admin/live-chat',
 ]);
 
 function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
@@ -46,18 +48,22 @@ function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
   const isManager = profile.role === 'manager';
   const hrAccess = canAccessHr(profile.role);
 
+  const hrefAllowed = (allowed: Set<string>, href: string) =>
+    allowed.has(href) || allowed.has(href.split('?')[0]);
+
   return ADMIN_NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
       if (item.href === '/admin/users' && !isAccountAdmin) return false;
       if (item.href === '/admin/audit-log' && !isAccountAdmin) return false;
+      if (item.href === '/admin/live-chat' && !canAccessLiveChat(profile.role)) return false;
       // HR section + payroll (now nested under HR)
       if ((group.id === 'hr' || item.href.startsWith('/admin/hr') || item.href === '/admin/payroll') && !hrAccess) {
         return false;
       }
-      if (fieldAgent && !FIELD_AGENT_NAV_HREFS.has(item.href)) return false;
-      if (accounts && !ACCOUNTS_NAV_HREFS.has(item.href)) return false;
-      if (isManager && !MANAGER_NAV_HREFS.has(item.href)) return false;
+      if (fieldAgent && !hrefAllowed(FIELD_AGENT_NAV_HREFS, item.href)) return false;
+      if (accounts && !hrefAllowed(ACCOUNTS_NAV_HREFS, item.href)) return false;
+      if (isManager && !hrefAllowed(MANAGER_NAV_HREFS, item.href)) return false;
       return true;
     }),
   })).filter((group) => group.items.length > 0);
@@ -66,6 +72,7 @@ function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(true);
@@ -131,7 +138,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const receivables = canManageReceivables(profile.role);
   const visibleGroups = filterNavGroups(profile);
   const pageTitle =
-    pathname === '/admin/profile' ? 'My profile' : findAdminNavLabel(visibleGroups, pathname) || 'Admin workspace';
+    pathname === '/admin/profile'
+      ? 'My profile'
+      : findAdminNavLabel(visibleGroups, pathname, searchParams?.toString() ?? '') || 'Admin workspace';
 
   return (
     <div className="admin-shell flex min-h-screen min-w-0">

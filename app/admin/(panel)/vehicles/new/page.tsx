@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Save, Loader2, ArrowLeft, Plus, X, Upload, Star, Image as ImageIcon, Car } from 'lucide-react';
+import { Suspense, useState, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Save, Loader2, ArrowLeft, Plus, X, Upload, Star, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,13 @@ import { compressCatalogImage } from '@/lib/catalog-image';
 import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { toast } from 'sonner';
 import { STOCK_ORIGINS } from '@/lib/stock';
+import {
+  EQUIPMENT_CATEGORIES,
+  isMachineryClass,
+  isVehicleClass,
+  VEHICLE_CLASSES,
+  type VehicleClass,
+} from '@/lib/vehicle-class';
 
 interface PendingPhoto {
   file: File;
@@ -21,7 +28,19 @@ interface PendingPhoto {
 }
 
 export default function AddVehiclePage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+      <AddVehiclePageInner />
+    </Suspense>
+  );
+}
+
+function AddVehiclePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialClass = isVehicleClass(searchParams.get('class'))
+    ? (searchParams.get('class') as VehicleClass)
+    : 'passenger';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -33,6 +52,9 @@ export default function AddVehiclePage() {
   const [stockNumber, setStockNumber] = useState('');
   const [chassisNumber, setChassisNumber] = useState('');
   const [stockOrigin, setStockOrigin] = useState('dubai');
+  const [vehicleClass, setVehicleClass] = useState<VehicleClass>(initialClass);
+  const [equipmentCategory, setEquipmentCategory] = useState('');
+  const [operatingHours, setOperatingHours] = useState('');
   const [chassisCode, setChassisCode] = useState('');
   const [engineCode, setEngineCode] = useState('');
   const [transmission, setTransmission] = useState('');
@@ -49,6 +71,7 @@ export default function AddVehiclePage() {
 
   const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
   const [coverIndex, setCoverIndex] = useState(0);
+  const machineryForm = isMachineryClass(vehicleClass);
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -101,6 +124,9 @@ export default function AddVehiclePage() {
         stock_origin: stockOrigin,
         stock_status: 'available',
         lifecycle_stage: 'unassigned',
+        vehicle_class: vehicleClass,
+        equipment_category: machineryForm ? (equipmentCategory.trim() || null) : null,
+        operating_hours: machineryForm && operatingHours ? parseInt(operatingHours, 10) : null,
         chassis_code: chassisCode.trim() || null,
         engine_code: engineCode.trim() || null,
         transmission: transmission.trim() || null,
@@ -177,8 +203,14 @@ export default function AddVehiclePage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Add New Vehicle</h1>
-          <p className="text-sm text-muted-foreground">Fill in the vehicle details below</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {machineryForm ? 'Add machinery / truck' : 'Add New Vehicle'}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {machineryForm
+              ? 'Excavators, loaders, trucks, and heavy equipment for the public machinery catalog'
+              : 'Fill in the vehicle details below'}
+          </p>
         </div>
       </div>
 
@@ -251,20 +283,64 @@ export default function AddVehiclePage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="vehicle-title">Title *</Label>
-              <Input id="vehicle-title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="e.g. Toyota Aqua 2018" />
+              <Input
+                id="vehicle-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                placeholder={machineryForm ? 'e.g. Komatsu PC200-8 Excavator 2015' : 'e.g. Toyota Aqua 2018'}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="vehicle-class">Inventory class *</Label>
+                <select
+                  id="vehicle-class"
+                  value={vehicleClass}
+                  onChange={(e) => {
+                    const next = e.target.value as VehicleClass;
+                    setVehicleClass(next);
+                    if (!isMachineryClass(next)) {
+                      setEquipmentCategory('');
+                      setOperatingHours('');
+                    }
+                  }}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {VEHICLE_CLASSES.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
+              </div>
+              {machineryForm ? (
+                <div className="space-y-2">
+                  <Label htmlFor="equipment-category">Equipment type</Label>
+                  <select
+                    id="equipment-category"
+                    value={equipmentCategory}
+                    onChange={(e) => setEquipmentCategory(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Select type</option>
+                    {EQUIPMENT_CATEGORIES.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="vehicle-make">Make *</Label>
-                <Input id="vehicle-make" value={make} onChange={(e) => setMake(e.target.value)} required placeholder="Toyota" />
+                <Input id="vehicle-make" value={make} onChange={(e) => setMake(e.target.value)} required placeholder={machineryForm ? 'Komatsu / Caterpillar / Isuzu' : 'Toyota'} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="vehicle-model">Model *</Label>
-                <Input id="vehicle-model" value={model} onChange={(e) => setModel(e.target.value)} required placeholder="Aqua" />
+                <Input id="vehicle-model" value={model} onChange={(e) => setModel(e.target.value)} required placeholder={machineryForm ? 'PC200-8' : 'Aqua'} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="vehicle-variant">Variant</Label>
-                <Input id="vehicle-variant" value={variant} onChange={(e) => setVariant(e.target.value)} placeholder="S, G, Limited" />
+                <Input id="vehicle-variant" value={variant} onChange={(e) => setVariant(e.target.value)} placeholder={machineryForm ? 'Long arm / Standard' : 'S, G, Limited'} />
               </div>
             </div>
           </CardContent>
@@ -293,9 +369,15 @@ export default function AddVehiclePage() {
               <Input id="vehicle-fuel" value={fuelType} onChange={(e) => setFuelType(e.target.value)} placeholder="Petrol / Hybrid / Diesel" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="vehicle-mileage">Mileage (km)</Label>
+              <Label htmlFor="vehicle-mileage">{machineryForm ? 'Mileage (km, optional)' : 'Mileage (km)'}</Label>
               <Input id="vehicle-mileage" type="number" value={mileage} onChange={(e) => setMileage(e.target.value)} placeholder="50000" />
             </div>
+            {machineryForm ? (
+              <div className="space-y-2">
+                <Label htmlFor="vehicle-hours">Operating hours</Label>
+                <Input id="vehicle-hours" type="number" value={operatingHours} onChange={(e) => setOperatingHours(e.target.value)} placeholder="6500" />
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="vehicle-location">Location</Label>
               <Input id="vehicle-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Showroom / Warehouse" />
@@ -396,7 +478,7 @@ export default function AddVehiclePage() {
           </Button>
           <Button type="button" disabled={loading} onClick={(e) => handleSubmit(e as unknown as React.FormEvent, true)}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Publish Vehicle
+            Publish {machineryForm ? 'Listing' : 'Vehicle'}
           </Button>
         </div>
       </form>

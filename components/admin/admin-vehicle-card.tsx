@@ -12,6 +12,7 @@ import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
 import { auctionSheetPhotos, pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
+import { isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
 import type { StockStatus, VehiclePhoto, VehicleWithPhotos } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -155,6 +156,11 @@ export function AdminVehicleCard({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
+                {isMachineryClass(vehicle.vehicle_class) ? (
+                  <Badge variant="outline" className="font-normal">
+                    {vehicleClassBadgeLabel(vehicle.vehicle_class)}
+                  </Badge>
+                ) : null}
                 <Badge variant="outline" className="font-normal">
                   {lifecycleStageLabel(stage)}
                 </Badge>
@@ -218,6 +224,9 @@ export function AdminVehicleCard({
             <div className="flex flex-wrap gap-2">
               <Badge className={stageClass[stage]}>{lifecycleStageLabel(stage)}</Badge>
               <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
+              {isMachineryClass(vehicle.vehicle_class) ? (
+                <Badge variant="outline">{vehicleClassBadgeLabel(vehicle.vehicle_class)}</Badge>
+              ) : null}
               {vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}
               <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
             </div>

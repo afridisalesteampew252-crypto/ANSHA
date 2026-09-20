@@ -3,6 +3,7 @@ export type InquiryStatus = 'new' | 'read' | 'responded' | 'closed';
 export type AdminRole = 'admin' | 'staff' | 'sales' | 'freelancer' | 'manager' | 'accounts';
 export type StockOrigin = 'japan' | 'dubai' | 'singapore' | 'china' | 'thailand' | 'taiwan';
 export type StockStatus = 'available' | 'reserved' | 'sold';
+export type VehicleClass = 'passenger' | 'commercial_truck' | 'heavy_machinery';
 export type LifecycleStage = 'unassigned' | 'auction' | 'yard' | 'port' | 'sold';
 export type LifecycleEventType =
   | 'stage_change'
@@ -134,7 +135,13 @@ export interface Vehicle {
   transmission: string | null;
   fuel_type: string | null;
   mileage: number | null;
+  /** Meter hours for heavy equipment; prefer over mileage when set. */
+  operating_hours: number | null;
   color: string | null;
+  /** passenger | commercial_truck | heavy_machinery */
+  vehicle_class: VehicleClass;
+  /** Optional subtype e.g. excavator, dump_truck */
+  equipment_category: string | null;
   price: number | null;
   currency: string;
   show_price: boolean;

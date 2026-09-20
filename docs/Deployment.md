@@ -83,6 +83,16 @@ WhatsApp Business Cloud API (Phase 40): set Edge Function secrets for `send-what
 
 Set with Supabase CLI against project `ydrnilquojvalhgifest`, e.g. `supabase secrets set WHATSAPP_ACCESS_TOKEN=… WHATSAPP_PHONE_NUMBER_ID=…`. Redeploy `send-whatsapp` after changing secrets. Admin UI `/admin/whatsapp` probes `action: status` and shows setup instructions when secrets are missing (no crash).
 
+Tawk.to live chat (public widget + admin agent inbox): set on the **Vercel** project (and local `.env.local`). These are publishable widget IDs, not secrets — still do not hard-code them in git.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_TAWK_PROPERTY_ID` | yes (to enable) | From embed URL `https://embed.tawk.to/<PROPERTY_ID>/<WIDGET_ID>` |
+| `NEXT_PUBLIC_TAWK_WIDGET_ID` | yes (to enable) | Widget id from the same URL |
+| `NEXT_PUBLIC_TAWK_DASHBOARD_URL` | no | Defaults to `https://dashboard.tawk.to` for `/admin/live-chat` |
+
+Leave property/widget blank to disable the public widget. Admin Live chat is **admin + manager only** (see `docs/Roles.md`). Redeploy Next.js after changing Vercel env.
+
 ## Rollback
 
 Vercel instant rollback to a previous production deployment is the application rollback. Database is **not** rolled back by a Vercel revert. Forward-fix with a new migration if schema already applied.

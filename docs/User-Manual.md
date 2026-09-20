@@ -11,11 +11,11 @@ ANSHA is one product with four surfaces:
 | Surface | Who | What |
 |---|---|---|
 | **Public website** | Anyone | Browse published parts & vehicles, inquire, read blog/offers, banking details, verify invoices |
-| **Staff ERP** | Admin / staff / sales | Catalog, purchase, sales, finance, inbox, marketing, team |
+| **Staff ERP** | Admin / staff / field agents / accounts / manager | Catalog, purchase, sales, finance, HR, inbox, marketing, team (role-gated) |
 | **Customer portal** | Enabled customers | Own invoices + account statement |
 | **PWA / mobile** | Anyone (public) | Installable catalog; optional store WebView shell |
 
-Staff ERP and the portal need a live internet connection (not cached offline).
+Staff ERP and the portal need a live internet connection (not cached offline). Full RBAC: [Roles](./Roles.md).
 
 ---
 
@@ -23,10 +23,12 @@ Staff ERP and the portal need a live internet connection (not cached offline).
 
 | Role | Login | Can do | Cannot do |
 |---|---|---|---|
-| **Visitor** | None | Browse available published stock, inquire, request parts, verify invoice by QR code | Staff tools, portal |
-| **Sales** | `/admin` | Catalog view/edit, customers, reserve vehicles, customer invoices, inquiries, requests, chat, mail, dashboard & own-book analytics | Suppliers, GRN, remittances, supplier invoices, purchase/finance/ops pages |
-| **Staff** | `/admin` | Day-to-day ops: PO, GRN, invoices, remittances, bank txns, expenses, shipments, landed cost, draft GL, payroll drafts, email/WhatsApp/AI, etc. | User management, portal enable, reverse posted GL, create/delete bank accounts, post payroll, hard-delete suppliers, force lifecycle stage jumps |
-| **Admin** | `/admin` | Everything staff can do, plus account-admin actions above | — |
+| **Visitor** | None | Browse available published stock, inquire, request parts, verify invoice by QR code | Staff tools, portal; auction-sheet photos |
+| **Sales / Freelancer** (field agent) | `/admin` | Parts/vehicles **lists**, own-book customers, reserve vehicles, **draft proforma only**, chat, light dashboard | Catalog create/edit/import, mark invoices sent, remittances, finance, HR, marketing |
+| **Accounts** | `/admin` | Customer invoices (all types; approve draft→sent), remittances, expenses, bank txns/views, supplier invoices, ledger/reports/VAT views | Users, audit log, catalog writes, PO/GRN, marketing, HR |
+| **Manager** | `/admin` | HR view (locations/shifts/attendance), own check-in/out, payroll link | Finance, catalog, location writes (ops-only in v1) |
+| **Staff** | `/admin` | Day-to-day ops: PO, GRN, invoices, remittances, bank txns, expenses, shipments, landed cost, draft GL, payroll drafts, HR admin, email/WhatsApp/AI, etc. | User management, portal enable, reverse posted GL, create/delete bank accounts, post payroll, hard-delete suppliers, force lifecycle stage jumps |
+| **Admin** | `/admin` | Everything staff can do, plus account-admin actions above; audit log | — |
 | **Customer (portal)** | `/portal` | Read own non-draft invoices; view account statement | Remittances, chat, staff ERP |
 
 There is no department matrix. Portal users are linked via `customer_profiles`, not staff accounts.
@@ -65,9 +67,10 @@ Staff ERP is **not** a native app rewrite. Store shells (if used) wrap the publi
 
 | Page | Path | Use it to |
 |---|---|---|
-| Home | `/` | Start search; jump to parts or vehicles; featured parts/vehicles rotate every 10 minutes across published stock |
+| Home | `/` | Start search; jump to parts or vehicles; featured parts (8) / vehicles (4) rotate every **10 minutes** (`lib/featured-rotation.ts`); admin `is_featured` boosts the pool |
 | Parts | `/parts`, `/parts/[slug]` | Browse / open a part; inquire or request sourcing; deal price if linked |
-| Vehicles | `/vehicles`, `/vehicles/[slug]` | Browse / open a vehicle; inquire; deal price if linked |
+| Vehicles | `/vehicles`, `/vehicles/[slug]` | Browse / open a vehicle; inquire; deal price if linked; auction sheets never shown publicly |
+| Machinery & trucks | `/machinery` | Browse commercial trucks and heavy equipment (`vehicle_class`); filter by equipment type / origin |
 | Categories | `/categories`, `/categories/[slug]` | Shop by category |
 | Deals | `/offers` (also **Deals** in nav / mobile bar) | Current offers; tap inventory-linked deals |
 | Markets | `/markets/[code]` | Import notes + hot vehicles for a destination (from flag strip) |
@@ -94,7 +97,7 @@ Open `/admin` after login. Menu groups match the sidebar.
 | Dashboard | `/admin/dashboard` | Review counts and ops charts. |
 | Analytics | `/admin/analytics` | Pick a date range for sales / stock / purchase / request KPIs. Sales see own-book receivables only. |
 | AI assistant | `/admin/ai` | Ask ops questions grounded in live data. Needs server AI keys (see Tips). |
-| Audit log | `/admin/audit-log` | Filter by entity, actor, or date (invoice status, vehicle stock, remittance allocations). Append-only. |
+| Audit log | `/admin/audit-log` | **Admin only.** Filter by entity, actor, or date (invoice status, part/vehicle catalog activity, remittance allocations). Append-only. |
 
 ### 5.2 Catalog
 
@@ -108,16 +111,19 @@ Open `/admin` after login. Menu groups match the sidebar.
 
 1. Create or open a vehicle.
 2. On the detail page, manage photos (upload, set cover, reorder, replace, delete), purchase/reserve fields, and public listing (publish only when stock is **available**).
-3. On the detail page, advance **lifecycle** along the recommended path (Auction → Yard → Port → Sold). Record workflow events; attach private files per event.
-4. Skipping stages requires an **admin** force override with a reason.
+3. Mark Japanese auction sheets (`A.*` / `is_auction_sheet`) — they stay admin-only. On list cards, the **Auction sheet** badge opens a lightbox of those images.
+4. On the detail page, advance **lifecycle** along the recommended path (Auction → Yard → Port → Sold). Record workflow events; attach private files per event.
+5. Skipping stages requires an **admin** force override with a reason.
 
 **Categories** — `/admin/categories` — create and maintain public category structure.
 
 **Bulk import** — `/admin/imports`
 
 1. Download / use the Excel template for parts or vehicles.
-2. Upload `.xlsx` (and optional image ZIP matched by part number or chassis).
+2. Upload `.xlsx` (and optional image ZIP matched by part number or chassis). Filenames starting with `A.` are flagged as auction sheets.
 3. Review job results and row errors in the import history.
+
+Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Development](./Development.md)); those are not the Excel import UI.
 
 **Suppliers** — `/admin/suppliers` (ops)
 
@@ -150,21 +156,22 @@ Open `/admin` after login. Menu groups match the sidebar.
 2. Open a customer for statement of account (invoices, remittances, allocations).
 3. **Admin only:** enable portal access from the customer SOA page (sends portal credentials via the provision flow).
 
-**Reserve vehicle** — `/admin/reservations` (sales + ops)
+**Reserve vehicle** — `/admin/reservations` (field agents + ops)
 
 1. Select an available vehicle and customer.
-2. Reserve stock; optionally create a **proforma** in one step.
+2. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft).
 3. Release (with republish when appropriate) if the deal does not proceed.
 
-**Invoices** — `/admin/invoices` (sales: customer invoices only)
+**Invoices** — `/admin/invoices`
 
-1. **New invoice** — pick type (proforma / tax / commercial), customer, lines (parts or vehicles), VAT/discounts.
-2. Issue / edit as allowed; print or PDF; QR verify link uses `/verify/invoice/[code]`.
-3. Tax/commercial lines can apply sold status on linked stock when issued.
+1. **Field agents:** create/edit **draft proforma only**. Accounts or ops mark drafts as **sent**.
+2. **Accounts / ops:** all document types; approve draft→sent; record payments.
+3. Print A4 — denser layout; verification code + QR on the face when verification is enabled (`/verify/invoice/[code]`).
+4. Tax/commercial lines can apply sold status on linked stock when issued.
 
-**Supplier invoices** — `/admin/invoices/supplier` (ops) — archive files linked to purchase (not available to sales).
+**Supplier invoices** — `/admin/invoices/supplier` (ops + accounts) — archive files linked to purchase (not available to field agents).
 
-**Remittances** — `/admin/remittances` (ops)
+**Remittances** — `/admin/remittances` (ops + accounts)
 
 1. Record pending or confirmed customer funds; attach evidence if needed.
 2. Allocate across invoices (partial allocations supported); reverse allocations carefully when correcting.
@@ -198,6 +205,7 @@ Open `/admin` after login. Menu groups match the sidebar.
 | Page | Path | How to use |
 |---|---|---|
 | Inquiries | `/admin/inquiries` | Work website inquiry forms. |
+| Live chat | `/admin/live-chat` | **Admin + manager only.** Open the Tawk agent inbox (new tab / popup). Answer public-site visitors. Needs `NEXT_PUBLIC_TAWK_*` on Vercel. |
 | Requests | `/admin/requests`, `/admin/requests/[id]` | Assign tickets, set due dates, attach private files, follow events. Due-soon/overdue appear in the notification center. |
 | Team Chat | `/admin/chat` | Direct/group chat; link conversations to vehicle / customer / inquiry / invoice / request; filter via query params. |
 | Internal Mail | `/admin/mail` | Inbox / sent / archive; To/CC/BCC; attachments. |
@@ -216,12 +224,23 @@ Header **notification center**: team messages, mail, inquiries, part requests, r
 | PWA subscribers | `/admin/subscribers` (ops) | List push opt-ins (deals/insights), filter, remove stale rows. |
 | Trade config | `/admin/trade-config` (ops) | FX reference rates, freight notes, per-country import policies for `/markets/[code]`. |
 
-### 5.9 Team
+### 5.9 HR
+
+| Page | Path | How to use |
+|---|---|---|
+| HR home | `/admin/hr` | Entry to workforce tools. |
+| Locations | `/admin/hr/locations` | Ops create/edit shift locations. |
+| Shifts | `/admin/hr/shifts` | Ops assign Morning/Night (and related) shifts. |
+| Attendance | `/admin/hr/attendance` | Ops/manager view; staff check in/out as allowed. |
+
+Manager is an HR **viewer** in v1 (not location-scoped). Ops (`admin`/`staff`) write locations and assignments.
+
+### 5.10 Team
 
 | Page | Path | Who |
 |---|---|---|
-| Payroll | `/admin/payroll` | Ops drafts; admin posts (see Finance). |
-| Users | `/admin/users` | **Admin only** — create/update workspace users and roles (`admin` / `staff` / `sales`), deactivate. |
+| Payroll | `/admin/payroll` | Ops drafts; admin posts (see Finance). Admin can delete employees / draft-cancelled runs (Phase 53). |
+| Users | `/admin/users` | **Admin only** — create/update workspace users and roles (`admin` / `staff` / `sales` / `freelancer` / `manager` / `accounts`), deactivate. |
 | Profile | `/admin/profile` | Anyone signed in — own name, avatar, password. |
 
 ---
@@ -243,11 +262,13 @@ Portal access is enabled by an **admin** from the customer page in ERP. Remittan
 1. **Searchable selects** — Prefer typing in dropdowns when choosing customers, stock, suppliers, or categories; long lists are meant to be filtered by search, not scrolled blindly.
 2. **Public stock** — Only **available** + **published** items show on the website. Reserve or sell in ERP before expecting the public list to change.
 3. **Vehicle publish** — You can publish a vehicle only while `stock_status` is available.
-4. **Sales menu** — If you are sales, missing sidebar items (suppliers, remittances, bank, etc.) are intentional.
-5. **Secrets for integrations** — Outbound email needs Resend; WhatsApp needs Meta token + phone number ID; AI needs `AI_GATEWAY_API_KEY` or `OPENAI_API_KEY`; Web Push needs VAPID keys. Without them, the related admin screens show setup/empty send states.
+4. **Role menus** — Field agents, accounts, and managers see intentional allowlists; missing sidebar items are by design.
+5. **Secrets for integrations** — Outbound email needs Resend; WhatsApp needs Meta token + phone number ID; AI needs `AI_GATEWAY_API_KEY` or `OPENAI_API_KEY`; Web Push needs VAPID keys; Tawk needs `NEXT_PUBLIC_TAWK_PROPERTY_ID` + `NEXT_PUBLIC_TAWK_WIDGET_ID`. Without them, the related admin screens show setup/empty send states (Tawk widget simply does not load).
+6. **Live chat roles** — `/admin/live-chat` is **admin + manager only**. Staff, sales, freelancer, and accounts cannot open it.
 6. **Quick add** — Desktop header **Quick add** jumps to new part/vehicle/invoice, customers, remittances, offers, or bulk import.
-7. **QR invoices** — Share the verify URL from the invoice; buyers confirm authenticity without seeing internal notes.
+7. **QR invoices** — Share the verify URL from the invoice; buyers confirm authenticity via QR or the verification code on the A4 print.
 8. **Banking page** — Point customers to `/banking` for official AED/USD payment details rather than pasting ad-hoc numbers in chat.
+9. **Auction sheets** — Admin-only; never appear on the public vehicle gallery.
 
 ---
 

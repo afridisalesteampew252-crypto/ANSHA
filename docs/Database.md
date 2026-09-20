@@ -11,23 +11,23 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phase 51 offer inventory links (`20260919010000_phase_51_offer_inventory_links.sql`) and Phase 52 trade config (`20260919020000_phase_52_trade_config.sql`). Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
+Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53 payroll deletes, Phase 54 field agents/HR/catalog audit, Phase 55 accounts + draft proforma, Phase 56 `vehicle_photos.is_auction_sheet`, Phase 57 `vehicles.vehicle_class` / `equipment_category` / `operating_hours`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
 
 ## Entity groups
 
 ### Identity
 
-`admin_profiles` �?? PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`), `email`, `avatar_url`, `is_active`, `created_at`.
+`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`), `email`, `avatar_url`, `is_active`, `created_at`.
 
-`customer_profiles` �?? PK `id` = `auth.users.id`, unique `customer_id` �?? `customers`. Portal identity only; never place portal users in `admin_profiles`.
+`customer_profiles` — PK `id` = `auth.users.id`, unique `customer_id` → `customers`. Portal identity only; never place portal users in `admin_profiles`.
 
 ### Catalog
 
-- `categories` �?? name/slug unique, `sort_order`, optional `image_url`
-- `parts` �?? unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`
+- `categories` — name/slug unique, `sort_order`, optional `image_url`
+- `parts` — unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`
 - `part_photos`, `part_compatibility`
-- `vehicles` �?? unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts
-- `vehicle_photos`
+- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts; Phase 57 `vehicle_class` (`passenger`\|`commercial_truck`\|`heavy_machinery`, default `passenger`), optional `equipment_category`, optional `operating_hours`
+- `vehicle_photos` — includes `is_auction_sheet` (Phase 56; Japanese auction sheets / typically `A.*`); public SELECT policy requires `is_auction_sheet = false`
 - `suppliers` �?? master (`supplier_code`, TRN, country, currency, �?�); ops RLS
 - `purchase_orders` / `purchase_order_lines` �?? PO number, VAT, terms; match snapshot vs GRN/supplier invoices/payments
 - `supplier_payments` / `supplier_payment_allocations` �?? AP payments allocated to PO or supplier invoice file
@@ -42,8 +42,9 @@ Latest migrations in the repository include Phase 51 offer inventory links (`202
 - `gl_accounts` / `gl_journals` / `gl_journal_lines` — chart of accounts + journals (JE- numbers); draft/posted/reversed; `source_module`/`source_id` for auto-post idempotency (Phase 46); ops RLS; report RPCs `gl_trial_balance` / `gl_profit_and_loss` / `gl_balance_sheet`
 - `ai_chat_threads` / `ai_chat_messages` ? ops AI assistant history; owner-scoped RLS; grounding via `get_ai_ops_grounding`
 - `get_ops_analytics_summary(from,to)` ? Phase 41 jsonb KPIs (sales/AR, stock, requests; ops also remittances + open POs + GRNs). Workspace-executable; sales scoped to own book
-- `audit_logs` ? append-only ops activity log (actor, action, entity_type, entity_id, metadata); writes via `private.write_audit_log`; triggers on invoice status, vehicle stock_status, remittance allocations; ops SELECT only
-- `vehicle_lifecycle_events` �?? append-only stage changes and workflow events (BL, inspection, RORO, etc.)
+- `audit_logs` — append-only activity log (actor, action, entity_type, entity_id, metadata); writes via `private.write_audit_log`; triggers on invoice status, vehicle/part catalog activity (Phase 54), remittance allocations; **admin SELECT only** (Phase 54)
+- `shift_locations` / `shift_assignments` / `attendance_records` — HR MVP (Phase 54); ops write; `is_hr_viewer()` SELECT
+- `vehicle_lifecycle_events` — append-only stage changes and workflow events (BL, inspection, RORO, etc.)
 - `vehicle_lifecycle_event_attachments` — private file metadata for lifecycle event documents (storage prefix `vehicles/{vehicle_id}/lifecycle/{event_id}/` in `internal-files`)
 
 ### Public marketing (Phase 24 + 51–52)
@@ -121,4 +122,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics.
+Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, and Phase 57 `vehicle_class`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`.

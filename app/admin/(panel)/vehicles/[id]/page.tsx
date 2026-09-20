@@ -32,6 +32,12 @@ import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import {
+  EQUIPMENT_CATEGORIES,
+  isMachineryClass,
+  VEHICLE_CLASSES,
+  type VehicleClass,
+} from '@/lib/vehicle-class';
+import {
   LIFECYCLE_ATTACHMENT_MAX_BYTES,
   LIFECYCLE_EVENT_TYPES,
   LIFECYCLE_STAGES,
@@ -98,6 +104,9 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [location, setLocation] = useState('');
   const [stockOrigin, setStockOrigin] = useState('dubai');
   const [stockStatus, setStockStatus] = useState<StockStatus>('available');
+  const [vehicleClass, setVehicleClass] = useState<VehicleClass>('passenger');
+  const [equipmentCategory, setEquipmentCategory] = useState('');
+  const [operatingHours, setOperatingHours] = useState('');
   const [purchasePrice, setPurchasePrice] = useState('');
   const [purchaseCurrency, setPurchaseCurrency] = useState('AED');
   const [purchaseDate, setPurchaseDate] = useState('');
@@ -163,6 +172,9 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setLocation(row.location || '');
     setStockOrigin(row.stock_origin || 'dubai');
     setStockStatus(row.stock_status || 'available');
+    setVehicleClass(row.vehicle_class || 'passenger');
+    setEquipmentCategory(row.equipment_category || '');
+    setOperatingHours(row.operating_hours != null ? String(row.operating_hours) : '');
     setPurchasePrice(row.purchase_price != null ? String(row.purchase_price) : '');
     setPurchaseCurrency(row.purchase_currency || 'AED');
     setPurchaseDate(row.purchase_date || '');
@@ -229,6 +241,12 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         location: location.trim() || null,
         stock_origin: stockOrigin,
         stock_status: stockStatus,
+        vehicle_class: vehicleClass,
+        equipment_category: isMachineryClass(vehicleClass) ? (equipmentCategory.trim() || null) : null,
+        operating_hours:
+          isMachineryClass(vehicleClass) && operatingHours !== ''
+            ? Number.parseInt(operatingHours, 10)
+            : null,
         purchase_price: purchasePrice === '' ? null : Number(purchasePrice),
         purchase_currency: purchaseCurrency.trim().toUpperCase() || 'AED',
         purchase_date: purchaseDate || null,
@@ -1171,6 +1189,58 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                 <Label htmlFor="year">Year</Label>
                 <Input id="year" value={year} onChange={(event) => setYear(event.target.value)} inputMode="numeric" />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vehicle-class">Inventory class</Label>
+                <select
+                  id="vehicle-class"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  value={vehicleClass}
+                  onChange={(event) => {
+                    const next = event.target.value as VehicleClass;
+                    setVehicleClass(next);
+                    if (!isMachineryClass(next)) {
+                      setEquipmentCategory('');
+                      setOperatingHours('');
+                    }
+                  }}
+                >
+                  {VEHICLE_CLASSES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {isMachineryClass(vehicleClass) ? (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="equipment-category">Equipment type</Label>
+                    <select
+                      id="equipment-category"
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      value={equipmentCategory}
+                      onChange={(event) => setEquipmentCategory(event.target.value)}
+                    >
+                      <option value="">Select type</option>
+                      {EQUIPMENT_CATEGORIES.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="operating-hours">Operating hours</Label>
+                    <Input
+                      id="operating-hours"
+                      value={operatingHours}
+                      onChange={(event) => setOperatingHours(event.target.value)}
+                      inputMode="numeric"
+                      placeholder="6500"
+                    />
+                  </div>
+                </>
+              ) : null}
               <div className="space-y-1.5">
                 <Label htmlFor="stock-number">Stock number</Label>
                 <Input id="stock-number" value={stockNumber} onChange={(event) => setStockNumber(event.target.value)} />

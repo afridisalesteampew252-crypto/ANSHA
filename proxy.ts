@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import {
+  canAccessLiveChat,
   isAccountsAllowedPath,
   isAccountsRole,
   isFieldAgentAllowedPath,
@@ -28,6 +29,7 @@ function isManagerAllowedPath(pathname: string): boolean {
     || pathname === '/admin/profile'
     || pathname.startsWith('/admin/hr')
     || pathname.startsWith('/admin/chat')
+    || pathname.startsWith('/admin/live-chat')
   );
 }
 
@@ -157,6 +159,14 @@ export async function proxy(request: NextRequest) {
     }
 
     if (profile.role !== 'admin' && pathname.startsWith('/admin/audit-log')) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = '/admin/dashboard';
+      dashboardUrl.search = '';
+      return redirectWithSession(dashboardUrl);
+    }
+
+    // Tawk agent inbox — admin + manager ONLY (blocks staff, sales, freelancer, accounts)
+    if (pathname.startsWith('/admin/live-chat') && !canAccessLiveChat(profile.role)) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/admin/dashboard';
       dashboardUrl.search = '';

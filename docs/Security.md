@@ -7,7 +7,10 @@
 3. `proxy.ts` requires claims + `admin_profiles` row for `/admin/*` except `/admin`
 4. RLS uses `public.is_admin()` = membership in `admin_profiles`, not `role = 'admin'`
 5. Sensitive account actions use `private.is_account_admin()` = active `role = 'admin'` (Phase 45)
-6. `role = 'admin'` is required for Edge Function user create/update and portal-create-access
+6. Field agents use `private.is_field_agent()` (`sales`|`freelancer`); receivables use `private.can_manage_receivables()` (`admin`|`staff`|`accounts`); HR SELECT uses `private.is_hr_viewer()` (Phases 54–55)
+7. `role = 'admin'` is required for Edge Function user create/update and portal-create-access
+8. Public `vehicle_photos` SELECT excludes `is_auction_sheet = true` (Phase 56)
+9. `/admin/live-chat` is **admin + manager only** (`canAccessLiveChat` in `proxy.ts` + nav) — not staff/sales/freelancer/accounts
 
 Treat every browser query as hostile. Policies are the API.
 
@@ -43,7 +46,7 @@ Public media buckets serve catalog/blog images. Private buckets (`profile-images
 
 Must verify the caller JWT with the anon key before using the service-role client. `admin-create-user` and `admin-update-user` both do this. CORS reflects an allowlist (canonical ANSHA hosts, localhost:3000, `https://*.vercel.app`) and does not use `*`.
 
-Staff may use day-to-day ops (`private.is_ops_user()`). Account-admin actions (`private.is_account_admin()`) cover user management, portal access create, GL reverse / chart changes, bank account create/delete, supplier hard-delete, and payroll post / cancel-posted. See `docs/Roles.md`.
+Staff may use day-to-day ops (`private.is_ops_user()`). Account-admin actions (`private.is_account_admin()`) cover user management, portal access create, GL reverse / chart changes, bank account create/delete, supplier hard-delete, payroll post / cancel-posted / deletes (Phase 53), and audit log SELECT (Phase 54). Field-agent and accounts gates: see `docs/Roles.md`.
 
 ## XSS / HTML
 

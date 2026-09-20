@@ -95,6 +95,20 @@ Done (Phase 52): trade configuration — `export_market_configs` + `site_trade_s
 
 Also shipped (product slices, post-50): public cart/favorites; Dubai clock + AED FX (`/api/fx`); PNG export-market flags; mobile PWA overflow fixes; admin PK/Dubai clocks + FX; Marketing `/admin/subscribers`; PWA name **Anshatradingco APP** + install CTAs; blog Write/HTML/Preview editor.
 
+Done (Phase 53): account-admin payroll deletes — `delete_payroll_employee`, `delete_payroll_run` (draft/cancelled only; posted must cancel first). Migration `20260920020000_phase_53_payroll_delete.sql`.
+
+Done (Phase 54): field agents — tighten `sales` + add `freelancer`; `manager` HR viewer; HR MVP (`shift_locations`, `shift_assignments`, `attendance_records`); catalog activity audit on `parts`/`vehicles`; `audit_logs` SELECT admin-only. Migration `20260920030000_phase_54_field_agents_hr_catalog_audit.sql`. A4 invoice print landed with this slice.
+
+Done (Phase 55): `accounts` role + `can_manage_receivables()`; field agents create **draft proforma only** (cannot mark sent); sales dashboard cleanup; invoice RBAC. Migrations `20260920040000_phase_55_accounts_role_proforma_draft.sql`, `20260920040100_phase_55_accounts_invoice_rbac.sql`.
+
+Done (Phase 56): `vehicle_photos.is_auction_sheet`; public RLS hides A-sheets; admin badge + clickable Auction sheet lightbox; Japan ZIP import script flags `A.*`. Migration `20260920050000_phase_56_vehicle_photo_auction_sheet.sql`. Invoice A4 polish: denser layout + verification code on face.
+
+Also shipped (inventory ops, scripts): Japan stock ZIP (~35 chassis folders via `scripts/import-japan-stock-vehicles.mjs`; SEO Make/Model/Year/Color + WebP; 12 new / 23 already present); WhatsApp parts warehouse + Dubai Sep 20 batches; Japan key-fob / car-electronics batch (`scripts/import-whatsapp-parts-keys.mjs`, **16** created).
+
+Done (Phase 57): vehicle class for heavy machinery & trucks — `vehicles.vehicle_class` (`passenger`|`commercial_truck`|`heavy_machinery`), optional `equipment_category` + `operating_hours`; public `/machinery`; admin class filters + nav “Machinery & trucks”; helpers in `lib/vehicle-class.ts`. Migration `20260920060000_phase_57_vehicle_class_machinery.sql`.
+
+Also shipped (Tawk.to): public site widget via `NEXT_PUBLIC_TAWK_PROPERTY_ID` / `NEXT_PUBLIC_TAWK_WIDGET_ID`; admin `/admin/live-chat` agent inbox surface — **admin + manager only** (`canAccessLiveChat` + nav filter + `proxy.ts`). Optional `NEXT_PUBLIC_TAWK_DASHBOARD_URL`.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.
@@ -107,12 +121,17 @@ Done (Phase 45): tighter staff vs account-admin RBAC — `private.is_account_adm
 
 ## 8. Later platform
 
-AI automation and deeper ESP features — all against this PostgreSQL project.
+Still open (not scheduled until chosen):
 
-Live bank OAuth (beyond CSV stub), email newsletter list separate from push, automated E2E suite.
+- AI automation and deeper ESP features — all against this PostgreSQL project
+- Live bank OAuth (beyond CSV stub)
+- Email newsletter list separate from push
+- Automated E2E / unit test suite
+- Manager location-scoped HR approvals (Phase 54 v1 is global viewer)
+- Native admin rewrite (explicitly out of scope for Capacitor shell)
 
 Stop after the current module until the next one is approved.
 
-Done (home featured rotation): display-only 10-minute rotation of home featured parts (8) and vehicles (4) via `lib/featured-rotation.ts` + home client pool query. Admin `is_featured` unchanged for badges / pool boost. No cron, no migration.
+Done (home featured rotation): display-only 10-minute rotation of home featured parts (8) and vehicles (4) via `lib/featured-rotation.ts` + home client pool query. Admin `is_featured` unchanged for badges / pool boost. No cron, no migration. Tip around `e76df97`.
 
 Checkpoint: [CURRENT_STATE](./CURRENT_STATE.md).

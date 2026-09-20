@@ -41,7 +41,7 @@ Public callers may:
 - `SELECT` published catalog, categories, published blog
 - `INSERT` `inquiries` and `part_requests` (anon policies from initial/blog migrations)
 
-Staff (`admin_profiles` membership) may `SELECT`/`INSERT`/`UPDATE`/`DELETE` according to table policies. Sequence tables deny direct access.
+Staff (`admin_profiles` membership) may `SELECT`/`INSERT`/`UPDATE`/`DELETE` according to table policies. Sequence tables deny direct access. Roles further restrict via helpers (`is_ops_user`, `is_field_agent`, `can_manage_receivables`, `is_hr_viewer`, `is_account_admin`) — see [Roles](./Roles.md).
 
 Public RPC:
 

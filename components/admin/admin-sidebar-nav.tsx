@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   Banknote,
   BarChart3,
@@ -20,6 +20,7 @@ import {
   FileBarChart,
   FileSpreadsheet,
   Globe2,
+  Headphones,
   Inbox,
   LayoutDashboard,
   Mail,
@@ -77,6 +78,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { href: '/admin/parts', label: 'Parts', icon: Package },
       { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
+      { href: '/admin/vehicles?class=machinery', label: 'Machinery & trucks', icon: Truck },
       { href: '/admin/categories', label: 'Categories', icon: Tag },
       { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
     ],
@@ -123,6 +125,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: Inbox,
     items: [
       { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
+      { href: '/admin/live-chat', label: 'Live chat', icon: Headphones },
       { href: '/admin/requests', label: 'Requests', icon: ClipboardList },
       { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
       { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
@@ -162,13 +165,32 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   },
 ];
 
-export function isAdminNavActive(pathname: string, href: string) {
-  if (pathname === href) return true;
-  if (!pathname.startsWith(`${href}/`)) return false;
+export function isAdminNavActive(pathname: string, href: string, search = '') {
+  const [hrefPath, hrefQuery = ''] = href.split('?');
+  if (pathname !== hrefPath && !pathname.startsWith(`${hrefPath}/`)) return false;
+
+  const current = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const expected = new URLSearchParams(hrefQuery);
+
+  if (hrefQuery) {
+    for (const [key, value] of Array.from(expected.entries())) {
+      if (current.get(key) !== value) return false;
+    }
+    return true;
+  }
+
+  // Plain /admin/vehicles should not stay active when a class filter is applied.
+  if (hrefPath === '/admin/vehicles') {
+    const classFilter = current.get('class');
+    if (classFilter && classFilter !== 'all' && classFilter !== 'passenger') return false;
+  }
+
+  if (pathname === hrefPath) return true;
+  if (!pathname.startsWith(`${hrefPath}/`)) return false;
   // Avoid marking customer invoices active on supplier invoice routes
-  if (href === '/admin/invoices' && pathname.startsWith('/admin/invoices/supplier')) return false;
+  if (hrefPath === '/admin/invoices' && pathname.startsWith('/admin/invoices/supplier')) return false;
   // Avoid marking /admin/hr active on nested HR pages that have their own nav items
-  if (href === '/admin/hr') {
+  if (hrefPath === '/admin/hr') {
     const nested = ['/admin/hr/locations', '/admin/hr/shifts', '/admin/hr/attendance'];
     if (nested.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return false;
   }
@@ -236,10 +258,12 @@ function NavLinkRow({
 function GroupFlyoutLinks({
   group,
   pathname,
+  search,
   chatUnread,
 }: {
   group: AdminNavGroup;
   pathname: string;
+  search: string;
   chatUnread: number;
 }) {
   return (
@@ -248,7 +272,7 @@ function GroupFlyoutLinks({
         {group.label}
       </p>
       {group.items.map((item) => {
-        const active = isAdminNavActive(pathname, item.href);
+        const active = isAdminNavActive(pathname, item.href, search);
         return (
           <Link
             key={item.href}
@@ -290,9 +314,11 @@ export function AdminSidebarNav({
   chatUnread = 0,
 }: AdminSidebarNavProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams?.toString() ?? '';
   const activeGroupId = useMemo(
-    () => groups.find((group) => group.items.some((item) => isAdminNavActive(pathname, item.href)))?.id ?? null,
-    [groups, pathname]
+    () => groups.find((group) => group.items.some((item) => isAdminNavActive(pathname, item.href, search)))?.id ?? null,
+    [groups, pathname, search]
   );
 
   const [openIds, setOpenIds] = useState<string[]>(() => (activeGroupId ? [activeGroupId] : []));
@@ -335,7 +361,7 @@ export function AdminSidebarNav({
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Admin navigation">
       {groups.map((group) => {
-        const groupActive = group.items.some((item) => isAdminNavActive(pathname, item.href));
+        const groupActive = group.items.some((item) => isAdminNavActive(pathname, item.href, search));
         const isOpen = openIds.includes(group.id);
         const GroupIcon = group.icon;
 
@@ -358,7 +384,7 @@ export function AdminSidebarNav({
                 </button>
               </HoverCardTrigger>
               <HoverCardContent side="right" align="start" sideOffset={10} className="w-56 p-1.5">
-                <GroupFlyoutLinks group={group} pathname={pathname} chatUnread={chatUnread} />
+                <GroupFlyoutLinks group={group} pathname={pathname} search={search} chatUnread={chatUnread} />
               </HoverCardContent>
             </HoverCard>
           );
@@ -374,7 +400,7 @@ export function AdminSidebarNav({
               </p>
               <NavLinkRow
                 item={item}
-                active={isAdminNavActive(pathname, item.href)}
+                active={isAdminNavActive(pathname, item.href, search)}
                 collapsed={collapsed}
                 mobile={mobile}
                 chatUnread={chatUnread}
@@ -418,7 +444,7 @@ export function AdminSidebarNav({
                 <NavLinkRow
                   key={item.href}
                   item={item}
-                  active={isAdminNavActive(pathname, item.href)}
+                  active={isAdminNavActive(pathname, item.href, search)}
                   collapsed={false}
                   mobile={mobile}
                   chatUnread={chatUnread}
@@ -434,10 +460,10 @@ export function AdminSidebarNav({
 }
 
 /** Resolve page title from visible nav items. */
-export function findAdminNavLabel(groups: AdminNavGroup[], pathname: string): string | undefined {
+export function findAdminNavLabel(groups: AdminNavGroup[], pathname: string, search = ''): string | undefined {
   for (const group of groups) {
     for (const item of group.items) {
-      if (isAdminNavActive(pathname, item.href)) return item.label;
+      if (isAdminNavActive(pathname, item.href, search)) return item.label;
     }
   }
   return undefined;

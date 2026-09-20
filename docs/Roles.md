@@ -53,8 +53,21 @@ There is no department role and no `domain.action` permission matrix in code. Cu
 ## Managers (Phase 54 v1)
 
 - Can open **HR** (`/admin/hr*`) and **Payroll** (related link; payroll delete unchanged Phase 48/53).
+- Can open **Live chat** (`/admin/live-chat`) with admin — Tawk agent inbox.
 - Cannot manage locations/assignments unless also ops — writes use `is_ops_user()`.
 - Location-scoped manager approvals **deferred**.
+
+## Live chat / Tawk (admin + manager only)
+
+| Role | `/admin/live-chat` |
+|---|---|
+| `admin` | Yes |
+| `manager` | Yes |
+| `staff` | **No** |
+| `sales` / `freelancer` | **No** |
+| `accounts` | **No** |
+
+Enforcement: `canAccessLiveChat()` in `lib/admin-rbac.ts`; nav filter in admin layout; route guard in `proxy.ts`. Do not broaden this allowlist.
 
 ## Staff vs account-admin matrix (Phase 45)
 
@@ -83,8 +96,8 @@ Triggers on `parts` and `vehicles` (create / meaningful update / delete / `stock
 
 ## Enforcement locations
 
-- Route: `proxy.ts` — any active `admin_profiles` row; field-agent + accounts + manager allowlists; `/admin/users` and `/admin/audit-log` require `role = 'admin'`
-- UI: nav hides Users / Audit log for non-admin; HR group for ops/manager; field-agent + accounts nav; ledger reverse / chart edit, bank account create, payroll post / cancel-posted, portal enable — admin only
+- Route: `proxy.ts` — any active `admin_profiles` row; field-agent + accounts + manager allowlists; `/admin/users` and `/admin/audit-log` require `role = 'admin'`; `/admin/live-chat` requires `admin` \| `manager` via `canAccessLiveChat`
+- UI: nav hides Users / Audit log for non-admin; Live chat for non-`canAccessLiveChat`; HR group for ops/manager; field-agent + accounts nav; ledger reverse / chart edit, bank account create, payroll post / cancel-posted, portal enable — admin only
 - Database: catalog often `is_ops_user()`; receivables use `can_manage_receivables()`; field-agent draft proforma via RLS + `create_invoice_v3` + trigger; sensitive RPCs use `private.is_account_admin()`
 - Edge Functions: `callerProfile.role !== 'admin'` (and inactive) → 403 for user-admin and portal-create; create/update user accept roles including `freelancer` / `manager` / `accounts`
 

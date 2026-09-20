@@ -52,6 +52,7 @@ There is no `test` script. Native mobile steps: `docs/Mobile.md`. Live product c
 - PWA assets: `app/manifest.ts`, `public/sw.js`, `public/icons/`; do not cache admin or auth in the service worker
 - Web Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in app env; private VAPID key only as Edge Function secret
 - Capacitor: `capacitor.config.ts` + `native/www`; do not commit generated `android/` or `ios/` (see `docs/Mobile.md`)
+- One-off inventory scripts (ops only, service role locally — never commit keys): `scripts/import-japan-stock-vehicles.mjs`, `scripts/import-whatsapp-parts.mjs`, `scripts/import-whatsapp-parts-dubai.mjs`, `scripts/import-whatsapp-parts-keys.mjs`
 
 ## Next.js 16 notes
 

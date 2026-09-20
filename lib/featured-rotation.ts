@@ -14,10 +14,13 @@ export const FEATURED_ROTATION_WINDOW_MS = 10 * 60 * 1000;
 export const HOME_FEATURED_PARTS_LIMIT = 8;
 /** Home vehicle showroom slots */
 export const HOME_FEATURED_VEHICLES_LIMIT = 4;
+/** Home heavy machinery & trucks slots */
+export const HOME_FEATURED_MACHINERY_LIMIT = 4;
 
 /** Candidate pool sizes — larger than slots so rotation has variety */
 export const HOME_FEATURED_PARTS_POOL = 48;
 export const HOME_FEATURED_VEHICLES_POOL = 24;
+export const HOME_FEATURED_MACHINERY_POOL = 24;
 
 export type FeaturedRotationCandidate = {
   id: string;
