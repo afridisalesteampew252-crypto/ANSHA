@@ -123,6 +123,10 @@ Done (Phase 62): stock ops dashboard — `/admin/stock` + `/admin/stock/arrival-
 
 Done (Phase 63): parts stock ops parity — `/admin/parts/stock`; parts `reserved_by` + reservation VAT/ETD/ETA/requester; field-agent parts SELECT (available + own reserved); reserve/proforma/release RPCs for parts; `export_shipment_parts` + `create_export_shipment` `part_ids`; requester_role includes `freelancer` with locked requester fields for sales/freelancer; redesigned `/admin/parts` + `/admin/vehicles` cards/lists. Migration `20260920210000_phase_63_parts_stock_ops_sales_scope.sql` (applied remote). Seed: `20260920210000_seed_export_master_options.sql` + `scripts/seed-export-masters.sql`. Helpers: `lib/parts-stock-ops-data.ts`, `lib/part-sales-status.ts`.
 
+Done (Phase 64): invoice unallocate-then-delete — remittance allocations must clear before delete; `unallocate_invoice_remittances` returns funds to remittance pool; `delete_invoice_safely` restores linked reserved/sold vehicles/parts to `available` (parts sold qty restored); `unallocate_and_delete_invoice` chains both; admin invoice list/detail UX. Migration `20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql` (applied remote). Helper: `lib/invoice-delete.ts`.
+
+Done (Phase 65): vehicle stock pools — `vehicles.stock_pool` (`owned`|`auction_third_party`); `/admin/vehicles` = owned only; `/admin/auction-stock` = third-party auction; transfer actions; Japan-origin defaults/backfill to auction; stock ops filter owned. Migration `20260920230000_phase_65_vehicle_stock_pool.sql` (applied remote). Helpers: `lib/stock.ts` (`STOCK_POOLS`), shared `AdminVehiclesInventoryPage`.
+
 ## 7. Mobile / PWA
 
 Done (Phase 22): installable PWA for the public catalog on the same Next.js app and Supabase project. Manifest, icons, service worker (`/sw.js`), offline fallback (`/offline`), and optional install prompt. Admin/API/auth responses are never cached.

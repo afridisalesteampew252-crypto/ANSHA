@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { compressCatalogImage } from '@/lib/catalog-image';
-import { STOCK_ORIGINS } from '@/lib/stock';
+import { STOCK_ORIGINS, defaultStockPoolForOrigin } from '@/lib/stock';
 import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import type { StockOrigin } from '@/lib/types';
 
@@ -67,7 +67,7 @@ export default function ImportsPage() {
           const chassis = String(row.chassis_number || '').trim(); const make = String(row.make || '').trim(); const model = String(row.model || '').trim();
           if (!chassis || !make || !model) throw new Error('chassis_number, make and model are required');
           const title = String(row.title || `${row.year || ''} ${make} ${model}`.trim());
-          const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, stock_origin: vehicleStockOrigin, show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
+          const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, stock_origin: vehicleStockOrigin, stock_pool: defaultStockPoolForOrigin(vehicleStockOrigin), show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
           const { data: existing } = await supabase.from('vehicles').select('id').eq('chassis_number', chassis).maybeSingle();
           const mutation = existing ? supabase.from('vehicles').update(payload).eq('id', existing.id) : supabase.from('vehicles').insert(payload);
           const { error } = await mutation; if (error) throw error;

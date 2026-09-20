@@ -69,7 +69,7 @@ Staff ERP is **not** a native app rewrite. Store shells (if used) wrap the publi
 |---|---|---|
 | Home | `/` | Start search; jump to parts or vehicles; featured parts (8) / vehicles (4) rotate every **10 minutes** (`lib/featured-rotation.ts`); admin `is_featured` boosts the pool |
 | Parts | `/parts`, `/parts/[slug]` | Browse / open a part; inquire or request sourcing; deal price if linked |
-| Vehicles | `/vehicles`, `/vehicles/[slug]` | Browse / open a vehicle; inquire; deal price if linked; auction sheets never shown publicly |
+| Vehicles | `/vehicles`, `/vehicles/[slug]` | Browse / open a vehicle; inquire; deal price if linked; auction sheets never shown publicly; auction-pool units may show as auction listing |
 | Machinery & trucks | `/machinery` | Browse commercial trucks and heavy equipment (`vehicle_class`); filter by equipment type / origin |
 | Categories | `/categories`, `/categories/[slug]` | Shop by category |
 | Deals | `/offers` (also **Deals** in nav / mobile bar) | Current offers; tap inventory-linked deals |
@@ -107,13 +107,20 @@ Open `/admin` after login. Menu groups match the sidebar.
 2. Fill identifiers, pricing (including optional **FOB / C&F / CIF** sell quotes), stock origin/status, publish flags, photos.
 3. Save. Purchase cost fields appear on edit for ops users. Public detail shows Incoterm quotes when set.
 
-**Vehicles** — `/admin/vehicles` and `/admin/vehicles/[id]`
+**Vehicles (owned)** — `/admin/vehicles` and `/admin/vehicles/[id]`
 
-1. Create or open a vehicle.
+1. Create or open an **owned** inventory vehicle (`stock_pool = owned`). Use **Auction stock** for third-party auction/yard listings.
 2. On the detail page, manage photos (upload, set cover, reorder, replace, delete), purchase/reserve fields, optional **FOB / C&F / CIF** quotes, and public listing (publish only when stock is **available**).
 3. Mark Japanese auction sheets (`A.*` / `is_auction_sheet`) — they stay admin-only. On list cards, the **Auction sheet** badge opens a lightbox of those images.
 4. On the detail page, advance **lifecycle** along the recommended path (Auction → Yard → Port → Sold). Record workflow events; attach private files per event.
 5. Skipping stages requires an **admin** force override with a reason.
+6. Transfer to **Auction stock** when the unit is third-party (not purchased inventory).
+
+**Auction stock** — `/admin/auction-stock`
+
+1. Lists `stock_pool = auction_third_party` only (Japan uploads default here until purchased into owned).
+2. Create via **New auction stock** (`/admin/vehicles/new?pool=auction`) or transfer from owned.
+3. **Transfer to owned inventory** when ANSHA buys the unit into stock. Field agents can open this list (same catalog allowlist as vehicles).
 
 **Categories** — `/admin/categories` — create and maintain public category structure.
 
@@ -170,6 +177,7 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 3. Set document **price term**, **shipment term**, and **VAT applicable** on the invoice header (shown on A4 print and `/verify/invoice/[code]`). Linked stock lines can carry a per-line price term when the unit price came from an Incoterm quote.
 4. Print A4 — denser layout; verification code + QR on the face when verification is enabled; header shows price/shipment terms when set.
 5. Tax/commercial lines can apply sold status on linked stock when issued.
+6. **Delete:** remittance allocations must be cleared first (**Unallocate** on the invoice, or **Unallocate & delete**). After delete, linked reserved/sold vehicles/parts return to **available** (sold parts quantity restored).
 
 **Supplier invoices** — `/admin/invoices/supplier` (ops + accounts) — archive files linked to purchase (not available to field agents).
 
@@ -182,7 +190,7 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 
 **Stock management** — `/admin/stock` (ops)
 
-1. Review inventory with dual columns: **payment/stock status** (Available / Reserved / Partial Paid / Paid / Unpaid / Sold) and **shipment status** (Not Booked / Booked / Shipped / Delivered).
+1. Review **owned** vehicle inventory with dual columns: **payment/stock status** (Available / Reserved / Partial Paid / Paid / Unpaid / Sold) and **shipment status** (Not Booked / Booked / Shipped / Delivered). Auction-pool units are managed under **Auction stock**, not this board.
 2. Use summary chips and filters; open a vehicle for detail.
 3. **Arrival Watch** (`/admin/stock/arrival-watch`) — units with ETD/ETA or in-transit shipment focus.
 

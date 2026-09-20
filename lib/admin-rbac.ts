@@ -48,6 +48,7 @@ export const FIELD_AGENT_NAV_HREFS = new Set([
   '/admin/dashboard',
   '/admin/parts',
   '/admin/vehicles',
+  '/admin/auction-stock',
   '/admin/customers',
   '/admin/reservations',
   '/admin/invoices',
@@ -56,7 +57,8 @@ export const FIELD_AGENT_NAV_HREFS = new Set([
 
 export function isFieldAgentAllowedPath(pathname: string): boolean {
   if (pathname === '/admin/dashboard' || pathname === '/admin/profile') return true;
-  if (pathname === '/admin/parts' || pathname === '/admin/vehicles') return true;
+  if (pathname === '/admin/parts' || pathname === '/admin/vehicles' || pathname === '/admin/auction-stock')
+    return true;
   // No catalog create/edit routes for field agents
   if (pathname.startsWith('/admin/parts/') || pathname.startsWith('/admin/vehicles/')) return false;
   if (pathname.startsWith('/admin/customers')) return true;

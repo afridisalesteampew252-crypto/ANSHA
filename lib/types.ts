@@ -2,6 +2,7 @@ export type PartCondition = 'new' | 'used' | 'refurbished' | 'for-parts';
 export type InquiryStatus = 'new' | 'read' | 'responded' | 'closed';
 export type AdminRole = 'admin' | 'staff' | 'sales' | 'freelancer' | 'manager' | 'accounts';
 export type StockOrigin = 'japan' | 'dubai' | 'singapore' | 'china' | 'thailand' | 'taiwan';
+export type StockPool = 'owned' | 'auction_third_party';
 export type StockStatus = 'available' | 'reserved' | 'sold';
 export type VehicleClass = 'passenger' | 'commercial_truck' | 'heavy_machinery';
 export type LifecycleStage = 'unassigned' | 'auction' | 'yard' | 'port' | 'sold';
@@ -172,6 +173,8 @@ export interface Vehicle {
   is_published: boolean;
   is_featured: boolean;
   stock_origin: StockOrigin;
+  /** owned = purchased inventory; auction_third_party = third-party auction/yard listings. */
+  stock_pool: StockPool;
   stock_status: StockStatus;
   sold_at: string | null;
   sold_by: string | null;

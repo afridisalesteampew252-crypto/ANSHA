@@ -3,7 +3,18 @@
 
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import Link from 'next/link';
-import { BookmarkPlus, Car, CheckCircle2, ChevronLeft, ChevronRight, Edit, Eye, Trash2 } from 'lucide-react';
+import {
+  BookmarkPlus,
+  Car,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Edit,
+  Eye,
+  Gavel,
+  PackagePlus,
+  Trash2,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -18,7 +29,7 @@ import {
 } from '@/lib/trade-terms';
 import { auctionSheetPhotos, pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
 import { isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
-import { stockOriginLabel } from '@/lib/stock';
+import { isAuctionStockPool, stockOriginLabel, type StockPool } from '@/lib/stock';
 import type { StockStatus, VehiclePhoto, VehicleWithPhotos } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +59,7 @@ type Props = {
   onUpdate?: (id: string, changes: Record<string, unknown>, success: string) => void;
   onSetListing?: (vehicle: VehicleWithPhotos, publish: boolean) => void;
   onDelete?: (vehicle: VehicleWithPhotos) => void;
+  onTransferPool?: (vehicle: VehicleWithPhotos, nextPool: StockPool) => void;
   stockOriginOptions?: ReadonlyArray<{ value: string; label: string }>;
 };
 
@@ -155,12 +167,14 @@ export function AdminVehicleCard({
   onUpdate,
   onSetListing,
   onDelete,
+  onTransferPool,
   stockOriginOptions,
 }: Props) {
   const cover = pickVehicleCoverPhoto(vehicle.vehicle_photos);
   const photoUrl = cover ? publicVehicleImageUrl(cover.storage_path) : '';
   const status = vehicle.stock_status || 'available';
   const stage = (vehicle.lifecycle_stage || 'unassigned') as LifecycleStage;
+  const auctionPool = isAuctionStockPool(vehicle.stock_pool);
   const canReserve = status === 'available';
   const stockRef =
     vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || vehicle.id.slice(0, 8);
@@ -203,6 +217,9 @@ export function AdminVehicleCard({
             ) : (
               <Badge variant="secondary">Draft</Badge>
             )
+          ) : null}
+          {auctionPool ? (
+            <Badge className="border-0 bg-violet-600 text-white">Auction stock</Badge>
           ) : null}
           <AuctionSheetTag photos={vehicle.vehicle_photos} vehicleTitle={vehicle.title} />
         </div>
@@ -279,6 +296,28 @@ export function AdminVehicleCard({
           {!fieldAgent && vehicle.is_published ? (
             <Button size="sm" variant="outline" onClick={() => onSetListing?.(vehicle, false)}>
               Unpublish
+            </Button>
+          ) : null}
+          {!fieldAgent && auctionPool && onTransferPool ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onTransferPool(vehicle, 'owned')}
+              title="Purchase into owned Vehicles inventory"
+            >
+              <PackagePlus className="h-3.5 w-3.5" />
+              To inventory
+            </Button>
+          ) : null}
+          {!fieldAgent && !auctionPool && onTransferPool ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onTransferPool(vehicle, 'auction_third_party')}
+              title="Mark as third-party auction stock"
+            >
+              <Gavel className="h-3.5 w-3.5" />
+              To auction
             </Button>
           ) : null}
           <Button asChild size="sm" variant="ghost">

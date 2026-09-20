@@ -53,6 +53,7 @@ export async function loadStockOpsRows(limit = 800): Promise<{ rows: StockOpsRow
     .select(
       'id,title,slug,make,model,year,stock_number,chassis_number,chassis_code,fuel_type,transmission,color,location,stock_origin,stock_status,price,price_fob,price_cf,price_cif,currency,purchase_price,purchase_currency,purchase_date,landed_cost,reserved_by,reserved_customer_id,reservation_requester_name,reservation_requester_role,reservation_etd,reservation_eta,reservation_vat_applicable,reservation_price_term,reservation_shipment_term,created_at,sold_at,vehicle_photos(storage_path,is_cover,sort_order,is_auction_sheet)'
     )
+    .eq('stock_pool', 'owned')
     .order('created_at', { ascending: false })
     .limit(limit);
 

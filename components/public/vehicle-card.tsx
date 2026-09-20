@@ -87,6 +87,11 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
 
       <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-5">
         <div className="mb-1.5 flex min-w-0 flex-wrap items-center gap-1">
+          {vehicle.stock_pool === 'auction_third_party' ? (
+            <Badge variant="outline" className="h-5 w-fit border-violet-500/40 px-1.5 text-[9px] text-violet-800 sm:text-[10px] dark:text-violet-200">
+              Auction
+            </Badge>
+          ) : null}
           {isMachineryClass(vehicle.vehicle_class) ? (
             <Badge variant="outline" className="h-5 w-fit px-1.5 text-[9px] sm:text-[10px]">
               {equipmentCategoryLabel(vehicle.equipment_category) || vehicleClassBadgeLabel(vehicle.vehicle_class)}

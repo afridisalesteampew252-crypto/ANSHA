@@ -12,6 +12,11 @@ import { Label } from '@/components/ui/label';
 import { InvoicePrintDocument } from '@/components/invoices/invoice-print-document';
 import { siteConfig } from '@/lib/site-config';
 import { canManageReceivables, isFieldAgentRole } from '@/lib/admin-rbac';
+import {
+  INVOICE_DELETE_CONFIRM,
+  INVOICE_UNALLOCATE_DELETE_CONFIRM,
+  needsUnallocateBeforeDelete,
+} from '@/lib/invoice-delete';
 
 type Invoice = {
   id: string; invoice_number: string; customer_name: string; customer_company: string | null;
@@ -32,6 +37,7 @@ type Item = {
   line_total: number; sort_order: number; price_term: 'fob' | 'cf' | 'cif' | null;
 };
 type Payment = { id: string; payment_date: string; amount: number; method: string; reference: string | null; notes: string | null; created_at: string };
+type Allocation = { id: string; remittance_id: string; amount: number; created_at: string };
 
 const money = (value: number, currency: string) => new Intl.NumberFormat('en-AE', { style: 'currency', currency }).format(value || 0);
 const statusClass: Record<string, string> = {
@@ -49,6 +55,7 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [paymentOpen, setPaymentOpen] = useState(false);
@@ -71,16 +78,18 @@ export default function InvoiceDetailPage() {
       setFieldAgent(isFieldAgentRole(profile?.role));
       setCanFinance(canManageReceivables(profile?.role));
     }
-    const [invoiceResult, itemResult, paymentResult] = await Promise.all([
+    const [invoiceResult, itemResult, paymentResult, allocationResult] = await Promise.all([
       supabase.from('invoices').select('*').eq('id', params.id).maybeSingle(),
       supabase.from('invoice_items').select('*').eq('invoice_id', params.id).order('sort_order'),
       supabase.from('invoice_payments').select('*').eq('invoice_id', params.id).order('payment_date', { ascending: false }),
+      supabase.from('remittance_allocations').select('id,remittance_id,amount,created_at').eq('invoice_id', params.id).order('created_at', { ascending: false }),
     ]);
     setLoading(false);
     if (invoiceResult.error || !invoiceResult.data) return setMessage(invoiceResult.error?.message || 'Invoice not found.');
     setInvoice(invoiceResult.data as Invoice);
     setItems((itemResult.data || []) as Item[]);
     setPayments((paymentResult.data || []) as Payment[]);
+    setAllocations((allocationResult.data || []) as Allocation[]);
     setPayment((current) => ({ ...current, amount: String(Math.max(Number(invoiceResult.data.balance_due || 0), 0)) }));
   }, [params.id]);
 
@@ -141,13 +150,38 @@ export default function InvoiceDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  const removeInvoice = async () => {
-    if (!invoice || !window.confirm(`Delete ${invoice.invoice_number}? This is permanent. Invoices with payments or remittances must be reconciled first.`)) return;
+  const unallocateRemittances = async () => {
+    if (!invoice || !canFinance) return;
+    if (!window.confirm(`Unallocate ${allocations.length || 'all'} remittance payment(s) on ${invoice.invoice_number}? Funds return to the remittance pool.`)) return;
     setBusy(true);
-    setMessage('Deleting invoice…');
-    const { error } = await supabase.rpc('delete_invoice_safely', { p_invoice_id: invoice.id });
+    setMessage('Unallocating remittance payments…');
+    const { data, error } = await supabase.rpc('unallocate_invoice_remittances', { p_invoice_id: invoice.id });
     setBusy(false);
     if (error) return setMessage(error.message);
+    setMessage(`Unallocated ${Number(data || 0)} remittance allocation(s). You can delete the invoice now.`);
+    void load();
+  };
+
+  const removeInvoice = async (forceUnallocate = false) => {
+    if (!invoice) return;
+    const confirmText = forceUnallocate
+      ? INVOICE_UNALLOCATE_DELETE_CONFIRM
+      : `Delete ${invoice.invoice_number}? ${INVOICE_DELETE_CONFIRM}`;
+    if (!window.confirm(confirmText)) return;
+    setBusy(true);
+    setMessage(forceUnallocate ? 'Unallocating and deleting invoice…' : 'Deleting invoice…');
+    const { error } = forceUnallocate
+      ? await supabase.rpc('unallocate_and_delete_invoice', { p_invoice_id: invoice.id })
+      : await supabase.rpc('delete_invoice_safely', { p_invoice_id: invoice.id });
+    setBusy(false);
+    if (error) {
+      if (!forceUnallocate && canFinance && needsUnallocateBeforeDelete(error.message)) {
+        if (window.confirm(`${error.message}\n\nUnallocate remittance payments and delete now?`)) {
+          return void removeInvoice(true);
+        }
+      }
+      return setMessage(error.message);
+    }
     router.push('/admin/invoices');
   };
 
@@ -203,9 +237,21 @@ export default function InvoiceDetailPage() {
             </Button>
           ) : null}
           {(canFinance || (fieldAgent && invoice.status === 'draft')) ? (
-            <Button variant="outline" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => void removeInvoice()}>
-              <Trash2 className="h-4 w-4" />Delete
-            </Button>
+            <>
+              {canFinance && allocations.length > 0 ? (
+                <Button variant="outline" disabled={busy} onClick={() => void unallocateRemittances()}>
+                  Unallocate ({allocations.length})
+                </Button>
+              ) : null}
+              {canFinance && (allocations.length > 0 || invoice.amount_paid > 0) ? (
+                <Button variant="outline" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => void removeInvoice(true)}>
+                  <Trash2 className="h-4 w-4" />Unallocate & delete
+                </Button>
+              ) : null}
+              <Button variant="outline" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => void removeInvoice(false)}>
+                <Trash2 className="h-4 w-4" />Delete
+              </Button>
+            </>
           ) : null}
         </div>
       </div>
@@ -321,6 +367,29 @@ export default function InvoiceDetailPage() {
               )) : <p className="text-sm text-muted-foreground">No payments recorded.</p>}
             </CardContent>
           </Card>
+
+          {canFinance ? (
+            <Card>
+              <CardHeader><CardTitle className="text-base">Remittance allocations</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {allocations.length ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Unallocate these before deleting the invoice. Funds return to the remittance pool.
+                    </p>
+                    {allocations.map((entry) => (
+                      <div key={entry.id} className="flex justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
+                        <span className="font-medium">{money(entry.amount, invoice.currency)}</span>
+                        <span className="text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No remittance allocations on this invoice.</p>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card>
             <CardHeader><CardTitle className="text-base">QR verification</CardTitle></CardHeader>

@@ -9,8 +9,10 @@ import {
   ChevronLeft,
   ChevronRight,
   FileText,
+  Gavel,
   Image as ImageIcon,
   Loader2,
+  PackagePlus,
   Paperclip,
   Replace,
   Save,
@@ -32,7 +34,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { compressCatalogImage } from '@/lib/catalog-image';
 import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { supabase } from '@/lib/supabase/client';
-import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
+import { STOCK_ORIGINS, isAuctionStockPool, stockOriginLabel, stockPoolLabel, type StockPool } from '@/lib/stock';
 import {
   PRICE_TERM_LABELS,
   PRICE_TERMS,
@@ -126,6 +128,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [chassisNumber, setChassisNumber] = useState('');
   const [location, setLocation] = useState('');
   const [stockOrigin, setStockOrigin] = useState('dubai');
+  const [stockPool, setStockPool] = useState<StockPool>('owned');
   const [stockStatus, setStockStatus] = useState<StockStatus>('available');
   const [vehicleClass, setVehicleClass] = useState<VehicleClass>('passenger');
   const [equipmentCategory, setEquipmentCategory] = useState('');
@@ -208,6 +211,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setChassisNumber(row.chassis_number || '');
     setLocation(row.location || '');
     setStockOrigin(row.stock_origin || 'dubai');
+    setStockPool((row.stock_pool as StockPool) || 'owned');
     setStockStatus(row.stock_status || 'available');
     setVehicleClass(row.vehicle_class || 'passenger');
     setEquipmentCategory(row.equipment_category || '');
@@ -299,6 +303,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         chassis_number: chassisNumber.trim() || null,
         location: location.trim() || null,
         stock_origin: stockOrigin,
+        stock_pool: stockPool,
         stock_status: stockStatus,
         vehicle_class: vehicleClass,
         equipment_category: isMachineryClass(vehicleClass) ? (equipmentCategory.trim() || null) : null,
@@ -708,20 +713,45 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     );
   }
 
+  const auctionPool = isAuctionStockPool(vehicle.stock_pool || stockPool);
+  const listHref = auctionPool ? '/admin/auction-stock' : '/admin/vehicles';
+
+  const transferPool = async (nextPool: StockPool) => {
+    const toOwned = nextPool === 'owned';
+    if (
+      !window.confirm(
+        toOwned
+          ? `Transfer "${vehicle.title}" into owned Vehicles inventory?`
+          : `Move "${vehicle.title}" to Auction stock (third-party)?`
+      )
+    ) {
+      return;
+    }
+    const changes: Record<string, unknown> = { stock_pool: nextPool };
+    if (toOwned && !vehicle.purchase_date && !purchaseDate) {
+      changes.purchase_date = new Date().toISOString().slice(0, 10);
+    }
+    const { error } = await supabase.from('vehicles').update(changes).eq('id', id);
+    if (error) return toast.error(error.message);
+    toast.success(toOwned ? 'Transferred to owned inventory.' : 'Moved to auction stock.');
+    await load();
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-            <Link href="/admin/vehicles">
+            <Link href={listHref}>
               <ArrowLeft className="h-4 w-4" />
-              Back to vehicles
+              {auctionPool ? 'Back to auction stock' : 'Back to vehicles'}
             </Link>
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{vehicle.title}</h1>
             <p className="text-sm text-muted-foreground">
-              {stockOriginLabel(vehicle.stock_origin)} · {vehicle.stock_number || vehicle.chassis_number || vehicle.slug}
+              {stockPoolLabel(vehicle.stock_pool)} · {stockOriginLabel(vehicle.stock_origin)} ·{' '}
+              {vehicle.stock_number || vehicle.chassis_number || vehicle.slug}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -731,14 +761,32 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             <Badge className={statusClass[vehicle.stock_status || 'available']}>
               {(vehicle.stock_status || 'available').replace('_', ' ')}
             </Badge>
+            {auctionPool ? (
+              <Badge className="border-0 bg-violet-600 text-white">Auction stock</Badge>
+            ) : (
+              <Badge variant="outline">Owned inventory</Badge>
+            )}
             {vehicle.is_published ? <Badge variant="outline">Public</Badge> : <Badge variant="secondary">Draft</Badge>}
           </div>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/vehicles/${vehicle.slug}`} target="_blank">
-            View public page
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {auctionPool ? (
+            <Button type="button" variant="accent" onClick={() => void transferPool('owned')}>
+              <PackagePlus className="h-4 w-4" />
+              Transfer to inventory
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" onClick={() => void transferPool('auction_third_party')}>
+              <Gavel className="h-4 w-4" />
+              Mark as auction stock
+            </Button>
+          )}
+          <Button asChild variant="outline">
+            <Link href={`/vehicles/${vehicle.slug}`} target="_blank">
+              View public page
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card className="overflow-hidden">
@@ -1474,6 +1522,18 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                       {item.label}
                     </option>
                   ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stock-pool">Stock pool</Label>
+                <select
+                  id="stock-pool"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  value={stockPool}
+                  onChange={(event) => setStockPool(event.target.value as StockPool)}
+                >
+                  <option value="owned">Owned inventory (Vehicles)</option>
+                  <option value="auction_third_party">Auction stock (third-party)</option>
                 </select>
               </div>
               <div className="space-y-1.5">

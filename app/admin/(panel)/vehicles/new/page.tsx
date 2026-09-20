@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase/client';
 import { compressCatalogImage } from '@/lib/catalog-image';
 import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { toast } from 'sonner';
-import { STOCK_ORIGINS } from '@/lib/stock';
+import { STOCK_ORIGINS, defaultStockPoolForOrigin, type StockPool } from '@/lib/stock';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 import {
   EQUIPMENT_CATEGORIES,
@@ -42,6 +42,7 @@ function AddVehiclePageInner() {
   const initialClass = isVehicleClass(searchParams.get('class'))
     ? (searchParams.get('class') as VehicleClass)
     : 'passenger';
+  const initialAuction = searchParams.get('pool') === 'auction';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -52,7 +53,10 @@ function AddVehiclePageInner() {
   const [year, setYear] = useState('');
   const [stockNumber, setStockNumber] = useState('');
   const [chassisNumber, setChassisNumber] = useState('');
-  const [stockOrigin, setStockOrigin] = useState('dubai');
+  const [stockOrigin, setStockOrigin] = useState(initialAuction ? 'japan' : 'dubai');
+  const [stockPool, setStockPool] = useState<StockPool>(
+    initialAuction ? 'auction_third_party' : 'owned'
+  );
   const [vehicleClass, setVehicleClass] = useState<VehicleClass>(initialClass);
   const [equipmentCategory, setEquipmentCategory] = useState('');
   const [operatingHours, setOperatingHours] = useState('');
@@ -126,6 +130,7 @@ function AddVehiclePageInner() {
         stock_number: stockNumber.trim() || null,
         chassis_number: chassisNumber.trim() || null,
         stock_origin: stockOrigin,
+        stock_pool: stockPool,
         stock_status: 'available',
         lifecycle_stage: 'unassigned',
         vehicle_class: vehicleClass,
@@ -203,21 +208,31 @@ function AddVehiclePageInner() {
     router.push(`/admin/vehicles/${vehicleId}`);
   };
 
+  const backHref = stockPool === 'auction_third_party' ? '/admin/auction-stock' : '/admin/vehicles';
+  const pageTitle =
+    stockPool === 'auction_third_party'
+      ? machineryForm
+        ? 'Add auction machinery / truck'
+        : 'Add auction stock'
+      : machineryForm
+        ? 'Add machinery / truck'
+        : 'Add New Vehicle';
+  const pageSubtitle =
+    stockPool === 'auction_third_party'
+      ? 'Third-party auction / yard listing — transfer to owned inventory when purchased'
+      : machineryForm
+        ? 'Excavators, loaders, trucks, and heavy equipment for the public machinery catalog'
+        : 'Fill in the vehicle details below';
+
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/admin/vehicles')}>
+        <Button variant="ghost" size="icon" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {machineryForm ? 'Add machinery / truck' : 'Add New Vehicle'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {machineryForm
-              ? 'Excavators, loaders, trucks, and heavy equipment for the public machinery catalog'
-              : 'Fill in the vehicle details below'}
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{pageTitle}</h1>
+          <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
         </div>
       </div>
 
@@ -399,7 +414,34 @@ function AddVehiclePageInner() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="vehicle-stock-origin">Stock location</Label>
-              <select id="vehicle-stock-origin" value={stockOrigin} onChange={(e) => setStockOrigin(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">{STOCK_ORIGINS.map((origin) => <option key={origin.value} value={origin.value}>{origin.label}</option>)}</select>
+              <select
+                id="vehicle-stock-origin"
+                value={stockOrigin}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setStockOrigin(next);
+                  if (initialAuction) setStockPool(defaultStockPoolForOrigin(next));
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {STOCK_ORIGINS.map((origin) => (
+                  <option key={origin.value} value={origin.value}>
+                    {origin.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vehicle-stock-pool">Stock pool</Label>
+              <select
+                id="vehicle-stock-pool"
+                value={stockPool}
+                onChange={(e) => setStockPool(e.target.value as StockPool)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="owned">Owned inventory (Vehicles)</option>
+                <option value="auction_third_party">Auction stock (third-party)</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="vehicle-chassis">Chassis Code</Label>
@@ -485,7 +527,7 @@ function AddVehiclePageInner() {
 
         {/* Actions */}
         <div className="flex gap-3 justify-end">
-          <Button type="button" variant="outline" onClick={() => router.push('/admin/vehicles')}>
+          <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
             Cancel
           </Button>
           <Button type="button" variant="secondary" disabled={loading} onClick={(e) => handleSubmit(e as unknown as React.FormEvent, false)}>

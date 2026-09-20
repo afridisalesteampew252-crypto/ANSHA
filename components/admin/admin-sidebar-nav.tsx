@@ -19,6 +19,7 @@ import {
   Clock3,
   FileBarChart,
   FileSpreadsheet,
+  Gavel,
   Globe2,
   Headphones,
   Inbox,
@@ -80,6 +81,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { href: '/admin/parts', label: 'Parts', icon: Package },
       { href: '/admin/vehicles', label: 'Vehicles', icon: Car },
+      { href: '/admin/auction-stock', label: 'Auction stock', icon: Gavel },
       { href: '/admin/vehicles?class=machinery', label: 'Machinery & trucks', icon: Truck },
       { href: '/admin/categories', label: 'Categories', icon: Tag },
       { href: '/admin/imports', label: 'Bulk Import', icon: Upload },

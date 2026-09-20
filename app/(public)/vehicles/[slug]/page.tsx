@@ -188,11 +188,14 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
 
         <div className="min-w-0 space-y-6">
           <div>
-            <p className="eyebrow">Export vehicle</p>
+            <p className="eyebrow">
+              {vehicle.stock_pool === 'auction_third_party' ? 'Auction listing' : 'Export vehicle'}
+            </p>
             <h1 className="mt-2 font-display text-2xl font-black tracking-tight md:text-3xl lg:text-4xl">{vehicle.title}</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {vehicle.make} {vehicle.model}
               {vehicle.variant ? ` • ${vehicle.variant}` : ''}
+              {vehicle.stock_pool === 'auction_third_party' ? ' · Auction stock' : ''}
             </p>
           </div>
 

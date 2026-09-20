@@ -9,6 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { canManageReceivables, isFieldAgentRole } from '@/lib/admin-rbac';
+import {
+  INVOICE_DELETE_CONFIRM,
+  INVOICE_UNALLOCATE_DELETE_CONFIRM,
+  needsUnallocateBeforeDelete,
+} from '@/lib/invoice-delete';
 
 type InvoiceItemRef = {
   description: string | null;
@@ -125,11 +130,24 @@ export default function InvoicesPage() {
     overdue: invoices.filter((invoice) => invoice.currency === 'AED' && effectiveStatus(invoice) === 'overdue').reduce((sum, invoice) => sum + Math.max(Number(invoice.balance_due || 0), 0), 0),
   }), [invoices]);
 
-  const remove = async (invoice: Invoice) => {
-    if (!window.confirm(`Delete ${invoice.invoice_number}? This is permanent. Invoices with payments or remittances must be reconciled first.`)) return;
-    const { error } = await supabase.rpc('delete_invoice_safely', { p_invoice_id: invoice.id });
-    if (error) return setMessage(error.message);
-    setMessage('Invoice deleted.'); void load();
+  const remove = async (invoice: Invoice, forceUnallocate = false) => {
+    const confirmText = forceUnallocate
+      ? `Delete ${invoice.invoice_number}? ${INVOICE_UNALLOCATE_DELETE_CONFIRM}`
+      : `Delete ${invoice.invoice_number}? ${INVOICE_DELETE_CONFIRM}`;
+    if (!window.confirm(confirmText)) return;
+    const { error } = forceUnallocate
+      ? await supabase.rpc('unallocate_and_delete_invoice', { p_invoice_id: invoice.id })
+      : await supabase.rpc('delete_invoice_safely', { p_invoice_id: invoice.id });
+    if (error) {
+      if (!forceUnallocate && canFinance && needsUnallocateBeforeDelete(error.message)) {
+        if (window.confirm(`${error.message}\n\nUnallocate remittance payments and delete now?`)) {
+          return void remove(invoice, true);
+        }
+      }
+      return setMessage(error.message);
+    }
+    setMessage(forceUnallocate ? 'Invoice unallocated and deleted. Linked stock set to available.' : 'Invoice deleted. Linked stock set to available.');
+    void load();
   };
 
   return <div className="mx-auto max-w-7xl space-y-6">

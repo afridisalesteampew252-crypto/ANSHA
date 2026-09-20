@@ -11,7 +11,7 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, Phase 61/61b (export docs + Incoterms), and Phase 62 (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`). Phase 61/61b/62 are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
+Latest migrations in the repository include Phase 51–52 (offers / trade config), Phase 53–60 as before, Phase 61/61b (export docs + Incoterms), Phase 62 (`20260920200000_phase_62_sales_assignment_export_masters_vat.sql`), Phase 63 parts stock ops, Phase 64 invoice unallocate-delete (`20260920220000_phase_64_invoice_unallocate_delete_stock_restore.sql`), and Phase 65 vehicle stock pool (`20260920230000_phase_65_vehicle_stock_pool.sql`). Phases 61–65 are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases (purchase → GL → bank feeds stub) remain under `supabase/migrations/`.
 
 ## Entity groups
 
@@ -26,7 +26,7 @@ Latest migrations in the repository include Phase 51–52 (offers / trade config
 - `categories` — name/slug unique, `sort_order`, optional `image_url`
 - `parts` — unique `part_code`/`slug`, pricing, publish flags, SEO/export arrays (Phase 4), `stock_origin`, `stock_status`, `sold_at`, `sold_by`; Phase 28 cost: `purchase_price`, `purchase_currency`, `purchase_date`, `supplier_id`, `supplier_invoice_id`, `landed_cost`, `reserved_customer_id`; Phase 61 Incoterm quotes `price_fob`/`price_cf`/`price_cif`; reservation terms `reservation_price_term`/`reservation_shipment_term`/`reservation_inspection_required` (61b)
 - `part_photos`, `part_compatibility`
-- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts; Phase 57 `vehicle_class` (`passenger`\|`commercial_truck`\|`heavy_machinery`, default `passenger`), optional `equipment_category`, optional `operating_hours`; Phase 61/61b same Incoterm + reservation term columns as parts; Phase 62 `reserved_by`, `reservation_vat_applicable`, `reservation_etd`/`reservation_eta`, `reservation_requester_name`/`reservation_requester_role`; field-agent SELECT scoped to available + own reserved rows
+- `vehicles` — unique `slug`; unique chassis/stock numbers where indexed; same stock fields as parts; `lifecycle_stage` (`unassigned`|`auction`|`yard`|`port`|`sold`); Phase 28 cost/reservation columns as on parts; Phase 57 `vehicle_class` (`passenger`\|`commercial_truck`\|`heavy_machinery`, default `passenger`), optional `equipment_category`, optional `operating_hours`; Phase 61/61b same Incoterm + reservation term columns as parts; Phase 62 `reserved_by`, `reservation_vat_applicable`, `reservation_etd`/`reservation_eta`, `reservation_requester_name`/`reservation_requester_role`; Phase 65 `stock_pool` (`owned`\|`auction_third_party`, default `owned`; Japan-origin backfilled to `auction_third_party`); field-agent SELECT scoped to available + own reserved rows
 - `vehicle_photos` — includes `is_auction_sheet` (Phase 56; Japanese auction sheets / typically `A.*`); public SELECT policy requires `is_auction_sheet = false`
 - `suppliers` — master (`supplier_code`, TRN, country, currency, …); ops RLS
 - `purchase_orders` / `purchase_order_lines` — PO number, VAT, terms; match snapshot vs GRN/supplier invoices/payments
@@ -98,6 +98,7 @@ Chat stays one product. Links are additive metadata; mutations go through `link_
 - `invoice_company_settings`, `invoice_sequences`
 - `invoices` — sequential `invoice_number`, document types, tax/payment totals, QR verification fields (Phase 14), provider submission fields; Phase 61b `price_term` (`fob`|`cf`|`cif`) + `shipment_term` (`dhl`|`roro`|`container_20ft`|`container_40ft`); Phase 62 `vat_applicable` (default true)
 - `invoice_items` — optional `part_id` / `vehicle_id` / `inventory_reference`; Phase 61b optional `price_term`
+- Phase 64 delete path: `unallocate_invoice_remittances(invoice_id)` reverses remittance allocations (receivables access); `delete_invoice_safely` refuses while allocations/payments remain, then calls `private.restore_invoice_linked_stock` (reserved/sold linked vehicles/parts → `available`, reservation fields cleared; sold parts quantity restored); `unallocate_and_delete_invoice` chains both. App helpers: `lib/invoice-delete.ts`.
 - `invoice_payments`
 - `remittance_sequences`, `remittances`, `remittance_documents`, `remittance_allocations`
 - `supplier_invoices` �?? private file metadata
@@ -109,6 +110,8 @@ Triggers recalculate invoice balances and sync remittance-linked payments. Do no
 
 `stock_origin`: `japan`, `dubai`, `singapore`, `china`, `thailand`, `taiwan`.
 
+`stock_pool` (vehicles only, Phase 65): `owned` (purchased ANSHA inventory — `/admin/vehicles` + stock ops) or `auction_third_party` (third-party auction/yard listings — `/admin/auction-stock`). Japan-origin uploads default to `auction_third_party` until transferred to owned. Distinct from `lifecycle_stage` (operational path) and from auction-sheet photos (`is_auction_sheet`).
+
 `stock_status`: `available`, `reserved`, `sold`.
 
 `lifecycle_stage` (vehicles only): `unassigned`, `auction`, `yard`, `port`, `sold`.
@@ -117,7 +120,7 @@ Recommended operational path: Auction → Yard → Port → Sold. Commercial `st
 
 `private.sync_catalog_sold_state` stamps `sold_at`/`sold_by` on transition to `sold` and clears them otherwise.
 
-This is not an auction/yard/port rewrite of availability. Lifecycle was added beside stock.
+This is not an auction/yard/port rewrite of availability. Lifecycle was added beside stock. `stock_pool` separates owned inventory UI from third-party auction listings without changing `stock_status`.
 
 ## Indexes
 
@@ -125,4 +128,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, Phase 60 `last_seen_at`, Phase 61/61b Incoterm + export document + reservation/invoice term columns, and Phase 62 `reserved_by` / `export_master_options` / `vat_applicable`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`.
+Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through concurrent ERP phases including Phase 41 analytics, Phase 56 `is_auction_sheet`, Phase 57 `vehicle_class`, Phase 58 Tawk mirror types, Phase 60 `last_seen_at`, Phase 61/61b Incoterm + export document + reservation/invoice term columns, Phase 62 `reserved_by` / `export_master_options` / `vat_applicable`, and Phase 65 `stock_pool`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`.

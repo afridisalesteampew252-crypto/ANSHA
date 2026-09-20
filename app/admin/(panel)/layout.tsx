@@ -243,6 +243,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 <DropdownMenuLabel>Create or import</DropdownMenuLabel>
                 <DropdownMenuItem asChild><Link href="/admin/parts/new">New part</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/admin/vehicles/new">New vehicle</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/admin/vehicles/new?pool=auction">New auction stock</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/admin/invoices/new">New invoice</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/admin/customers">Customer / enable portal</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild><Link href="/admin/remittances">Record remittance</Link></DropdownMenuItem>
