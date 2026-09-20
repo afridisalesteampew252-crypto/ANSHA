@@ -43,6 +43,7 @@ import {
   Truck,
   Upload,
   UserCog,
+  UserPlus,
   Users,
   WalletCards,
   type LucideIcon,
@@ -110,6 +111,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/customers', label: 'Customers & portal', icon: Users },
       { href: '/admin/reservations', label: 'Reserve stock', icon: BookmarkPlus },
       { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
+      { href: '/admin/commissions', label: 'Commissions', icon: Banknote },
     ],
   },
   {
@@ -121,6 +123,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/remittances', label: 'Remittances', icon: WalletCards },
       { href: '/admin/remittances/mine', label: 'My remittances', icon: UserCog },
       { href: '/admin/remittances/unknown', label: 'Unknown TTS', icon: Inbox },
+      { href: '/admin/remittances/offices', label: 'Offices', icon: MapPin },
+      { href: '/admin/remittances/shifts', label: 'Shifts', icon: Clock3 },
     ],
   },
   {
@@ -132,8 +136,23 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/expenses', label: 'Expenses', icon: Receipt },
       { href: '/admin/invoices/supplier', label: 'Supplier invoices', icon: ReceiptText },
       { href: '/admin/ledger', label: 'General ledger', icon: BookMarked },
-      { href: '/admin/reports', label: 'Reports', icon: FileBarChart },
       { href: '/admin/vat-return', label: 'VAT return', icon: FileSpreadsheet },
+    ],
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: FileBarChart,
+    items: [
+      { href: '/admin/reports', label: 'All reports', icon: FileBarChart },
+      { href: '/admin/reports/customer-balance-payments', label: 'Customer Balance Payments', icon: WalletCards },
+      { href: '/admin/reports/customer-sales-value-stats', label: 'Customer Sales Value Stats', icon: Users },
+      { href: '/admin/reports/customer-registrations', label: 'Customer Registrations', icon: UserPlus },
+      { href: '/admin/reports/office-sales-stats', label: 'Office Sales Stats', icon: MapPin },
+      { href: '/admin/reports/purchase-statistics', label: 'Purchase Statistics', icon: ClipboardList },
+      { href: '/admin/reports/resource-sales-stats', label: 'Resource Sales Stats', icon: Package },
+      { href: '/admin/reports/resource-sales-value-stats', label: 'Resource Sales Value Stats', icon: FileSpreadsheet },
+      { href: '/admin/reports/financial', label: 'Financial statements', icon: BookMarked },
     ],
   },
   {
@@ -186,6 +205,9 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: Settings2,
     items: [
       { href: '/admin/configuration', label: 'Export masters', icon: Settings2 },
+      { href: '/admin/freight-charges', label: 'Freight charges', icon: Truck },
+      { href: '/admin/configuration/shipping-companies', label: 'Shipping Companies', icon: Ship },
+      { href: '/admin/configuration/yards', label: 'Yards', icon: MapPin },
       { href: '/admin/trade-config', label: 'Trade config', icon: Globe2 },
     ],
   },
@@ -227,10 +249,18 @@ export function isAdminNavActive(pathname: string, href: string, search = '') {
   if (hrefPath === '/admin/remittances') {
     if (pathname !== '/admin/remittances') return false;
   }
+  // Reports hub vs nested report pages
+  if (hrefPath === '/admin/reports') {
+    if (pathname !== '/admin/reports') return false;
+  }
   // Avoid marking /admin/hr active on nested HR pages that have their own nav items
   if (hrefPath === '/admin/hr') {
     const nested = ['/admin/hr/locations', '/admin/hr/shifts', '/admin/hr/attendance'];
     if (nested.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return false;
+  }
+  // Avoid marking Export masters active on nested configuration pages (yards, etc.)
+  if (hrefPath === '/admin/configuration') {
+    if (pathname.startsWith('/admin/configuration/')) return false;
   }
   return true;
 }

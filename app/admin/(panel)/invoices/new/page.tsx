@@ -167,7 +167,66 @@ export default function NewInvoicePage() {
       status: item.stock_status,
       keywords: [item.stock_number, item.chassis_number, item.chassis_code, item.title],
     }));
-    setStockItems([...vehicles, ...parts]);
+    let nextStock: StockItem[] = [...vehicles, ...parts];
+    const params = new URLSearchParams(window.location.search);
+    const prefVehicle = params.get('vehicle') || '';
+    const prefPart = params.get('part') || '';
+    const prefCustomer = params.get('customer') || '';
+    const prefReference = params.get('reference') || '';
+
+    // Prefill may target sold stock excluded from the catalog picker — fetch and inject.
+    if (prefVehicle && !nextStock.some((item) => item.type === 'vehicle' && item.id === prefVehicle)) {
+      const { data: soldVehicle } = await supabase
+        .from('vehicles')
+        .select('id,stock_number,chassis_number,chassis_code,title,price,price_fob,price_cf,price_cif,currency,stock_status')
+        .eq('id', prefVehicle)
+        .maybeSingle();
+      if (soldVehicle) {
+        nextStock = [
+          {
+            id: soldVehicle.id,
+            type: 'vehicle',
+            reference: soldVehicle.stock_number || soldVehicle.chassis_number || soldVehicle.chassis_code || soldVehicle.id.slice(0, 8),
+            label: soldVehicle.title,
+            price: soldVehicle.price,
+            price_fob: soldVehicle.price_fob,
+            price_cf: soldVehicle.price_cf,
+            price_cif: soldVehicle.price_cif,
+            currency: soldVehicle.currency,
+            status: soldVehicle.stock_status,
+            keywords: [soldVehicle.stock_number, soldVehicle.chassis_number, soldVehicle.chassis_code, soldVehicle.title],
+          },
+          ...nextStock,
+        ];
+      }
+    }
+    if (prefPart && !nextStock.some((item) => item.type === 'part' && item.id === prefPart)) {
+      const { data: soldPart } = await supabase
+        .from('parts')
+        .select('id,part_code,name,price,price_fob,price_cf,price_cif,currency,stock_status')
+        .eq('id', prefPart)
+        .maybeSingle();
+      if (soldPart) {
+        nextStock = [
+          {
+            id: soldPart.id,
+            type: 'part',
+            reference: soldPart.part_code,
+            label: soldPart.name,
+            price: soldPart.price,
+            price_fob: soldPart.price_fob,
+            price_cf: soldPart.price_cf,
+            price_cif: soldPart.price_cif,
+            currency: soldPart.currency,
+            status: soldPart.stock_status,
+            keywords: [soldPart.part_code, soldPart.name],
+          },
+          ...nextStock,
+        ];
+      }
+    }
+    setStockItems(nextStock);
+
     if (invoiceId) {
       if (invoiceResult.error || !invoiceResult.data) {
         setMessage(invoiceResult.error?.message || 'Invoice could not be loaded for editing.');
@@ -194,6 +253,46 @@ export default function NewInvoicePage() {
         inventory_reference: item.inventory_reference || '',
         price_term: (item.price_term as PriceTerm) || '',
       })) : [newLine()]);
+    } else {
+      if (prefReference) setReference(prefReference);
+      if (prefCustomer) {
+        const selected = ((customerResult.data || []) as Customer[]).find((item) => item.id === prefCustomer);
+        if (selected) {
+          setCustomerId(selected.id);
+          setCustomer({
+            name: selected.full_name,
+            company: selected.company_name || '',
+            email: selected.email || '',
+            phone: selected.phone || '',
+            address: selected.address || '',
+            trn: selected.tax_registration_number || '',
+          });
+        }
+      }
+      const prefItem =
+        (prefVehicle && nextStock.find((item) => item.type === 'vehicle' && item.id === prefVehicle)) ||
+        (prefPart && nextStock.find((item) => item.type === 'part' && item.id === prefPart)) ||
+        null;
+      if (prefItem) {
+        const term: PriceTerm = 'fob';
+        const quoted = priceForTerm(term, prefItem);
+        setCurrency(prefItem.currency || 'AED');
+        setLines([
+          {
+            key: crypto.randomUUID(),
+            description: prefItem.label,
+            quantity: 1,
+            unit_price: quoted ?? prefItem.price ?? 0,
+            discount_percent: 0,
+            tax_rate: 5,
+            inventory_type: prefItem.type,
+            part_id: prefItem.type === 'part' ? prefItem.id : null,
+            vehicle_id: prefItem.type === 'vehicle' ? prefItem.id : null,
+            inventory_reference: prefItem.reference,
+            price_term: term,
+          },
+        ]);
+      }
     }
   })(); }, []);
 

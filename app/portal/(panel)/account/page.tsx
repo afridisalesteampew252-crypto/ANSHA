@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Banknote, CheckCircle2, Loader2, ReceiptText, WalletCards } from 'lucide-react';
+import { Banknote, CheckCircle2, Loader2, ReceiptText, ShoppingBag, WalletCards } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,11 +53,26 @@ type SoaAllocation = {
   created_at: string;
 };
 
+type SoaBuying = {
+  id: string;
+  source: 'reservation' | 'invoice' | string;
+  inventory_type: string | null;
+  description: string;
+  inventory_reference: string | null;
+  quantity: number;
+  line_total: number;
+  currency: string;
+  stock_status: string | null;
+  invoice_id: string | null;
+  invoice_number: string | null;
+};
+
 type SoaPayload = {
   summary: SoaSummary;
   invoices: SoaInvoice[];
   remittances: SoaRemittance[];
   allocations: SoaAllocation[];
+  buying?: SoaBuying[];
 };
 
 const money = (value: number, currency = 'AED') =>
@@ -89,6 +104,7 @@ function PortalAccountInner() {
   const invoices = data?.invoices || [];
   const remittances = data?.remittances || [];
   const allocations = data?.allocations || [];
+  const buying = data?.buying || [];
   const currency = summary?.currency || 'AED';
 
   const ledger = useMemo(() => {
@@ -214,6 +230,43 @@ function PortalAccountInner() {
                 </tbody>
               </table>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ShoppingBag className="h-5 w-5" />
+            Buying details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {buying.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No reserved stock or open buying lines on your account.
+            </p>
+          ) : (
+            buying.map((item) => (
+              <div
+                key={item.id}
+                className={`flex items-start justify-between gap-4 rounded-lg border p-4 ${
+                  item.source === 'reservation' ? 'border-accent/30 bg-accent/[0.04]' : ''
+                }`}
+              >
+                <div>
+                  <p className="font-medium">{item.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.source === 'reservation'
+                      ? `Reserved${item.inventory_type ? ` · ${item.inventory_type}` : ''}`
+                      : item.invoice_number || 'Invoice'}
+                    {item.inventory_reference ? ` · Ref ${item.inventory_reference}` : ''}
+                    {item.quantity ? ` · Qty ${item.quantity}` : ''}
+                  </p>
+                </div>
+                <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || currency)}</span>
+              </div>
+            ))
           )}
         </CardContent>
       </Card>

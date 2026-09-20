@@ -331,6 +331,7 @@ export interface AdminProfile {
 
 export interface Customer {
   id: string;
+  /** Human-readable Customer ID (auto-assigned numeric string). */
   customer_code: string;
   full_name: string;
   company_name: string | null;
@@ -342,6 +343,13 @@ export interface Customer {
   notes: string | null;
   avatar_url: string | null;
   tax_registration_number: string | null;
+  consignee_name?: string | null;
+  consignee_company?: string | null;
+  consignee_phone?: string | null;
+  consignee_email?: string | null;
+  consignee_address?: string | null;
+  consignee_country?: string | null;
+  consignee_notes?: string | null;
   is_active: boolean;
   owner_id: string | null;
   created_at: string;
@@ -785,6 +793,9 @@ export interface RemittanceSequence {
   next_number: number;
 }
 
+/** Phase 76 — freight charge rates by route / mode / shipping company */
+export type FreightCharge = import('./freight-charges').FreightCharge;
+
 /** Phase 70 — office picklist for user profiles + remittance tagging/dashboard */
 export interface RemittanceOffice {
   id: string;
@@ -792,6 +803,19 @@ export interface RemittanceOffice {
   code: string | null;
   is_active: boolean;
   sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Phase 75 — Configuration master: shipping company + vessel pairing. */
+export interface ShippingCompany {
+  id: string;
+  company_name: string;
+  vessel_name: string;
+  is_active: boolean;
+  sort_order: number;
+  notes: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -826,6 +850,9 @@ export interface Remittance {
   receiving_bank: string | null;
   status: RemittanceStatus;
   notes: string | null;
+  /** Optional direct stock link when present on the row */
+  vehicle_id?: string | null;
+  part_id?: string | null;
   /** Staff tagged as receiver — can view via My remittances */
   received_by: string | null;
   office_id: string | null;
@@ -855,6 +882,27 @@ export interface RemittanceAllocation {
   amount: number;
   created_by: string;
   created_at: string;
+}
+
+/** Phase 72 — sales commission claims on sold vehicles/parts */
+export type CommissionClaimStatus = 'pending' | 'approved' | 'paid' | 'rejected';
+
+export interface CommissionClaim {
+  id: string;
+  claimant_id: string;
+  vehicle_id: string | null;
+  part_id: string | null;
+  invoice_id: string | null;
+  amount: number;
+  currency: string;
+  status: CommissionClaimStatus;
+  claim_notes: string | null;
+  review_notes: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SupplierInvoice {
@@ -1611,12 +1659,28 @@ export interface AttendanceRecord {
   updated_at: string;
 }
 
+/** Configuration master: auction house + loading port + yard + tentative days (Phase 74). */
+export interface AuctionYard {
+  id: string;
+  auction_name: string;
+  port: string;
+  yard: string;
+  tentative_days: number;
+  notes: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
       admin_notifications: TableDef<AdminNotification>;
       admin_profiles: TableDef<AdminProfile>;
       attendance_records: TableDef<AttendanceRecord>;
+      auction_yards: TableDef<AuctionYard>;
       audit_logs: TableDef<AuditLog>;
       ai_chat_messages: TableDef<AiChatMessage>;
       ai_chat_threads: TableDef<AiChatThread>;
@@ -1626,6 +1690,7 @@ export interface Database {
       blog_categories: TableDef<BlogCategory>;
       blog_posts: TableDef<BlogPost>;
       categories: TableDef<Category>;
+      commission_claims: TableDef<CommissionClaim>;
       chat_attachments: TableDef<ChatAttachment>;
       chat_conversation_links: TableDef<ChatConversationLink>;
       chat_conversations: TableDef<ChatConversation>;
@@ -1642,6 +1707,7 @@ export interface Database {
       export_shipment_parts: TableDef<ExportShipmentPart>;
       export_shipment_vehicles: TableDef<ExportShipmentVehicle>;
       export_shipments: TableDef<ExportShipment>;
+      freight_charges: TableDef<FreightCharge>;
       gl_accounts: TableDef<GlAccount>;
       gl_journal_lines: TableDef<GlJournalLine>;
       gl_journals: TableDef<GlJournal>;
@@ -1682,6 +1748,7 @@ export interface Database {
       reviews: TableDef<Review>;
       shift_assignments: TableDef<ShiftAssignment>;
       shift_locations: TableDef<ShiftLocation>;
+      shipping_companies: TableDef<ShippingCompany>;
       site_offers: TableDef<SiteOffer>;
       supplier_invoices: TableDef<SupplierInvoice>;
       supplier_payment_allocations: TableDef<SupplierPaymentAllocation>;

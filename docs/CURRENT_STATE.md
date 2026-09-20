@@ -14,7 +14,7 @@ Hosting: Vercel project `anshanew`
 | Staff ERP (purchase → GL → VAT/payroll) | **~99%** | Phases 28–38, 46–48, 50, 53–57, **61/61b**, **62–65**, **66** manager location inventory; **68** export/request hard-delete; **69–71** remittances (user office/shift, Unknown TTS, My remittances RLS, dashboard office filter, allocate/unallocate fix); owned vs auction pools; invoice unallocate-delete; stock dashboards; export masters; field-agent RLS; VAT Yes/No; doc-driven shipment status; clear reservation on available |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~93%** | Phase 66 campaigns (edit/audience/links/Resend test+segment/`sent_count`); subscribers Subscribe this device + Send test push; VAPID keys on Vercel + Edge (this deploy bakes `NEXT_PUBLIC_VAPID_PUBLIC_KEY`). Still no open tracking / cron ESP |
-| Customer portal | **~92%** | Invoices + SOA + **reservations** (`/portal/reservations`, `get_my_reservations` Phase 67); no remittance UX for customers |
+| Customer portal | **~93%** | Invoices + SOA (**Buying details** / reserved stock via `get_my_customer_soa`) + **reservations** (`/portal/reservations`, `get_my_reservations` Phase 67); no remittance UX for customers |
 | PWA / Capacitor | **~88%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; graceful no-op when VAPID unset; Capacitor shell docs |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
 | Docs (this set) | **~99%** | Audit refresh 2026-09-21 + Phases 66–71 + markets expansion + VAPID |
@@ -41,7 +41,7 @@ Hosting: Vercel project `anshanew`
 
 ### Customer portal (`/portal`)
 - **Reservations** (`/portal/reservations`) — own reserved vehicles/parts + open/proforma-linked sold rows via `get_my_reservations` (Phase 67)
-- Invoices (non-draft) + account statement SOA (`get_my_customer_soa`)
+- Invoices (non-draft) + account statement SOA (`get_my_customer_soa`) with **Buying details** (active reserved stock; unpaid reservation proformas cancel when stock returns to available)
 
 ### Staff ERP (`/admin`)
 - Catalog (parts / **owned vehicles** / **Auction stock** / **Machinery & trucks** filter), customers, reservations, invoices, remittances (Phase 69 module below)

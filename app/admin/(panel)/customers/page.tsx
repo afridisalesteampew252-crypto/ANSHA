@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { KeyRound, Pencil, Plus, Search, Trash2, Upload, Users } from 'lucide-react';
+import {
+  ChevronDown,
+  KeyRound,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+} from 'lucide-react';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import type { Customer } from '@/lib/types';
@@ -18,11 +27,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 const emptyForm = {
-  customer_code: '',
   full_name: '',
   company_name: '',
   email: '',
@@ -37,7 +52,6 @@ type CustomerForm = typeof emptyForm;
 type PortalMap = Record<string, { email: string; is_active: boolean }>;
 
 const FORM_FIELDS: { key: keyof Omit<CustomerForm, 'avatar_url'>; label: string; required?: boolean }[] = [
-  { key: 'customer_code', label: 'Customer code', required: true },
   { key: 'full_name', label: 'Full name', required: true },
   { key: 'company_name', label: 'Company name' },
   { key: 'email', label: 'Email' },
@@ -48,11 +62,14 @@ const FORM_FIELDS: { key: keyof Omit<CustomerForm, 'avatar_url'>; label: string;
   { key: 'notes', label: 'Notes' },
 ];
 
+const isFieldAgentRole = (role: string) => role === 'sales' || role === 'freelancer';
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [portalByCustomer, setPortalByCustomer] = useState<PortalMap>({});
   const [form, setForm] = useState<CustomerForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -115,6 +132,7 @@ export default function CustomersPage() {
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
+    setEditingCode(null);
     setAvatarFile(null);
     setFormError('');
   };
@@ -126,10 +144,10 @@ export default function CustomersPage() {
 
   const openEdit = (customer: Customer) => {
     setEditingId(customer.id);
+    setEditingCode(customer.customer_code);
     setAvatarFile(null);
     setFormError('');
     setForm({
-      customer_code: customer.customer_code,
       full_name: customer.full_name,
       company_name: customer.company_name || '',
       email: customer.email || '',
@@ -159,8 +177,8 @@ export default function CustomersPage() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     setFormError('');
-    if (!form.customer_code.trim() || !form.full_name.trim()) {
-      setFormError('Customer code and name are required.');
+    if (!form.full_name.trim()) {
+      setFormError('Full name is required.');
       return;
     }
     setSaving(true);
@@ -168,11 +186,15 @@ export default function CustomersPage() {
       const wasEditing = Boolean(editingId);
       const customerId = editingId || crypto.randomUUID();
       const avatarUrl = avatarFile ? await uploadAvatar(avatarFile, customerId) : form.avatar_url || null;
+      const trimmed = Object.fromEntries(
+        Object.entries(form).map(([key, value]) => [key, value.trim() || null])
+      ) as Record<string, string | null>;
       const payload = {
-        ...Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim() || null])),
+        ...trimmed,
         avatar_url: avatarUrl,
         ...(editingId || !selfId ? {} : { owner_id: selfId }),
       };
+      // Omit customer_code on create — DB default / trigger assigns next Customer ID.
       const operation = editingId
         ? supabase.from('customers').update(payload).eq('id', editingId)
         : supabase.from('customers').insert({ id: customerId, ...payload });
@@ -217,11 +239,14 @@ export default function CustomersPage() {
       item.address,
       item.notes,
       item.tax_registration_number,
+      item.consignee_name,
+      item.consignee_company,
       portal?.email,
     ]);
   });
 
   const existingAvatarSrc = editingId ? avatarUrls[editingId] : null;
+  const fieldAgentScoped = isFieldAgentRole(selfRole);
 
   return (
     <div className="space-y-6">
@@ -229,7 +254,7 @@ export default function CustomersPage() {
         <div className="min-w-0 space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
           <p className="text-sm text-muted-foreground">
-            Manage CRM profiles{selfRole === 'sales' ? ' assigned to you' : ''}. Enable customer portal login from each
+            Manage CRM profiles{fieldAgentScoped ? ' assigned to you' : ''}. Enable customer portal login from each
             customer&apos;s account page.
           </p>
         </div>
@@ -260,7 +285,7 @@ export default function CustomersPage() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search code, name, email, phone, address, notes…"
+            placeholder="Search ID, name, email, phone, address, notes…"
             className="pl-9"
             aria-label="Search customers"
           />
@@ -298,32 +323,64 @@ export default function CustomersPage() {
               )}
             </div>
           ) : (
-            <div className="divide-y">
-              {visible.map((item) => {
-                const portal = portalByCustomer[item.id];
-                return (
-                  <div
-                    key={item.id}
-                    className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      {avatarUrls[item.id] ? (
-                        <Image
-                          src={avatarUrls[item.id]}
-                          alt=""
-                          width={44}
-                          height={44}
-                          className="h-11 w-11 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary font-semibold">
-                          {item.full_name.charAt(0)}
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="flex flex-wrap items-center gap-2 font-medium">
-                          {item.full_name}
-                          <span className="text-xs text-muted-foreground">{item.customer_code}</span>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-sm">
+                <thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="p-4">Customer ID / Full name</th>
+                    <th className="p-4">Country</th>
+                    <th className="p-4">Primary contact / Email</th>
+                    <th className="p-4">Portal</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((item) => {
+                    const portal = portalByCustomer[item.id];
+                    return (
+                      <tr key={item.id} className="border-t">
+                        <td className="p-4">
+                          <div className="flex min-w-0 items-center gap-3">
+                            {avatarUrls[item.id] ? (
+                              <Image
+                                src={avatarUrls[item.id]}
+                                alt=""
+                                width={40}
+                                height={40}
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary font-semibold">
+                                {item.full_name.charAt(0)}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <Link
+                                href={`/admin/customers/${item.id}`}
+                                className="font-semibold text-primary hover:underline"
+                              >
+                                {item.customer_code}
+                              </Link>
+                              <p className="truncate">
+                                <Link
+                                  href={`/admin/customers/${item.id}`}
+                                  className="text-foreground hover:underline"
+                                >
+                                  {item.full_name}
+                                </Link>
+                              </p>
+                              {item.company_name ? (
+                                <p className="truncate text-xs text-muted-foreground">{item.company_name}</p>
+                              ) : null}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 uppercase text-muted-foreground">{item.country || '—'}</td>
+                        <td className="p-4">
+                          <p className="truncate">{item.phone || '—'}</p>
+                          <p className="truncate text-xs text-muted-foreground">{item.email || portal?.email || '—'}</p>
+                        </td>
+                        <td className="p-4">
                           {portal ? (
                             <Badge
                               variant="outline"
@@ -336,38 +393,65 @@ export default function CustomersPage() {
                               No portal
                             </Badge>
                           )}
-                        </p>
-                        <p className="truncate text-sm text-muted-foreground">
-                          {[item.company_name, item.phone, item.country, portal?.email].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button asChild variant="accent" size="sm">
-                        <Link href={`/admin/customers/${item.id}`}>Statement (SOA)</Link>
-                      </Button>
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/admin/customers/${item.id}`}>
-                          <KeyRound className="h-4 w-4" />
-                          {portal ? 'Portal' : 'Enable portal'}
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => openEdit(item)}>
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => void remove(item.id)}
-                        aria-label="Delete customer"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-1">
+                                  Actions
+                                  <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}`}>View Customer</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}#profile`}>Edit Profile</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}#company`}>Edit Company Info</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}#contact`}>Edit Contact Info</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}#details`}>Edit Customer Details</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}#consignee`}>
+                                    Add/Edit Consignee Details
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => openEdit(item)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  Quick edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}`}>
+                                    <KeyRound className="h-3.5 w-3.5" />
+                                    {portal ? 'Portal' : 'Enable portal'}
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onSelect={() => void remove(item.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
@@ -380,7 +464,7 @@ export default function CustomersPage() {
             <DialogDescription>
               {editingId
                 ? 'Update CRM profile details. Portal login is managed from the customer account page.'
-                : 'Create a CRM profile. Customer code and name are required.'}
+                : 'Create a CRM profile. Customer ID is assigned automatically on save.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -411,6 +495,18 @@ export default function CustomersPage() {
                   onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
                 />
               </Label>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="customer_id_preview">Customer ID</Label>
+              <Input
+                id="customer_id_preview"
+                value={editingId ? editingCode || '' : ''}
+                placeholder="Assigned on save"
+                readOnly
+                disabled
+                className="bg-secondary/40"
+              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

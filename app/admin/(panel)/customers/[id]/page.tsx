@@ -3,7 +3,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Banknote, CheckCircle2, KeyRound, Loader2, ReceiptText, RotateCcw, ShoppingBag, WalletCards } from 'lucide-react';
+import {
+  ArrowLeft,
+  Banknote,
+  Building2,
+  CheckCircle2,
+  Contact,
+  KeyRound,
+  Loader2,
+  MapPin,
+  ReceiptText,
+  RotateCcw,
+  Save,
+  ShoppingBag,
+  UserRound,
+  WalletCards,
+} from 'lucide-react';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/lib/supabase/client';
@@ -12,20 +27,89 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-type Customer = { id: string; customer_code: string; full_name: string; company_name: string | null; email: string | null; phone: string | null; country: string | null };
+type Customer = {
+  id: string;
+  customer_code: string;
+  full_name: string;
+  company_name: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  country: string | null;
+  address: string | null;
+  notes: string | null;
+  tax_registration_number: string | null;
+  consignee_name: string | null;
+  consignee_company: string | null;
+  consignee_phone: string | null;
+  consignee_email: string | null;
+  consignee_address: string | null;
+  consignee_country: string | null;
+  consignee_notes: string | null;
+};
 type Invoice = { id: string; invoice_number: string; document_type: string; issue_date: string; currency: string; status: string; total_amount: number; amount_paid: number; balance_due: number };
-type InvoiceItem = { id: string; invoice_id: string; description: string; quantity: number; line_total: number; inventory_type: string | null; inventory_reference: string | null };
+type InvoiceItem = { id: string; invoice_id: string; description: string; quantity: number; line_total: number; inventory_type: string | null; inventory_reference: string | null; vehicle_id?: string | null; part_id?: string | null };
 type Remittance = { id: string; remittance_number: string; received_date: string; amount: number; currency: string; status: string; method: string; bank_reference: string | null };
 type Allocation = { id: string; remittance_id: string; invoice_id: string; invoice_payment_id: string; amount: number; created_at: string };
 type PortalLink = { id: string; email: string; full_name: string | null; is_active: boolean };
+type ReservedBuying = {
+  key: string;
+  kind: 'vehicle' | 'part';
+  description: string;
+  inventory_reference: string;
+  line_total: number;
+  currency: string;
+  stock_id: string;
+};
+
+type ProfileForm = {
+  full_name: string;
+  company_name: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  country: string;
+  address: string;
+  notes: string;
+  tax_registration_number: string;
+  consignee_name: string;
+  consignee_company: string;
+  consignee_phone: string;
+  consignee_email: string;
+  consignee_address: string;
+  consignee_country: string;
+  consignee_notes: string;
+};
+
+const emptyProfileForm = (): ProfileForm => ({
+  full_name: '',
+  company_name: '',
+  email: '',
+  phone: '',
+  whatsapp: '',
+  country: '',
+  address: '',
+  notes: '',
+  tax_registration_number: '',
+  consignee_name: '',
+  consignee_company: '',
+  consignee_phone: '',
+  consignee_email: '',
+  consignee_address: '',
+  consignee_country: '',
+  consignee_notes: '',
+});
 
 const money = (value: number, currency = 'AED') => new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value || 0));
 const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
+const trimOrNull = (value: string) => value.trim() || null;
 
 export default function CustomerAccountPage() {
   const params = useParams<{ id: string }>();
   const customerId = params.id;
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
+  const [profileSaving, setProfileSaving] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
@@ -38,23 +122,55 @@ export default function CustomerAccountPage() {
   const [remittanceId, setRemittanceId] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
   const [allocationAmount, setAllocationAmount] = useState('');
+  const [reservedBuying, setReservedBuying] = useState<ReservedBuying[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
 
+  const applyCustomerToForm = (row: Customer) => {
+    setProfileForm({
+      full_name: row.full_name || '',
+      company_name: row.company_name || '',
+      email: row.email || '',
+      phone: row.phone || '',
+      whatsapp: row.whatsapp || '',
+      country: row.country || '',
+      address: row.address || '',
+      notes: row.notes || '',
+      tax_registration_number: row.tax_registration_number || '',
+      consignee_name: row.consignee_name || '',
+      consignee_company: row.consignee_company || '',
+      consignee_phone: row.consignee_phone || '',
+      consignee_email: row.consignee_email || '',
+      consignee_address: row.consignee_address || '',
+      consignee_country: row.consignee_country || '',
+      consignee_notes: row.consignee_notes || '',
+    });
+  };
+
   const load = useCallback(async () => {
     setLoading(true);
-    const [customerResult, invoiceResult, remittanceResult, portalResult, sessionRes] = await Promise.all([
-      supabase.from('customers').select('id,customer_code,full_name,company_name,email,phone,country').eq('id', customerId).single(),
+    const [customerResult, invoiceResult, remittanceResult, portalResult, sessionRes, vehicleReserveResult, partReserveResult] = await Promise.all([
+      supabase
+        .from('customers')
+        .select(
+          'id,customer_code,full_name,company_name,email,phone,whatsapp,country,address,notes,tax_registration_number,consignee_name,consignee_company,consignee_phone,consignee_email,consignee_address,consignee_country,consignee_notes'
+        )
+        .eq('id', customerId)
+        .single(),
       supabase.from('invoices').select('id,invoice_number,document_type,issue_date,currency,status,total_amount,amount_paid,balance_due').eq('customer_id', customerId).order('issue_date', { ascending: false }),
       supabase.from('remittances').select('id,remittance_number,received_date,amount,currency,status,method,bank_reference').eq('customer_id', customerId).order('received_date', { ascending: false }),
       supabase.from('customer_profiles').select('id,email,full_name,is_active').eq('customer_id', customerId).maybeSingle(),
       supabase.auth.getSession(),
+      supabase.from('vehicles').select('id,title,stock_number,chassis_number,price,price_fob,price_cf,price_cif,currency,reservation_price_term').eq('reserved_customer_id', customerId).eq('stock_status', 'reserved'),
+      supabase.from('parts').select('id,name,part_code,part_number,price,price_fob,price_cf,price_cif,currency,reservation_price_term').eq('reserved_customer_id', customerId).eq('stock_status', 'reserved'),
     ]);
     if (customerResult.error) setNotice(customerResult.error.message);
-    const invoiceRows = (invoiceResult.data || []) as Invoice[];
+    const invoiceRows = ((invoiceResult.data || []) as Invoice[]).filter((row) => row.status !== 'cancelled');
     const remittanceRows = (remittanceResult.data || []) as Remittance[];
-    setCustomer(customerResult.data as Customer | null);
+    const customerRow = (customerResult.data || null) as Customer | null;
+    setCustomer(customerRow);
+    if (customerRow) applyCustomerToForm(customerRow);
     setPortalLink((portalResult.data || null) as PortalLink | null);
     setPortalEmail(customerResult.data?.email || '');
     setInvoices(invoiceRows);
@@ -64,8 +180,35 @@ export default function CustomerAccountPage() {
       const { data: prof } = await supabase.from('admin_profiles').select('role').eq('id', uid).maybeSingle();
       setIsAccountAdmin(prof?.role === 'admin');
     }
+    const reservedPrice = (row: { reservation_price_term: string | null; price_fob: number | null; price_cf: number | null; price_cif: number | null; price: number | null }) => {
+      if (row.reservation_price_term === 'fob') return Number(row.price_fob ?? row.price ?? 0);
+      if (row.reservation_price_term === 'cf') return Number(row.price_cf ?? row.price ?? 0);
+      if (row.reservation_price_term === 'cif') return Number(row.price_cif ?? row.price ?? 0);
+      return Number(row.price ?? 0);
+    };
+    const reservedRows: ReservedBuying[] = [
+      ...((vehicleReserveResult.data || []) as Array<{ id: string; title: string; stock_number: string | null; chassis_number: string | null; price: number | null; price_fob: number | null; price_cf: number | null; price_cif: number | null; currency: string; reservation_price_term: string | null }>).map((row) => ({
+        key: `vehicle:${row.id}`,
+        kind: 'vehicle' as const,
+        description: row.title,
+        inventory_reference: row.stock_number || row.chassis_number || row.id.slice(0, 8),
+        line_total: reservedPrice(row),
+        currency: row.currency || 'AED',
+        stock_id: row.id,
+      })),
+      ...((partReserveResult.data || []) as Array<{ id: string; name: string; part_code: string; part_number: string | null; price: number | null; price_fob: number | null; price_cf: number | null; price_cif: number | null; currency: string; reservation_price_term: string | null }>).map((row) => ({
+        key: `part:${row.id}`,
+        kind: 'part' as const,
+        description: row.name,
+        inventory_reference: row.part_code || row.part_number || row.id.slice(0, 8),
+        line_total: reservedPrice(row),
+        currency: row.currency || 'AED',
+        stock_id: row.id,
+      })),
+    ];
+    setReservedBuying(reservedRows);
     const [itemResult, allocationResult] = await Promise.all([
-      invoiceRows.length ? supabase.from('invoice_items').select('id,invoice_id,description,quantity,line_total,inventory_type,inventory_reference').in('invoice_id', invoiceRows.map((row) => row.id)).order('sort_order') : Promise.resolve({ data: [] }),
+      invoiceRows.length ? supabase.from('invoice_items').select('id,invoice_id,description,quantity,line_total,inventory_type,inventory_reference,vehicle_id,part_id').in('invoice_id', invoiceRows.map((row) => row.id)).order('sort_order') : Promise.resolve({ data: [] }),
       remittanceRows.length ? supabase.from('remittance_allocations').select('id,remittance_id,invoice_id,invoice_payment_id,amount,created_at').in('remittance_id', remittanceRows.map((row) => row.id)).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
     ]);
     setItems((itemResult.data || []) as InvoiceItem[]);
@@ -74,6 +217,16 @@ export default function CustomerAccountPage() {
   }, [customerId]);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (loading || !customer) return;
+    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
+    if (!hash) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [loading, customer]);
 
   const allocatedByRemittance = useMemo(() => allocations.reduce<Record<string, number>>((sum, row) => ({ ...sum, [row.remittance_id]: (sum[row.remittance_id] || 0) + Number(row.amount) }), {}), [allocations]);
   const receivableInvoices = useMemo(() => invoices.filter((row) => receivableDocument(row.document_type) && row.status !== 'cancelled'), [invoices]);
@@ -108,6 +261,16 @@ export default function CustomerAccountPage() {
     return map;
   }, [items]);
 
+  const reservedStockIds = useMemo(() => new Set(reservedBuying.map((row) => row.stock_id)), [reservedBuying]);
+  const buyingInvoiceItems = useMemo(
+    () => items.filter((item) => {
+      if (item.vehicle_id && reservedStockIds.has(item.vehicle_id)) return false;
+      if (item.part_id && reservedStockIds.has(item.part_id)) return false;
+      return true;
+    }),
+    [items, reservedStockIds],
+  );
+
   const chooseRemittance = (value: string) => {
     setRemittanceId(value);
     const remittance = remittances.find((row) => row.id === value);
@@ -136,6 +299,42 @@ export default function CustomerAccountPage() {
     setNotice('Allocation reversed and balances restored.'); await load();
   };
 
+  const saveProfile = async (sectionLabel: string) => {
+    if (!customer) return;
+    if (!profileForm.full_name.trim()) {
+      setNotice('Full name is required.');
+      return;
+    }
+    setProfileSaving(true);
+    setNotice(`Saving ${sectionLabel}…`);
+    const payload = {
+      full_name: profileForm.full_name.trim(),
+      company_name: trimOrNull(profileForm.company_name),
+      email: trimOrNull(profileForm.email),
+      phone: trimOrNull(profileForm.phone),
+      whatsapp: trimOrNull(profileForm.whatsapp),
+      country: trimOrNull(profileForm.country),
+      address: trimOrNull(profileForm.address),
+      notes: trimOrNull(profileForm.notes),
+      tax_registration_number: trimOrNull(profileForm.tax_registration_number),
+      consignee_name: trimOrNull(profileForm.consignee_name),
+      consignee_company: trimOrNull(profileForm.consignee_company),
+      consignee_phone: trimOrNull(profileForm.consignee_phone),
+      consignee_email: trimOrNull(profileForm.consignee_email),
+      consignee_address: trimOrNull(profileForm.consignee_address),
+      consignee_country: trimOrNull(profileForm.consignee_country),
+      consignee_notes: trimOrNull(profileForm.consignee_notes),
+    };
+    const { error } = await supabase.from('customers').update(payload).eq('id', customer.id);
+    setProfileSaving(false);
+    if (error) {
+      setNotice(error.message);
+      return;
+    }
+    setNotice(`${sectionLabel} saved.`);
+    await load();
+  };
+
   const enablePortal = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!customer) return;
@@ -162,14 +361,179 @@ export default function CustomerAccountPage() {
   if (loading) return <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!customer) return <Card><CardContent className="p-10 text-center">Customer account not found.</CardContent></Card>;
 
+  const setField = (key: keyof ProfileForm) => (event: React.ChangeEvent<HTMLInputElement>) =>
+    setProfileForm((prev) => ({ ...prev, [key]: event.target.value }));
+
   return <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><Button asChild variant="ghost" size="sm" className="-ml-3 mb-2"><Link href="/admin/customers"><ArrowLeft className="h-4 w-4" />Customers</Link></Button><h1 className="text-2xl font-bold">{customer.company_name || customer.full_name}</h1><p className="text-sm text-muted-foreground">Statement of Account · {customer.customer_code} · {[customer.email, customer.phone, customer.country].filter(Boolean).join(' · ')}</p></div>
+      <div>
+        <Button asChild variant="ghost" size="sm" className="-ml-3 mb-2">
+          <Link href="/admin/customers"><ArrowLeft className="h-4 w-4" />Customers</Link>
+        </Button>
+        <h1 className="text-2xl font-bold">{customer.company_name || customer.full_name}</h1>
+        <p className="text-sm text-muted-foreground">
+          Customer ID <span className="font-semibold text-foreground">{customer.customer_code}</span>
+          {' · '}Statement of Account
+          {[customer.email, customer.phone, customer.country].filter(Boolean).length
+            ? ` · ${[customer.email, customer.phone, customer.country].filter(Boolean).join(' · ')}`
+            : ''}
+        </p>
+      </div>
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline"><Link href={`/admin/chat?customer=${customer.id}`}>Open linked chat</Link></Button>
         <Button asChild><Link href={`/admin/invoices/new?customer=${customer.id}`}><ReceiptText className="h-4 w-4" />Create invoice</Link></Button>
       </div>
     </div>
+
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Card id="profile" className="scroll-mt-24">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <UserRound className="h-5 w-5 text-accent" />
+            Profile
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-customer-id">Customer ID</Label>
+            <Input id="profile-customer-id" value={customer.customer_code} readOnly disabled className="bg-secondary/40" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-full-name">Full name</Label>
+            <Input id="profile-full-name" value={profileForm.full_name} onChange={setField('full_name')} required />
+          </div>
+          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Profile')}>
+            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save profile
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card id="company" className="scroll-mt-24">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Building2 className="h-5 w-5 text-accent" />
+            Company info
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="company-name">Company name</Label>
+            <Input id="company-name" value={profileForm.company_name} onChange={setField('company_name')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="company-trn">Tax registration number</Label>
+            <Input id="company-trn" value={profileForm.tax_registration_number} onChange={setField('tax_registration_number')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="company-country">Country</Label>
+            <Input id="company-country" value={profileForm.country} onChange={setField('country')} />
+          </div>
+          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Company info')}>
+            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save company info
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card id="contact" className="scroll-mt-24">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Contact className="h-5 w-5 text-accent" />
+            Contact info
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-email">Email</Label>
+              <Input id="contact-email" type="email" value={profileForm.email} onChange={setField('email')} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contact-phone">Phone</Label>
+              <Input id="contact-phone" value={profileForm.phone} onChange={setField('phone')} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="contact-whatsapp">WhatsApp</Label>
+              <Input id="contact-whatsapp" value={profileForm.whatsapp} onChange={setField('whatsapp')} />
+            </div>
+          </div>
+          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Contact info')}>
+            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save contact info
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card id="details" className="scroll-mt-24">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <MapPin className="h-5 w-5 text-accent" />
+            Customer details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="details-address">Address</Label>
+            <Input id="details-address" value={profileForm.address} onChange={setField('address')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="details-notes">Notes</Label>
+            <Input id="details-notes" value={profileForm.notes} onChange={setField('notes')} />
+          </div>
+          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Customer details')}>
+            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save customer details
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+
+    <Card id="consignee" className="scroll-mt-24">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <ShoppingBag className="h-5 w-5 text-accent" />
+          Consignee details
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">Shipping consignee used on export docs when different from the billing customer.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="consignee-name">Consignee name</Label>
+            <Input id="consignee-name" value={profileForm.consignee_name} onChange={setField('consignee_name')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="consignee-company">Consignee company</Label>
+            <Input id="consignee-company" value={profileForm.consignee_company} onChange={setField('consignee_company')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="consignee-phone">Consignee phone</Label>
+            <Input id="consignee-phone" value={profileForm.consignee_phone} onChange={setField('consignee_phone')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="consignee-email">Consignee email</Label>
+            <Input id="consignee-email" type="email" value={profileForm.consignee_email} onChange={setField('consignee_email')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="consignee-country">Consignee country</Label>
+            <Input id="consignee-country" value={profileForm.consignee_country} onChange={setField('consignee_country')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="consignee-address">Consignee address</Label>
+            <Input id="consignee-address" value={profileForm.consignee_address} onChange={setField('consignee_address')} />
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label htmlFor="consignee-notes">Consignee notes</Label>
+            <Input id="consignee-notes" value={profileForm.consignee_notes} onChange={setField('consignee_notes')} />
+          </div>
+        </div>
+        <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Consignee details')}>
+          {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save consignee details
+        </Button>
+      </CardContent>
+    </Card>
 
     <Card className="border-accent/25 bg-accent/[0.04]">
       <CardHeader className="pb-2">
@@ -233,7 +597,38 @@ export default function CustomerAccountPage() {
 
     <div className="grid gap-6 xl:grid-cols-2">
       <Card><CardHeader><CardTitle className="text-lg">Remittances and allocations</CardTitle></CardHeader><CardContent className="space-y-3">{remittances.map((row) => { const used = allocatedByRemittance[row.id] || 0; return <div key={row.id} className="rounded-lg border p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{row.remittance_number}</p><p className="text-xs text-muted-foreground">{row.received_date} · {row.method.replaceAll('_',' ')} · {row.bank_reference || 'No bank reference'}</p></div><div className="text-right"><p className="font-semibold">{money(row.amount,row.currency)}</p><p className="text-xs text-muted-foreground">{money(Number(row.amount)-used,row.currency)} available</p></div></div><div className="mt-3 space-y-2">{allocations.filter((item) => item.remittance_id === row.id).map((allocation) => { const invoice = invoices.find((item) => item.id === allocation.invoice_id); const stock = stockRefsByInvoice[allocation.invoice_id]?.join(', '); return <div key={allocation.id} className="flex items-center justify-between rounded-md bg-secondary/60 px-3 py-2 text-xs"><span>Applied to {invoice?.invoice_number || 'invoice'}{stock ? ` · ${stock}` : ''} · {money(allocation.amount,row.currency)}</span><Button variant="ghost" size="sm" className="h-7 text-destructive" disabled={busy} onClick={() => void reverse(allocation)}><RotateCcw className="h-3.5 w-3.5" />Reverse</Button></div>; })}</div></div>; })}{remittances.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No remittances recorded for this customer.</p> : null}</CardContent></Card>
-      <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><ShoppingBag className="h-5 w-5" />Buying details</CardTitle></CardHeader><CardContent className="space-y-3">{items.map((item) => { const invoice = invoices.find((row) => row.id === item.invoice_id); return <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-4"><div><p className="font-medium">{item.description}</p><p className="text-xs text-muted-foreground">{invoice?.invoice_number} · Qty {item.quantity}{item.inventory_reference ? ` · Ref ${item.inventory_reference}` : ''}{item.inventory_type ? ` · ${item.inventory_type}` : ''}</p></div><span className="shrink-0 font-semibold">{money(item.line_total, invoice?.currency || currency)}</span></div>; })}{items.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No invoice buying details yet.</p> : null}</CardContent></Card>
+      <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><ShoppingBag className="h-5 w-5" />Buying details</CardTitle></CardHeader><CardContent className="space-y-3">
+        {reservedBuying.map((item) => (
+          <div key={item.key} className="flex items-start justify-between gap-4 rounded-lg border border-accent/30 bg-accent/[0.04] p-4">
+            <div>
+              <p className="font-medium">{item.description}</p>
+              <p className="text-xs text-muted-foreground">
+                Reserved · {item.kind} · Ref {item.inventory_reference}
+              </p>
+            </div>
+            <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || currency)}</span>
+          </div>
+        ))}
+        {buyingInvoiceItems.map((item) => {
+          const invoice = invoices.find((row) => row.id === item.invoice_id);
+          return (
+            <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-4">
+              <div>
+                <p className="font-medium">{item.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {invoice?.invoice_number} · Qty {item.quantity}
+                  {item.inventory_reference ? ` · Ref ${item.inventory_reference}` : ''}
+                  {item.inventory_type ? ` · ${item.inventory_type}` : ''}
+                </p>
+              </div>
+              <span className="shrink-0 font-semibold">{money(item.line_total, invoice?.currency || currency)}</span>
+            </div>
+          );
+        })}
+        {reservedBuying.length === 0 && buyingInvoiceItems.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">No reserved stock or invoice buying details yet.</p>
+        ) : null}
+      </CardContent></Card>
     </div>
   </div>;
 }

@@ -51,6 +51,8 @@ export const MANAGER_NAV_HREFS = new Set([
   '/admin/parts/stock',
   '/admin/reservations',
   '/admin/export-shipments',
+  '/admin/freight-charges',
+  '/admin/commissions',
   '/admin/hr',
   '/admin/hr/locations',
   '/admin/hr/shifts',
@@ -69,6 +71,9 @@ export function isManagerAllowedPath(pathname: string): boolean {
   if (pathname.startsWith('/admin/stock')) return true;
   if (pathname.startsWith('/admin/reservations')) return true;
   if (pathname.startsWith('/admin/export-shipments')) return true;
+  // Freight charge master — read-only for managers (writes are receivables RLS)
+  if (pathname.startsWith('/admin/freight-charges')) return true;
+  if (pathname.startsWith('/admin/commissions')) return true;
   if (pathname.startsWith('/admin/hr')) return true;
   // Tagged remittances only (not full finance remittance module)
   if (pathname === '/admin/remittances/mine') return true;
@@ -117,6 +122,7 @@ export const FIELD_AGENT_NAV_HREFS = new Set([
   '/admin/customers',
   '/admin/reservations',
   '/admin/invoices',
+  '/admin/commissions',
   '/admin/remittances/mine',
   '/admin/chat',
 ]);
@@ -132,6 +138,7 @@ export function isFieldAgentAllowedPath(pathname: string): boolean {
   // Draft proforma only — list / new / detail / edit query on new
   if (pathname === '/admin/invoices' || pathname === '/admin/invoices/new') return true;
   if (pathname.startsWith('/admin/invoices/') && !pathname.startsWith('/admin/invoices/supplier')) return true;
+  if (pathname.startsWith('/admin/commissions')) return true;
   // Remittances tagged to this user only
   if (pathname === '/admin/remittances/mine') return true;
   if (pathname.startsWith('/admin/chat')) return true;
@@ -144,6 +151,7 @@ export const ACCOUNTS_NAV_HREFS = new Set([
   '/admin/customers',
   '/admin/invoices',
   '/admin/invoices/supplier',
+  '/admin/commissions',
   '/admin/remittances',
   '/admin/remittances/dashboard',
   '/admin/remittances/mine',
@@ -152,7 +160,16 @@ export const ACCOUNTS_NAV_HREFS = new Set([
   '/admin/expenses',
   '/admin/ledger',
   '/admin/reports',
+  '/admin/reports/customer-balance-payments',
+  '/admin/reports/customer-sales-value-stats',
+  '/admin/reports/customer-registrations',
+  '/admin/reports/office-sales-stats',
+  '/admin/reports/purchase-statistics',
+  '/admin/reports/resource-sales-stats',
+  '/admin/reports/resource-sales-value-stats',
+  '/admin/reports/financial',
   '/admin/vat-return',
+  '/admin/freight-charges',
   '/admin/chat',
 ]);
 
@@ -160,12 +177,14 @@ export function isAccountsAllowedPath(pathname: string): boolean {
   if (pathname === '/admin/dashboard' || pathname === '/admin/profile') return true;
   if (pathname.startsWith('/admin/customers')) return true;
   if (pathname.startsWith('/admin/invoices')) return true;
+  if (pathname.startsWith('/admin/commissions')) return true;
   if (pathname.startsWith('/admin/remittances')) return true;
   if (pathname.startsWith('/admin/bank-accounts')) return true;
   if (pathname.startsWith('/admin/expenses')) return true;
   if (pathname.startsWith('/admin/ledger')) return true;
   if (pathname.startsWith('/admin/reports')) return true;
   if (pathname.startsWith('/admin/vat-return')) return true;
+  if (pathname.startsWith('/admin/freight-charges')) return true;
   if (pathname.startsWith('/admin/chat')) return true;
   return false;
 }

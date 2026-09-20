@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BookmarkPlus, Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { BulkReserveDialog } from '@/components/admin/bulk-reserve-dialog';
 import {
   SearchableSelect,
   customerSelectOption,
@@ -12,6 +13,7 @@ import {
 } from '@/components/admin/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -140,6 +142,10 @@ function ReservationsPageInner() {
   const [busy, setBusy] = useState(false);
   const [role, setRole] = useState<AdminRole | null>(null);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [mode, setMode] = useState<'single' | 'bulk'>('single');
+  const [bulkVehicleIds, setBulkVehicleIds] = useState<Set<string>>(new Set());
+  const [bulkPartIds, setBulkPartIds] = useState<Set<string>>(new Set());
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const fieldAgent = isFieldAgentRole(role);
   const requesterLocked = fieldAgent;
   const inspectionInvalid = attemptedSubmit && !inspectionRequired;
@@ -228,6 +234,23 @@ function ReservationsPageInner() {
   const customerOptions = useMemo(() => customers.map(customerSelectOption), [customers]);
   const vehicleOptions = useMemo(() => vehicles.map(vehicleSelectOption), [vehicles]);
   const partOptions = useMemo(() => parts.map(partSelectOption), [parts]);
+  const bulkVehicleLabelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const v of vehicles) {
+      map[v.id] = v.stock_number || v.chassis_number || v.title || v.id.slice(0, 8);
+    }
+    return map;
+  }, [vehicles]);
+  const bulkPartLabelMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of parts) {
+      map[p.id] = p.part_code || p.name || p.id.slice(0, 8);
+    }
+    return map;
+  }, [parts]);
+  const bulkSelectedVehicleIds = useMemo(() => Array.from(bulkVehicleIds), [bulkVehicleIds]);
+  const bulkSelectedPartIds = useMemo(() => Array.from(bulkPartIds), [bulkPartIds]);
+  const bulkTotal = bulkSelectedVehicleIds.length + bulkSelectedPartIds.length;
 
   useEffect(() => {
     if (kind === 'vehicle' && selectedVehicle) {
@@ -366,47 +389,246 @@ function ReservationsPageInner() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Reservations</p>
         <h1 className="flex items-center gap-2.5 text-2xl font-black tracking-tight sm:text-[1.75rem]">
           <BookmarkPlus className="h-6 w-6 shrink-0 text-accent" />
-          Reserve {kind === 'part' ? 'part' : 'vehicle'}
+          {mode === 'bulk'
+            ? 'Bulk reserve'
+            : `Reserve ${kind === 'part' ? 'part' : 'vehicle'}`}
         </h1>
         <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-          Hold available stock for a customer, assign it to the reserving sales agent, unpublish it, and
-          create a proforma draft.
+          {mode === 'bulk'
+            ? 'Select multiple available vehicles and/or parts, then reserve them together for one customer with shared trade terms. Each item is reserved individually so SOA stays correct.'
+            : 'Hold available stock for a customer, assign it to the reserving sales agent, unpublish it, and create a proforma draft.'}
           {fieldAgent
-            ? ' Requester is locked to your profile. Only you will see this reserved unit (ops still see all).'
+            ? ' Requester is locked to your profile. Only you will see reserved units you own (ops still see all).'
             : ''}
         </p>
       </div>
 
-      <div
-        className="inline-flex rounded-full border border-border/80 bg-card p-1 shadow-sm"
-        role="group"
-        aria-label="Stock kind"
-      >
-        {(['vehicle', 'part'] as const).map((item) => {
-          const active = kind === item;
-          return (
-            <button
-              key={item}
-              type="button"
-              onClick={() => {
-                setKind(item);
-                if (item === 'part') setShipmentTerm('dhl');
-                else if (!shipmentTerm || shipmentTerm === 'dhl') setShipmentTerm('roro');
-              }}
-              className={cn(
-                'min-h-10 min-w-[5.5rem] rounded-full px-5 text-sm font-semibold capitalize transition-colors',
-                active
-                  ? 'bg-accent text-accent-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-              aria-pressed={active}
-            >
-              {item}
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap gap-2">
+        <div
+          className="inline-flex rounded-full border border-border/80 bg-card p-1 shadow-sm"
+          role="group"
+          aria-label="Reservation mode"
+        >
+          {([
+            { id: 'single' as const, label: 'Single + proforma' },
+            { id: 'bulk' as const, label: 'Bulk reserve' },
+          ]).map((item) => {
+            const active = mode === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setMode(item.id)}
+                className={cn(
+                  'min-h-10 rounded-full px-4 text-sm font-semibold transition-colors',
+                  active
+                    ? 'bg-accent text-accent-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+                aria-pressed={active}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+        {mode === 'single' ? (
+          <div
+            className="inline-flex rounded-full border border-border/80 bg-card p-1 shadow-sm"
+            role="group"
+            aria-label="Stock kind"
+          >
+            {(['vehicle', 'part'] as const).map((item) => {
+              const active = kind === item;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => {
+                    setKind(item);
+                    if (item === 'part') setShipmentTerm('dhl');
+                    else if (!shipmentTerm || shipmentTerm === 'dhl') setShipmentTerm('roro');
+                  }}
+                  className={cn(
+                    'min-h-10 min-w-[5.5rem] rounded-full px-5 text-sm font-semibold capitalize transition-colors',
+                    active
+                      ? 'bg-accent text-accent-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                  aria-pressed={active}
+                >
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
+      {mode === 'bulk' ? (
+        <>
+          <Card className="overflow-hidden">
+            <CardHeader className="space-y-1.5 pb-4">
+              <CardTitle className="text-lg">Select available stock</CardTitle>
+              <CardDescription>
+                Only available units are listed. Reserved or sold items cannot be selected. You can also
+                multi-select from Vehicles / Parts inventory.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Vehicles ({vehicles.length})</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={vehicles.length === 0}
+                    onClick={() => setBulkVehicleIds(new Set(vehicles.map((v) => v.id)))}
+                  >
+                    Select all
+                  </Button>
+                </div>
+                <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-border/70 p-2">
+                  {vehicles.length === 0 ? (
+                    <p className="px-1 py-3 text-xs text-muted-foreground">No available vehicles.</p>
+                  ) : (
+                    vehicles.map((vehicle) => {
+                      const checked = bulkVehicleIds.has(vehicle.id);
+                      const label =
+                        bulkVehicleLabelMap[vehicle.id] || vehicle.title || vehicle.id.slice(0, 8);
+                      return (
+                        <label
+                          key={vehicle.id}
+                          className={cn(
+                            'flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50',
+                            checked && 'bg-accent/10'
+                          )}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(value) => {
+                              setBulkVehicleIds((prev) => {
+                                const next = new Set(prev);
+                                if (value === true) next.add(vehicle.id);
+                                else next.delete(vehicle.id);
+                                return next;
+                              });
+                            }}
+                            className="mt-0.5"
+                          />
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium">{label}</span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {vehicle.title}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Parts ({parts.length})</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={parts.length === 0}
+                    onClick={() => setBulkPartIds(new Set(parts.map((p) => p.id)))}
+                  >
+                    Select all
+                  </Button>
+                </div>
+                <div className="max-h-64 space-y-1 overflow-y-auto rounded-md border border-border/70 p-2">
+                  {parts.length === 0 ? (
+                    <p className="px-1 py-3 text-xs text-muted-foreground">No available parts.</p>
+                  ) : (
+                    parts.map((part) => {
+                      const checked = bulkPartIds.has(part.id);
+                      const label = bulkPartLabelMap[part.id] || part.name || part.id.slice(0, 8);
+                      return (
+                        <label
+                          key={part.id}
+                          className={cn(
+                            'flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50',
+                            checked && 'bg-accent/10'
+                          )}
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(value) => {
+                              setBulkPartIds((prev) => {
+                                const next = new Set(prev);
+                                if (value === true) next.add(part.id);
+                                else next.delete(part.id);
+                                return next;
+                              });
+                            }}
+                            className="mt-0.5"
+                          />
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium">{label}</span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {part.name}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 sm:col-span-2">
+                <Button
+                  type="button"
+                  disabled={bulkTotal === 0}
+                  onClick={() => setBulkDialogOpen(true)}
+                  className="min-h-10"
+                >
+                  <BookmarkPlus className="h-4 w-4" />
+                  Continue with {bulkTotal || 0} selected
+                </Button>
+                {bulkTotal > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-10"
+                    onClick={() => {
+                      setBulkVehicleIds(new Set());
+                      setBulkPartIds(new Set());
+                    }}
+                  >
+                    Clear selection
+                  </Button>
+                ) : null}
+                <Button asChild type="button" variant="outline" className="min-h-10">
+                  <Link href="/admin/vehicles">Vehicles inventory</Link>
+                </Button>
+                <Button asChild type="button" variant="outline" className="min-h-10">
+                  <Link href="/admin/parts">Parts inventory</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <BulkReserveDialog
+            open={bulkDialogOpen}
+            onOpenChange={setBulkDialogOpen}
+            vehicleIds={bulkSelectedVehicleIds}
+            partIds={bulkSelectedPartIds}
+            vehicleLabels={bulkVehicleLabelMap}
+            partLabels={bulkPartLabelMap}
+            onCompleted={() => {
+              setBulkVehicleIds(new Set());
+              setBulkPartIds(new Set());
+              void load();
+            }}
+          />
+        </>
+      ) : (
       <Card className="overflow-hidden">
         <CardHeader className="space-y-1.5 pb-4">
           <CardTitle className="text-lg">Customer + {kind}</CardTitle>
@@ -653,6 +875,7 @@ function ReservationsPageInner() {
           </form>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

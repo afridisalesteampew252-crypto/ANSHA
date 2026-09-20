@@ -581,7 +581,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
       <div className="space-y-6">
         {/* Photos */}
-        <Card className="overflow-hidden">
+        <Card id="photos" className="scroll-mt-24 overflow-hidden">
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>

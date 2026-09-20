@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { ChevronDown, Filter, Loader2, Package, Plus, Search, Ship, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminPartCard } from '@/components/admin/admin-part-card';
+import { BulkReserveDialog } from '@/components/admin/bulk-reserve-dialog';
+import { ChangeRequesterDialog } from '@/components/admin/change-requester-dialog';
+import { ClaimCommissionDialog } from '@/components/admin/claim-commission-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -48,6 +51,11 @@ export default function AdminPartsPage() {
   const [invoiceByPart, setInvoiceByPart] = useState<Record<string, string>>({});
   const [role, setRole] = useState<AdminRole | null>(null);
   const [allowedOrigins, setAllowedOrigins] = useState<string[] | null>(null);
+  const [claimTarget, setClaimTarget] = useState<PartWithRelations | null>(null);
+  const [requesterTarget, setRequesterTarget] = useState<PartWithRelations | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
   const fieldAgent = isFieldAgentRole(role);
   const isManager = role === 'manager';
 
@@ -234,6 +242,36 @@ export default function AdminPartsPage() {
     ]
   );
 
+  const availableFiltered = useMemo(
+    () => filtered.filter((p) => p.stock_status === 'available' && p.quantity > 0),
+    [filtered]
+  );
+  const selectedPartIds = useMemo(() => Array.from(selectedIds), [selectedIds]);
+  const partLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of parts) {
+      map[p.id] = p.part_code || p.name || p.id.slice(0, 8);
+    }
+    return map;
+  }, [parts]);
+
+  function toggleSelected(id: string, next: boolean) {
+    setSelectedIds((prev) => {
+      const copy = new Set(prev);
+      if (next) copy.add(id);
+      else copy.delete(id);
+      return copy;
+    });
+  }
+
+  function selectAllAvailable() {
+    setSelectedIds(new Set(availableFiltered.map((p) => p.id)));
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
   async function updatePart(id: string, changes: Record<string, unknown>) {
     const { error } = await supabase.from('parts').update(changes).eq('id', id);
     if (error) return toast.error(error.message);
@@ -248,6 +286,55 @@ export default function AdminPartsPage() {
     if (error) return toast.error(error.message);
     if (paths.length) await supabase.storage.from('part-images').remove(paths);
     toast.success('Part deleted.');
+    await fetchParts();
+  }
+
+  async function makeAvailable(part: PartWithRelations) {
+    if (
+      !window.confirm(
+        `Make "${part.name}" available again? This clears the reservation and linked SOA.`
+      )
+    ) {
+      return;
+    }
+    await updatePart(part.id, { stock_status: 'available' });
+  }
+
+  async function submitClaim(payload: { amount: number; currency: string; notes: string }) {
+    if (!claimTarget) return;
+    setActionBusy(true);
+    const { error } = await supabase.rpc('claim_stock_commission', {
+      p_amount: payload.amount,
+      p_currency: payload.currency,
+      p_vehicle_id: null,
+      p_part_id: claimTarget.id,
+      p_invoice_id: null,
+      p_notes: payload.notes || null,
+      p_claimant_id: null,
+    });
+    setActionBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success('Commission claim submitted.');
+    setClaimTarget(null);
+  }
+
+  async function submitRequester(payload: {
+    name: string;
+    role: 'sales' | 'freelancer' | 'manager' | 'admin' | null;
+  }) {
+    if (!requesterTarget) return;
+    setActionBusy(true);
+    const { error } = await supabase
+      .from('parts')
+      .update({
+        reservation_requester_name: payload.name,
+        reservation_requester_role: payload.role,
+      })
+      .eq('id', requesterTarget.id);
+    setActionBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success('Requester updated.');
+    setRequesterTarget(null);
     await fetchParts();
   }
 
@@ -447,15 +534,27 @@ export default function AdminPartsPage() {
       </Collapsible>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 py-3">
+        <CardHeader className="flex-row flex-wrap items-center justify-between space-y-0 gap-2 py-3">
           <CardTitle className="text-base">
             Parts list
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {filtered.length} of {parts.length}
             </span>
           </CardTitle>
+          {availableFiltered.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={selectAllAvailable}>
+                Select available ({availableFiltered.length})
+              </Button>
+              {selectedIds.size > 0 ? (
+                <Button type="button" size="sm" variant="ghost" onClick={clearSelection}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
         </CardHeader>
-        <CardContent className="space-y-2 p-2 sm:p-4">
+        <CardContent className={cn('space-y-2 p-2 sm:p-4', selectedIds.size > 0 && 'pb-24')}>
           {loading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -476,8 +575,13 @@ export default function AdminPartsPage() {
                 shipmentStatusLabel={
                   shipmentByPart[part.id] ? exportShipmentStatusLabel(shipmentByPart[part.id]) : null
                 }
+                selected={selectedIds.has(part.id)}
+                onSelectedChange={(next) => toggleSelected(part.id, next)}
                 onUpdate={updatePart}
                 onDelete={isManager ? undefined : deletePart}
+                onMakeAvailable={makeAvailable}
+                onChangeRequester={fieldAgent ? undefined : setRequesterTarget}
+                onClaimCommission={setClaimTarget}
                 stockOriginOptions={
                   isManager && allowedOrigins
                     ? STOCK_ORIGINS.filter((item) => allowedOrigins.includes(item.value))
@@ -488,6 +592,59 @@ export default function AdminPartsPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedIds.size > 0 ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-medium">
+              {selectedIds.size} part{selectedIds.size === 1 ? '' : 's'} selected
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button type="button" variant="accent" onClick={() => setBulkOpen(true)}>
+                Bulk reserve
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <BulkReserveDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        vehicleIds={[]}
+        partIds={selectedPartIds}
+        partLabels={partLabels}
+        defaultShipment="dhl"
+        onCompleted={() => {
+          clearSelection();
+          void fetchParts();
+        }}
+      />
+
+      <ClaimCommissionDialog
+        open={!!claimTarget}
+        onOpenChange={(open) => {
+          if (!open && !actionBusy) setClaimTarget(null);
+        }}
+        title={claimTarget?.name || ''}
+        defaultCurrency={claimTarget?.currency}
+        busy={actionBusy}
+        onSubmit={submitClaim}
+      />
+      <ChangeRequesterDialog
+        open={!!requesterTarget}
+        onOpenChange={(open) => {
+          if (!open && !actionBusy) setRequesterTarget(null);
+        }}
+        title={requesterTarget?.name || ''}
+        defaultName={requesterTarget?.reservation_requester_name}
+        defaultRole={requesterTarget?.reservation_requester_role}
+        busy={actionBusy}
+        onSubmit={submitRequester}
+      />
     </div>
   );
 }

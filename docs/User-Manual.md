@@ -161,15 +161,15 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 **Customers** — `/admin/customers`
 
 1. Create or search customers.
-2. Open a customer for statement of account (invoices, remittances, allocations).
+2. Open a customer for statement of account (invoices, remittances, allocations, **Buying details** including currently reserved stock).
 3. **Admin only:** enable portal access from the customer SOA page (sends portal credentials via the provision flow).
 
 **Reserve stock** — `/admin/reservations` (field agents + ops)
 
 1. Select an available **vehicle or part** and customer. Field agents only see **available** units plus stock **they** reserved.
 2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release **or** when stock is set to Available (including the list status dropdown). Sales/freelancer requester fields are locked to their profile.
-3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. VAT No expects zero tax rates on the draft.
-4. Release (with republish when appropriate) if the deal does not proceed.
+3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. VAT No expects zero tax rates on the draft. The customer SOA **Buying details** updates for the reserved unit.
+4. Release (with republish when appropriate) if the deal does not proceed — unpaid open reservation proformas cancel automatically so SOA Buying clears.
 
 **Invoices** — `/admin/invoices`
 

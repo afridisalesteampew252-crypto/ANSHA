@@ -792,7 +792,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
       <StockLinkedInvoices vehicleId={vehicle.id} />
 
-      <Card className="overflow-hidden">
+      <Card id="photos" className="scroll-mt-24 overflow-hidden">
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>

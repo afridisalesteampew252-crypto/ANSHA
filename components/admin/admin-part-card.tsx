@@ -2,9 +2,29 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from 'next/link';
-import { BookmarkPlus, Eye, Pencil, Trash2, Wrench } from 'lucide-react';
+import {
+  Banknote,
+  ChevronDown,
+  Eye,
+  FileText,
+  ImageMinus,
+  Pencil,
+  ReceiptText,
+  RotateCcw,
+  Trash2,
+  UserRound,
+  Wrench,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { conditionLabels } from '@/lib/site-config';
@@ -30,8 +50,13 @@ type Props = {
   reservedByLabel?: string | null;
   salesStatusLabel?: string | null;
   shipmentStatusLabel?: string | null;
+  selected?: boolean;
+  onSelectedChange?: (selected: boolean) => void;
   onUpdate?: (id: string, changes: Record<string, unknown>) => void;
   onDelete?: (part: PartWithRelations) => void;
+  onMakeAvailable?: (part: PartWithRelations) => void;
+  onChangeRequester?: (part: PartWithRelations) => void;
+  onClaimCommission?: (part: PartWithRelations) => void;
   stockOriginOptions?: ReadonlyArray<{ value: string; label: string }>;
 };
 
@@ -54,21 +79,61 @@ export function AdminPartCard({
   reservedByLabel,
   salesStatusLabel,
   shipmentStatusLabel,
+  selected = false,
+  onSelectedChange,
   onUpdate,
   onDelete,
+  onMakeAvailable,
+  onChangeRequester,
+  onClaimCommission,
   stockOriginOptions,
 }: Props) {
   const cover = part.part_photos?.find((photo) => photo.is_cover) || part.part_photos?.[0];
   const photoUrl = cover ? publicPartImageUrl(cover.storage_path) : '';
   const status = part.stock_status || 'available';
   const canReserve = status === 'available' && part.quantity > 0;
+  const isReserved = status === 'reserved';
+  const isSold = status === 'sold';
+  const selectable = Boolean(onSelectedChange) && canReserve;
   const fob = money(part.price_fob ?? part.price, part.currency);
   const categoryName = part.categories?.name;
   const compat = (part.part_compatibility || []).slice(0, 2);
   const compatLabel = compat.map((c) => `${c.make} ${c.model}`.trim()).join(', ');
+  const invoiceHref = (() => {
+    const params = new URLSearchParams();
+    params.set('part', part.id);
+    if (part.reserved_customer_id) params.set('customer', part.reserved_customer_id);
+    return `/admin/invoices/new?${params.toString()}`;
+  })();
+  const creditNoteHref = (() => {
+    const params = new URLSearchParams();
+    params.set('part', part.id);
+    if (part.reserved_customer_id) params.set('customer', part.reserved_customer_id);
+    params.set('reference', 'Credit note');
+    return `/admin/invoices/new?${params.toString()}`;
+  })();
 
   return (
-    <div className="grid gap-3 rounded-lg border bg-card p-3 shadow-sm sm:grid-cols-[5.5rem_minmax(0,1fr)_auto] lg:grid-cols-[5.5rem_minmax(12rem,1.3fr)_minmax(7rem,0.8fr)_minmax(8rem,0.9fr)_minmax(10rem,1.1fr)]">
+    <div
+      className={cn(
+        'grid gap-3 rounded-lg border bg-card p-3 shadow-sm sm:grid-cols-[auto_5.5rem_minmax(0,1fr)_auto] lg:grid-cols-[auto_5.5rem_minmax(12rem,1.3fr)_minmax(7rem,0.8fr)_minmax(8rem,0.9fr)_minmax(10rem,1.1fr)]',
+        selected && 'border-accent/60 ring-1 ring-accent/30'
+      )}
+    >
+      {onSelectedChange ? (
+        <div className="flex items-start pt-1">
+          <Checkbox
+            checked={selected}
+            disabled={!selectable}
+            onCheckedChange={(value) => onSelectedChange(value === true)}
+            aria-label={
+              selectable
+                ? `Select ${part.name} for bulk reserve`
+                : 'Only available stock can be bulk-reserved'
+            }
+          />
+        </div>
+      ) : null}
       <div className="h-16 w-20 overflow-hidden rounded-md bg-secondary">
         {photoUrl ? (
           <img src={photoUrl} alt="" className="h-full w-full object-contain p-1" />
@@ -163,51 +228,132 @@ export function AdminPartCard({
       </div>
 
       <div className="flex flex-col gap-2 sm:col-span-3 lg:col-span-1 lg:items-end">
-        <div className="flex flex-wrap gap-1.5 lg:justify-end">
-          {canReserve ? (
-            <Button asChild size="sm" variant="accent">
-              <Link href={`/admin/reservations?part=${part.id}`}>
-                <BookmarkPlus className="h-3.5 w-3.5" />
-                Reserve
-              </Link>
-            </Button>
-          ) : (
+        <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+          {!canReserve ? (
             <span className="self-center text-[11px] text-muted-foreground">
               {status === 'reserved' ? 'Reserved' : status === 'sold' ? 'Sold' : 'Unavailable'}
             </span>
-          )}
-          {!fieldAgent ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onUpdate?.(part.id, { is_published: !part.is_published })}
-            >
-              {part.is_published ? 'Unpublish' : 'Publish'}
-            </Button>
           ) : null}
-          <Button asChild size="sm" variant="ghost">
-            <Link href={`/parts/${part.slug}`} target="_blank">
-              <Eye className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-          {!fieldAgent ? (
-            <>
-              <Button asChild size="sm" variant="ghost">
-                <Link href={`/admin/parts/${part.id}`}>
-                  <Pencil className="h-3.5 w-3.5" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="accent" aria-label={`Actions for ${part.name}`}>
+                Actions
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {!fieldAgent ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/parts/${part.id}`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit stock details
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
+              {isReserved || isSold ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href={invoiceHref}>
+                      <FileText className="h-3.5 w-3.5" />
+                      Generate Invoice
+                    </Link>
+                  </DropdownMenuItem>
+                  {isSold && onClaimCommission ? (
+                    <DropdownMenuItem onSelect={() => onClaimCommission(part)}>
+                      <Banknote className="h-3.5 w-3.5" />
+                      Claim commission
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem disabled>
+                      <Banknote className="h-3.5 w-3.5" />
+                      Record Commission Payment
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link href={creditNoteHref}>
+                      <ReceiptText className="h-3.5 w-3.5" />
+                      Credit note
+                    </Link>
+                  </DropdownMenuItem>
+                  {!fieldAgent ? (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/admin/parts/${part.id}`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                        Fix profit data
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                </>
+              ) : null}
+              {!fieldAgent ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/parts/${part.id}`}>
+                    <Eye className="h-3.5 w-3.5" />
+                    View stock details
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem asChild>
+                <Link href={`/parts/${part.slug}`} target="_blank">
+                  <Eye className="h-3.5 w-3.5" />
+                  View public listing
                 </Link>
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-destructive"
-                onClick={() => onDelete?.(part)}
-                aria-label={`Delete ${part.name}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          ) : null}
+              </DropdownMenuItem>
+              {canReserve ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/reservations?part=${part.id}`}>Reserve part</Link>
+                </DropdownMenuItem>
+              ) : null}
+              {!fieldAgent ? (
+                <DropdownMenuItem
+                  onSelect={() => onUpdate?.(part.id, { is_published: !part.is_published })}
+                >
+                  {part.is_published ? 'Unpublish' : 'Publish'}
+                </DropdownMenuItem>
+              ) : null}
+              {isReserved || isSold ? (
+                <>
+                  <DropdownMenuSeparator />
+                  {onMakeAvailable ? (
+                    <DropdownMenuItem
+                      className="text-pink-600 focus:text-pink-700 dark:text-pink-400 dark:focus:text-pink-300"
+                      onSelect={() => onMakeAvailable(part)}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Make Available
+                    </DropdownMenuItem>
+                  ) : null}
+                  {isReserved && !fieldAgent && onChangeRequester ? (
+                    <DropdownMenuItem
+                      className="text-violet-600 focus:text-violet-700 dark:text-violet-400 dark:focus:text-violet-300"
+                      onSelect={() => onChangeRequester(part)}
+                    >
+                      <UserRound className="h-3.5 w-3.5" />
+                      Change Requester
+                    </DropdownMenuItem>
+                  ) : null}
+                </>
+              ) : null}
+              {!fieldAgent ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/admin/parts/${part.id}#photos`}>
+                      <ImageMinus className="h-3.5 w-3.5" />
+                      Manage images
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => onDelete?.(part)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         {!fieldAgent ? (
           <div className="grid w-full gap-2 sm:grid-cols-2 lg:max-w-xs">

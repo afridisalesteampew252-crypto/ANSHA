@@ -4,14 +4,18 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Car, ChevronDown, Filter, Gavel, Loader2, Plus, Search, Ship } from 'lucide-react';
+import { Car, ChevronDown, Download, Filter, FileSpreadsheet, Gavel, Loader2, Plus, Search, Ship } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminVehicleCard } from '@/components/admin/admin-vehicle-card';
+import { BulkReserveDialog } from '@/components/admin/bulk-reserve-dialog';
+import { ChangeRequesterDialog } from '@/components/admin/change-requester-dialog';
+import { ClaimCommissionDialog } from '@/components/admin/claim-commission-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { downloadRowsAsXlsx } from '@/lib/export-excel';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import { isFieldAgentRole } from '@/lib/admin-rbac';
@@ -84,6 +88,12 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
   const [invoiceByVehicle, setInvoiceByVehicle] = useState<Record<string, string>>({});
   const [role, setRole] = useState<AdminRole | null>(null);
   const [allowedOrigins, setAllowedOrigins] = useState<string[] | null>(null);
+  const [claimTarget, setClaimTarget] = useState<VehicleWithPhotos | null>(null);
+  const [requesterTarget, setRequesterTarget] = useState<VehicleWithPhotos | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
   const fieldAgent = isFieldAgentRole(role);
   const isManager = role === 'manager';
   const machineryFocus = vehicleClass === 'machinery';
@@ -312,9 +322,139 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     ]
   );
 
+  const availableFiltered = useMemo(
+    () => filtered.filter((v) => v.stock_status === 'available'),
+    [filtered]
+  );
+  const selectedVehicleIds = useMemo(() => Array.from(selectedIds), [selectedIds]);
+  const vehicleLabels = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const v of vehicles) {
+      map[v.id] =
+        v.stock_number || v.chassis_number || v.title || v.id.slice(0, 8);
+    }
+    return map;
+  }, [vehicles]);
+
+  function toggleSelected(id: string, next: boolean) {
+    setSelectedIds((prev) => {
+      const copy = new Set(prev);
+      if (next) copy.add(id);
+      else copy.delete(id);
+      return copy;
+    });
+  }
+
+  function selectAllAvailable() {
+    setSelectedIds(new Set(availableFiltered.map((v) => v.id)));
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  async function exportFilteredVehicles() {
+    if (filtered.length === 0) {
+      toast.error('No vehicles match the current filters.');
+      return;
+    }
+    setExporting(true);
+    try {
+      const customerIds = Array.from(
+        new Set(filtered.map((v) => v.reserved_customer_id).filter(Boolean))
+      ) as string[];
+      const customerNames: Record<string, string> = {};
+      if (customerIds.length) {
+        const { data: customers } = await supabase
+          .from('customers')
+          .select('id,full_name,customer_code')
+          .in('id', customerIds);
+        for (const row of customers || []) {
+          customerNames[row.id] = row.full_name || row.customer_code || row.id.slice(0, 8);
+        }
+      }
+
+      const poolSlug = isAuction ? 'auction-stock' : 'vehicles';
+      await downloadRowsAsXlsx({
+        filename: `ansha-${poolSlug}`,
+        sheetName: isAuction ? 'Auction stock' : 'Vehicles',
+        columns: [
+          { header: 'Stock number', key: 'stock_number', width: 16 },
+          { header: 'Title', key: 'title', width: 36 },
+          { header: 'Chassis', key: 'chassis_number', width: 20 },
+          { header: 'Chassis code', key: 'chassis_code', width: 14 },
+          { header: 'Make', key: 'make', width: 14 },
+          { header: 'Model', key: 'model', width: 16 },
+          { header: 'Year', key: 'year', width: 8 },
+          { header: 'Class', key: 'vehicle_class', width: 16 },
+          { header: 'Origin', key: 'origin', width: 16 },
+          { header: 'Location', key: 'location', width: 18 },
+          { header: 'Stock status', key: 'stock_status', width: 12 },
+          { header: 'Sales status', key: 'sales_status', width: 14 },
+          { header: 'Shipment status', key: 'shipment_status', width: 14 },
+          { header: 'Price', key: 'price', width: 12 },
+          { header: 'Price FOB', key: 'price_fob', width: 12 },
+          { header: 'Currency', key: 'currency', width: 10 },
+          { header: 'Purchase price', key: 'purchase_price', width: 14 },
+          { header: 'Purchase currency', key: 'purchase_currency', width: 12 },
+          { header: 'Purchase date', key: 'purchase_date', width: 12 },
+          { header: 'Reserved customer', key: 'reserved_customer', width: 22 },
+          { header: 'Requester name', key: 'requester_name', width: 18 },
+          { header: 'Requester role', key: 'requester_role', width: 12 },
+          { header: 'Agent', key: 'agent', width: 18 },
+          { header: 'Pool', key: 'pool', width: 18 },
+          { header: 'Published', key: 'published', width: 10 },
+          { header: 'Lifecycle', key: 'lifecycle', width: 16 },
+          { header: 'Created', key: 'created_at', width: 12 },
+          { header: 'Sold at', key: 'sold_at', width: 12 },
+        ],
+        rows: filtered.map((vehicle) => {
+          const ship = shipmentByVehicle[vehicle.id];
+          return {
+            stock_number: vehicle.stock_number,
+            title: vehicle.title,
+            chassis_number: vehicle.chassis_number,
+            chassis_code: vehicle.chassis_code,
+            make: vehicle.make,
+            model: vehicle.model,
+            year: vehicle.year,
+            vehicle_class: vehicleClassLabel(vehicle.vehicle_class),
+            origin: stockOriginLabel(vehicle.stock_origin),
+            location: vehicle.location,
+            stock_status: vehicle.stock_status,
+            sales_status: VEHICLE_SALES_STATUS_LABELS[salesStatusOf(vehicle)],
+            shipment_status: ship ? exportShipmentStatusLabel(ship) : null,
+            price: vehicle.price,
+            price_fob: vehicle.price_fob,
+            currency: vehicle.currency,
+            purchase_price: vehicle.purchase_price,
+            purchase_currency: vehicle.purchase_currency,
+            purchase_date: vehicle.purchase_date,
+            reserved_customer: vehicle.reserved_customer_id
+              ? customerNames[vehicle.reserved_customer_id] || vehicle.reserved_customer_id
+              : null,
+            requester_name: vehicle.reservation_requester_name,
+            requester_role: vehicle.reservation_requester_role,
+            agent: vehicle.reserved_by ? agentNames[vehicle.reserved_by] || vehicle.reserved_by : null,
+            pool: stockPoolLabel(vehicle.stock_pool),
+            published: vehicle.is_published ? 'Yes' : 'No',
+            lifecycle: lifecycleStageLabel(vehicle.lifecycle_stage),
+            created_at: vehicle.created_at ? vehicle.created_at.slice(0, 10) : null,
+            sold_at: vehicle.sold_at ? vehicle.sold_at.slice(0, 10) : null,
+          };
+        }),
+      });
+      toast.success(`Exported ${filtered.length} vehicle${filtered.length === 1 ? '' : 's'}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Excel export failed.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function updateVehicle(id: string, changes: Record<string, unknown>, success: string) {
     const { error } = await supabase.from('vehicles').update(changes).eq('id', id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(success);
     await fetchVehicles();
   }
@@ -336,7 +476,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
       changes.purchase_date = new Date().toISOString().slice(0, 10);
     }
     const { error } = await supabase.from('vehicles').update(changes).eq('id', vehicle.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(`Moved to ${label}.`);
     await fetchVehicles();
   }
@@ -346,7 +486,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
       p_vehicle_id: vehicle.id,
       p_publish: publish,
     });
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(publish ? 'Published (available stock only).' : 'Unpublished from website.');
     await fetchVehicles();
   }
@@ -354,8 +494,57 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
   async function removeVehicle(vehicle: VehicleWithPhotos) {
     if (!window.confirm(`Delete "${vehicle.title}" permanently?`)) return;
     const { error } = await supabase.from('vehicles').delete().eq('id', vehicle.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success('Vehicle deleted.');
+    await fetchVehicles();
+  }
+
+  async function makeAvailable(vehicle: VehicleWithPhotos) {
+    if (
+      !window.confirm(
+        `Make "${vehicle.title}" available again? This clears the reservation and linked SOA.`
+      )
+    ) {
+      return;
+    }
+    await updateVehicle(vehicle.id, { stock_status: 'available' }, 'Vehicle marked available.');
+  }
+
+  async function submitClaim(payload: { amount: number; currency: string; notes: string }) {
+    if (!claimTarget) return;
+    setActionBusy(true);
+    const { error } = await supabase.rpc('claim_stock_commission', {
+      p_amount: payload.amount,
+      p_currency: payload.currency,
+      p_vehicle_id: claimTarget.id,
+      p_part_id: null,
+      p_invoice_id: null,
+      p_notes: payload.notes || null,
+      p_claimant_id: null,
+    });
+    setActionBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Commission claim submitted.');
+    setClaimTarget(null);
+  }
+
+  async function submitRequester(payload: {
+    name: string;
+    role: 'sales' | 'freelancer' | 'manager' | 'admin' | null;
+  }) {
+    if (!requesterTarget) return;
+    setActionBusy(true);
+    const { error } = await supabase
+      .from('vehicles')
+      .update({
+        reservation_requester_name: payload.name,
+        reservation_requester_role: payload.role,
+      })
+      .eq('id', requesterTarget.id);
+    setActionBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Requester updated.');
+    setRequesterTarget(null);
     await fetchVehicles();
   }
 
@@ -586,7 +775,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
                   </div>
                 </>
               ) : null}
-              <div className="flex items-end">
+              <div className="flex flex-wrap items-end gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -601,6 +790,19 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
                   }}
                 >
                   Reset
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={exporting || filtered.length === 0}
+                  onClick={() => void exportFilteredVehicles()}
+                >
+                  {exporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileSpreadsheet className="h-4 w-4" />
+                  )}
+                  Export Excel
                 </Button>
               </div>
             </CardContent>
@@ -626,15 +828,44 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
       </div>
 
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0 py-3">
+        <CardHeader className="flex-row flex-wrap items-center justify-between space-y-0 gap-3 py-3">
           <CardTitle className="text-base">
             Stock list
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {filtered.length} of {vehicles.length}
             </span>
           </CardTitle>
+          <div className="flex flex-wrap gap-2">
+            {availableFiltered.length > 0 ? (
+              <>
+                <Button type="button" size="sm" variant="outline" onClick={selectAllAvailable}>
+                  Select available ({availableFiltered.length})
+                </Button>
+                {selectedIds.size > 0 ? (
+                  <Button type="button" size="sm" variant="ghost" onClick={clearSelection}>
+                    Clear
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              disabled={exporting || filtered.length === 0 || loading}
+              onClick={() => void exportFilteredVehicles()}
+            >
+              {exporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              Export Excel
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-2 p-2 sm:p-4">
+        <CardContent className={cn('space-y-2 p-2 sm:p-4', selectedIds.size > 0 && 'pb-24')}>
           {loading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -663,16 +894,73 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
                     ? exportShipmentStatusLabel(shipmentByVehicle[vehicle.id])
                     : null
                 }
+                selected={selectedIds.has(vehicle.id)}
+                onSelectedChange={(next) => toggleSelected(vehicle.id, next)}
                 onUpdate={updateVehicle}
                 onSetListing={setListing}
                 onDelete={isManager ? undefined : removeVehicle}
                 onTransferPool={isManager ? undefined : transferStockPool}
+                onMakeAvailable={makeAvailable}
+                onChangeRequester={fieldAgent ? undefined : setRequesterTarget}
+                onClaimCommission={setClaimTarget}
                 stockOriginOptions={originOptions}
               />
             ))
           )}
         </CardContent>
       </Card>
+
+      {selectedIds.size > 0 ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-medium">
+              {selectedIds.size} vehicle{selectedIds.size === 1 ? '' : 's'} selected
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={clearSelection}>
+                Clear
+              </Button>
+              <Button type="button" variant="accent" onClick={() => setBulkOpen(true)}>
+                Bulk reserve
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <BulkReserveDialog
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        vehicleIds={selectedVehicleIds}
+        partIds={[]}
+        vehicleLabels={vehicleLabels}
+        onCompleted={() => {
+          clearSelection();
+          void fetchVehicles();
+        }}
+      />
+
+      <ClaimCommissionDialog
+        open={!!claimTarget}
+        onOpenChange={(open) => {
+          if (!open && !actionBusy) setClaimTarget(null);
+        }}
+        title={claimTarget?.title || ''}
+        defaultCurrency={claimTarget?.currency}
+        busy={actionBusy}
+        onSubmit={submitClaim}
+      />
+      <ChangeRequesterDialog
+        open={!!requesterTarget}
+        onOpenChange={(open) => {
+          if (!open && !actionBusy) setRequesterTarget(null);
+        }}
+        title={requesterTarget?.title || ''}
+        defaultName={requesterTarget?.reservation_requester_name}
+        defaultRole={requesterTarget?.reservation_requester_role}
+        busy={actionBusy}
+        onSubmit={submitRequester}
+      />
     </div>
   );
 }

@@ -118,7 +118,11 @@ export default function RemittanceOfficesPage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Remittances</p>
         <h1 className="text-2xl font-black tracking-tight">Office picklist</h1>
         <p className="text-sm text-muted-foreground">
-          Lightweight list used when assigning an office on a user profile. Remittance dashboard reports by that office — this is not HR master data.
+          Lightweight list used when assigning an office on a user profile (Team →{' '}
+          <Link href="/admin/users" className="font-medium text-primary underline-offset-2 hover:underline">
+            Users
+          </Link>
+          ). Remittance dashboard reports by that office — this is not HR master data.
         </p>
         <RemittanceSubNav canManageFinance unknownCount={unknownCount} />
       </div>

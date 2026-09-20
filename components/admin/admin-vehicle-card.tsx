@@ -4,20 +4,33 @@
 import { useState, type KeyboardEvent, type MouseEvent } from 'react';
 import Link from 'next/link';
 import {
-  BookmarkPlus,
+  Banknote,
   Car,
-  CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Edit,
   Eye,
+  FileText,
   Gavel,
+  ImageMinus,
   PackagePlus,
+  Pencil,
+  ReceiptText,
+  RotateCcw,
   Trash2,
+  UserRound,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { lifecycleStageLabel, type LifecycleStage } from '@/lib/vehicle-lifecycle';
@@ -56,10 +69,15 @@ type Props = {
   reservedByLabel?: string | null;
   salesStatusLabel?: string | null;
   shipmentStatusLabel?: string | null;
+  selected?: boolean;
+  onSelectedChange?: (selected: boolean) => void;
   onUpdate?: (id: string, changes: Record<string, unknown>, success: string) => void;
   onSetListing?: (vehicle: VehicleWithPhotos, publish: boolean) => void;
   onDelete?: (vehicle: VehicleWithPhotos) => void;
   onTransferPool?: (vehicle: VehicleWithPhotos, nextPool: StockPool) => void;
+  onMakeAvailable?: (vehicle: VehicleWithPhotos) => void;
+  onChangeRequester?: (vehicle: VehicleWithPhotos) => void;
+  onClaimCommission?: (vehicle: VehicleWithPhotos) => void;
   stockOriginOptions?: ReadonlyArray<{ value: string; label: string }>;
 };
 
@@ -164,10 +182,15 @@ export function AdminVehicleCard({
   reservedByLabel,
   salesStatusLabel,
   shipmentStatusLabel,
+  selected = false,
+  onSelectedChange,
   onUpdate,
   onSetListing,
   onDelete,
   onTransferPool,
+  onMakeAvailable,
+  onChangeRequester,
+  onClaimCommission,
   stockOriginOptions,
 }: Props) {
   const cover = pickVehicleCoverPhoto(vehicle.vehicle_photos);
@@ -176,12 +199,47 @@ export function AdminVehicleCard({
   const stage = (vehicle.lifecycle_stage || 'unassigned') as LifecycleStage;
   const auctionPool = isAuctionStockPool(vehicle.stock_pool);
   const canReserve = status === 'available';
+  const isReserved = status === 'reserved';
+  const isSold = status === 'sold';
+  const selectable = Boolean(onSelectedChange) && canReserve;
   const stockRef =
     vehicle.stock_number || vehicle.chassis_number || vehicle.chassis_code || vehicle.id.slice(0, 8);
   const fob = money(vehicle.price_fob ?? vehicle.price, vehicle.currency);
+  const invoiceHref = (() => {
+    const params = new URLSearchParams();
+    params.set('vehicle', vehicle.id);
+    if (vehicle.reserved_customer_id) params.set('customer', vehicle.reserved_customer_id);
+    return `/admin/invoices/new?${params.toString()}`;
+  })();
+  const creditNoteHref = (() => {
+    const params = new URLSearchParams();
+    params.set('vehicle', vehicle.id);
+    if (vehicle.reserved_customer_id) params.set('customer', vehicle.reserved_customer_id);
+    params.set('reference', 'Credit note');
+    return `/admin/invoices/new?${params.toString()}`;
+  })();
 
   return (
-    <div className="grid gap-3 rounded-lg border bg-card p-3 shadow-sm sm:grid-cols-[7rem_minmax(0,1fr)_auto] lg:grid-cols-[7rem_minmax(12rem,1.3fr)_minmax(8rem,0.9fr)_minmax(9rem,1fr)_minmax(10rem,1.1fr)]">
+    <div
+      className={cn(
+        'grid gap-3 rounded-lg border bg-card p-3 shadow-sm sm:grid-cols-[auto_7rem_minmax(0,1fr)_auto] lg:grid-cols-[auto_7rem_minmax(12rem,1.3fr)_minmax(8rem,0.9fr)_minmax(9rem,1fr)_minmax(10rem,1.1fr)]',
+        selected && 'border-accent/60 ring-1 ring-accent/30'
+      )}
+    >
+      {onSelectedChange ? (
+        <div className="flex items-start pt-1">
+          <Checkbox
+            checked={selected}
+            disabled={!selectable}
+            onCheckedChange={(value) => onSelectedChange(value === true)}
+            aria-label={
+              selectable
+                ? `Select ${vehicle.title} for bulk reserve`
+                : 'Only available stock can be bulk-reserved'
+            }
+          />
+        </div>
+      ) : null}
       <div className="h-20 w-28 overflow-hidden rounded-md bg-secondary">
         {photoUrl ? (
           <img src={photoUrl} alt="" className="h-full w-full object-cover" />
@@ -278,71 +336,140 @@ export function AdminVehicleCard({
       </div>
 
       <div className="flex flex-col gap-2 sm:col-span-3 lg:col-span-1 lg:items-end">
-        <div className="flex flex-wrap gap-1.5 lg:justify-end">
-          {canReserve ? (
-            <Button asChild size="sm" variant="accent">
-              <Link href={`/admin/reservations?vehicle=${vehicle.id}`}>
-                <BookmarkPlus className="h-3.5 w-3.5" />
-                Reserve
-              </Link>
-            </Button>
-          ) : null}
-          {!fieldAgent && status === 'available' && !vehicle.is_published ? (
-            <Button size="sm" variant="outline" onClick={() => onSetListing?.(vehicle, true)}>
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Publish
-            </Button>
-          ) : null}
-          {!fieldAgent && vehicle.is_published ? (
-            <Button size="sm" variant="outline" onClick={() => onSetListing?.(vehicle, false)}>
-              Unpublish
-            </Button>
-          ) : null}
-          {!fieldAgent && auctionPool && onTransferPool ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onTransferPool(vehicle, 'owned')}
-              title="Purchase into owned Vehicles inventory"
-            >
-              <PackagePlus className="h-3.5 w-3.5" />
-              To inventory
-            </Button>
-          ) : null}
-          {!fieldAgent && !auctionPool && onTransferPool ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onTransferPool(vehicle, 'auction_third_party')}
-              title="Mark as third-party auction stock"
-            >
-              <Gavel className="h-3.5 w-3.5" />
-              To auction
-            </Button>
-          ) : null}
-          <Button asChild size="sm" variant="ghost">
-            <Link href={`/vehicles/${vehicle.slug}`} target="_blank">
-              <Eye className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-          {!fieldAgent ? (
-            <>
-              <Button asChild size="sm" variant="ghost">
-                <Link href={`/admin/vehicles/${vehicle.id}`}>
-                  <Edit className="h-3.5 w-3.5" />
+        <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="accent" aria-label={`Actions for ${vehicle.title}`}>
+                Actions
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {!fieldAgent ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/vehicles/${vehicle.id}`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit stock details
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
+              {!fieldAgent && auctionPool && onTransferPool ? (
+                <DropdownMenuItem
+                  className="text-primary focus:text-primary"
+                  onSelect={() => onTransferPool(vehicle, 'owned')}
+                >
+                  <PackagePlus className="h-3.5 w-3.5" />
+                  Assign to inventory
+                </DropdownMenuItem>
+              ) : null}
+              {!fieldAgent && !auctionPool && onTransferPool ? (
+                <DropdownMenuItem onSelect={() => onTransferPool(vehicle, 'auction_third_party')}>
+                  <Gavel className="h-3.5 w-3.5" />
+                  Assign to auction stock
+                </DropdownMenuItem>
+              ) : null}
+              {isReserved || isSold ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href={invoiceHref}>
+                      <FileText className="h-3.5 w-3.5" />
+                      Generate Invoice
+                    </Link>
+                  </DropdownMenuItem>
+                  {isSold && onClaimCommission ? (
+                    <DropdownMenuItem onSelect={() => onClaimCommission(vehicle)}>
+                      <Banknote className="h-3.5 w-3.5" />
+                      Claim commission
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem disabled>
+                      <Banknote className="h-3.5 w-3.5" />
+                      Record Commission Payment
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link href={creditNoteHref}>
+                      <ReceiptText className="h-3.5 w-3.5" />
+                      Credit note
+                    </Link>
+                  </DropdownMenuItem>
+                  {!fieldAgent ? (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/admin/vehicles/${vehicle.id}`}>
+                        <Pencil className="h-3.5 w-3.5" />
+                        Fix profit data
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
+                </>
+              ) : null}
+              {!fieldAgent ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/vehicles/${vehicle.id}`}>
+                    <Eye className="h-3.5 w-3.5" />
+                    View stock details
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
+              <DropdownMenuItem asChild>
+                <Link href={`/vehicles/${vehicle.slug}`} target="_blank">
+                  <Eye className="h-3.5 w-3.5" />
+                  View public listing
                 </Link>
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-destructive"
-                onClick={() => onDelete?.(vehicle)}
-                aria-label={`Delete ${vehicle.title}`}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </>
-          ) : null}
+              </DropdownMenuItem>
+              {canReserve ? (
+                <DropdownMenuItem asChild>
+                  <Link href={`/admin/reservations?vehicle=${vehicle.id}`}>Reserve vehicle</Link>
+                </DropdownMenuItem>
+              ) : null}
+              {!fieldAgent && onSetListing ? (
+                <DropdownMenuItem onSelect={() => onSetListing(vehicle, !vehicle.is_published)}>
+                  {vehicle.is_published ? 'Unpublish' : 'Publish'}
+                </DropdownMenuItem>
+              ) : null}
+              {isReserved || isSold ? (
+                <>
+                  <DropdownMenuSeparator />
+                  {onMakeAvailable ? (
+                    <DropdownMenuItem
+                      className="text-pink-600 focus:text-pink-700 dark:text-pink-400 dark:focus:text-pink-300"
+                      onSelect={() => onMakeAvailable(vehicle)}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Make Available
+                    </DropdownMenuItem>
+                  ) : null}
+                  {isReserved && !fieldAgent && onChangeRequester ? (
+                    <DropdownMenuItem
+                      className="text-violet-600 focus:text-violet-700 dark:text-violet-400 dark:focus:text-violet-300"
+                      onSelect={() => onChangeRequester(vehicle)}
+                    >
+                      <UserRound className="h-3.5 w-3.5" />
+                      Change Requester
+                    </DropdownMenuItem>
+                  ) : null}
+                </>
+              ) : null}
+              {!fieldAgent ? (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/admin/vehicles/${vehicle.id}#photos`}>
+                      <ImageMinus className="h-3.5 w-3.5" />
+                      Manage images
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => onDelete?.(vehicle)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         {!fieldAgent ? (
           <div className="grid w-full gap-2 sm:grid-cols-2 lg:max-w-xs">

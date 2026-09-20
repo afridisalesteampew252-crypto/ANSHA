@@ -118,18 +118,22 @@ export default function UnknownRemittancesPage() {
       toast.error('Select a customer to link.');
       return;
     }
+    if (!receivedBy) {
+      toast.error('Select a linked user (agent) to confirm this TTS.');
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.rpc('link_remittance', {
       p_remittance_id: linkingId,
       p_customer_id: customerId,
-      p_received_by: receivedBy || null,
+      p_received_by: receivedBy,
       p_office_id: officeId || null,
       p_shift_id: shiftId || null,
-      p_status: 'pending',
+      p_status: 'confirmed',
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success('Remittance linked.');
+    toast.success('Remittance linked and confirmed.');
     setLinkingId(null);
     await load();
   };
@@ -157,7 +161,8 @@ export default function UnknownRemittancesPage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-accent">Remittances</p>
         <h1 className="text-2xl font-black tracking-tight">Unknown TTS</h1>
         <p className="text-sm text-muted-foreground">
-          Unmatched bank transfers — link a customer and user. Office/shift come from the user&apos;s profile (override optional).
+          Unconfirmed unmatched bank transfers — link a customer and agent to auto-confirm.
+          Office/shift come from the user&apos;s profile (override optional).
         </p>
         <RemittanceSubNav canManageFinance unknownCount={unknownCount} />
       </div>
@@ -180,7 +185,7 @@ export default function UnknownRemittancesPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Linked user</Label>
+                <Label>Linked user (agent) *</Label>
                 <SearchableSelect
                   value={receivedBy}
                   onValueChange={(v) => {
@@ -192,7 +197,6 @@ export default function UnknownRemittancesPage() {
                   options={staffOptions}
                   placeholder="Staff who received"
                   searchPlaceholder="Search staff…"
-                  clearLabel="No user"
                 />
               </div>
               <div className="space-y-1.5">
@@ -220,7 +224,7 @@ export default function UnknownRemittancesPage() {
                 />
               </div>
               <div className="flex items-center gap-2 md:col-span-2 xl:col-span-3">
-                <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}Save link</Button>
+                <Button disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}Link & confirm</Button>
                 <Button type="button" variant="outline" onClick={() => setLinkingId(null)}>Cancel</Button>
               </div>
             </form>
@@ -237,6 +241,7 @@ export default function UnknownRemittancesPage() {
                 <th className="p-4">TTS / reference</th>
                 <th className="p-4">Date</th>
                 <th className="p-4 text-right">Amount</th>
+                <th className="p-4">Status</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -250,17 +255,22 @@ export default function UnknownRemittancesPage() {
                   </td>
                   <td className="p-4">{row.received_date}</td>
                   <td className="p-4 text-right font-semibold">{money(row.amount, row.currency)}</td>
+                  <td className="p-4">
+                    <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-700">
+                      Unconfirmed
+                    </span>
+                  </td>
                   <td className="p-4 text-right">
                     <Button variant="outline" size="sm" onClick={() => startLink(row)}>
                       <Pencil className="h-3.5 w-3.5" />
-                      Link
+                      Link & confirm
                     </Button>
                   </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-12 text-center text-muted-foreground">No unknown remittances.</td>
+                  <td colSpan={6} className="p-12 text-center text-muted-foreground">No unknown remittances.</td>
                 </tr>
               )}
             </tbody>

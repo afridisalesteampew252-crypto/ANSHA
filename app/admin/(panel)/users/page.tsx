@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Loader2, Pencil, ShieldAlert, Upload, UserPlus, UserX, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminProfile, AdminRole, RemittanceOffice, RemittanceShift } from '@/lib/types';
@@ -230,6 +231,17 @@ export default function UsersPage() {
         <p className="text-sm text-muted-foreground">
           Create staff accounts, assign remittance office/shift, set manager stock locations, and deactivate access.
         </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Remittance desk assignment lives on this page (Team → Users). Manage the office/shift lists under{' '}
+          <Link href="/admin/remittances/offices" className="font-medium text-primary underline-offset-2 hover:underline">
+            Remittances → Offices
+          </Link>{' '}
+          and{' '}
+          <Link href="/admin/remittances/shifts" className="font-medium text-primary underline-offset-2 hover:underline">
+            Shifts
+          </Link>
+          .
+        </p>
       </div>
 
       {canManage ? (
@@ -276,42 +288,67 @@ export default function UsersPage() {
                   ))}
                 </select>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="user-office">Remittance office</Label>
-                <select
-                  id="user-office"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  disabled={busy}
-                  value={form.office_id}
-                  onChange={(event) => setForm({ ...form, office_id: event.target.value, shift_id: '' })}
-                >
-                  <option value="">No office</option>
-                  {offices.map((office) => (
-                    <option key={office.id} value={office.id}>
-                      {office.code ? `${office.name} (${office.code})` : office.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-muted-foreground">
-                  Used when tagging remittances to this user and for office-wise remittance dashboard totals.
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="user-shift">Remittance shift</Label>
-                <select
-                  id="user-shift"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  disabled={busy}
-                  value={form.shift_id}
-                  onChange={(event) => setForm({ ...form, shift_id: event.target.value })}
-                >
-                  <option value="">No shift</option>
-                  {filteredShifts.map((shift) => (
-                    <option key={shift.id} value={shift.id}>
-                      {shift.hours_label ? `${shift.name} — ${shift.hours_label}` : shift.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-1.5 rounded-lg border border-border bg-secondary/20 p-3 md:col-span-2 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
+                <div className="space-y-1.5">
+                  <Label htmlFor="user-office">Remittance office</Label>
+                  <select
+                    id="user-office"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    disabled={busy}
+                    value={form.office_id}
+                    onChange={(event) => setForm({ ...form, office_id: event.target.value, shift_id: '' })}
+                  >
+                    <option value="">No office</option>
+                    {offices.map((office) => (
+                      <option key={office.id} value={office.id}>
+                        {office.code ? `${office.name} (${office.code})` : office.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Used when tagging remittances to this user and for office-wise remittance dashboard totals.
+                    {offices.length === 0 ? (
+                      <>
+                        {' '}
+                        No offices yet —{' '}
+                        <Link href="/admin/remittances/offices" className="text-primary underline-offset-2 hover:underline">
+                          add offices
+                        </Link>
+                        .
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="user-shift">Remittance shift</Label>
+                  <select
+                    id="user-shift"
+                    className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                    disabled={busy}
+                    value={form.shift_id}
+                    onChange={(event) => setForm({ ...form, shift_id: event.target.value })}
+                  >
+                    <option value="">No shift</option>
+                    {filteredShifts.map((shift) => (
+                      <option key={shift.id} value={shift.id}>
+                        {shift.hours_label ? `${shift.name} — ${shift.hours_label}` : shift.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Desk shift label (e.g. Morning 9–13), not the HR attendance roster.
+                    {shifts.length === 0 ? (
+                      <>
+                        {' '}
+                        No shifts yet —{' '}
+                        <Link href="/admin/remittances/shifts" className="text-primary underline-offset-2 hover:underline">
+                          add shifts
+                        </Link>
+                        .
+                      </>
+                    ) : null}
+                  </p>
+                </div>
               </div>
               {form.role === 'manager' ? (
                 <div className="space-y-2 rounded-lg border border-border p-3 md:col-span-2">

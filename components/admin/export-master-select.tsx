@@ -12,13 +12,24 @@ type Props = {
   disabled?: boolean;
   id?: string;
   allowCustom?: boolean;
+  /** Override the default kind label (e.g. Source country). */
+  label?: string;
 };
 
 /**
  * Select from Configuration export masters. Optionally allow typing a custom value
  * (stored as free text on the shipment header).
  */
-export function ExportMasterSelect({ kind, value, onChange, disabled, id, allowCustom = true }: Props) {
+export function ExportMasterSelect({
+  kind,
+  value,
+  onChange,
+  disabled,
+  id,
+  allowCustom = true,
+  label,
+}: Props) {
+  const fieldLabel = label || EXPORT_MASTER_KIND_LABELS[kind];
   const [options, setOptions] = useState<ExportMasterOption[]>([]);
   const [custom, setCustom] = useState(false);
 
@@ -46,7 +57,7 @@ export function ExportMasterSelect({ kind, value, onChange, disabled, id, allowC
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{EXPORT_MASTER_KIND_LABELS[kind]}</Label>
+      <Label htmlFor={id}>{fieldLabel}</Label>
       {showCustom ? (
         <input
           id={id}
@@ -54,7 +65,7 @@ export function ExportMasterSelect({ kind, value, onChange, disabled, id, allowC
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={`Type ${EXPORT_MASTER_KIND_LABELS[kind].toLowerCase()}…`}
+          placeholder={`Type ${fieldLabel.toLowerCase()}…`}
         />
       ) : (
         <select

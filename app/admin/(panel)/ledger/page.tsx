@@ -263,15 +263,15 @@ export default function LedgerPage() {
           <h1 className="text-2xl font-bold">General ledger</h1>
           <p className="text-sm text-muted-foreground">
             Chart of accounts and manual journals. Statements live on{' '}
-            <Link href="/admin/reports" className="text-primary underline">
-              Reports
+            <Link href="/admin/reports/financial" className="text-primary underline">
+              Financial statements
             </Link>
             .
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" asChild>
-            <Link href="/admin/reports">P&amp;L / Balance sheet</Link>
+            <Link href="/admin/reports/financial">P&amp;L / Balance sheet</Link>
           </Button>
           <Button onClick={() => setShowJournalForm(true)}>
             <Plus className="h-4 w-4" />
