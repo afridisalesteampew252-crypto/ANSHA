@@ -161,13 +161,19 @@ function describeVin(raw) {
   let make = 'Taiwan';
   let model = 'Passenger';
 
-  // Best-effort WMI / VDS mapping for this Oct 2025 Taiwan lot
+  // WMI / VDS mapping verified against this Taiwan lot's photos/rear badges
   if (wmi === '3TM' || vin.startsWith('3TMCZ')) {
     make = 'Toyota';
     model = 'Tacoma';
+  } else if (vin.startsWith('4T1EZ')) {
+    make = 'Toyota';
+    model = 'Avalon';
   } else if (wmi === '4T1' || vin.startsWith('4T1')) {
     make = 'Toyota';
     model = 'Camry';
+  } else if (vin.startsWith('5N1AL0')) {
+    make = 'Infiniti';
+    model = 'QX60';
   } else if (wmi === '5N1') {
     make = 'Nissan';
     model = 'Rogue';
@@ -177,27 +183,35 @@ function describeVin(raw) {
     else model = 'Sedan';
   } else if (wmi === 'JTJ') {
     make = 'Lexus';
-    if (vin.startsWith('JTJHY')) model = 'RX';
-    else if (vin.startsWith('JTJHZ')) model = 'NX';
+    if (vin.startsWith('JTJHY')) model = 'LX 570';
+    else if (vin.startsWith('JTJHZ')) model = 'RX 350L';
     else model = 'SUV';
   } else if (wmi === 'JTM') {
     make = 'Toyota';
     if (vin.startsWith('JTMRF')) model = 'RAV4';
     else model = 'SUV';
+  } else if (vin.startsWith('SALGS')) {
+    make = 'Land Rover';
+    model = 'Range Rover';
   } else if (wmi === 'SAL') {
     make = 'Land Rover';
     model = 'Range Rover Sport';
   } else if (wmi === 'SCF') {
     make = 'Aston Martin';
-    model = 'DBX';
+    // SCF* is not always DBX — this lot's SCFSMG* unit is a Vantage coupe
+    if (vin.startsWith('SCFSMG')) model = 'Vantage';
+    else model = 'DBX';
   } else if (wmi === 'W1K') {
     make = 'Mercedes-Benz';
-    if (vin.startsWith('W1K7X')) model = 'C-Class';
-    else if (vin.startsWith('W1KZF')) model = 'GLC';
+    if (vin.startsWith('W1K7X')) model = 'AMG GT 53';
+    else if (vin.startsWith('W1KZF')) model = 'AMG E 53';
     else model = 'Passenger';
   } else if (wmi === 'WDC') {
     make = 'Mercedes-Benz';
     model = 'GLK';
+  } else if (vin.startsWith('WDDSJ')) {
+    make = 'Mercedes-Benz';
+    model = 'CLA 250';
   } else if (wmi === 'WDD') {
     make = 'Mercedes-Benz';
     model = 'C-Class';
