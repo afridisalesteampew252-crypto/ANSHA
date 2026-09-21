@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: `How ${siteConfig.name} uses cookies and similar technologies on ${siteConfig.url.replace('https://', '')}.`,
 };
 
-const lastUpdated = '18 September 2026';
+const lastUpdated = '22 September 2026';
 
 export default function CookiePolicyPage() {
   return (
@@ -91,8 +91,8 @@ export default function CookiePolicyPage() {
                   </tr>
                   <tr>
                     <td className="px-3 py-2.5 align-top text-foreground">Analytics</td>
-                    <td className="px-3 py-2.5 align-top">Google Analytics ({siteConfig.googleAnalyticsId})</td>
-                    <td className="px-3 py-2.5 align-top">Measure visits, pages viewed, and traffic sources to improve the Site. May set cookies such as <code className="text-xs text-foreground">_ga</code> and <code className="text-xs text-foreground">_ga_*</code>.</td>
+                    <td className="px-3 py-2.5 align-top">Google Tag Manager ({siteConfig.gtmId}) / Google Analytics (via GTM)</td>
+                    <td className="px-3 py-2.5 align-top">Load marketing and analytics tags (including Google Analytics) through Google Tag Manager to measure visits, pages viewed, and traffic sources. May set cookies such as <code className="text-xs text-foreground">_ga</code>, <code className="text-xs text-foreground">_ga_*</code>, and GTM-related cookies.</td>
                     <td className="px-3 py-2.5 align-top">Up to 2 years</td>
                   </tr>
                   <tr>
@@ -111,7 +111,7 @@ export default function CookiePolicyPage() {
               </table>
             </div>
             <p>
-              Exact cookie names and lifetimes can change when providers update their services. Google’s own description of Analytics cookies is available in Google’s documentation.
+              Exact cookie names and lifetimes can change when providers update their services. Google’s descriptions of Tag Manager and Analytics cookies are available in Google’s documentation.
             </p>
           </section>
 
@@ -133,7 +133,7 @@ export default function CookiePolicyPage() {
             <h2 className="text-xl font-semibold text-foreground">6. Third parties</h2>
             <p>
               Some cookies are set by third parties that process data on our behalf or according to their own policies,
-              including Google (Analytics) and Vercel (hosting, Analytics, Speed Insights). We do not control those
+              including Google (Tag Manager / Analytics) and Vercel (hosting, Analytics, Speed Insights). We do not control those
               providers’ independent privacy practices. Review their published policies for details.
             </p>
           </section>
