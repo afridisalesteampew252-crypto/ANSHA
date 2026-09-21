@@ -71,7 +71,7 @@ Hosting: Vercel project `anshanew`
 
 Live Supabase counts (ops snapshot): **~191** Japan vehicles; **~32** auction-sheet photos; **~2** Dubai vehicles; **~154** Dubai parts; **~16** Japan parts (key-fobs).
 
-Japan Aug 2026 ZIP batches → `stock_origin=japan`, **`stock_pool=auction_third_party`**, published, ask-for-quote. Script: `scripts/import-japan-stock-vehicles.mjs`. WhatsApp/Dubai imports via `scripts/import-whatsapp-parts*.mjs`, `scripts/import-dubai-whatsapp-sep20-stock.mjs`.
+Japan Aug 2026 ZIP batches → `stock_origin=japan`, **`stock_pool=auction_third_party`**, published, ask-for-quote. Script: `scripts/import-japan-stock-vehicles.mjs`. WhatsApp/Dubai imports via `scripts/import-whatsapp-parts*.mjs`, `scripts/import-dubai-whatsapp-sep20-stock.mjs`. Singapore WhatsApp one-off (Lexus RX350 draft): `scripts/import-singapore-rx350-once.mjs`. Taiwan auction ZIP drafts: `scripts/import-taiwan-auction-stock.mjs` (local `_import_taiwan_stock*` media not in git).
 
 ### Edge Functions
 `admin-create-user`, `admin-update-user`, `portal-create-access`, `send-web-push`, `send-outbound-email`, `send-whatsapp`, `remind-request-dues`, `tawk-webhook` (deploy with `--no-verify-jwt`)

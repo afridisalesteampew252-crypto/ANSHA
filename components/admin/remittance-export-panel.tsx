@@ -1,13 +1,14 @@
 'use client';
 
-import { ChevronDown, Download, Eraser, FileSpreadsheet, Loader2, Search } from 'lucide-react';
+import { ChevronDown, Columns3, Download, Eraser, FileSpreadsheet, Loader2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
@@ -100,6 +101,62 @@ function ExportRecordsMenu({
           <Download className="h-3.5 w-3.5" />
           Export CSV
         </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ExportColumnsMenu({
+  columnSelection,
+  onColumnToggle,
+  onSelectAllColumns,
+  onUnselectAllColumns,
+}: {
+  columnSelection: Record<RemittanceExportColumnKey, boolean>;
+  onColumnToggle: (key: RemittanceExportColumnKey, checked: boolean) => void;
+  onSelectAllColumns: () => void;
+  onUnselectAllColumns: () => void;
+}) {
+  const selectedCount = REMITTANCE_EXPORT_COLUMNS.filter((col) => columnSelection[col.key]).length;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="outline" className="gap-1">
+          <Columns3 className="h-4 w-4" />
+          Export columns
+          <span className="text-muted-foreground">({selectedCount})</span>
+          <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-80 w-64 overflow-y-auto">
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            onSelectAllColumns();
+          }}
+        >
+          Select all
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            onUnselectAllColumns();
+          }}
+        >
+          Unselect all
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {REMITTANCE_EXPORT_COLUMNS.map((col) => (
+          <DropdownMenuCheckboxItem
+            key={col.key}
+            checked={columnSelection[col.key]}
+            onCheckedChange={(checked) => onColumnToggle(col.key, checked === true)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            {col.label}
+          </DropdownMenuCheckboxItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -323,33 +380,14 @@ export function RemittanceExportPanel({
           <ExportRecordsMenu exporting={exporting} onExport={onExport} />
         </div>
 
-        <div className="space-y-3 border-t pt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Export columns
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {REMITTANCE_EXPORT_COLUMNS.map((col) => (
-              <label
-                key={col.key}
-                className="flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-2 text-sm hover:bg-secondary/40"
-              >
-                <Checkbox
-                  checked={columnSelection[col.key]}
-                  onCheckedChange={(state) => onColumnToggle(col.key, state === true)}
-                />
-                <span className="leading-tight">{col.label}</span>
-              </label>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <ExportRecordsMenu exporting={exporting} onExport={onExport} />
-            <Button type="button" variant="outline" onClick={onSelectAllColumns}>
-              Select All
-            </Button>
-            <Button type="button" variant="outline" onClick={onUnselectAllColumns}>
-              Unselect All
-            </Button>
-          </div>
+        <div className="flex flex-wrap gap-2 border-t pt-4">
+          <ExportRecordsMenu exporting={exporting} onExport={onExport} />
+          <ExportColumnsMenu
+            columnSelection={columnSelection}
+            onColumnToggle={onColumnToggle}
+            onSelectAllColumns={onSelectAllColumns}
+            onUnselectAllColumns={onUnselectAllColumns}
+          />
         </div>
       </CardContent>
     </Card>

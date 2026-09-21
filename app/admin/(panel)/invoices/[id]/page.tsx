@@ -17,6 +17,7 @@ import {
   INVOICE_UNALLOCATE_DELETE_CONFIRM,
   needsUnallocateBeforeDelete,
 } from '@/lib/invoice-delete';
+import { invoicePrintFilename, printWithInvoiceFilename } from '@/lib/invoice-print-filename';
 
 type Invoice = {
   id: string; invoice_number: string; customer_name: string; customer_company: string | null;
@@ -190,9 +191,20 @@ export default function InvoiceDetailPage() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `${invoice.invoice_number}.json`;
+    anchor.download = `${invoicePrintFilename({
+      invoice_number: invoice.invoice_number,
+      reference: invoice.reference,
+    })}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
+  };
+
+  const printInvoice = () => {
+    if (!invoice) return;
+    printWithInvoiceFilename({
+      invoice_number: invoice.invoice_number,
+      reference: invoice.reference,
+    });
   };
 
   const unallocateRemittances = async () => {
@@ -309,7 +321,7 @@ export default function InvoiceDetailPage() {
             </Button>
           ) : null}
           <Button variant="outline" onClick={exportJson}><FileJson className="h-4 w-4" />Export JSON</Button>
-          <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" />Print A4 / PDF</Button>
+          <Button variant="outline" onClick={printInvoice}><Printer className="h-4 w-4" />Print A4 / PDF</Button>
           {canFinance ? (
             <Button onClick={() => setPaymentOpen((open) => !open)} disabled={invoice.status === 'cancelled' || invoice.balance_due <= 0}>
               <Banknote className="h-4 w-4" />Record payment
