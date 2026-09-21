@@ -16,13 +16,12 @@ import type { OpsAnalyticsSummary } from '@/lib/ops-analytics';
 import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { cn } from '@/lib/utils';
 import {
+  activeCurrencies,
   addToCurrencyMap,
-  formatMoneyBreakdown,
   formatMoneyCompact,
-  listCurrencies,
   normalizeCurrency,
-  pickCurrencyAmount,
 } from '@/lib/money';
+import { MoneyBreakdown } from '@/components/money-breakdown';
 
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
@@ -33,13 +32,6 @@ const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
 const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice'].includes(invoice.document_type) && invoice.status !== 'cancelled';
 const rangeFrom = () => format(subMonths(new Date(), 5), 'yyyy-MM-01');
 const rangeTo = () => format(new Date(), 'yyyy-MM-dd');
-
-function MoneyKpiValue({ amounts, currencyFilter }: { amounts: Record<string, number>; currencyFilter: string }) {
-  if (currencyFilter !== 'all') {
-    return <>{formatMoneyCompact(pickCurrencyAmount(amounts, currencyFilter), currencyFilter)}</>;
-  }
-  return <span className="whitespace-pre-line leading-snug">{formatMoneyBreakdown(amounts, { compact: true })}</span>;
-}
 
 function KpiCard({
   label,
@@ -56,14 +48,14 @@ function KpiCard({
 }) {
   return (
     <Card className={cn(
-      'overflow-hidden border-border/80 shadow-sm',
+      'border-border/80 shadow-sm',
       tone === 'accent' && 'border-accent/25 bg-gradient-to-br from-accent/[0.07] to-card',
       tone === 'ink' && 'border-[#101114]/15 bg-gradient-to-br from-[#101114]/[0.04] to-card dark:from-white/[0.04]'
     )}>
-      <CardContent className="flex items-center justify-between gap-3 p-5">
-        <div className="min-w-0">
+      <CardContent className="flex items-start justify-between gap-3 p-5">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-          <div className="mt-1.5 text-2xl font-black tracking-tight">{loading ? '—' : value}</div>
+          <div className="mt-1.5">{loading ? <span className="text-2xl font-black tracking-tight">—</span> : value}</div>
         </div>
         <span className={cn(
           'grid h-11 w-11 shrink-0 place-items-center rounded-xl',
@@ -263,11 +255,7 @@ export default function AdminDashboardPage() {
   }, [analytics, receivables, remittances]);
 
   const moneyCurrencies = useMemo(
-    () => listCurrencies([
-      ...Object.keys(moneyByCurrency.invoiced),
-      ...Object.keys(moneyByCurrency.received),
-      ...Object.keys(moneyByCurrency.outstanding),
-    ]),
+    () => activeCurrencies(moneyByCurrency.invoiced, moneyByCurrency.received, moneyByCurrency.outstanding),
     [moneyByCurrency]
   );
 
@@ -451,7 +439,7 @@ export default function AdminDashboardPage() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             label={analytics?.sales.scope === 'own_book' ? 'Your invoiced' : 'Invoiced'}
-            value={<MoneyKpiValue amounts={moneyByCurrency.invoiced} currencyFilter={moneyCurrency} />}
+            value={<MoneyBreakdown amounts={moneyByCurrency.invoiced} currencyFilter={moneyCurrency} compact size="lg" />}
             icon={CircleDollarSign}
             loading={loading}
             tone="accent"
@@ -460,8 +448,8 @@ export default function AdminDashboardPage() {
             label={isOps ? 'Funds received' : 'Outstanding AR'}
             value={
               isOps
-                ? <MoneyKpiValue amounts={moneyByCurrency.received} currencyFilter={moneyCurrency} />
-                : <MoneyKpiValue amounts={moneyByCurrency.outstanding} currencyFilter={moneyCurrency} />
+                ? <MoneyBreakdown amounts={moneyByCurrency.received} currencyFilter={moneyCurrency} compact size="lg" />
+                : <MoneyBreakdown amounts={moneyByCurrency.outstanding} currencyFilter={moneyCurrency} compact size="lg" />
             }
             icon={isOps ? WalletCards : CircleDollarSign}
             loading={loading}
@@ -471,22 +459,24 @@ export default function AdminDashboardPage() {
             label={isOps ? 'Outstanding AR' : 'Open requests'}
             value={
               isOps
-                ? <MoneyKpiValue amounts={moneyByCurrency.outstanding} currencyFilter={moneyCurrency} />
-                : String(analytics?.requests.open ?? '—')
+                ? <MoneyBreakdown amounts={moneyByCurrency.outstanding} currencyFilter={moneyCurrency} compact size="lg" />
+                : <span className="text-2xl font-black tracking-tight">{String(analytics?.requests.open ?? '—')}</span>
             }
             icon={isOps ? CircleDollarSign : ClipboardList}
             loading={loading}
           />
           <KpiCard
             label="Unread team chat"
-            value={String(counts.unreadChats)}
+            value={<span className="text-2xl font-black tracking-tight">{String(counts.unreadChats)}</span>}
             icon={Inbox}
             loading={loading}
           />
         </div>
-        {moneyCurrency === 'all' && moneyCurrencies.length > 1 ? (
+        {moneyCurrencies.length > 1 ? (
           <p className="text-xs text-muted-foreground">
-            Totals are listed per currency — amounts are not converted. Chart below uses {chartCurrency}.
+            {moneyCurrency === 'all'
+              ? `Totals are listed per currency — amounts are not converted. Chart below uses ${chartCurrency} only.`
+              : `Showing ${moneyCurrency} only. Switch to All currencies for a stacked breakdown (no FX).`}
           </p>
         ) : null}
       </section>

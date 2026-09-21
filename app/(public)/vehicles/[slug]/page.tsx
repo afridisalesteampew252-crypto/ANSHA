@@ -25,7 +25,12 @@ import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-ite
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
-import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
+import {
+  buildProductOffer,
+  buildProductReviewFields,
+  resolveProductOfferPrice,
+} from '@/lib/product-schema';
+import type { Review, SiteOffer, VehicleWithPhotos } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { publicVehiclePhotos } from '@/lib/vehicle-photos';
@@ -40,6 +45,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
   const { slug } = params;
   const [vehicle, setVehicle] = useState<VehicleWithPhotos | null>(null);
   const [deal, setDeal] = useState<SiteOffer | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFoundFlag, setNotFoundFlag] = useState(false);
   const [coverIndex, setCoverIndex] = useState(0);
@@ -68,14 +74,24 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
       setVehicle({ ...typedData, vehicle_photos: sortedPhotos });
       setCoverIndex(nextCover >= 0 ? nextCover : 0);
 
-      const { data: offerRows } = await supabase
-        .from('site_offers')
-        .select('*')
-        .eq('is_published', true)
-        .eq('vehicle_id', typedData.id)
-        .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(1);
+      const [{ data: offerRows }, { data: reviewRows }] = await Promise.all([
+        supabase
+          .from('site_offers')
+          .select('*')
+          .eq('is_published', true)
+          .eq('vehicle_id', typedData.id)
+          .order('published_at', { ascending: false, nullsFirst: false })
+          .limit(1),
+        supabase
+          .from('reviews')
+          .select('*')
+          .eq('is_published', true)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ]);
       setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
+      setReviews((reviewRows || []) as Review[]);
       setLoading(false);
     })();
   }, [slug]);
@@ -101,8 +117,27 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
   }
 
   const photos = vehicle.vehicle_photos || [];
-  const hasPrice = vehicle.show_price && vehicle.price && vehicle.price > 0;
+  const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
   const dealPrice = deal ? effectiveDealPrice(hasPrice ? vehicle.price : null, deal) : null;
+  const pageUrl = `${siteConfig.url}/vehicles/${vehicle.slug}`;
+  const offerPrice = resolveProductOfferPrice({
+    dealPrice,
+    showPrice: Boolean(vehicle.show_price),
+    price: vehicle.price,
+    priceFob: vehicle.price_fob,
+    priceCf: vehicle.price_cf,
+    priceCif: vehicle.price_cif,
+  });
+  const offers = buildProductOffer({
+    price: offerPrice,
+    currency: vehicle.currency,
+    url: pageUrl,
+    availability: 'https://schema.org/InStock',
+  });
+  const reviewFields = buildProductReviewFields(reviews, {
+    name: vehicle.title,
+    url: pageUrl,
+  });
 
   const machineryUnit = isMachineryClass(vehicle.vehicle_class);
   const specs = [
@@ -167,14 +202,9 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           vehicleIdentificationNumber: vehicle.chassis_code || undefined,
           mileageFromOdometer: vehicle.mileage != null ? { '@type': 'QuantitativeValue', value: vehicle.mileage, unitCode: 'KMT' } : undefined,
           image: photos.map((photo) => publicVehicleImageUrl(photo.storage_path)),
-          url: `${siteConfig.url}/vehicles/${vehicle.slug}`,
-          offers: {
-            '@type': 'Offer',
-            availability: 'https://schema.org/InStock',
-            priceCurrency: vehicle.currency,
-            price: dealPrice ?? (hasPrice ? vehicle.price : undefined),
-            url: `${siteConfig.url}/vehicles/${vehicle.slug}`,
-          },
+          url: pageUrl,
+          ...(offers ? { offers } : {}),
+          ...reviewFields,
         }}
       />
 

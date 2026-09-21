@@ -12,6 +12,7 @@ import {
   Trash2,
   Upload,
   Users,
+  WalletCards,
 } from 'lucide-react';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
@@ -406,6 +407,12 @@ export default function CustomersPage() {
                               <DropdownMenuContent align="end" className="w-56">
                                 <DropdownMenuItem asChild>
                                   <Link href={`/admin/customers/${item.id}`}>View Customer</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/customers/${item.id}#soa`}>
+                                    <WalletCards className="h-3.5 w-3.5" />
+                                    Statement of Account
+                                  </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
                                   <Link href={`/admin/customers/${item.id}#profile`}>Edit Profile</Link>

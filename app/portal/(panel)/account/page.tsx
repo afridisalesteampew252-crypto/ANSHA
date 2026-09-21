@@ -7,6 +7,8 @@ import { Banknote, CheckCircle2, Loader2, ReceiptText, ShoppingBag, WalletCards 
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MoneyBreakdown } from '@/components/money-breakdown';
+import { addToCurrencyMap } from '@/lib/money';
 import { supabase } from '@/lib/supabase/client';
 
 type SoaSummary = {
@@ -105,7 +107,29 @@ function PortalAccountInner() {
   const remittances = data?.remittances || [];
   const allocations = data?.allocations || [];
   const buying = data?.buying || [];
-  const currency = summary?.currency || 'AED';
+  const fallbackCurrency = summary?.currency || 'AED';
+
+  // Build per-currency KPIs from line data so mixed books never sum AED+USD as one total.
+  const soaTotals = useMemo(() => {
+    const invoiced: Record<string, number> = {};
+    const allocated: Record<string, number> = {};
+    const outstanding: Record<string, number> = {};
+    const available: Record<string, number> = {};
+
+    for (const row of invoices) {
+      if (!receivableDocument(row.document_type)) continue;
+      addToCurrencyMap(invoiced, row.currency, Number(row.total_amount || 0));
+      addToCurrencyMap(outstanding, row.currency, Number(row.balance_due || 0));
+    }
+    for (const row of allocations) {
+      addToCurrencyMap(allocated, row.currency, Number(row.amount || 0));
+    }
+    for (const row of remittances) {
+      addToCurrencyMap(available, row.currency, Number(row.available_amount || 0));
+    }
+
+    return { invoiced, allocated, outstanding, available };
+  }, [allocations, invoices, remittances]);
 
   const ledger = useMemo(() => {
     const rows: Array<{
@@ -157,10 +181,10 @@ function PortalAccountInner() {
   }
 
   const cards = [
-    { label: 'Receivable invoices', value: money(summary.total_invoiced, currency), icon: ReceiptText },
-    { label: 'Payments allocated', value: money(summary.total_allocated, currency), icon: CheckCircle2 },
-    { label: 'Outstanding balance', value: money(summary.outstanding, currency), icon: WalletCards },
-    { label: 'Unallocated remittance', value: money(summary.available_funds, currency), icon: Banknote },
+    { label: 'Receivable invoices', amounts: soaTotals.invoiced, icon: ReceiptText },
+    { label: 'Payments allocated', amounts: soaTotals.allocated, icon: CheckCircle2 },
+    { label: 'Outstanding balance', amounts: soaTotals.outstanding, icon: WalletCards },
+    { label: 'Unallocated remittance', amounts: soaTotals.available, icon: Banknote },
   ] as const;
 
   return (
@@ -169,16 +193,19 @@ function PortalAccountInner() {
         <h1 className="text-2xl font-bold tracking-tight">Account statement</h1>
         <p className="text-sm text-muted-foreground">
           Read-only summary of your invoices, confirmed remittances, and how payments were applied.
+          Balances are listed per currency — amounts are not converted.
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map(({ label, value, icon: Icon }) => (
+        {cards.map(({ label, amounts, icon: Icon }) => (
           <Card key={label}>
-            <CardContent className="flex items-center justify-between p-5">
-              <div>
+            <CardContent className="flex items-start justify-between gap-3 p-5">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-1 text-xl font-bold">{value}</p>
+                <div className="mt-1.5">
+                  <MoneyBreakdown amounts={amounts} emptyCurrency={fallbackCurrency} size="md" />
+                </div>
               </div>
               <span className="rounded-xl bg-primary/10 p-3 text-primary">
                 <Icon className="h-5 w-5" />
@@ -264,7 +291,7 @@ function PortalAccountInner() {
                     {item.quantity ? ` · Qty ${item.quantity}` : ''}
                   </p>
                 </div>
-                <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || currency)}</span>
+                <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || fallbackCurrency)}</span>
               </div>
             ))
           )}

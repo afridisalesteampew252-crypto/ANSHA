@@ -103,3 +103,12 @@ export function pickCurrencyAmount(
 ): number {
   return Number(amounts[normalizeCurrency(currency)] || 0);
 }
+
+/** Currencies with a non-zero amount in any of the maps (priority-sorted). */
+export function activeCurrencies(...maps: Array<Record<string, number>>): string[] {
+  const codes: string[] = [];
+  for (const map of maps) {
+    for (const [currency] of currencyEntries(map)) codes.push(currency);
+  }
+  return listCurrencies(codes);
+}

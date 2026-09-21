@@ -11,15 +11,15 @@ PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is th
 - Test migrations off production before apply
 - Production has both `20260909192712_001_initial_schema` and `20260909194958_001_initial_schema` recorded as applied. Keep both files. Deleting either would desync git from `schema_migrations`.
 
-Latest migrations in the repository include Phases **72–78** (commission claims, remittance auto-confirm, auction yards, shipping companies, freight charges, bulk reserve, customer auto ID) plus Phases 69–71 remittances / allocate / clear-reservation / SOA sync. These are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases remain under `supabase/migrations/`.
+Latest migrations in the repository include Phases **72–78** (commission claims, remittance auto-confirm, auction yards, shipping companies, freight charges, bulk reserve, customer auto ID) plus Phases 69–71 remittances / allocate / clear-reservation / SOA sync, plus post-78 **Make Available SECURITY DEFINER** and **security advisor hardening**. These are **already applied on production** — keep the files so git matches `schema_migrations`. Earlier ERP phases remain under `supabase/migrations/`.
 
-Key recent files: `20260921060000_phase_72_commission_claims.sql`, `20260921070000_phase_73_remittance_auto_confirm.sql`, `20260921090000_phase_74_yards_config.sql`, `20260921100000_phase_75_shipping_companies.sql`, `20260921110000_phase_76_freight_charges.sql`, `20260921120000_phase_77_bulk_reserve_stock.sql`, `20260921130000_phase_78_customer_auto_id.sql`, plus `20260921050000_soa_sync_on_reservation_release.sql` and `20260921040000_clear_reservation_on_available.sql`.
+Key recent files: `20260922010000_fix_sync_catalog_sold_state_security_definer.sql`, `20260922020000_security_advisor_hardening.sql`, `20260921060000_phase_72_commission_claims.sql`, `20260921070000_phase_73_remittance_auto_confirm.sql`, `20260921090000_phase_74_yards_config.sql`, `20260921100000_phase_75_shipping_companies.sql`, `20260921110000_phase_76_freight_charges.sql`, `20260921120000_phase_77_bulk_reserve_stock.sql`, `20260921130000_phase_78_customer_auto_id.sql`, plus `20260921050000_soa_sync_on_reservation_release.sql` and `20260921040000_clear_reservation_on_available.sql`.
 
 ## Entity groups
 
 ### Identity
 
-`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`), `email`, `avatar_url`, `is_active`, `created_at`, Phase 60 `last_seen_at` (UTC heartbeat for Team Chat offline labels), Phase 66 `allowed_stock_origins` (`text[]` for managers; empty = no inventory), Phase 70 `office_id` / `shift_id` (FK → remittance picklists). RPC `touch_admin_last_seen()` (workspace users only).
+`admin_profiles` — PK `id` = `auth.users.id`. Columns: `full_name`, `role` (`admin`|`staff`|`sales`|`freelancer`|`manager`|`accounts`), `email`, `avatar_url`, `is_active`, `created_at`, Phase 60 `last_seen_at` (UTC heartbeat for Team Chat offline labels), Phase 66 `allowed_stock_origins` (`text[]` for managers; empty = no inventory), Phase 70 `office_id` / `shift_id` (FK → remittance picklists). RPC `touch_admin_last_seen()` — **authenticated** workspace users only (anon EXECUTE revoked; migration `20260922020000_security_advisor_hardening.sql`).
 
 `customer_profiles` — PK `id` = `auth.users.id`, unique `customer_id` → `customers`. Portal identity only; never place portal users in `admin_profiles`. Phase 67: portal customers SELECT own reserved/sold stock (`reserved_customer_id`) + photos; RPC `get_my_reservations()` (sanitized list with linked non-draft invoices).
 
@@ -99,7 +99,7 @@ Intake rows stay as submitted. One ticket per inquiry and per part request (uniq
 - `chat_conversation_links` — optional links from a conversation to vehicle/customer/inquiry/invoice/request
 - `internal_mail`, `internal_mail_recipients`, `internal_mail_attachments`
 - `whatsapp_message_log` — Cloud API send log (E.164 phone, text/template, Meta message id, status); ops RLS; Edge Function `send-whatsapp` (Phase 40)
-- `tawk_chat_sessions` / `tawk_ticket_events` / `tawk_webhook_receipts` — Phase 58 Tawk webhook mirror for `/admin/live-chat` Needs attention; RLS `private.can_access_live_chat()` (admin|manager); Edge `tawk-webhook`
+- `tawk_chat_sessions` / `tawk_ticket_events` / `tawk_webhook_receipts` — Phase 58 Tawk webhook mirror for `/admin/live-chat` Needs attention; sessions/events RLS `private.can_access_live_chat()` (admin|manager); `tawk_webhook_receipts` is service-role-only (explicit deny policies for anon/authenticated; Edge `tawk-webhook` bypasses RLS)
 - `admin_notifications`
 
 Chat stays one product. Links are additive metadata; mutations go through `link_chat_conversation` / `unlink_chat_conversation`. Presence (Phase 60) is Realtime channel `workspace-presence` plus `last_seen_at` heartbeats — not a second chat product.
@@ -117,13 +117,15 @@ Chat stays one product. Links are additive metadata; mutations go through `link_
 - Phase 70: `admin_profiles.office_id` / `shift_id` → remittance picklists; Users UI assigns them; remittance dashboard filters by `remittances.office_id`. Migration `20260921020000_phase_70_admin_profile_office_shift.sql`.
 - Phase 73 remittance confirmation: known create (customer set) defaults to **confirmed**; unknown stays unconfirmed; `link_remittance` requires customer + agent (`received_by`) and **auto-confirms**; trigger also confirms when an unknown row gains both. Migration `20260921070000_phase_73_remittance_auto_confirm.sql`.
 - Clear reservation on available: `private.sync_catalog_sold_state` nulls `reserved_*` / `reservation_*` whenever parts/vehicles transition to `available`; release RPCs still clear explicitly; one-shot UPDATE cleans stale available rows. Migration `20260921040000_clear_reservation_on_available.sql` (applied remote).
+- Make Available fix: `private.sync_catalog_sold_state` and `private.clear_reservation_buying_documents` are **SECURITY DEFINER** (search_path locked; EXECUTE revoked from PUBLIC/anon/authenticated) so workspace status updates can cancel unpaid reservation proformas without `permission denied`. Migration `20260922010000_fix_sync_catalog_sold_state_security_definer.sql` (applied remote).
 - SOA reservation sync: on stock → `available`, `private.clear_reservation_buying_documents` cancels unpaid open reservation proformas (no payments/allocations) so customer Buying clears; field-agent invoice trigger allows that system cancel via `ansha.clearing_reservation_soa`; portal `get_my_customer_soa` returns `buying` (active reserved stock + open invoice lines). Migration `20260921050000_soa_sync_on_reservation_release.sql` (applied remote).
 - `supplier_invoices` — private file metadata
 - `bank_accounts` / `bank_transactions` — ops bank ledger (BNK-/BTXN-); opening balance + manual in/out; reconcile flags; optional remittance/supplier_payment/expense links; ops RLS
+- `purchase_order_sequences` — PO number counters; RLS enabled + deny-all for authenticated; no direct client access (`next_po_number()` SECURITY DEFINER only). Hardened in `20260922020000_security_advisor_hardening.sql` (applied remote).
 
 Triggers recalculate invoice balances and sync remittance-linked payments. Do not bypass them with ad-hoc SQL in the app.
 
-App money display: `lib/money.ts` `formatMoneyBreakdown` lists per-currency totals without converting (no FX mixing across currencies).
+App money display: `lib/money.ts` `formatMoneyBreakdown` / `currencyEntries` list per-currency totals without converting; UI uses `components/money-breakdown.tsx` (**All currencies** stacks each code — no FX mixing).
 
 ## Stock model (vehicles and parts)
 
@@ -137,7 +139,7 @@ App money display: `lib/money.ts` `formatMoneyBreakdown` lists per-currency tota
 
 Recommended operational path: Auction → Yard → Port → Sold. Commercial `stock_status` remains independent. Moving lifecycle to `sold` via `transition_vehicle_lifecycle` also sets `stock_status = sold`. Non-recommended stage jumps are blocked unless an account admin passes `p_force` with a reason in notes (Phase 47). Workflow actions (BL, inspection, RORO, etc.) are rows in `vehicle_lifecycle_events`, not free-text status fields. Event documents live in `vehicle_lifecycle_event_attachments`.
 
-`private.sync_catalog_sold_state` stamps `sold_at`/`sold_by` on transition to `sold` and clears them otherwise.
+`private.sync_catalog_sold_state` (SECURITY DEFINER) stamps `sold_at`/`sold_by` on transition to `sold` and clears them otherwise; on → `available` it calls `private.clear_reservation_buying_documents` and nulls reservation fields.
 
 This is not an auction/yard/port rewrite of availability. Lifecycle was added beside stock. `stock_pool` separates owned inventory UI from third-party auction listings without changing `stock_status`.
 
@@ -147,4 +149,4 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 
 ## Type generation
 
-Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through Phase **78**, including Phase 72 `CommissionClaim`, Phase 74–76 `AuctionYard` / `ShippingCompany` / `FreightCharge`, Phase 69–70 remittance offices/shifts + profile office, Phase 65 `stock_pool`, Phase 57 `vehicle_class`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`, `lib/money.ts`, `lib/export-excel.ts`, `lib/reports/*`, `lib/stock-linked-invoice.ts`, `lib/freight-charges.ts`.
+Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through Phase **78**, including Phase 72 `CommissionClaim`, Phase 74–76 `AuctionYard` / `ShippingCompany` / `FreightCharge`, Phase 69–70 remittance offices/shifts + profile office, Phase 65 `stock_pool`, Phase 57 `vehicle_class`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`, `lib/money.ts`, `lib/product-schema.ts`, `components/money-breakdown.tsx`, `lib/export-excel.ts`, `lib/reports/*`, `lib/stock-linked-invoice.ts`, `lib/freight-charges.ts`.

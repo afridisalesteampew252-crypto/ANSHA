@@ -1,6 +1,6 @@
 # ANSHA System Audit
 
-Audit date: **2026-09-21** (refresh through Phase **78**). Earlier snapshots are superseded.
+Audit date: **2026-09-22** (refresh post–Phase **78**: Make Available DEFINER, security advisor, SOA MoneyBreakdown, Product JSON-LD). Earlier snapshots are superseded.
 
 Scope: repository `ANSHA/` vs live product at `www.anshatradingco.com` + Supabase `ydrnilquojvalhgifest`. Documentation-only pass; no production secrets were read.
 
@@ -21,7 +21,8 @@ Legend: **Fact** | **Gap** | **Recommendation**
 - AI: Vercel AI SDK route `POST /api/ai/chat`
 - FX proxy: `GET /api/fx` (cached open.er-api.com)
 - Excel exports: `lib/export-excel.ts` + ExcelJS (reports, remittances, vehicles)
-- Multi-currency display: `lib/money.ts` `formatMoneyBreakdown` (no FX mixing)
+- Multi-currency display: `lib/money.ts` + `components/money-breakdown.tsx` (no FX mixing)
+- Product JSON-LD: `lib/product-schema.ts` (valid offers.price; real aggregateRating/review)
 - Home featured rotation: `lib/featured-rotation.ts` (10-minute buckets; no cron)
 - CI: lint, typecheck, `verify:brands`, build (Node 24)
 - **Gap:** no Vitest/Jest/Playwright suite in repo
@@ -36,9 +37,10 @@ Legend: **Fact** | **Gap** | **Recommendation**
 | Admin panel | `app/admin/(panel)/` |
 | Portal | `app/portal/` |
 | API | `app/api/{health,fx,ai/chat,cron/request-dues}` |
-| Domain libs | `lib/` (`types`, `money`, `export-excel`, `reports/*`, `stock-linked-invoice`, `freight-charges`, …) |
+| Domain libs | `lib/` (`types`, `money`, `product-schema`, `export-excel`, `reports/*`, `stock-linked-invoice`, `freight-charges`, …) |
+| Components | `components/` (incl. `money-breakdown.tsx`) |
 | Hooks | `hooks/` (`use-inventory-deals`, `use-fx-rates`, `use-live-clock`, …) |
-| Migrations | `supabase/migrations/` (through Phase **78**) |
+| Migrations | `supabase/migrations/` (through Phase **78** + post-78 DEFINER/security) |
 | Edge Functions | `supabase/functions/*` |
 | One-off import scripts | `scripts/import-japan-stock-vehicles.mjs`, `scripts/import-whatsapp-parts*.mjs`, `scripts/import-dubai-whatsapp-sep20-stock.mjs` |
 
@@ -174,15 +176,15 @@ Remaining: secrets hygiene, bank live integration, deeper marketing automation, 
 
 | Doc | Status after this audit |
 |---|---|
-| CURRENT_STATE.md | Checkpoint 2026-09-21 / Phases 72–78 |
-| Modules.md | Updated (commissions, config, reports, bulk reserve, customers) |
-| Roadmap.md | Phases 72–78 Done |
+| CURRENT_STATE.md | Checkpoint 2026-09-22 / post–Phase 78 ops+security+SEO |
+| Modules.md | Updated (SOA `#soa`, MoneyBreakdown, Product schema, Make Available) |
+| Roadmap.md | Phases 72–78 Done + post-78 ship notes |
 | Roles.md | Field / accounts / manager + commissions / freight / reports |
-| User-Manual.md | Operator flows through Phase 78 |
-| Deployment.md | Phase 72–78 migration table |
-| Architecture.md | Surfaces through Phase 78 |
-| Database.md | Entities through Phase 78 |
+| User-Manual.md | Operator flows through post-78 SOA / Make Available |
+| Deployment.md | Phase 72–78 + post-78 migration tables |
+| Architecture.md | Surfaces through post-78 |
+| Database.md | Entities + DEFINER/security hardening |
 | API.md | Commission / bulk reserve / remittance Phase 73 RPCs |
-| Security.md | Role helpers (unchanged posture) |
-| README.md | Status through Phase 78 |
+| Security.md | Advisor harden + Make Available DEFINER |
+| README.md | Status through post-78 |
 | PROJECT-AUDIT.md | This file |

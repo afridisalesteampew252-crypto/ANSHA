@@ -157,6 +157,14 @@ Done (Phase 77): bulk reserve — RPC `bulk_reserve_stock`; catalog multi-select
 
 Done (Phase 78): customer auto ID — `customer_code_seq` starting ~48001; consignee columns; Customers list **Actions** menu. Migration `20260921130000_phase_78_customer_auto_id.sql`.
 
+Also shipped (post–Phase 78, Make Available + security + SOA/SEO UI):
+
+- Make Available fix: `private.sync_catalog_sold_state` + `clear_reservation_buying_documents` SECURITY DEFINER so stock → available cancels unpaid reservation proformas without permission errors. Migration `20260922010000_fix_sync_catalog_sold_state_security_definer.sql` (applied remote).
+- Security advisor hardening: `purchase_order_sequences` RLS + deny; `tawk_webhook_receipts` explicit deny; revoke anon on `touch_admin_last_seen`; drop duplicate vehicles reserved_customer index. Migration `20260922020000_security_advisor_hardening.sql` (applied remote).
+- Customer SOA UI: admin `/admin/customers/[id]#soa` + Actions deep-link; portal `/portal/account` KPIs use shared **MoneyBreakdown** (per-currency; All = no FX mix).
+- Dashboard / analytics / invoices list: **MoneyBreakdown** cleanup for All currencies.
+- GSC Product schema: `lib/product-schema.ts` — valid `offers.price` only; real published `aggregateRating`/`review` only (parts + vehicles pages).
+
 Also shipped (reports + exports, no dedicated phase migration): reports hub `/admin/reports` with 7 operational reports + financial statements + Excel; vehicles **Export Excel** on inventory lists; stock list **linked invoice badges**.
 
 Also shipped (export markets expansion, no migration): `lib/export-markets.ts` expanded **20 → 70** destination markets.

@@ -13,7 +13,9 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import type { OpsAnalyticsSummary } from '@/lib/ops-analytics';
-import { addToCurrencyMap, formatMoney, formatMoneyBreakdown } from '@/lib/money';
+import { addToCurrencyMap, activeCurrencies, formatMoney } from '@/lib/money';
+import { MoneyBreakdown } from '@/components/money-breakdown';
+import { cn } from '@/lib/utils';
 
 const ACCENT = 'hsl(0 75% 47%)';
 const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
@@ -27,6 +29,7 @@ export default function AdminAnalyticsPage() {
   const [to, setTo] = useState(defaultTo);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<OpsAnalyticsSummary | null>(null);
+  const [moneyCurrency, setMoneyCurrency] = useState('all');
 
   const load = useCallback(async () => {
     if (!from || !to) return toast.error('Choose a from and to date');
@@ -36,9 +39,9 @@ export default function AdminAnalyticsPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     setSummary(data as OpsAnalyticsSummary);
+    setMoneyCurrency('all');
   }, [from, to]);
 
-  const currency = summary?.sales.totals.currency_focus || summary?.collections?.totals.currency_focus || 'AED';
   const isOps = summary?.viewer.is_ops ?? false;
 
   const moneyByCurrency = useMemo(() => {
@@ -64,24 +67,38 @@ export default function AdminAnalyticsPage() {
     return { invoiced, outstanding, received };
   }, [summary]);
 
+  const moneyCurrencies = useMemo(
+    () => activeCurrencies(moneyByCurrency.invoiced, moneyByCurrency.outstanding, moneyByCurrency.received),
+    [moneyByCurrency]
+  );
+
+  const chartCurrency = moneyCurrency === 'all'
+    ? (summary?.sales.totals.currency_focus
+      || summary?.collections?.totals.currency_focus
+      || moneyCurrencies[0]
+      || 'AED')
+    : moneyCurrency;
+
   const monthly = useMemo(() => {
     if (!summary) return [];
     const keys = new Set([
       ...summary.sales.by_month.map((row) => row.month_key),
       ...(summary.collections?.by_month.map((row) => row.month_key) || []),
     ]);
+    // RPC by_month is not split by currency — only use money bars for single-currency books.
+    const useMoneyBars = moneyCurrencies.length <= 1;
     return Array.from(keys).sort().map((key) => {
       const salesRow = summary.sales.by_month.find((row) => row.month_key === key);
       const receivedRow = summary.collections?.by_month.find((row) => row.month_key === key);
       return {
         month: salesRow?.month_label || receivedRow?.month_label || key,
-        invoiced: Number(salesRow?.invoiced_total || 0),
-        received: Number(receivedRow?.received_total || 0),
+        invoiced: useMoneyBars ? Number(salesRow?.invoiced_total || 0) : 0,
+        received: useMoneyBars ? Number(receivedRow?.received_total || 0) : 0,
         tax: Number(salesRow?.tax_invoice_count || 0),
         commercial: Number(salesRow?.commercial_invoice_count || 0),
       };
     });
-  }, [summary]);
+  }, [moneyCurrencies.length, summary]);
 
   const stockData = useMemo(() => {
     if (!summary) return [];
@@ -141,22 +158,57 @@ export default function AdminAnalyticsPage() {
         </Card>
       ) : (
         <>
+          {moneyCurrencies.length > 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">Money KPIs · no FX conversion</p>
+              <div className="flex flex-wrap gap-1" role="group" aria-label="Analytics currency filter">
+                <button
+                  type="button"
+                  onClick={() => setMoneyCurrency('all')}
+                  className={cn(
+                    'rounded-md border px-2.5 py-1 text-xs font-semibold transition',
+                    moneyCurrency === 'all'
+                      ? 'border-accent bg-accent text-white'
+                      : 'border-border bg-background text-muted-foreground hover:border-accent/40'
+                  )}
+                >
+                  All currencies
+                </button>
+                {moneyCurrencies.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setMoneyCurrency(code)}
+                    className={cn(
+                      'rounded-md border px-2.5 py-1 text-xs font-semibold transition',
+                      moneyCurrency === code
+                        ? 'border-accent bg-accent text-white'
+                        : 'border-border bg-background text-muted-foreground hover:border-accent/40'
+                    )}
+                  >
+                    {code}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Card>
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Invoiced ({summary.sales.scope})</p>
-                <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
-                  {formatMoneyBreakdown(moneyByCurrency.invoiced)}
-                </p>
+                <div className="mt-1">
+                  <MoneyBreakdown amounts={moneyByCurrency.invoiced} currencyFilter={moneyCurrency} />
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">{summary.sales.totals.invoice_count} tax/commercial invoices · no FX conversion</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Outstanding AR</p>
-                <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
-                  {formatMoneyBreakdown(moneyByCurrency.outstanding)}
-                </p>
+                <div className="mt-1">
+                  <MoneyBreakdown amounts={moneyByCurrency.outstanding} currencyFilter={moneyCurrency} />
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">Open balances as of today</p>
               </CardContent>
             </Card>
@@ -164,9 +216,9 @@ export default function AdminAnalyticsPage() {
               <Card>
                 <CardContent className="p-5">
                   <p className="text-sm text-muted-foreground">Funds received</p>
-                  <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
-                    {formatMoneyBreakdown(moneyByCurrency.received)}
-                  </p>
+                  <div className="mt-1">
+                    <MoneyBreakdown amounts={moneyByCurrency.received} currencyFilter={moneyCurrency} />
+                  </div>
                   <p className="mt-1 text-xs text-muted-foreground">{summary.collections.totals.remittance_count} confirmed remittances</p>
                 </CardContent>
               </Card>
@@ -239,7 +291,9 @@ export default function AdminAnalyticsPage() {
               <CardHeader>
                 <CardTitle className="text-lg">{isOps ? 'Invoiced versus received' : 'Invoiced by month'}</CardTitle>
                 <CardDescription>
-                  Monthly bars may mix currencies when several exist. KPI cards above list each currency separately (no FX conversion). Focus label: {currency}.
+                  {moneyCurrencies.length > 1
+                    ? `Multi-currency book: monthly money bars hidden (RPC is not per-currency). KPIs above are stacked / filtered. Focus label: ${chartCurrency}.`
+                    : `Single-currency monthly totals (${chartCurrency}). KPIs list each currency separately when more exist.`}
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-80">
@@ -248,7 +302,7 @@ export default function AdminAnalyticsPage() {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="month" tickLine={false} axisLine={false} />
                     <YAxis tickLine={false} axisLine={false} />
-                    <Tooltip formatter={(value) => money(Number(value), currency)} />
+                    <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
                     <Legend />
                     <Bar dataKey="invoiced" name="Invoiced" fill={ACCENT} radius={[5, 5, 0, 0]} />
                     {isOps ? <Bar dataKey="received" name="Received" fill="#10b981" radius={[5, 5, 0, 0]} /> : null}

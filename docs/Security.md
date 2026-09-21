@@ -34,10 +34,13 @@ AI keys (`AI_GATEWAY_API_KEY`, `OPENAI_API_KEY`) are server-only for `POST /api/
 - `chat_conversation_links`: members SELECT; link/unlink via SECURITY DEFINER RPCs that require chat membership
 - Finance, customers, imports, chat, mail, notifications: authenticated workspace members
 - `ai_chat_threads` / `ai_chat_messages`: ops-only; each user only manages their own threads
-- Sequence tables: deny direct access
+- Sequence tables: deny direct access (`purchase_order_sequences` RLS + deny-all; same posture as other counters)
+- `tawk_webhook_receipts`: RLS on + explicit deny for anon/authenticated (Edge service role writes only)
+- `touch_admin_last_seen()`: EXECUTE for `authenticated` only (anon revoked)
+- `private.sync_catalog_sold_state` / `private.clear_reservation_buying_documents`: SECURITY DEFINER, not client-callable; required so Make Available / stock → available can clear unpaid reservation proformas
 - `verify_invoice`: SECURITY DEFINER, callable by anon; must remain field-limited
 
-Advisor warnings (2026-09-17): leaked-password protection disabled; `is_admin()` and `verify_invoice` SECURITY DEFINER executability. Enabling HaveIBeenPwned on Auth still requires a dashboard action. Revoking `is_admin()` EXECUTE needs a login/RLS regression test.
+Advisor warnings (2026-09-17): leaked-password protection disabled; `is_admin()` and `verify_invoice` SECURITY DEFINER executability. Enabling HaveIBeenPwned on Auth still requires a dashboard action. Revoking `is_admin()` EXECUTE needs a login/RLS regression test. Post-78 advisor hardening (`20260922020000_security_advisor_hardening.sql`, applied remote) closed the open `purchase_order_sequences` RLS gap, receipt-table policy vacuum, and anon presence heartbeat.
 
 ## Storage
 
@@ -53,7 +56,7 @@ Staff may use day-to-day ops (`private.is_ops_user()`). Account-admin actions (`
 
 Public blog pages render `post.content` as HTML. Only staff can write posts, but a compromised staff account can store script. Sanitize or switch to a safe format before expanding who can author.
 
-JSON-LD uses `dangerouslySetInnerHTML` from server-built structured data.
+JSON-LD uses `dangerouslySetInnerHTML` from server-built structured data. Public Product markup (`lib/product-schema.ts`) must omit `offers` unless price+currency are valid, and must attach `aggregateRating`/`review` only from real published testimonials — never invent ratings for GSC.
 
 ## Transport / headers
 

@@ -26,7 +26,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { addToCurrencyMap, formatMoney, formatMoneyBreakdown, normalizeCurrency } from '@/lib/money';
+import { addToCurrencyMap, formatMoney, normalizeCurrency } from '@/lib/money';
+import { MoneyBreakdown } from '@/components/money-breakdown';
 
 const money = (value: number, currency = 'AED') => formatMoney(value, currency);
 const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
@@ -408,6 +409,7 @@ export default function CustomerAccountPage() {
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline"><Link href="#soa">Statement of Account</Link></Button>
         <Button asChild variant="outline"><Link href={`/admin/chat?customer=${customer.id}`}>Open linked chat</Link></Button>
         <Button asChild><Link href={`/admin/invoices/new?customer=${customer.id}`}><ReceiptText className="h-4 w-4" />Create invoice</Link></Button>
       </div>
@@ -604,93 +606,244 @@ export default function CustomerAccountPage() {
       </CardContent>
     </Card>
 
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {([
-        ['Receivable invoices', soaTotals.invoiced, ReceiptText],
-        ['Payments allocated', soaTotals.allocated, CheckCircle2],
-        ['Outstanding balance', soaTotals.balance, WalletCards],
-        ['Available remittance', soaTotals.available, Banknote],
-      ] as const).map(([label, amounts, Icon]) => (
-        <Card key={label}>
-          <CardContent className="flex items-center justify-between gap-3 p-5">
-            <div className="min-w-0">
-              <p className="text-sm text-muted-foreground">{label}</p>
-              <p className="mt-1 whitespace-pre-line text-2xl font-bold leading-snug">
-                {formatMoneyBreakdown(amounts)}
-              </p>
-            </div>
-            <span className="rounded-xl bg-primary/10 p-3 text-primary"><Icon className="h-5 w-5" /></span>
+    <section id="soa" className="scroll-mt-24 space-y-6">
+      <div>
+        <h2 className="text-lg font-bold tracking-tight">Statement of Account</h2>
+        <p className="text-sm text-muted-foreground">
+          Balances listed per currency — amounts are not converted. Allocate only matching currencies.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {([
+          ['Receivable invoices', soaTotals.invoiced, ReceiptText],
+          ['Payments allocated', soaTotals.allocated, CheckCircle2],
+          ['Outstanding balance', soaTotals.balance, WalletCards],
+          ['Available remittance', soaTotals.available, Banknote],
+        ] as const).map(([label, amounts, Icon]) => (
+          <Card key={label}>
+            <CardContent className="flex items-start justify-between gap-3 p-5">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <div className="mt-1.5">
+                  <MoneyBreakdown amounts={amounts} size="lg" />
+                </div>
+              </div>
+              <span className="rounded-xl bg-primary/10 p-3 text-primary"><Icon className="h-5 w-5" /></span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Invoices and payments · last 6 months</CardTitle>
+            <p className="text-sm text-muted-foreground">Chart shows {chartCurrency} only — no FX conversion across currencies.</p>
+          </CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
+                <Bar dataKey="invoices" name="Invoiced" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                <Bar dataKey="payments" name="Paid" fill="#10b981" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
-      ))}
-    </div>
+        <Card id="allocate" className="scroll-mt-24">
+          <CardHeader><CardTitle className="text-lg">Allocate received funds</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="soa-remittance">Confirmed remittance</Label>
+              <select id="soa-remittance" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={remittanceId} onChange={(event) => chooseRemittance(event.target.value)}>
+                <option value="">Select available funds</option>
+                {usableRemittances.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.remittance_number} · {money(Number(row.amount) - (allocatedByRemittance[row.id] || 0), row.currency)} available
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="soa-invoice">Open invoice</Label>
+              <select
+                id="soa-invoice"
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={invoiceId}
+                onChange={(event) => {
+                  setInvoiceId(event.target.value);
+                  const invoice = invoices.find((row) => row.id === event.target.value);
+                  const available = selectedRemittance ? Number(selectedRemittance.amount) - (allocatedByRemittance[selectedRemittance.id] || 0) : 0;
+                  setAllocationAmount(String(Math.min(available, Number(invoice?.balance_due || 0)) || ''));
+                }}
+              >
+                <option value="">Select invoice</option>
+                {openInvoices
+                  .filter((row) => !selectedRemittance || row.currency === selectedRemittance.currency)
+                  .map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.invoice_number}
+                      {stockRefsByInvoice[row.id]?.length ? ` · ${stockRefsByInvoice[row.id].join(', ')}` : ''}
+                      {' · '}
+                      {money(row.balance_due, row.currency)}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="soa-amount">Amount {selectedInvoice ? `(${selectedInvoice.currency})` : ''}</Label>
+              <Input id="soa-amount" type="number" min="0.01" step="0.01" value={allocationAmount} onChange={(event) => setAllocationAmount(event.target.value)} />
+            </div>
+            <Button className="w-full" disabled={busy || !remittanceId || !invoiceId} onClick={() => void allocate()}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Banknote className="h-4 w-4" />}
+              Apply payment
+            </Button>
+            <p className="text-xs text-muted-foreground">Only matching customer and currency records can be linked. Every change remains auditable.</p>
+          </CardContent>
+        </Card>
+      </div>
 
-    <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Invoices and payments · last 6 months</CardTitle>
-          <p className="text-sm text-muted-foreground">Chart shows {chartCurrency} only — no FX conversion across currencies.</p>
-        </CardHeader>
-        <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis fontSize={12} tickLine={false} axisLine={false} />
-              <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
-              <Bar dataKey="invoices" name="Invoiced" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
-              <Bar dataKey="payments" name="Paid" fill="#10b981" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {notice ? <div role="status" className="rounded-lg border bg-secondary/30 p-3 text-sm">{notice}</div> : null}
+
+      <Card id="ledger" className="scroll-mt-24">
+        <CardHeader><CardTitle className="text-lg">Statement ledger</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          {invoices.length === 0 ? (
+            <p className="px-4 py-10 text-center text-sm text-muted-foreground">No documents on this statement yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead className="bg-secondary/60 text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Reference</th>
+                    <th className="p-4">Stock</th>
+                    <th className="p-4">Type</th>
+                    <th className="p-4 text-right">Debit</th>
+                    <th className="p-4 text-right">Credit</th>
+                    <th className="p-4 text-right">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.id} className="border-t">
+                      <td className="p-4">{invoice.issue_date}</td>
+                      <td className="p-4">
+                        <Link href={`/admin/invoices/${invoice.id}`} className="font-semibold text-primary hover:underline">
+                          {invoice.invoice_number}
+                        </Link>
+                      </td>
+                      <td className="p-4 text-xs text-muted-foreground">{stockRefsByInvoice[invoice.id]?.join(', ') || '—'}</td>
+                      <td className="p-4 capitalize">{invoice.document_type.replaceAll('_', ' ')}</td>
+                      <td className="p-4 text-right">
+                        {receivableDocument(invoice.document_type) ? money(invoice.total_amount, invoice.currency) : 'Non-posting'}
+                      </td>
+                      <td className="p-4 text-right">{money(invoice.amount_paid, invoice.currency)}</td>
+                      <td className="p-4 text-right font-semibold">
+                        {receivableDocument(invoice.document_type) ? money(invoice.balance_due, invoice.currency) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
-      <Card><CardHeader><CardTitle className="text-lg">Allocate received funds</CardTitle></CardHeader><CardContent className="space-y-4">
-        <div className="space-y-1.5"><Label htmlFor="soa-remittance">Confirmed remittance</Label><select id="soa-remittance" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={remittanceId} onChange={(event) => chooseRemittance(event.target.value)}><option value="">Select available funds</option>{usableRemittances.map((row) => <option key={row.id} value={row.id}>{row.remittance_number} · {money(Number(row.amount) - (allocatedByRemittance[row.id] || 0), row.currency)} available</option>)}</select></div>
-        <div className="space-y-1.5"><Label htmlFor="soa-invoice">Open invoice</Label><select id="soa-invoice" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={invoiceId} onChange={(event) => { setInvoiceId(event.target.value); const invoice = invoices.find((row) => row.id === event.target.value); const available = selectedRemittance ? Number(selectedRemittance.amount) - (allocatedByRemittance[selectedRemittance.id] || 0) : 0; setAllocationAmount(String(Math.min(available, Number(invoice?.balance_due || 0)) || '')); }}><option value="">Select invoice</option>{openInvoices.filter((row) => !selectedRemittance || row.currency === selectedRemittance.currency).map((row) => <option key={row.id} value={row.id}>{row.invoice_number}{stockRefsByInvoice[row.id]?.length ? ` · ${stockRefsByInvoice[row.id].join(', ')}` : ''} · {money(row.balance_due, row.currency)}</option>)}</select></div>
-        <div className="space-y-1.5"><Label htmlFor="soa-amount">Amount {selectedInvoice ? `(${selectedInvoice.currency})` : ''}</Label><Input id="soa-amount" type="number" min="0.01" step="0.01" value={allocationAmount} onChange={(event) => setAllocationAmount(event.target.value)} /></div>
-        <Button className="w-full" disabled={busy || !remittanceId || !invoiceId} onClick={() => void allocate()}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Banknote className="h-4 w-4" />}Apply payment</Button>
-        <p className="text-xs text-muted-foreground">Only matching customer and currency records can be linked. Every change remains auditable.</p>
-      </CardContent></Card>
-    </div>
 
-    {notice ? <div role="status" className="rounded-lg border bg-secondary/30 p-3 text-sm">{notice}</div> : null}
-
-    <Card><CardHeader><CardTitle className="text-lg">Statement ledger</CardTitle></CardHeader><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-secondary/60 text-left text-xs uppercase text-muted-foreground"><tr><th className="p-4">Date</th><th className="p-4">Reference</th><th className="p-4">Stock</th><th className="p-4">Type</th><th className="p-4 text-right">Debit</th><th className="p-4 text-right">Credit</th><th className="p-4 text-right">Balance</th></tr></thead><tbody>{invoices.map((invoice) => <tr key={invoice.id} className="border-t"><td className="p-4">{invoice.issue_date}</td><td className="p-4"><Link href={`/admin/invoices/${invoice.id}`} className="font-semibold text-primary hover:underline">{invoice.invoice_number}</Link></td><td className="p-4 text-xs text-muted-foreground">{stockRefsByInvoice[invoice.id]?.join(', ') || '—'}</td><td className="p-4 capitalize">{invoice.document_type.replaceAll('_',' ')}</td><td className="p-4 text-right">{receivableDocument(invoice.document_type) ? money(invoice.total_amount, invoice.currency) : 'Non-posting'}</td><td className="p-4 text-right">{money(invoice.amount_paid, invoice.currency)}</td><td className="p-4 text-right font-semibold">{receivableDocument(invoice.document_type) ? money(invoice.balance_due, invoice.currency) : '—'}</td></tr>)}</tbody></table></div></CardContent></Card>
-
-    <div className="grid gap-6 xl:grid-cols-2">
-      <Card><CardHeader><CardTitle className="text-lg">Remittances and allocations</CardTitle></CardHeader><CardContent className="space-y-3">{remittances.map((row) => { const used = allocatedByRemittance[row.id] || 0; return <div key={row.id} className="rounded-lg border p-4"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-semibold">{row.remittance_number}</p><p className="text-xs text-muted-foreground">{row.received_date} · {row.method.replaceAll('_',' ')} · {row.bank_reference || 'No bank reference'}</p></div><div className="text-right"><p className="font-semibold">{money(row.amount,row.currency)}</p><p className="text-xs text-muted-foreground">{money(Number(row.amount)-used,row.currency)} available</p></div></div><div className="mt-3 space-y-2">{allocations.filter((item) => item.remittance_id === row.id).map((allocation) => { const invoice = invoices.find((item) => item.id === allocation.invoice_id); const stock = stockRefsByInvoice[allocation.invoice_id]?.join(', '); return <div key={allocation.id} className="flex items-center justify-between rounded-md bg-secondary/60 px-3 py-2 text-xs"><span>Applied to {invoice?.invoice_number || 'invoice'}{stock ? ` · ${stock}` : ''} · {money(allocation.amount,row.currency)}</span><Button variant="ghost" size="sm" className="h-7 text-destructive" disabled={busy} onClick={() => void reverse(allocation)}><RotateCcw className="h-3.5 w-3.5" />Reverse</Button></div>; })}</div></div>; })}{remittances.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No remittances recorded for this customer.</p> : null}</CardContent></Card>
-      <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><ShoppingBag className="h-5 w-5" />Buying details</CardTitle></CardHeader><CardContent className="space-y-3">
-        {reservedBuying.map((item) => (
-          <div key={item.key} className="flex items-start justify-between gap-4 rounded-lg border border-accent/30 bg-accent/[0.04] p-4">
-            <div>
-              <p className="font-medium">{item.description}</p>
-              <p className="text-xs text-muted-foreground">
-                Reserved · {item.kind} · Ref {item.inventory_reference}
-              </p>
-            </div>
-            <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || chartCurrency)}</span>
-          </div>
-        ))}
-        {buyingInvoiceItems.map((item) => {
-          const invoice = invoices.find((row) => row.id === item.invoice_id);
-          return (
-            <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-4">
-              <div>
-                <p className="font-medium">{item.description}</p>
-                <p className="text-xs text-muted-foreground">
-                  {invoice?.invoice_number} · Qty {item.quantity}
-                  {item.inventory_reference ? ` · Ref ${item.inventory_reference}` : ''}
-                  {item.inventory_type ? ` · ${item.inventory_type}` : ''}
-                </p>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card id="remittances" className="scroll-mt-24">
+          <CardHeader><CardTitle className="text-lg">Remittances and allocations</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {remittances.map((row) => {
+              const used = allocatedByRemittance[row.id] || 0;
+              return (
+                <div key={row.id} className="rounded-lg border p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold">{row.remittance_number}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {row.received_date} · {row.method.replaceAll('_', ' ')} · {row.bank_reference || 'No bank reference'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{money(row.amount, row.currency)}</p>
+                      <p className="text-xs text-muted-foreground">{money(Number(row.amount) - used, row.currency)} available</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {allocations
+                      .filter((item) => item.remittance_id === row.id)
+                      .map((allocation) => {
+                        const invoice = invoices.find((item) => item.id === allocation.invoice_id);
+                        const stock = stockRefsByInvoice[allocation.invoice_id]?.join(', ');
+                        return (
+                          <div key={allocation.id} className="flex items-center justify-between rounded-md bg-secondary/60 px-3 py-2 text-xs">
+                            <span>
+                              Applied to {invoice?.invoice_number || 'invoice'}
+                              {stock ? ` · ${stock}` : ''} · {money(allocation.amount, row.currency)}
+                            </span>
+                            <Button variant="ghost" size="sm" className="h-7 text-destructive" disabled={busy} onClick={() => void reverse(allocation)}>
+                              <RotateCcw className="h-3.5 w-3.5" />
+                              Reverse
+                            </Button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              );
+            })}
+            {remittances.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No remittances recorded for this customer.</p>
+            ) : null}
+          </CardContent>
+        </Card>
+        <Card id="buying" className="scroll-mt-24">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShoppingBag className="h-5 w-5" />
+              Buying details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {reservedBuying.map((item) => (
+              <div key={item.key} className="flex items-start justify-between gap-4 rounded-lg border border-accent/30 bg-accent/[0.04] p-4">
+                <div>
+                  <p className="font-medium">{item.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Reserved · {item.kind} · Ref {item.inventory_reference}
+                  </p>
+                </div>
+                <span className="shrink-0 font-semibold">{money(item.line_total, item.currency || chartCurrency)}</span>
               </div>
-              <span className="shrink-0 font-semibold">{money(item.line_total, invoice?.currency || chartCurrency)}</span>
-            </div>
-          );
-        })}
-        {reservedBuying.length === 0 && buyingInvoiceItems.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No reserved stock or invoice buying details yet.</p>
-        ) : null}
-      </CardContent></Card>
-    </div>
+            ))}
+            {buyingInvoiceItems.map((item) => {
+              const invoice = invoices.find((row) => row.id === item.invoice_id);
+              return (
+                <div key={item.id} className="flex items-start justify-between gap-4 rounded-lg border p-4">
+                  <div>
+                    <p className="font-medium">{item.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {invoice?.invoice_number} · Qty {item.quantity}
+                      {item.inventory_reference ? ` · Ref ${item.inventory_reference}` : ''}
+                      {item.inventory_type ? ` · ${item.inventory_type}` : ''}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-semibold">{money(item.line_total, invoice?.currency || chartCurrency)}</span>
+                </div>
+              );
+            })}
+            {reservedBuying.length === 0 && buyingInvoiceItems.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">No reserved stock or invoice buying details yet.</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+    </section>
   </div>;
 }

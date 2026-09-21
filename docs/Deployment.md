@@ -192,7 +192,18 @@ Migrations already applied on production — deploy app code only; do not re-app
 | 77 | `20260921120000_phase_77_bulk_reserve_stock.sql` | Catalog bulk reserve |
 | 78 | `20260921130000_phase_78_customer_auto_id.sql` | `customer_code_seq` ~48001+; consignee |
 
-App-only (no new secrets): Allocate To Stocks; remittance Excel/CSV export; reports hub + Excel; vehicles Export Excel; stock invoice badges; multi-currency `formatMoneyBreakdown`.
+App-only (no new secrets): Allocate To Stocks; remittance Excel/CSV export; reports hub + Excel; vehicles Export Excel; stock invoice badges; multi-currency `formatMoneyBreakdown` / **MoneyBreakdown**.
+
+## Post–Phase 78 (Make Available + security + SOA/SEO UI)
+
+Migrations **already applied on production** — deploy app code only; do not re-apply if present in `schema_migrations`:
+
+| Migration | Notes |
+|---|---|
+| `20260922010000_fix_sync_catalog_sold_state_security_definer.sql` | Make Available: DEFINER `sync_catalog_sold_state` + `clear_reservation_buying_documents` |
+| `20260922020000_security_advisor_hardening.sql` | PO sequences RLS; tawk receipts deny; `touch_admin_last_seen` anon revoke |
+
+App-only (no new secrets): customer SOA `#soa` section + portal/account **MoneyBreakdown**; dashboard/analytics All-currencies cleanup; Product JSON-LD via `lib/product-schema.ts`.
 
 ## Admin UI polish (post-65, no migration)
 

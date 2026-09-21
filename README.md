@@ -12,7 +12,7 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 
 ## Project status
 
-Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)** (~**96–98%** of the chosen Phase 1–78 ERP + public + platform MVP).
+Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)** (~**96–98%** of the chosen Phase 1–78 ERP + public + platform MVP; post-78 Make Available / security / SOA / Product schema shipped).
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -30,6 +30,7 @@ Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE
 | 72 | Commission claims | Complete |
 | 74–76 | Config: yards, shipping companies, freight charges | Complete |
 | 77–78 | Bulk reserve; customer auto ID (~48001+) | Complete |
+| Post-78 | Make Available DEFINER; security advisor RLS; SOA `#soa` + MoneyBreakdown; Product JSON-LD | Complete |
 | Product UX | PWA **Anshatradingco APP**, reports hub + Excel, multi-currency breakdowns, stock invoice badges, Tawk, subscribers | Complete |
 
 Module matrix: [docs/Modules.md](./docs/Modules.md). Full audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md).
@@ -81,7 +82,7 @@ Only public/publishable Supabase keys belong in browser variables. Never expose 
 
 Database changes belong under `supabase/migrations/`. They must be tested transactionally, applied to the linked Supabase project, verified with read-only queries, and committed with the phase documentation.
 
-Latest migrations include Phase **72–78** (commissions, remittance auto-confirm, yards, shipping companies, freight charges, bulk reserve, customer auto ID) and earlier ERP phases under `supabase/migrations/`. See [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md).
+Latest migrations include Phase **72–78** plus post-78 Make Available SECURITY DEFINER and security advisor hardening (already applied on production). Earlier ERP phases remain under `supabase/migrations/`. See [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md).
 
 ## Phase 4: global SEO and exporter schema
 

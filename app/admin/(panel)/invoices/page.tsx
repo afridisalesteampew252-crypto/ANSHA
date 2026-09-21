@@ -17,10 +17,10 @@ import {
 import {
   addToCurrencyMap,
   formatMoney,
-  formatMoneyBreakdown,
   listCurrencies,
   normalizeCurrency,
 } from '@/lib/money';
+import { MoneyBreakdown } from '@/components/money-breakdown';
 
 type InvoiceItemRef = {
   description: string | null;
@@ -184,9 +184,7 @@ export default function InvoicesPage() {
           <CardTitle className="text-sm font-medium text-muted-foreground">Total invoiced</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-line text-2xl font-bold leading-snug">
-            {formatMoneyBreakdown(totalsByCurrency.issued)}
-          </p>
+          <MoneyBreakdown amounts={totalsByCurrency.issued} />
         </CardContent>
       </Card>
       <Card>
@@ -194,9 +192,7 @@ export default function InvoicesPage() {
           <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-line text-2xl font-bold leading-snug">
-            {formatMoneyBreakdown(totalsByCurrency.outstanding)}
-          </p>
+          <MoneyBreakdown amounts={totalsByCurrency.outstanding} />
         </CardContent>
       </Card>
       <Card>
@@ -204,9 +200,7 @@ export default function InvoicesPage() {
           <CardTitle className="text-sm font-medium text-muted-foreground">Overdue</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-line text-2xl font-bold leading-snug text-destructive">
-            {formatMoneyBreakdown(totalsByCurrency.overdue)}
-          </p>
+          <MoneyBreakdown amounts={totalsByCurrency.overdue} className="text-destructive" />
         </CardContent>
       </Card>
     </div> : null}

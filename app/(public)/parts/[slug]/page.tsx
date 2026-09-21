@@ -41,7 +41,12 @@ import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { supabase } from '@/lib/supabase/client';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
-import type { PartWithRelations, SiteOffer } from '@/lib/types';
+import {
+  buildProductOffer,
+  buildProductReviewFields,
+  resolveProductOfferPrice,
+} from '@/lib/product-schema';
+import type { PartWithRelations, Review, SiteOffer } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
 
 export default function PartDetailPage(props: { params: Promise<{ slug: string }> }) {
@@ -51,6 +56,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
   const [part, setPart] = useState<PartWithRelations | null>(null);
   const [relatedParts, setRelatedParts] = useState<PartWithRelations[]>([]);
   const [deal, setDeal] = useState<SiteOffer | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFoundFlag, setNotFoundFlag] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -78,14 +84,24 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
       setPart({ ...typedData, part_photos: sortedPhotos });
       setSelectedImage(coverIndex >= 0 ? coverIndex : 0);
 
-      const { data: offerRows } = await supabase
-        .from('site_offers')
-        .select('*')
-        .eq('is_published', true)
-        .eq('part_id', typedData.id)
-        .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(1);
+      const [{ data: offerRows }, { data: reviewRows }] = await Promise.all([
+        supabase
+          .from('site_offers')
+          .select('*')
+          .eq('is_published', true)
+          .eq('part_id', typedData.id)
+          .order('published_at', { ascending: false, nullsFirst: false })
+          .limit(1),
+        supabase
+          .from('reviews')
+          .select('*')
+          .eq('is_published', true)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: false })
+          .limit(10),
+      ]);
       setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
+      setReviews((reviewRows || []) as Review[]);
       setLoading(false);
 
       // Fetch related parts (same category, excluding this one)
@@ -131,6 +147,26 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
     : null;
   const hasListPrice = Boolean(part.show_price && part.price && part.price > 0);
   const dealPrice = deal ? effectiveDealPrice(hasListPrice ? part.price : null, deal) : null;
+  const pageUrl = `${siteConfig.url}/parts/${part.slug}`;
+  const offerPrice = resolveProductOfferPrice({
+    dealPrice,
+    showPrice: Boolean(part.show_price),
+    price: part.price,
+    priceFob: part.price_fob,
+    priceCf: part.price_cf,
+    priceCif: part.price_cif,
+  });
+  const offers = buildProductOffer({
+    price: offerPrice,
+    currency: part.currency,
+    url: pageUrl,
+    availability:
+      part.quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+  });
+  const reviewFields = buildProductReviewFields(reviews, {
+    name: part.name,
+    url: pageUrl,
+  });
 
   const navigatePhoto = (dir: 'prev' | 'next') => {
     setSelectedImage((prev) => {
@@ -173,14 +209,9 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           mpn: part.part_number || part.oem_number || undefined,
           brand: part.brand ? { '@type': 'Brand', name: part.brand } : undefined,
           image: photos.map((photo) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${photo.storage_path}`),
-          url: `${siteConfig.url}/parts/${part.slug}`,
-          offers: {
-            '@type': 'Offer',
-            availability: part.quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-            priceCurrency: part.currency,
-            price: dealPrice ?? (part.show_price && part.price ? part.price : undefined),
-            url: `${siteConfig.url}/parts/${part.slug}`,
-          },
+          url: pageUrl,
+          ...(offers ? { offers } : {}),
+          ...reviewFields,
         }}
       />
 

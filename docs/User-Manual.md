@@ -94,7 +94,7 @@ Open `/admin` after login. Menu groups match the sidebar.
 
 | Page | Path | Steps |
 |---|---|---|
-| Dashboard | `/admin/dashboard` | Review counts and ops charts. |
+| Dashboard | `/admin/dashboard` | Review counts and ops charts. Money KPIs use **All currencies** stacked breakdown (no FX mixing). |
 | Analytics | `/admin/analytics` | Pick a date range for sales / stock / purchase / request KPIs. Sales see own-book receivables only. |
 | AI assistant | `/admin/ai` | Ask ops questions grounded in live data. Needs server AI keys (see Tips). |
 | Audit log | `/admin/audit-log` | **Admin only.** Filter by entity, actor, or date (invoice status, part/vehicle catalog activity, remittance allocations). Append-only. |
@@ -164,16 +164,16 @@ Ops also use one-off scripts for large WhatsApp/Japan ZIP loads (see [Developmen
 **Customers** — `/admin/customers`
 
 1. Create or search customers. New rows get an auto **Customer ID** (`customer_code`, sequence starting ~48001). Existing codes are kept.
-2. Use the row **Actions** menu for SOA, invoices, remittances, consignee, edit, or deactivate.
-3. Open a customer for statement of account (invoices, remittances, allocations, **Buying details** including currently reserved stock). Optional **consignee** shipping contact fields.
+2. Use the row **Actions** menu for SOA (`/admin/customers/[id]#soa`), invoices, remittances, consignee, edit, or deactivate.
+3. Open a customer — jump to **Statement of Account** (`#soa`) for invoices, remittances, allocations, and **Buying details** (currently reserved stock). Multi-currency KPI totals stack each currency separately (**MoneyBreakdown**; never convert/mix FX). Optional **consignee** shipping contact fields.
 4. **Admin only:** enable portal access from the customer SOA page.
 
 **Reserve stock** — `/admin/reservations` (field agents + ops) or catalog **Bulk reserve**
 
 1. Select an available **vehicle or part** and customer (or multi-select on catalog lists → Bulk reserve). Field agents only see **available** units plus stock **they** reserved.
-2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release **or** when stock is set to Available. Sales/freelancer requester fields are locked to their profile.
+2. Set **price term** (FOB / C&F / CIF), **shipment term** (DHL / RoRo / 20ft / 40ft), **inspection** (Yes / No), and **VAT** (Yes / No). Optional requester name/role and ETD/ETA. These store on the reserved stock and clear on release **or** when stock is set to **Available** (Make Available). Sales/freelancer requester fields are locked to their profile.
 3. Reserve stock; optionally create a **draft proforma** in one step (field agents land on the draft). Bulk reserve keeps successful rows even if some fail. Choosing a price term can pull the matching catalog Incoterm quote into the proforma line. The customer SOA **Buying details** updates for the reserved unit.
-4. Release (with republish when appropriate) if the deal does not proceed — unpaid open reservation proformas cancel automatically so SOA Buying clears.
+4. Release or **Make Available** if the deal does not proceed — unpaid open reservation proformas cancel automatically so SOA Buying clears.
 
 **Commissions** — `/admin/commissions`
 
@@ -304,7 +304,7 @@ Manager inventory/ops is **location-scoped** via stock origins assigned under Us
 | Login | `/portal` | Sign in with portal credentials. |
 | Reservations | `/portal/reservations` | Vehicles and parts reserved in your name (photo, terms, ETD/ETA, linked proforma/invoice). |
 | Invoices | `/portal/invoices`, `/portal/invoices/[id]` | List and open your non-draft invoices. |
-| Account statement | `/portal/account` | Confirmed remittances, allocations, and outstanding KPIs (no remittance notes, drafts, or staff allocate tools). |
+| Account statement | `/portal/account` | Confirmed remittances, allocations, Buying details, and outstanding KPIs with per-currency **MoneyBreakdown** (no remittance notes, drafts, or staff allocate tools). |
 
 Portal access is enabled by an **admin** from the customer page in ERP. Remittances and chat stay staff-only.
 
