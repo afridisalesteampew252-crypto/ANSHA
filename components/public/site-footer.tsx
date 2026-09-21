@@ -19,8 +19,9 @@ export function SiteFooter() {
               <Image
                 src="/images/ansha-logo-transparent.webp"
                 alt="Ansha Trading Co. LLC-FZ"
-                width={1000}
-                height={497}
+                width={200}
+                height={99}
+                sizes="200px"
                 className="h-14 w-auto max-w-[200px] object-contain sm:h-16"
               />
             </Link>
@@ -31,7 +32,7 @@ export function SiteFooter() {
               href={`https://wa.me/${siteConfig.whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-[#25D366] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-[#128C7E] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
             >
               <MessageCircle className="h-4 w-4" />
               Chat on WhatsApp

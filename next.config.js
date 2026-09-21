@@ -17,6 +17,29 @@ const nextConfig = {
       },
     ];
   },
+  /**
+   * Google tag gateway (first-party `/metrics`).
+   * beforeFiles so Next does not 404 `/metrics?id=…` or 308 `/metrics/` → `/metrics`
+   * before the Vercel/fps.goog upstream rewrite. Keep in sync with vercel.json.
+   */
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/metrics',
+          destination: 'https://gtm-tfszd9wt.fps.goog/metrics',
+        },
+        {
+          source: '/metrics/',
+          destination: 'https://gtm-tfszd9wt.fps.goog/metrics/',
+        },
+        {
+          source: '/metrics/:path*',
+          destination: 'https://gtm-tfszd9wt.fps.goog/metrics/:path*',
+        },
+      ],
+    };
+  },
   async headers() {
     return [
       {

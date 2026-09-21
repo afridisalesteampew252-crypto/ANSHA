@@ -36,10 +36,10 @@ export function MobileBottomNav() {
               href={item.href}
               className={cn(
                 'flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold transition-colors',
-                active ? 'text-accent' : 'text-muted-foreground'
+                active ? 'text-foreground' : 'text-muted-foreground'
               )}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
+              <item.icon className={cn('h-5 w-5 shrink-0', active && 'text-accent')} />
               <span className="max-w-full truncate">{item.label}</span>
             </Link>
           );
@@ -50,7 +50,7 @@ export function MobileBottomNav() {
           rel="noopener noreferrer"
           className="flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold text-[#199c4b]"
         >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#25D366] text-white shadow-md">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#128C7E] text-white shadow-md">
             <MessageCircle className="h-4 w-4" />
           </span>
           <span className="max-w-full truncate">WhatsApp</span>

@@ -124,7 +124,7 @@ Google Tag Manager: set on the **Vercel** project (and local `.env.local`). The 
 - `app/(public)/layout.tsx` — all public routes (home, catalog, blog, markets, verify, cookie-policy, etc.) via `components/analytics/google-tag-manager.tsx`
 - `app/portal/layout.tsx` — customer portal (same origin)
 
-Not loaded on `/admin`. Head snippet uses `next/script` (`afterInteractive`) and loads the container from the **first-party gateway path** (default `/metrics/?id=…`), not `www.googletagmanager.com`. Noscript iframe still uses `https://www.googletagmanager.com/ns.html?id=…` — Google tag gateway does **not** support first-party noscript. Configure GA4 and other tags inside the GTM container — do not also load direct `gtag.js` for a measurement ID. Disclosed in `/cookie-policy`. No consent banner yet.
+Not loaded on `/admin`. Head snippet uses `next/script` (`lazyOnload`) and loads the container from the **first-party gateway path** (default `/metrics?id=…`, no trailing slash), not `www.googletagmanager.com`. Noscript iframe still uses `https://www.googletagmanager.com/ns.html?id=…` — Google tag gateway does **not** support first-party noscript. Configure GA4 and other tags inside the GTM container — do not also load direct `gtag.js` for a measurement ID. Disclosed in `/cookie-policy`. No consent banner yet.
 
 | Variable | Required | Notes |
 |---|---|---|
@@ -141,8 +141,8 @@ First-party measurement path: **`/metrics`** (no App Router page conflict; alter
 |---|---|
 | GTM container | `GTM-TFSZD9WT` |
 | Gateway origin | `gtm-tfszd9wt.fps.goog` (lowercase container id) |
-| Browser script | `https://www.anshatradingco.com/metrics/?id=GTM-TFSZD9WT` |
-| Vercel rewrite | `/metrics` and `/metrics/:path*` → `https://gtm-tfszd9wt.fps.goog/metrics` and `…/metrics/:path*` (`vercel.json`) |
+| Browser script | `https://www.anshatradingco.com/metrics?id=GTM-TFSZD9WT` |
+| Vercel rewrite | `/metrics` and `/metrics/:path*` → `https://gtm-tfszd9wt.fps.goog/metrics` and `…/metrics/:path*` (`next.config.js` `rewrites.beforeFiles` + `vercel.json`) |
 
 **Host header:** Vercel external rewrites open a new HTTPS connection to the destination URL, so upstream `Host` is `gtm-tfszd9wt.fps.goog` automatically. Vercel does **not** expose a custom Host override on rewrites; none is needed when the destination hostname is already the fps.goog origin.
 
@@ -153,9 +153,9 @@ First-party measurement path: **`/metrics`** (no App Router page conflict; alter
 | Check | URL | Expected |
 |---|---|---|
 | Routing | `https://www.anshatradingco.com/metrics/healthy` | body `ok` |
-| Geo headers | `https://www.anshatradingco.com/metrics/?validate_geo=healthy` | body `ok` (may fail on Vercel-only rewrite; see above) |
+| Geo headers | `https://www.anshatradingco.com/metrics?validate_geo=healthy` | body `ok` (may fail on Vercel-only rewrite; see above) |
 
-**Tag Assistant:** Preview the site → Summary → Output → Hits Sent. Script and measurement requests should hit `www.anshatradingco.com/metrics/…`, not `www.googletagmanager.com/gtm.js`. Noscript may still reference googletagmanager.com. Optionally set `server_container_url` = `https://www.anshatradingco.com/metrics` on Google tags inside the container so GA4/Ads collect via the gateway path.
+**Tag Assistant:** Preview the site → Summary → Output → Hits Sent. Script and measurement requests should hit `www.anshatradingco.com/metrics…`, not `www.googletagmanager.com/gtm.js`. Noscript may still reference googletagmanager.com. Optionally set `server_container_url` = `https://www.anshatradingco.com/metrics` on Google tags inside the container so GA4/Ads collect via the gateway path.
 
 ### GTM / GA — Configure your domains
 

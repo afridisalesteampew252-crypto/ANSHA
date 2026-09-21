@@ -19,8 +19,12 @@ export function formatZoneTime(date: Date, timeZone: string) {
   }).format(date);
 }
 
+/** Stable SSR placeholder — avoids React #418 text hydration mismatches vs client clock. */
+const CLOCK_PLACEHOLDER = '--:--:--';
+
 export function useLiveClock(timeZone: string) {
-  const [now, setNow] = useState(() => formatZoneTime(new Date(), timeZone));
+  // Empty/placeholder on server + first paint; real time only after mount.
+  const [now, setNow] = useState(CLOCK_PLACEHOLDER);
 
   useEffect(() => {
     const tick = () => setNow(formatZoneTime(new Date(), timeZone));
@@ -34,10 +38,9 @@ export function useLiveClock(timeZone: string) {
 
 export function useLiveClocks(zones: LiveClockZone[]) {
   const zoneKey = zones.map((zone) => `${zone.id}:${zone.timeZone}`).join('|');
-  const [times, setTimes] = useState<Record<string, string>>(() => {
-    const stamp = new Date();
-    return Object.fromEntries(zones.map((zone) => [zone.id, formatZoneTime(stamp, zone.timeZone)]));
-  });
+  const [times, setTimes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(zones.map((zone) => [zone.id, CLOCK_PLACEHOLDER]))
+  );
 
   useEffect(() => {
     const tick = () => {

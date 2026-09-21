@@ -214,9 +214,9 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
               <Tag className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/75">Featured</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">Featured</p>
               <h2 className="text-base font-extrabold tracking-tight sm:text-lg">Current deals &amp; export offers</h2>
-              <p className="mt-0.5 text-sm text-white/75">Published promotions from ANSHA — always linked here.</p>
+              <p className="mt-0.5 text-sm text-white/95">Published promotions from ANSHA — always linked here.</p>
             </div>
           </div>
           <Button asChild className="h-11 w-full shrink-0 rounded-full bg-white px-5 text-sm font-bold text-accent hover:bg-white/90 sm:w-auto">
@@ -232,7 +232,7 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
             className="grid gap-3 rounded-[22px] border border-accent/20 bg-[#101114] p-4 text-white shadow-[0_16px_48px_rgba(16,17,20,0.28)] sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
           >
             <div className="lg:col-span-4">
-              <span className="eyebrow text-accent">Catalog finder</span>
+              <span className="eyebrow text-[#ff8a8a]">Catalog finder</span>
               <h2 className="mt-1.5 text-lg font-extrabold tracking-tight text-white sm:text-xl">Find the right part faster</h2>
             </div>
             <label className="block">
@@ -510,7 +510,7 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
           <div className="rounded-[28px] bg-accent p-7 text-white sm:p-10">
             <CircleHelp className="h-11 w-11" />
             <h2 className="mt-6 font-display text-3xl font-extrabold tracking-tight">Can&apos;t find the exact part?</h2>
-            <p className="mt-4 leading-7 text-white/75">
+            <p className="mt-4 leading-7 text-white/95">
               Share the part name, OEM number, vehicle model or chassis code. Our sourcing team will review your request.
             </p>
             <ul className="mt-7 space-y-3 text-sm font-semibold">

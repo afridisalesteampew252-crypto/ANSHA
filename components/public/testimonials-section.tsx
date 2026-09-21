@@ -5,7 +5,7 @@ import type { Review } from '@/lib/types';
 function Stars({ rating }: { rating: number }) {
   const safe = Math.min(5, Math.max(1, Math.round(rating)));
   return (
-    <div className="flex items-center gap-0.5" aria-label={`${safe} out of 5 stars`}>
+    <div className="flex items-center gap-0.5" role="img" aria-label={`${safe} out of 5 stars`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}

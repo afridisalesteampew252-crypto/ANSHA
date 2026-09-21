@@ -13,6 +13,10 @@
       "destination": "https://gtm-tfszd9wt.fps.goog/metrics"
     },
     {
+      "source": "/metrics/",
+      "destination": "https://gtm-tfszd9wt.fps.goog/metrics/"
+    },
+    {
       "source": "/metrics/:path*",
       "destination": "https://gtm-tfszd9wt.fps.goog/metrics/:path*"
     }
@@ -20,6 +24,12 @@
   "headers": [
     {
       "source": "/metrics",
+      "headers": [
+        { "key": "x-vercel-enable-rewrite-caching", "value": "0" }
+      ]
+    },
+    {
+      "source": "/metrics/",
       "headers": [
         { "key": "x-vercel-enable-rewrite-caching", "value": "0" }
       ]

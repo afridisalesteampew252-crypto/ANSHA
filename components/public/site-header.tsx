@@ -119,9 +119,10 @@ export function SiteHeader() {
             <Image
               src="/images/ansha-logo-transparent.webp"
               alt="Ansha Trading Co. LLC-FZ"
-              width={1000}
-              height={497}
+              width={340}
+              height={169}
               priority
+              sizes="(max-width: 640px) 200px, (max-width: 1024px) 260px, 340px"
               className="h-12 w-auto max-w-[min(52vw,200px)] object-contain object-left sm:h-[64px] sm:max-w-[260px] lg:h-[84px] lg:max-w-[340px]"
             />
           </Link>
