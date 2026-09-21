@@ -1,4 +1,4 @@
-import { siteConfig } from '@/lib/site-config';
+import { absoluteMediaUrl } from '@/lib/seo';
 
 /** Resolve a blog featured_image value to a URL for cards, heroes, and OG tags. */
 export function blogImageUrl(
@@ -9,11 +9,7 @@ export function blogImageUrl(
   const value = featuredImage.trim();
   if (value.startsWith('http://') || value.startsWith('https://')) return value;
   if (value.startsWith('/')) {
-    if (options?.absolute) {
-      const base = (process.env.NEXT_PUBLIC_SITE_URL || siteConfig.url).replace(/\/$/, '');
-      return `${base}${value}`;
-    }
-    return value;
+    return options?.absolute ? absoluteMediaUrl(value) : value;
   }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
   if (!supabaseUrl) return null;

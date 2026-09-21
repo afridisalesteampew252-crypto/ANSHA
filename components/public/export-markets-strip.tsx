@@ -7,6 +7,7 @@ import { EXPORT_MARKETS, flagImageUrl } from '@/lib/export-markets';
 export function ExportMarketsStrip() {
   return (
     <section
+      id="export-markets"
       className="surface-mist max-w-full overflow-x-clip border-y border-accent/15 py-7 sm:py-9"
       aria-labelledby="export-markets-heading"
     >

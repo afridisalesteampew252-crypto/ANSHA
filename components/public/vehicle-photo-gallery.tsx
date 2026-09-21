@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
+import { vehicleImageAlt } from '@/lib/seo';
 import type { VehiclePhoto } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,10 @@ type VehiclePhotoGalleryProps = {
   photos: VehiclePhoto[];
   featured?: boolean;
   initialIndex?: number;
+  /** Optional year/make/model for alt text (never invents specs). */
+  year?: number | string | null;
+  make?: string | null;
+  model?: string | null;
 };
 
 export function VehiclePhotoGallery({
@@ -26,6 +31,9 @@ export function VehiclePhotoGallery({
   photos,
   featured = false,
   initialIndex = 0,
+  year,
+  make,
+  model,
 }: VehiclePhotoGalleryProps) {
   const [selectedImage, setSelectedImage] = useState(initialIndex);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -64,6 +72,7 @@ export function VehiclePhotoGallery({
 
   const currentPhoto = photos[selectedImage];
   const photoUrl = currentPhoto ? publicVehicleImageUrl(currentPhoto.storage_path) : null;
+  const altBase = { title, year, make, model };
 
   const navigatePhoto = (dir: 'prev' | 'next') => {
     setSelectedImage((prev) => {
@@ -76,7 +85,7 @@ export function VehiclePhotoGallery({
   return (
     <div className="min-w-0 space-y-3">
       <div
-        className="group relative aspect-[4/3] max-h-[min(70vh,560px)] w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-secondary/80 to-background shadow-sm"
+        className="group relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-secondary/80 to-background shadow-sm"
         onClick={() => photoUrl && setLightboxOpen(true)}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
@@ -100,13 +109,13 @@ export function VehiclePhotoGallery({
             navigatePhoto('next');
           }
         }}
-        aria-label={photoUrl ? `Open ${title} image ${selectedImage + 1} in full screen` : undefined}
+        aria-label={photoUrl ? `Open ${vehicleImageAlt(altBase)} image ${selectedImage + 1} in full screen` : undefined}
       >
         {photoUrl ? (
           <CatalogImage
             key={currentPhoto.id}
             src={photoUrl}
-            alt={`${title} — photo ${selectedImage + 1}`}
+            alt={vehicleImageAlt(altBase, { photoIndex: selectedImage + 1 })}
             fill
             priority={selectedImage === 0}
             sizes="(max-width: 1024px) 100vw, 50vw"
@@ -211,7 +220,7 @@ export function VehiclePhotoGallery({
               >
                 <CatalogImage
                   src={thumbUrl}
-                  alt={`${title} ${idx + 1}`}
+                  alt={vehicleImageAlt(altBase, { photoIndex: idx + 1 })}
                   fill
                   sizes="96px"
                   objectFit="contain"
@@ -233,7 +242,7 @@ export function VehiclePhotoGallery({
               <div className="relative min-h-0 w-full flex-1">
                 <CatalogImage
                   src={photoUrl}
-                  alt={title}
+                  alt={vehicleImageAlt(altBase, { photoIndex: selectedImage + 1 })}
                   fill
                   sizes="96vw"
                   objectFit="contain"

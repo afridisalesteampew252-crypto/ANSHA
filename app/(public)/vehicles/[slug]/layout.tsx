@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
-import { createPublicSupabaseClient, absoluteUrl } from '@/lib/supabase/public';
+import { createPublicSupabaseClient } from '@/lib/supabase/public';
 import { publicVehicleImageUrl } from '@/lib/public-media';
-import { defaultOgImage } from '@/lib/seo';
+import {
+  absoluteMediaUrl,
+  buildPageMetadata,
+  defaultOgImage,
+  sanitizeDescription,
+  vehicleListingTitle,
+} from '@/lib/seo';
 import { siteConfig } from '@/lib/site-config';
 
 type Props = {
@@ -14,7 +20,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createPublicSupabaseClient();
   const { data } = await supabase
     .from('vehicles')
-    .select('title, description, make, model, year, vehicle_photos(storage_path, is_cover, sort_order, is_auction_sheet)')
+    .select(
+      'title, description, make, model, year, variant, vehicle_photos(storage_path, is_cover, sort_order, is_auction_sheet)'
+    )
     .eq('slug', slug)
     .eq('is_published', true)
     .eq('stock_status', 'available')
@@ -39,31 +47,30 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cover = photos.find((p) => p.is_cover) || photos[0];
   const imageUrl = cover?.storage_path
     ? publicVehicleImageUrl(cover.storage_path)
-    : absoluteUrl(defaultOgImage.url);
+    : absoluteMediaUrl(defaultOgImage.url);
 
-  const title = data.title;
-  const description =
+  const title = vehicleListingTitle({
+    title: data.title,
+    year: data.year,
+    make: data.make,
+    model: data.model,
+    variant: data.variant,
+  });
+
+  const ymm = [data.year, data.make, data.model].filter(Boolean).join(' ');
+  const description = sanitizeDescription(
     data.description?.trim() ||
-    `${[data.year, data.make, data.model].filter(Boolean).join(' ')} — export vehicle from ${siteConfig.name}.`;
+      (ymm
+        ? `${ymm} — published export vehicle from ${siteConfig.name}.`
+        : `Published export vehicle from ${siteConfig.name}.`)
+  );
 
-  return {
+  return buildPageMetadata({
     title,
     description,
-    alternates: { canonical: `/vehicles/${slug}` },
-    openGraph: {
-      title: `${title} | ${siteConfig.name}`,
-      description,
-      url: absoluteUrl(`/vehicles/${slug}`),
-      type: 'website',
-      images: [{ url: imageUrl, alt: title }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [imageUrl],
-    },
-  };
+    path: `/vehicles/${slug}`,
+    image: { url: imageUrl, alt: title },
+  });
 }
 
 export default function VehicleSlugLayout({ children }: Props) {

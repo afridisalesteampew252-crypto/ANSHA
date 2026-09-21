@@ -8,18 +8,21 @@ import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-im
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
+import { partImageAlt } from '@/lib/seo';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
 import type { PartWithRelations, SiteOffer } from '@/lib/types';
 
 interface PartCardProps {
   part: PartWithRelations;
+  priority?: boolean;
   deal?: SiteOffer | null;
 }
 
-export function PartCard({ part, deal = null }: PartCardProps) {
+export function PartCard({ part, priority = false, deal = null }: PartCardProps) {
   const coverPhoto = part.part_photos?.find((photo) => photo.is_cover) || part.part_photos?.[0];
   const compatibility = part.part_compatibility?.[0];
   const photoUrl = coverPhoto ? publicPartImageUrl(coverPhoto.storage_path) : null;
+  const imageAlt = partImageAlt(part);
   const hasPrice = Boolean(part.show_price && part.price && part.price > 0);
   const listPrice = hasPrice ? Number(part.price) : null;
   const dealPrice =
@@ -51,8 +54,9 @@ export function PartCard({ part, deal = null }: PartCardProps) {
           {photoUrl ? (
             <CatalogImage
               src={photoUrl}
-              alt={part.name}
+              alt={imageAlt}
               fill
+              priority={priority}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               className="p-2.5 transition-transform duration-500 group-hover:scale-[1.04] sm:p-4"
               objectFit="contain"

@@ -1,11 +1,14 @@
+import type { Metadata } from 'next';
 import { Search, ShieldCheck, Truck, Headphones, Award } from 'lucide-react';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { siteConfig } from '@/lib/site-config';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'About Us',
-  description: `Learn about ${siteConfig.name} - your trusted automotive spare parts supplier.`,
-};
+  description: `${siteConfig.name} is a Dubai-based exporter of vehicles, automotive parts, and heavy machinery for global buyers.`,
+  path: '/about',
+});
 
 export default function AboutPage() {
   return (
@@ -15,10 +18,10 @@ export default function AboutPage() {
           <div className="mx-auto max-w-3xl text-center">
             <p className="eyebrow text-accent mb-2">About Us</p>
             <h1 className="font-display text-3xl font-black tracking-tight md:text-4xl">
-              Your Trusted Partner in<br />Automotive Spare Parts
+              Dubai export partner for<br />vehicles, parts &amp; machinery
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
-              Dubai-based global automotive exporter — verified inventory, OEM fitment support, and worldwide shipping coordination.
+              Published inventory, OEM fitment support, and worldwide shipping coordination for importers and workshops.
             </p>
           </div>
         </div>
@@ -28,9 +31,9 @@ export default function AboutPage() {
         <div className="container-page py-12 sm:py-14">
           <div className="mx-auto max-w-3xl">
             <p className="text-lg leading-relaxed text-foreground/80">
-              {siteConfig.name} is a dedicated automotive spare parts supplier, providing quality parts
-              for a wide range of vehicle makes and models. We help mechanics, workshops, and individual
-              vehicle owners find the right parts quickly and reliably.
+              {siteConfig.name} exports vehicles, automotive parts, and heavy machinery from Dubai.
+              We help importers, workshops, and fleet buyers source published stock by make, model,
+              OEM number, and chassis details.
             </p>
 
             <div className="mt-12 grid gap-5 sm:grid-cols-2">

@@ -24,14 +24,37 @@ Default branch is `main`. There is no `master` workflow in `.github/workflows/ci
 
 ## SEO / Search Console (shipped)
 
-After each production deploy that touches crawl metadata:
+Canonical origin: `https://www.anshatradingco.com` (`lib/site-config.ts`; optional override `NEXT_PUBLIC_SITE_URL`). Shared metadata: `lib/seo.ts` / `lib/seo-schema.ts` / `lib/product-schema.ts`.
 
-1. **Google Search Console ownership** — root layout includes `metadata.verification.google` (HTML tag). Confirm the property verifies for `https://www.anshatradingco.com`.
-2. **Request indexing** — submit or re-request key URLs (home, catalog hubs, blog, reviews) once the deploy is READY.
-3. **Favicon / brand icons** — stable `/favicon.ico` plus `/icons/favicon-48.png` and PWA icons under `/icons/*`. Google may take **days** to refresh the SERP icon after a change.
-4. **Default Open Graph** — `/images/og-default.jpg` via `lib/seo.ts` (`defaultOgImage`); listing/detail pages fall back to it when no cover photo exists.
+### What the app ships (code)
 
-Helpers: `lib/seo.ts`, `scripts/generate-brand-icons.mjs`.
+| Area | Behavior |
+|---|---|
+| `robots.txt` | Allow `/`; disallow `/admin`, `/portal`, `/api`; sitemap URL |
+| `sitemap.xml` | Home, hubs, company pages, published blog, categories, published+available parts/vehicles, markets (only when vehicle pool non-empty) |
+| Metadata | `buildPageMetadata` / `buildListingPageMetadata` — canonical, OG/Twitter; faceted listing query URLs → canonical parent + `noindex,follow` |
+| Markets | Empty inventory → `noindex,follow`; no invented customs/tax copy |
+| JSON-LD | Root: Organization + WebSite; blog: Article + BreadcrumbList; listings/categories: ItemList where applicable; Product offers only with valid price+currency |
+| Images | Cover/OG via `absoluteMediaUrl`; alts from real title/YMM (`vehicleImageAlt` / `partImageAlt`) |
+| GSC / GTM | `metadata.verification.google`; GTM via first-party `/metrics` gateway (see Tag Assistant below) |
+
+Helpers: `lib/seo.ts`, `lib/seo-schema.ts`, `lib/product-schema.ts`, `scripts/generate-brand-icons.mjs`.
+
+### Post-deploy checklist (human)
+
+After each production deploy that touches crawl metadata (deploy must be **READY**):
+
+1. **GSC ownership** — confirm the property verifies for `https://www.anshatradingco.com` (HTML tag already in root layout).
+2. **Sitemap** — in GSC → Sitemaps, submit or re-submit `https://www.anshatradingco.com/sitemap.xml` if this deploy changed crawl URLs (markets, robots, inventory filters). Do not re-submit on unrelated app-only deploys.
+3. **Request indexing** — re-request key URLs as needed: home, `/vehicles`, `/parts`, `/machinery`, `/markets/…` (a few live destinations), `/blog`, `/reviews`.
+4. **Tag Assistant (GTM gateway)** — Preview production → Summary → Output → Hits Sent. Script/measurement should hit `www.anshatradingco.com/metrics/…`, not `www.googletagmanager.com/gtm.js` (noscript may still use googletagmanager.com). Full gateway notes under **Google tag gateway for advertisers** below.
+5. **Favicon / OG** — `/favicon.ico`, `/icons/favicon-48.png`, default OG `/images/og-default.jpg`. SERP icon refresh can take **days**.
+
+### Intentional gaps (do not “fix” without a new brief)
+
+- No `/brands` microsite — make filters use faceted `noindex` policy instead.
+- Vehicle/part **detail** Product + Breadcrumb JSON-LD render after client hydrate (`'use client'` pages); server `generateMetadata` + canonical still apply. Prefer a later server-component split if crawlers must see schema in first HTML.
+- Market pages: metadata/noindex yes; visual BreadcrumbList not rolled onto market UI yet.
 
 ## CI
 

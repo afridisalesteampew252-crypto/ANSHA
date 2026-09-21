@@ -36,9 +36,10 @@ import { BrandLogo } from '@/components/public/brand-logo';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
-import { publicPartImageUrl } from '@/components/public/catalog-image';
+import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-image';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { supabase } from '@/lib/supabase/client';
+import { partImageAlt } from '@/lib/seo';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
 import {
@@ -48,6 +49,7 @@ import {
 } from '@/lib/product-schema';
 import type { PartWithRelations, Review, SiteOffer } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
+import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 
 export default function PartDetailPage(props: { params: Promise<{ slug: string }> }) {
   const params = use(props.params);
@@ -142,9 +144,8 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
   const photos = part.part_photos || [];
   const compatibilities = part.part_compatibility || [];
   const currentPhoto = photos[selectedImage];
-  const photoUrl = currentPhoto
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${currentPhoto.storage_path}`
-    : null;
+  const photoUrl = currentPhoto ? publicPartImageUrl(currentPhoto.storage_path) : null;
+  const imageAlt = partImageAlt(part, { photoIndex: selectedImage + 1 });
   const hasListPrice = Boolean(part.show_price && part.price && part.price > 0);
   const dealPrice = deal ? effectiveDealPrice(hasListPrice ? part.price : null, deal) : null;
   const pageUrl = `${siteConfig.url}/parts/${part.slug}`;
@@ -179,21 +180,16 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
     <div className="overflow-x-clip">
       <div className="page-band">
         <div className="container-page py-5 sm:py-6">
-          <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/55">
-            <Link href="/" className="shrink-0 hover:text-white">Home</Link>
-            <ChevronRight className="h-4 w-4 shrink-0" />
-            <Link href="/parts" className="shrink-0 hover:text-white">Parts</Link>
-            {part.categories && (
-              <>
-                <ChevronRight className="h-4 w-4 shrink-0" />
-                <Link href={`/categories/${part.categories.slug}`} className="shrink-0 hover:text-white">
-                  {part.categories.name}
-                </Link>
-              </>
-            )}
-            <ChevronRight className="h-4 w-4 shrink-0" />
-            <span className="truncate font-medium text-white">{part.name}</span>
-          </nav>
+          <PageBreadcrumbs
+            items={[
+              { name: 'Home', href: '/' },
+              { name: 'Parts', href: '/parts' },
+              ...(part.categories
+                ? [{ name: part.categories.name, href: `/categories/${part.categories.slug}` }]
+                : []),
+              { name: part.name },
+            ]}
+          />
         </div>
       </div>
 
@@ -208,7 +204,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           sku: part.part_code,
           mpn: part.part_number || part.oem_number || undefined,
           brand: part.brand ? { '@type': 'Brand', name: part.brand } : undefined,
-          image: photos.map((photo) => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${photo.storage_path}`),
+          image: photos.map((photo) => publicPartImageUrl(photo.storage_path)),
           url: pageUrl,
           ...(offers ? { offers } : {}),
           ...reviewFields,
@@ -229,14 +225,17 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
                 setLightboxOpen(true);
               }
             }}
-            aria-label={photoUrl ? `Open ${part.name} image ${selectedImage + 1} in full screen` : undefined}
+            aria-label={photoUrl ? `Open ${partImageAlt(part)} image ${selectedImage + 1} in full screen` : undefined}
           >
             {photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <CatalogImage
                 src={photoUrl}
-                alt={part.name}
-                className="h-full w-full object-contain p-3 sm:p-6"
+                alt={imageAlt}
+                fill
+                priority={selectedImage === 0}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                objectFit="contain"
+                className="p-3 sm:p-6"
               />
             ) : (
               <div className="flex h-full items-center justify-center">
@@ -283,7 +282,7 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           {photos.length > 1 && (
             <div className="flex snap-x gap-2 overflow-x-auto pb-2" aria-label="Part photo thumbnails">
               {photos.map((photo, idx) => {
-                const thumbUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${photo.storage_path}`;
+                const thumbUrl = publicPartImageUrl(photo.storage_path);
                 return (
                   <button
                     key={photo.id}
@@ -294,11 +293,13 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
                       idx === selectedImage ? 'border-accent ring-2 ring-accent/15' : 'border-border hover:border-foreground/40'
                     }`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <CatalogImage
                       src={thumbUrl}
-                      alt={`${part.name} ${idx + 1}`}
-                      className="h-full w-full object-contain p-1"
+                      alt={partImageAlt(part, { photoIndex: idx + 1 })}
+                      fill
+                      sizes="96px"
+                      objectFit="contain"
+                      className="p-1"
                     />
                   </button>
                 );
@@ -533,12 +534,15 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
           <DialogTitle className="sr-only">{part.name} — Image {selectedImage + 1}</DialogTitle>
           <div className="relative flex h-full min-h-[50vh] flex-col items-center justify-center p-4 pb-24 sm:p-8 sm:pb-28">
             {photoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoUrl}
-                alt={part.name}
-                className="h-full min-h-0 w-full object-contain"
-              />
+              <div className="relative min-h-0 w-full flex-1">
+                <CatalogImage
+                  src={photoUrl}
+                  alt={imageAlt}
+                  fill
+                  sizes="96vw"
+                  objectFit="contain"
+                />
+              </div>
             )}
             {photos.length > 1 && (
               <>
@@ -568,10 +572,15 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
                       onClick={() => setSelectedImage(index)}
                       aria-label={`Show photo ${index + 1}`}
                       aria-current={index === selectedImage ? 'true' : undefined}
-                      className={`h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 bg-white/5 ${index === selectedImage ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                      className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 bg-white/5 ${index === selectedImage ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'}`}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/part-images/${photo.storage_path}`} alt="" className="h-full w-full object-contain" />
+                      <CatalogImage
+                        src={publicPartImageUrl(photo.storage_path)}
+                        alt=""
+                        fill
+                        sizes="56px"
+                        objectFit="contain"
+                      />
                     </button>
                   ))}
                 </div>
@@ -585,7 +594,21 @@ export default function PartDetailPage(props: { params: Promise<{ slug: string }
       {relatedParts.length > 0 && (
         <div className="mt-12">
           <Separator className="mb-8" />
-          <h2 className="mb-6 font-display text-xl font-black tracking-tight">Related Parts</h2>
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="font-display text-xl font-black tracking-tight">Related Parts</h2>
+            {part.categories ? (
+              <Link
+                href={`/categories/${part.categories.slug}`}
+                className="text-sm font-semibold text-accent hover:underline"
+              >
+                More in {part.categories.name}
+              </Link>
+            ) : (
+              <Link href="/parts" className="text-sm font-semibold text-accent hover:underline">
+                Browse all parts
+              </Link>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {relatedParts.map((rp) => (
               <PartCard key={rp.id} part={rp} deal={dealForPart(rp.id)} />

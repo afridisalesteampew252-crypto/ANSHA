@@ -9,6 +9,7 @@ import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-ite
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
 import { siteConfig } from '@/lib/site-config';
 import { equipmentCategoryLabel, isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
+import { vehicleImageAlt } from '@/lib/seo';
 import { pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
 import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 
@@ -21,6 +22,7 @@ interface VehicleCardProps {
 export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleCardProps) {
   const coverPhoto = pickVehicleCoverPhoto(vehicle.vehicle_photos);
   const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
+  const imageAlt = vehicleImageAlt(vehicle);
   const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
   const listPrice = hasPrice ? Number(vehicle.price) : null;
   const dealPrice =
@@ -50,10 +52,10 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
           {photoUrl ? (
             <CatalogImage
               src={photoUrl}
-              alt={vehicle.title}
+              alt={imageAlt}
               fill
               priority={priority}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
               className="transition-transform duration-500 group-hover:scale-105"
               objectFit="cover"
             />

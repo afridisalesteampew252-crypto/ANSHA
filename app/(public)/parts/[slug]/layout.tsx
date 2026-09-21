@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
-import { createPublicSupabaseClient, absoluteUrl } from '@/lib/supabase/public';
+import { createPublicSupabaseClient } from '@/lib/supabase/public';
 import { publicPartImageUrl } from '@/lib/public-media';
-import { defaultOgImage } from '@/lib/seo';
+import {
+  absoluteMediaUrl,
+  buildPageMetadata,
+  defaultOgImage,
+  sanitizeDescription,
+  sanitizeTitle,
+} from '@/lib/seo';
 import { siteConfig } from '@/lib/site-config';
 
 type Props = {
@@ -35,32 +41,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const cover = photos.find((p) => p.is_cover) || photos[0];
   const imageUrl = cover?.storage_path
     ? publicPartImageUrl(cover.storage_path)
-    : absoluteUrl(defaultOgImage.url);
+    : absoluteMediaUrl(defaultOgImage.url);
 
-  const title = data.meta_title?.trim() || data.name;
-  const description =
+  const title = sanitizeTitle(data.meta_title?.trim() || data.name);
+  const description = sanitizeDescription(
     data.meta_description?.trim() ||
-    data.description?.trim() ||
-    `${data.name}${data.part_code ? ` (${data.part_code})` : ''}${data.brand ? ` — ${data.brand}` : ''} from ${siteConfig.name}.`;
+      data.description?.trim() ||
+      [
+        data.name,
+        data.part_code ? `(${data.part_code})` : null,
+        data.brand ? `— ${data.brand}` : null,
+        `from ${siteConfig.name}.`,
+      ]
+        .filter(Boolean)
+        .join(' ')
+  );
 
-  return {
+  return buildPageMetadata({
     title,
     description,
-    alternates: { canonical: `/parts/${slug}` },
-    openGraph: {
-      title: `${title} | ${siteConfig.name}`,
-      description,
-      url: absoluteUrl(`/parts/${slug}`),
-      type: 'website',
-      images: [{ url: imageUrl, alt: title }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [imageUrl],
-    },
-  };
+    path: `/parts/${slug}`,
+    image: { url: imageUrl, alt: title },
+  });
 }
 
 export default function PartSlugLayout({ children }: Props) {

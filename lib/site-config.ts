@@ -1,19 +1,28 @@
+const DEFAULT_SITE_URL = 'https://www.anshatradingco.com';
+
+/** Canonical production origin. Prefers NEXT_PUBLIC_SITE_URL; never use preview/localhost as canonical. */
+function resolveSiteUrl() {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!fromEnv) return DEFAULT_SITE_URL;
+  return fromEnv.replace(/\/$/, '');
+}
+
 export const siteConfig = {
   name: 'ANSHA TRADING',
   shortName: 'ANSHA',
   /** Installed PWA display name (homescreen / install UI). */
   pwaName: 'Anshatradingco APP',
   pwaShortName: 'Anshatradingco APP',
-  tagline: 'Global Vehicles and Automotive Parts Exporter',
+  tagline: 'Global Vehicles, Parts & Machinery Exporter',
   description:
-    'Global exporter of vehicles and automotive parts for all brands. Search inventory by OEM part number, chassis code, engine code, make, model, and year.',
+    'Dubai-based global exporter of vehicles, automotive parts, and heavy machinery. Browse published stock by make, model, year, OEM number, chassis code, and stock origin.',
   whatsappNumber: '971501677980',
   whatsappDisplay: '+971 50 167 7980',
   email: 'info@anshatrading.com',
   phone: '+971 50 167 7980',
   address: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba, Dubai, U.A.E.',
   taxRegistrationNumber: '105335274400003',
-  url: 'https://www.anshatradingco.com',
+  url: resolveSiteUrl(),
   /** GTM container ID (public). Prefer NEXT_PUBLIC_GTM_ID; this is the production fallback / cookie-policy label. */
   gtmId: 'GTM-TFSZD9WT',
 };

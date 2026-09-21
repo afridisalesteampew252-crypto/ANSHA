@@ -1,6 +1,6 @@
 # Current State
 
-Verified checkpoint: **2026-09-22** (post–Phase **78** ops/SEO/security ship on production `www.anshatradingco.com` / Supabase `ydrnilquojvalhgifest`). Prior checkpoint: Phases **72–78** + remittance follow-ups (2026-09-21).
+Verified checkpoint: **2026-09-22** (Complete SEO Repair **SEO-01…SEO-10** validated locally; production may lag until deploy). Prior: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `ydrnilquojvalhgifest`.
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
@@ -10,14 +10,14 @@ Hosting: Vercel project `anshanew`
 
 | Area | Approx. done | Notes |
 |---|---|---|
-| Public catalog + SEO exporter site | **~98%** | Parts/vehicles/**machinery**/categories/blog+SEO/`/reviews`/offers/**70 export markets**; FOB/C&F/CIF quote strip; **GSC verification**; favicon/OG; Product JSON-LD with valid `offers.price` + real `aggregateRating`/`review` (`lib/product-schema.ts`); cart & favorites; FX/clock; Deals; featured rotation; public Tawk widget |
+| Public catalog + SEO exporter site | **~99%** | Parts/vehicles/**machinery**/categories/blog/`/reviews`/offers/**70 export markets**; Complete SEO Repair (robots+sitemap+facets noindex+markets empty noindex+shared metadata/schema/breadcrumbs/CWV); FOB/C&F/CIF; **GSC**; favicon/OG; Product JSON-LD rules (`lib/product-schema.ts`); cart & favorites; FX/clock; Deals; featured rotation; Tawk. Remaining: deploy + GSC human steps; no brand microsite; detail schema still client-hydrated |
 | Staff ERP (purchase → GL → VAT/payroll) | **~99%** | Phases 28–38, 46–48, 50, 53–57, **61–71**, **72–78** + post-78: remittances; commissions; bulk reserve; config yards/shipping/freight; reports + Excel; customer auto ID + Actions; **MoneyBreakdown** KPIs (dashboard/analytics/invoices/SOA — All currencies, no FX mixing); stock invoice badges; Make Available clears reservation SOA (SECURITY DEFINER fix) |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror; advisor harden on `tawk_webhook_receipts` + `touch_admin_last_seen` |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~93%** | Phase 66 campaigns; subscribers Subscribe this device + Send test push; VAPID on Vercel + Edge. Still no open tracking / cron ESP |
 | Customer portal | **~94%** | Invoices + SOA (**Buying details**, per-currency **MoneyBreakdown**) + **reservations** (`get_my_reservations`); no remittance UX for customers |
 | PWA / Capacitor | **~88%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; Capacitor shell docs |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-22 (post–Phase 78 ops/SEO/security) |
+| Docs (this set) | **~99%** | Audit refresh 2026-09-22 (Complete SEO Repair SEO-10 + Deployment SEO checklist) |
 
 **Overall product maturity (shipping ERP + public exporter):** roughly **96–98%** of the Phase 1–78 roadmap that was chosen and built. Core MVP is **shipped**. Remaining: Auth leaked-password toggle, bank live feeds, full ESP automation, HR location-scoped approvals, automated tests — not a greenfield rewrite.
 
@@ -30,8 +30,8 @@ Hosting: Vercel project `anshanew`
 - Markets: `/markets/[code]` from **`lib/export-markets.ts` (70 destinations)** + admin Trade config
 - Cart + favorites (localStorage); blog; banking; about; contact; invoice verify
 - Testimonials on home + `/reviews`
-- **SEO:** root `verification.google`; `/favicon.ico`; default OG `/images/og-default.jpg`
-- **Product JSON-LD:** `lib/product-schema.ts` — omit `offers` unless price+currency valid; real published testimonials only for `aggregateRating`/`review` (never invented)
+- **SEO (SEO-01…10):** `NEXT_PUBLIC_SITE_URL` + `lib/seo.ts`; robots disallow `/admin` `/portal` `/api`; sitemap includes markets when inventory exists; listing facet URLs `noindex,follow` + canonical hub; empty markets `noindex`; Organization/WebSite (root), Article/ItemList/BreadcrumbList helpers; GSC verification; `/favicon.ico`; default OG `/images/og-default.jpg`. Checklist: `docs/Deployment.md` → SEO section
+- **Product JSON-LD:** `lib/product-schema.ts` — omit `offers` unless price+currency valid; real published testimonials only for `aggregateRating`/`review` (never invented). Vehicle/part detail graphs emit after client hydrate (pages are `'use client'`)
 - **Incoterm quotes:** FOB / C&F / CIF when catalog columns are set
 - PWA: manifest **Anshatradingco APP**, SW, install CTAs, push opt-in
 - Header: live Dubai time + AED→USD/EUR/JPY/PKR via `/api/fx`
@@ -100,7 +100,7 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 
 ## Known gaps / operator actions
 
-1. **Google Search Console** — confirm ownership → Request indexing for key URLs.
+1. **Google Search Console** — after SEO deploy READY: confirm ownership → re-submit `sitemap.xml` if crawl URLs changed → Request indexing for key URLs. Tag Assistant: confirm GTM hits `/metrics` (see `docs/Deployment.md`).
 2. **VAPID verify** — matching keys on Vercel + Edge; confirm via `/admin/subscribers` → Subscribe → Send test push. Do not commit `.env.local`.
 3. **Supabase Auth leaked-password protection** — enable in dashboard.
 4. **Optional secrets** — Resend, WhatsApp, AI Gateway/OpenAI if those UIs should send.
@@ -114,7 +114,7 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 
 ## Next recommended steps (safe order)
 
-1. GSC verify + Request indexing.
+1. Deploy Complete SEO Repair → GSC sitemap re-submit (if needed) + Request indexing → Tag Assistant for `/metrics` gateway.
 2. `/admin/subscribers` Subscribe this device → Send test push.
 3. Enable leaked-password protection.
 4. Confirm Resend / WhatsApp / AI / Tawk webhook if in use.

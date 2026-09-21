@@ -4,7 +4,8 @@ import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { siteConfig } from '@/lib/site-config';
-import { absoluteMediaUrl, defaultOgImage, favicon48Path } from '@/lib/seo';
+import { defaultOgImage, favicon48Path } from '@/lib/seo';
+import { buildOrganizationJsonLd, buildWebSiteJsonLd } from '@/lib/seo-schema';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -32,11 +33,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`, template: `%s | ${siteConfig.name}` },
+  title: { default: `${siteConfig.name} — ${siteConfig.tagline}`, template: `%s | ${siteConfig.name}` },
   description: siteConfig.description,
   metadataBase: new URL(siteConfig.url),
   openGraph: {
-    title: `${siteConfig.name} — Global Vehicles & Auto Parts Exporter`,
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
     url: siteConfig.url,
     siteName: siteConfig.name,
@@ -93,20 +94,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="font-sans antialiased">
         <ThemeProvider>
-          <JsonLd data={[
-            {
-              '@context': 'https://schema.org', '@type': 'Organization', name: siteConfig.name,
-              url: siteConfig.url, email: siteConfig.email, telephone: siteConfig.phone,
-              description: siteConfig.description, taxID: siteConfig.taxRegistrationNumber,
-              logo: absoluteMediaUrl('/icons/icon-512.png'),
-              image: absoluteMediaUrl(defaultOgImage.url),
-              address: { '@type': 'PostalAddress', streetAddress: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba', addressLocality: 'Dubai', addressCountry: 'AE' },
-            },
-            {
-              '@context': 'https://schema.org', '@type': 'WebSite', name: siteConfig.name, url: siteConfig.url,
-              potentialAction: { '@type': 'SearchAction', target: `${siteConfig.url}/parts?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
-            },
-          ]} />
+          {/* Organization + WebSite only here — avoid duplicate graphs on child pages */}
+          <JsonLd data={[buildOrganizationJsonLd(), buildWebSiteJsonLd()]} />
           <TooltipProvider delayDuration={200}>{children}<Toaster /></TooltipProvider>
           <RegisterServiceWorker />
           <Analytics /><SpeedInsights />

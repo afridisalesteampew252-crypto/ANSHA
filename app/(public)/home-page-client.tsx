@@ -176,10 +176,10 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
               ANSHA Trading Co.
             </p>
             <h1 className="animate-fade-up-delay-1 mt-3 max-w-xl font-display text-[1.85rem] font-extrabold leading-[1.08] tracking-[-0.04em] sm:mt-4 sm:text-4xl lg:text-5xl">
-              Export-ready vehicles &amp; parts from Dubai.
+              Export-ready vehicles, parts &amp; machinery from Dubai.
             </h1>
             <p className="animate-fade-up-delay-2 mt-3 max-w-lg text-[14px] leading-6 text-white/70 sm:mt-4 sm:text-base sm:leading-7">
-              Verified inventory, OEM fitment support, and worldwide shipping coordination — one team.
+              Published stock, OEM fitment support, and worldwide shipping coordination — one export team.
             </p>
             <div className="animate-fade-up-delay-2 mt-6 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-3">
               <Button asChild variant="accent" size="lg" className="h-11 w-full rounded-full px-6 text-sm font-bold sm:h-12 sm:w-auto sm:px-7">
@@ -192,6 +192,17 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
                 <Link href="/parts">Explore parts</Link>
               </Button>
             </div>
+            <p className="animate-fade-up-delay-2 mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/55">
+              <Link href="/#export-markets" className="hover:text-white hover:underline">
+                Export markets
+              </Link>
+              <Link href="/blog" className="hover:text-white hover:underline">
+                Insights &amp; guides
+              </Link>
+              <Link href="/categories" className="hover:text-white hover:underline">
+                Parts categories
+              </Link>
+            </p>
           </div>
         </div>
       </section>
@@ -312,7 +323,7 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-              {categories.map((category, index) => {
+              {categories.map((category) => {
                 const imageSrc = resolveCategoryImage(category.slug, category.image_url);
                 return (
                   <Link
@@ -326,7 +337,6 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
                         alt={category.name}
                         fill
                         sizes="(max-width: 768px) 50vw, 16vw"
-                        priority={index < 4}
                         className="transition duration-500 group-hover:scale-105"
                         objectFit="cover"
                       />
@@ -364,7 +374,7 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
           {loading ? (
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="aspect-[.72] animate-pulse rounded-2xl bg-muted" />
+                <div key={index} className="min-h-[18rem] animate-pulse rounded-2xl bg-muted sm:min-h-[22rem]" />
               ))}
             </div>
           ) : featured.length ? (
@@ -437,8 +447,8 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
           </div>
           {featuredVehicles.length ? (
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              {featuredVehicles.map((vehicle, index) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} deal={dealForVehicle(vehicle.id)} />
+              {featuredVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} deal={dealForVehicle(vehicle.id)} />
               ))}
             </div>
           ) : (
@@ -476,8 +486,8 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
 
           {featuredMachinery.length ? (
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredMachinery.map((vehicle, index) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} deal={dealForVehicle(vehicle.id)} />
+              {featuredMachinery.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} deal={dealForVehicle(vehicle.id)} />
               ))}
             </div>
           ) : (
@@ -518,7 +528,7 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
         </div>
       </section>
 
-      {latestPosts.length > 0 && (
+      {latestPosts.length > 0 ? (
         <section className="surface-mist border-t border-accent/10 py-14 sm:py-20">
           <div className="container-page min-w-0">
             <div className="section-heading">
@@ -534,6 +544,19 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
                 <BlogCard key={post.id} post={post} />
               ))}
             </div>
+          </div>
+        </section>
+      ) : (
+        <section className="surface-mist border-t border-accent/10 py-10 sm:py-12">
+          <div className="container-page flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <span className="eyebrow">Export insights</span>
+              <h2 className="mt-1 text-lg font-extrabold tracking-tight">Buying guides &amp; market notes</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Practical export reading from the ANSHA team.</p>
+            </div>
+            <Link href="/blog" className="section-link">
+              Visit insights <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </section>
       )}

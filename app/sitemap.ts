@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { EXPORT_MARKETS } from '@/lib/export-markets';
 import { siteConfig } from '@/lib/site-config';
 import { supabase } from '@/lib/supabase/client';
 
@@ -28,6 +29,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       supabase.from('categories').select('slug, updated_at'),
     ]);
 
+    /** Markets share the global published vehicle pool — skip when that pool is empty (noindex). */
+    const marketRoutes: MetadataRoute.Sitemap =
+      (vehicles || []).length > 0
+        ? EXPORT_MARKETS.map((market) => ({
+            url: `${baseUrl}/markets/${market.code.toLowerCase()}`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly' as const,
+            priority: 0.65,
+          }))
+        : [];
+
     const blogRoutes: MetadataRoute.Sitemap = (posts || []).map((post) => ({
       url: `${baseUrl}/blog/${post.slug}`,
       lastModified: new Date(post.updated_at),
@@ -56,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })),
     ];
 
-    return [...staticRoutes, ...inventoryRoutes, ...blogRoutes];
+    return [...staticRoutes, ...marketRoutes, ...inventoryRoutes, ...blogRoutes];
   } catch {
     return staticRoutes;
   }

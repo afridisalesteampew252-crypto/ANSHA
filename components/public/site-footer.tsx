@@ -53,6 +53,7 @@ export function SiteFooter() {
               <li><Link href="/parts" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">All Parts</Link></li>
               <li><Link href="/vehicles" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Vehicles</Link></li>
               <li><Link href="/machinery" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Machinery &amp; trucks</Link></li>
+              <li><Link href="/#export-markets" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Export markets</Link></li>
               <li><Link href="/categories" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Categories</Link></li>
               <li><Link href="/about" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">About Us</Link></li>
               <li><Link href="/blog" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Insights</Link></li>

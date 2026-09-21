@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { BlogPostClient } from '@/components/public/blog-post-client';
+import { JsonLd } from '@/components/seo/json-ld';
 import { blogImageUrl } from '@/lib/blog-image';
 import { createPublicSupabaseClient, absoluteUrl } from '@/lib/supabase/public';
+import { buildArticleJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo-schema';
 import { siteConfig } from '@/lib/site-config';
 
 type Props = { params: Promise<{ slug: string }> };
@@ -58,39 +60,44 @@ export default async function BlogPostPage(props: Props) {
   const supabase = createPublicSupabaseClient();
   const { data } = await supabase
     .from('blog_posts')
-    .select('title, excerpt, slug, published_at, updated_at, featured_image, meta_description')
+    .select('title, excerpt, slug, published_at, updated_at, featured_image, meta_description, blog_categories(name, slug)')
     .eq('slug', slug)
     .eq('status', 'published')
     .maybeSingle();
 
   const cover = data ? blogImageUrl(data.featured_image, { absolute: true }) : null;
-  const jsonLd = data
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'Article',
+  const rawCategory = data?.blog_categories as
+    | { name: string; slug: string }
+    | { name: string; slug: string }[]
+    | null
+    | undefined;
+  const category = Array.isArray(rawCategory) ? rawCategory[0] : rawCategory;
+  const articleUrl = data ? absoluteUrl(`/blog/${data.slug}`) : null;
+
+  const articleJsonLd = data && articleUrl
+    ? buildArticleJsonLd({
         headline: data.title,
-        description: data.meta_description || data.excerpt || undefined,
-        datePublished: data.published_at || undefined,
-        dateModified: data.updated_at || undefined,
-        image: cover || undefined,
-        author: { '@type': 'Organization', name: siteConfig.name },
-        publisher: {
-          '@type': 'Organization',
-          name: siteConfig.name,
-          url: siteConfig.url,
-        },
-        mainEntityOfPage: absoluteUrl(`/blog/${data.slug}`),
-      }
+        description: data.meta_description || data.excerpt,
+        url: articleUrl,
+        datePublished: data.published_at,
+        dateModified: data.updated_at,
+        image: cover,
+      })
+    : null;
+
+  const breadcrumbJsonLd = data
+    ? buildBreadcrumbListJsonLd([
+        { name: 'Home', href: '/' },
+        { name: 'Insights', href: '/blog' },
+        ...(category ? [{ name: category.name, href: `/blog?category=${category.slug}` }] : []),
+        { name: data.title },
+      ])
     : null;
 
   return (
     <>
-      {jsonLd ? (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      ) : null}
+      {articleJsonLd ? <JsonLd data={articleJsonLd} /> : null}
+      {breadcrumbJsonLd ? <JsonLd data={breadcrumbJsonLd} /> : null}
       <BlogPostClient slug={slug} />
     </>
   );

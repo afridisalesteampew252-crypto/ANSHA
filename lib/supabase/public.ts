@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { siteConfig } from '@/lib/site-config';
+
+export { absoluteUrl } from '@/lib/seo';
 
 function getPublicConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -18,9 +19,4 @@ export function createPublicSupabaseClient() {
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-}
-
-export function absoluteUrl(path = '/') {
-  const normalized = path.startsWith('/') ? path : `/${path}`;
-  return `${siteConfig.url}${normalized === '/' ? '' : normalized}`;
 }

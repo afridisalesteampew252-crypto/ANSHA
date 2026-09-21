@@ -3,13 +3,15 @@ import Link from 'next/link';
 import { Building2, CircleDollarSign, Landmark, MessageCircle, ShieldCheck } from 'lucide-react';
 import { BankDetail } from './bank-detail';
 import { siteConfig } from '@/lib/site-config';
+import { buildPageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: 'Official Banking Information',
   description: 'Official AED and USD intermediary banking details for Ansha Trading Co. L.L.C-FZ.',
-  alternates: { canonical: '/banking' },
-  robots: { index: false, follow: true },
-};
+  path: '/banking',
+  noIndex: true,
+  followWhenNoIndex: true,
+});
 
 const primaryBank = [
   { label: 'Bank name', value: 'WIO BANK' },

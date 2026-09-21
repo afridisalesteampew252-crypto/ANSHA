@@ -3,10 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PartCard } from '@/components/public/part-card';
+import { JsonLd } from '@/components/seo/json-ld';
+import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
+import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
+import { absoluteUrl } from '@/lib/seo';
+import { buildItemListJsonLd } from '@/lib/seo-schema';
 import { supabase } from '@/lib/supabase/client';
 import type { Category, PartWithRelations } from '@/lib/types';
 
@@ -63,17 +68,36 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
     );
   }
 
+  const itemListJsonLd =
+    category && parts.length
+      ? buildItemListJsonLd({
+          name: `${category.name} parts`,
+          description: category.description || undefined,
+          url: `/categories/${category.slug}`,
+          items: parts.slice(0, 24).map((part) => {
+            const cover = (part.part_photos || []).find((p) => p.is_cover) || part.part_photos?.[0];
+            return {
+              name: part.name,
+              url: absoluteUrl(`/parts/${part.slug}`),
+              image: cover ? publicPartImageUrl(cover.storage_path) : null,
+            };
+          }),
+        })
+      : null;
+
   return (
     <div>
+      {itemListJsonLd ? <JsonLd data={itemListJsonLd} /> : null}
       <section className="page-band">
         <div className="container-page py-8 sm:py-10">
-          <nav className="mb-4 flex items-center gap-1.5 text-sm text-white/55">
-            <Link href="/" className="hover:text-white">Home</Link>
-            <ChevronRight className="h-4 w-4" />
-            <Link href="/categories" className="hover:text-white">Categories</Link>
-            <ChevronRight className="h-4 w-4" />
-            <span className="font-medium text-white">{category?.name}</span>
-          </nav>
+          <PageBreadcrumbs
+            className="mb-4"
+            items={[
+              { name: 'Home', href: '/' },
+              { name: 'Categories', href: '/categories' },
+              { name: category?.name || 'Category' },
+            ]}
+          />
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/20">
               <Package className="h-6 w-6 text-accent" />
@@ -98,9 +122,14 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
               <Package className="h-12 w-12 text-muted-foreground/30" />
               <h3 className="mt-4 text-lg font-semibold">No parts in this category yet</h3>
               <p className="mt-1 text-muted-foreground">Check back soon or browse other categories.</p>
-              <Link href="/parts" className="mt-4 font-medium text-accent hover:underline">
-                Browse all parts
-              </Link>
+              <div className="mt-4 flex flex-wrap justify-center gap-4">
+                <Link href="/parts" className="font-medium text-accent hover:underline">
+                  Browse all parts
+                </Link>
+                <Link href="/categories" className="font-medium text-accent hover:underline">
+                  All categories
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">

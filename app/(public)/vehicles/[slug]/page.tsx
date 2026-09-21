@@ -8,7 +8,6 @@ import {
   Gauge,
   Fuel,
   Calendar,
-  ChevronRight,
   CheckCircle2,
   MapPin,
   Cog,
@@ -18,6 +17,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
+import { VehicleCard } from '@/components/public/vehicle-card';
 import { VehiclePhotoGallery } from '@/components/public/vehicle-photo-gallery';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
@@ -32,6 +32,7 @@ import {
 } from '@/lib/product-schema';
 import type { Review, SiteOffer, VehicleWithPhotos } from '@/lib/types';
 import { JsonLd } from '@/components/seo/json-ld';
+import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { publicVehiclePhotos } from '@/lib/vehicle-photos';
 import {
@@ -44,6 +45,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
   const params = use(props.params);
   const { slug } = params;
   const [vehicle, setVehicle] = useState<VehicleWithPhotos | null>(null);
+  const [relatedVehicles, setRelatedVehicles] = useState<VehicleWithPhotos[]>([]);
   const [deal, setDeal] = useState<SiteOffer | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +76,7 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
       setVehicle({ ...typedData, vehicle_photos: sortedPhotos });
       setCoverIndex(nextCover >= 0 ? nextCover : 0);
 
-      const [{ data: offerRows }, { data: reviewRows }] = await Promise.all([
+      const [{ data: offerRows }, { data: reviewRows }, relatedRes] = await Promise.all([
         supabase
           .from('site_offers')
           .select('*')
@@ -89,9 +91,22 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           .order('sort_order', { ascending: true })
           .order('created_at', { ascending: false })
           .limit(10),
+        typedData.make
+          ? supabase
+              .from('vehicles')
+              .select('*, vehicle_photos(*)')
+              .eq('is_published', true)
+              .eq('stock_status', 'available')
+              .eq('make', typedData.make)
+              .neq('id', typedData.id)
+              .order('is_featured', { ascending: false })
+              .order('created_at', { ascending: false })
+              .limit(4)
+          : Promise.resolve({ data: [] as unknown[] }),
       ]);
       setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
       setReviews((reviewRows || []) as Review[]);
+      setRelatedVehicles((relatedRes.data || []) as unknown as VehicleWithPhotos[]);
       setLoading(false);
     })();
   }, [slug]);
@@ -169,19 +184,24 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
     },
   ].filter((s) => s.value);
 
+  const catalogHref = machineryUnit ? '/machinery' : '/vehicles';
+  const catalogLabel = machineryUnit ? 'Machinery' : 'Vehicles';
+  const makeHref = vehicle.make
+    ? `${catalogHref}?brand=${encodeURIComponent(vehicle.make)}`
+    : catalogHref;
+
   return (
     <div className="overflow-x-clip">
       <div className="page-band">
         <div className="container-page py-5 sm:py-6">
-          <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/55">
-            <Link href="/" className="shrink-0 hover:text-white">Home</Link>
-            <ChevronRight className="h-4 w-4 shrink-0" />
-            <Link href={machineryUnit ? '/machinery' : '/vehicles'} className="shrink-0 hover:text-white">
-              {machineryUnit ? 'Machinery' : 'Vehicles'}
-            </Link>
-            <ChevronRight className="h-4 w-4 shrink-0" />
-            <span className="truncate font-medium text-white">{vehicle.title}</span>
-          </nav>
+          <PageBreadcrumbs
+            items={[
+              { name: 'Home', href: '/' },
+              { name: catalogLabel, href: catalogHref },
+              ...(vehicle.make ? [{ name: vehicle.make, href: makeHref }] : []),
+              { name: vehicle.title },
+            ]}
+          />
         </div>
       </div>
 
@@ -214,6 +234,9 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           photos={photos}
           featured={vehicle.is_featured}
           initialIndex={coverIndex}
+          year={vehicle.year}
+          make={vehicle.make}
+          model={vehicle.model}
         />
 
         <div className="min-w-0 space-y-6">
@@ -340,6 +363,33 @@ export default function VehicleDetailPage(props: { params: Promise<{ slug: strin
           )}
         </div>
       </div>
+
+      {(relatedVehicles.length > 0 || vehicle.make) && (
+        <div className="mt-12 border-t border-accent/10 pt-10">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="eyebrow">More from stock</p>
+              <h2 className="font-display text-xl font-black tracking-tight">
+                {vehicle.make ? `Related ${vehicle.make} units` : 'Related inventory'}
+              </h2>
+            </div>
+            <Link href={makeHref} className="text-sm font-semibold text-accent hover:underline">
+              Browse {vehicle.make || catalogLabel}
+            </Link>
+          </div>
+          {relatedVehicles.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {relatedVehicles.map((item) => (
+                <VehicleCard key={item.id} vehicle={item} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              See the full {catalogLabel.toLowerCase()} catalog for more published stock.
+            </p>
+          )}
+        </div>
+      )}
       </div>
       </div>
     </div>

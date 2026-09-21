@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Search, FileText, ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -117,6 +118,12 @@ export function BlogIndexClient() {
           <h1 className="font-display text-2xl font-black tracking-tight md:text-4xl">Used Japanese cars, parts &amp; export insights</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
             Practical guides from ANSHA TRADING — Japan auction sheets, OEM remotes, Dubai export shipping, and heavy machinery sourcing.
+          </p>
+          <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/55">
+            <Link href="/vehicles" className="hover:text-white hover:underline">Vehicles</Link>
+            <Link href="/parts" className="hover:text-white hover:underline">Parts</Link>
+            <Link href="/machinery" className="hover:text-white hover:underline">Machinery</Link>
+            <Link href="/#export-markets" className="hover:text-white hover:underline">Export markets</Link>
           </p>
           <div className="relative mt-5 max-w-xl">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />

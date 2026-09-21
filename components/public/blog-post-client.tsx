@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
-  ChevronRight, Calendar, Link2, MessageCircle, Facebook, Linkedin, ArrowRight,
+  Calendar, Link2, MessageCircle, Facebook, Linkedin, ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BlogCard } from '@/components/public/blog-card';
+import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 import { blogImageUrl } from '@/lib/blog-image';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
@@ -136,21 +137,16 @@ export function BlogPostClient({ slug }: { slug: string }) {
     <div>
       <div className="border-b border-border bg-secondary/30">
         <div className="container-page py-3">
-          <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Link href="/" className="hover:text-foreground">Home</Link>
-            <ChevronRight className="h-4 w-4" />
-            <Link href="/blog" className="hover:text-foreground">Blog</Link>
-            {category && (
-              <>
-                <ChevronRight className="h-4 w-4" />
-                <Link href={`/blog?category=${category.slug}`} className="hover:text-foreground">
-                  {category.name}
-                </Link>
-              </>
-            )}
-            <ChevronRight className="h-4 w-4" />
-            <span className="text-foreground font-medium truncate">{post.title}</span>
-          </nav>
+          <PageBreadcrumbs
+            variant="muted"
+            includeJsonLd={false}
+            items={[
+              { name: 'Home', href: '/' },
+              { name: 'Insights', href: '/blog' },
+              ...(category ? [{ name: category.name, href: `/blog?category=${category.slug}` }] : []),
+              { name: post.title },
+            ]}
+          />
         </div>
       </div>
 
@@ -218,20 +214,30 @@ export function BlogPostClient({ slug }: { slug: string }) {
           </div>
 
           <div className="mt-10 rounded-xl bg-foreground p-6 text-center text-background md:p-8">
-            <h2 className="text-lg font-bold">Looking for Japanese Auto Parts?</h2>
+            <h2 className="text-lg font-bold">Looking for stock to export?</h2>
             <p className="mt-2 text-background/60 text-sm">
-              Search our available stock or contact Ansha Trading for assistance.
+              Browse published vehicles and parts, or contact ANSHA for sourcing support from Dubai.
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-3">
-              <Link href="/parts">
+              <Link href="/vehicles">
                 <Button variant="accent">
-                  Browse Parts
+                  Browse vehicles
                   <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/parts">
+                <Button variant="outline" className="bg-transparent border-background/25 text-background hover:bg-background/10 hover:text-background">
+                  Browse parts
+                </Button>
+              </Link>
+              <Link href="/machinery">
+                <Button variant="outline" className="bg-transparent border-background/25 text-background hover:bg-background/10 hover:text-background">
+                  Machinery
                 </Button>
               </Link>
               <Link href="/contact">
                 <Button variant="outline" className="bg-transparent border-background/25 text-background hover:bg-background/10 hover:text-background">
-                  Contact Us
+                  Contact us
                 </Button>
               </Link>
             </div>
