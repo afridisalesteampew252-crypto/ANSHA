@@ -96,6 +96,32 @@ WhatsApp Business Cloud API (Phase 40): set Edge Function secrets for `send-what
 
 Set with Supabase CLI against project `ydrnilquojvalhgifest`, e.g. `supabase secrets set WHATSAPP_ACCESS_TOKEN=… WHATSAPP_PHONE_NUMBER_ID=…`. Redeploy `send-whatsapp` after changing secrets. Admin UI `/admin/whatsapp` probes `action: status` and shows setup instructions when secrets are missing (no crash).
 
+Google Analytics 4 (gtag.js): set on the **Vercel** project (and local `.env.local`). The measurement ID is publishable (not a secret). Loaded from:
+
+- `app/(public)/layout.tsx` — all public routes (home, catalog, blog, markets, verify, cookie-policy, etc.)
+- `app/portal/layout.tsx` — customer portal (same origin)
+
+Not loaded on `/admin`. SPA client navigations send `page_view` via `components/analytics/google-analytics-pageviews.tsx` (`send_page_view: false` on initial config). Disclosed in `/cookie-policy`. No consent banner yet.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | yes (prod) | Production value `G-T40ZE27E73`. If unset locally, app falls back to `siteConfig.googleAnalyticsId`. Set to an empty value on Preview to disable gtag. |
+
+Vercel: **Settings → Environment Variables** → add `NEXT_PUBLIC_GA_MEASUREMENT_ID` = `G-T40ZE27E73` for **Production** (and Preview only if you want GA there). Redeploy after changing — `NEXT_PUBLIC_*` is baked at build time.
+
+### GA Admin — Configure your domains (Tag Quality)
+
+In Google Analytics → **Admin** → **Data streams** → your web stream → **Configure your domains** (or Tag Quality → Configure your domains), add domains where the tag may fire:
+
+| Domain | Why |
+|---|---|
+| `www.anshatradingco.com` | Canonical production host (`siteConfig.url`) |
+| `anshatradingco.com` | Apex; redirects to www (`next.config.js`) |
+| `anshatrading.com` | Legacy alias; redirects to www |
+| `www.anshatrading.com` | Legacy www alias; redirects to www |
+
+Optional: Vercel Preview hosts (`*.vercel.app`) only if Preview builds leave `NEXT_PUBLIC_GA_MEASUREMENT_ID` set — prefer blank Preview env so previews do not pollute production GA.
+
 Tawk.to live chat (public widget + admin agent inbox): set on the **Vercel** project (and local `.env.local`). These are publishable widget IDs, not secrets — still do not hard-code them in git.
 
 | Variable | Required | Notes |

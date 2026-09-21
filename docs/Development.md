@@ -14,6 +14,10 @@ Required names:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — legacy fallback only if the publishable key is unset
 
+Optional (public site):
+
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` — GA4 (`G-T40ZE27E73` in production; set on Vercel Production). Unset uses `siteConfig` fallback; blank disables. Public + portal layouts; SPA `page_view` on client nav. Domains for GA Admin: see `docs/Deployment.md`.
+
 Do not put `SUPABASE_SERVICE_ROLE_KEY` in Next.js env. Service role belongs on Edge Functions only.
 
 AI ops assistant (Phase 42) — server-only on Vercel / `.env.local` (never `NEXT_PUBLIC_*`):

@@ -10,7 +10,6 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JsonLd } from '@/components/seo/json-ld';
 import { ThemeProvider } from '@/components/theme-provider';
 import { RegisterServiceWorker } from '@/components/pwa/register-service-worker';
-import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 
 /** Body: Plus Jakarta Sans — clear marketplace UI (Amazon Ember / eBay Market Sans energy). */
 const plusJakarta = Plus_Jakarta_Sans({
@@ -110,7 +109,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           ]} />
           <TooltipProvider delayDuration={200}>{children}<Toaster /></TooltipProvider>
           <RegisterServiceWorker />
-          <GoogleAnalytics />
           <Analytics /><SpeedInsights />
         </ThemeProvider>
       </body>

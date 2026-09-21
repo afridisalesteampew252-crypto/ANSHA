@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/public/site-header';
 import { SiteFooter } from '@/components/public/site-footer';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { TawkToChat } from '@/components/public/tawk-to-chat';
+import { GoogleAnalytics } from '@/components/analytics/google-analytics';
 
 export default function PublicLayout({
   children,
@@ -21,6 +22,7 @@ export default function PublicLayout({
       <InstallPrompt />
       <PushOptIn />
       <TawkToChat />
+      <GoogleAnalytics />
     </div>
   );
 }

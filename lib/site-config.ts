@@ -14,6 +14,7 @@ export const siteConfig = {
   address: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba, Dubai, U.A.E.',
   taxRegistrationNumber: '105335274400003',
   url: 'https://www.anshatradingco.com',
+  /** GA4 measurement ID (public). Prefer NEXT_PUBLIC_GA_MEASUREMENT_ID; this is the production fallback / cookie-policy label. */
   googleAnalyticsId: 'G-T40ZE27E73',
 };
 
