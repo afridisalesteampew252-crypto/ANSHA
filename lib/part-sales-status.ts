@@ -5,6 +5,7 @@
 
 import {
   deriveVehicleSalesStatus,
+  isSalesStatusRedundantWithStock,
   VEHICLE_SALES_STATUS_LABELS,
   VEHICLE_SALES_STATUSES,
   type ExportShipmentStatusLike,
@@ -15,6 +16,7 @@ import {
 export const PART_SALES_STATUSES = VEHICLE_SALES_STATUSES;
 export type PartSalesStatus = VehicleSalesStatus;
 export const PART_SALES_STATUS_LABELS = VEHICLE_SALES_STATUS_LABELS;
+export { isSalesStatusRedundantWithStock };
 
 export function derivePartSalesStatus(input: {
   stockStatus: string | null | undefined;

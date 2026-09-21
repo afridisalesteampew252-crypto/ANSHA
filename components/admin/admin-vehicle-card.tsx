@@ -46,6 +46,7 @@ import { isAuctionStockPool, stockOriginLabel, type StockPool } from '@/lib/stoc
 import type { StockListLinkedInvoice } from '@/lib/stock-linked-invoice';
 import type { StockStatus, VehiclePhoto, VehicleWithPhotos } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { isSalesStatusRedundantWithStock } from '@/lib/vehicle-sales-status';
 
 const statusClass: Record<StockStatus, string> = {
   available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -258,7 +259,7 @@ export function AdminVehicleCard({
       <div className="min-w-0 space-y-1 text-xs">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge className={statusClass[status]}>{status.replace('_', ' ')}</Badge>
-          {salesStatusLabel ? (
+          {salesStatusLabel && !isSalesStatusRedundantWithStock(status, salesStatusLabel) ? (
             <Badge variant="outline" className="font-normal">
               {salesStatusLabel}
             </Badge>

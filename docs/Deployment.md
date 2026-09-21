@@ -101,13 +101,38 @@ Google Tag Manager: set on the **Vercel** project (and local `.env.local`). The 
 - `app/(public)/layout.tsx` — all public routes (home, catalog, blog, markets, verify, cookie-policy, etc.) via `components/analytics/google-tag-manager.tsx`
 - `app/portal/layout.tsx` — customer portal (same origin)
 
-Not loaded on `/admin`. Head snippet uses `next/script` (`afterInteractive`); noscript iframe uses `https://www.googletagmanager.com/ns.html?id=…`. Configure GA4 and other tags inside the GTM container — do not also load direct `gtag.js` for a measurement ID. Disclosed in `/cookie-policy`. No consent banner yet.
+Not loaded on `/admin`. Head snippet uses `next/script` (`afterInteractive`) and loads the container from the **first-party gateway path** (default `/metrics/?id=…`), not `www.googletagmanager.com`. Noscript iframe still uses `https://www.googletagmanager.com/ns.html?id=…` — Google tag gateway does **not** support first-party noscript. Configure GA4 and other tags inside the GTM container — do not also load direct `gtag.js` for a measurement ID. Disclosed in `/cookie-policy`. No consent banner yet.
 
 | Variable | Required | Notes |
 |---|---|---|
 | `NEXT_PUBLIC_GTM_ID` | yes (prod) | Production value `GTM-TFSZD9WT`. If unset locally, app falls back to `siteConfig.gtmId`. Set to an empty value on Preview to disable GTM. |
+| `NEXT_PUBLIC_GTM_GATEWAY_PATH` | no | Default `/metrics`. Must match the Vercel rewrite measurement path and stay unused by App Router pages. |
 
-Vercel: **Settings → Environment Variables** → add `NEXT_PUBLIC_GTM_ID` = `GTM-TFSZD9WT` for **Production** (and Preview only if you want GTM there). Remove any leftover `NEXT_PUBLIC_GA_MEASUREMENT_ID` so you do not dual-load gtag. Redeploy after changing — `NEXT_PUBLIC_*` is baked at build time.
+Vercel: **Settings → Environment Variables** → add `NEXT_PUBLIC_GTM_ID` = `GTM-TFSZD9WT` for **Production** (and Preview only if you want GTM there). Optional `NEXT_PUBLIC_GTM_GATEWAY_PATH=/metrics`. Remove any leftover `NEXT_PUBLIC_GA_MEASUREMENT_ID` so you do not dual-load gtag. Redeploy after changing — `NEXT_PUBLIC_*` is baked at build time.
+
+### Google tag gateway for advertisers
+
+First-party measurement path: **`/metrics`** (no App Router page conflict; alternatives if needed: `/gtm`, `/metrics-gtm`).
+
+| Item | Value |
+|---|---|
+| GTM container | `GTM-TFSZD9WT` |
+| Gateway origin | `gtm-tfszd9wt.fps.goog` (lowercase container id) |
+| Browser script | `https://www.anshatradingco.com/metrics/?id=GTM-TFSZD9WT` |
+| Vercel rewrite | `/metrics` and `/metrics/:path*` → `https://gtm-tfszd9wt.fps.goog/metrics` and `…/metrics/:path*` (`vercel.json`) |
+
+**Host header:** Vercel external rewrites open a new HTTPS connection to the destination URL, so upstream `Host` is `gtm-tfszd9wt.fps.goog` automatically. Vercel does **not** expose a custom Host override on rewrites; none is needed when the destination hostname is already the fps.goog origin.
+
+**Geolocation headers:** Google expects `X-Forwarded-CountryRegion` (or `X-Forwarded-Country` + `X-Forwarded-Region`) on the upstream request. Vercel rewrites do **not** add those Google-specific headers (they expose `x-vercel-ip-country` / `x-vercel-ip-country-region` to the app, not to fps.goog). Routing/`/metrics/healthy` can succeed while `?validate_geo=healthy` fails. For full gateway compliance (geo validate = `ok`), put Cloudflare (Origin Rule + visitor location headers) or a GCP HTTP(S) load balancer in front of the site and route `/metrics/*` there with Host override + geo headers. Keep the Vercel rewrite as a best-effort path until that layer exists.
+
+**Health checks** (after deploy; rewrites are Vercel-only — not applied by local `next dev`):
+
+| Check | URL | Expected |
+|---|---|---|
+| Routing | `https://www.anshatradingco.com/metrics/healthy` | body `ok` |
+| Geo headers | `https://www.anshatradingco.com/metrics/?validate_geo=healthy` | body `ok` (may fail on Vercel-only rewrite; see above) |
+
+**Tag Assistant:** Preview the site → Summary → Output → Hits Sent. Script and measurement requests should hit `www.anshatradingco.com/metrics/…`, not `www.googletagmanager.com/gtm.js`. Noscript may still reference googletagmanager.com. Optionally set `server_container_url` = `https://www.anshatradingco.com/metrics` on Google tags inside the container so GA4/Ads collect via the gateway path.
 
 ### GTM / GA — Configure your domains
 

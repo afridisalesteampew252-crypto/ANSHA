@@ -17,6 +17,7 @@ Required names:
 Optional (public site):
 
 - `NEXT_PUBLIC_GTM_ID` — Google Tag Manager (`GTM-TFSZD9WT` in production; set on Vercel Production). Unset uses `siteConfig.gtmId` fallback; blank disables. Public + portal layouts (not `/admin`). GA and other tags fire from the GTM container. See `docs/Deployment.md`.
+- `NEXT_PUBLIC_GTM_GATEWAY_PATH` — optional; default `/metrics`. First-party path for Google tag gateway (must match the Vercel rewrite to `gtm-tfszd9wt.fps.goog`).
 
 Do not put `SUPABASE_SERVICE_ROLE_KEY` in Next.js env. Service role belongs on Edge Functions only.
 

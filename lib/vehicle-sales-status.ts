@@ -70,6 +70,20 @@ export function exportShipmentStatusLabel(status: ExportShipmentStatusLike): str
 }
 
 /**
+ * True when salesStatusLabel only restates stock_status (e.g. "Available" vs available).
+ * Keeps meaningful sales labels like Partial Paid, Booked, Shipped, etc.
+ */
+export function isSalesStatusRedundantWithStock(
+  stockStatus: string | null | undefined,
+  salesStatusLabel: string | null | undefined
+): boolean {
+  if (!salesStatusLabel) return true;
+  const stock = (stockStatus || 'available').toLowerCase().replace(/_/g, ' ').trim();
+  const sales = salesStatusLabel.toLowerCase().replace(/_/g, ' ').trim();
+  return stock === sales;
+}
+
+/**
  * Resolve the primary filter/display status for a vehicle.
  * Priority: delivered > shipped > booked > paid > partial_paid > sold > reserved > available,
  * with not_booked only when an export shipment exists in draft.

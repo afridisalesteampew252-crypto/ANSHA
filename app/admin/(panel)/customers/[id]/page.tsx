@@ -12,12 +12,14 @@ import {
   KeyRound,
   Loader2,
   MapPin,
+  Pencil,
   ReceiptText,
   RotateCcw,
   Save,
   ShoppingBag,
   UserRound,
   WalletCards,
+  X,
 } from 'lucide-react';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -28,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { addToCurrencyMap, formatMoney, normalizeCurrency } from '@/lib/money';
 import { MoneyBreakdown } from '@/components/money-breakdown';
+import { cn } from '@/lib/utils';
 
 const money = (value: number, currency = 'AED') => formatMoney(value, currency);
 const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
@@ -106,12 +109,31 @@ const emptyProfileForm = (): ProfileForm => ({
   consignee_notes: '',
 });
 
+const EDIT_SECTIONS = ['profile', 'company', 'contact', 'details', 'consignee'] as const;
+type EditSection = (typeof EDIT_SECTIONS)[number];
+
+function parseEditSection(hash: string): EditSection | null {
+  return (EDIT_SECTIONS as readonly string[]).includes(hash) ? (hash as EditSection) : null;
+}
+
+function ReadField({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium break-words">{value?.trim() || '—'}</p>
+    </div>
+  );
+}
+
 export default function CustomerAccountPage() {
   const params = useParams<{ id: string }>();
   const customerId = params.id;
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [editingSection, setEditingSection] = useState<EditSection | null>(() =>
+    typeof window !== 'undefined' ? parseEditSection(window.location.hash.replace(/^#/, '')) : null
+  );
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
@@ -222,13 +244,36 @@ export default function CustomerAccountPage() {
 
   useEffect(() => {
     if (loading || !customer) return;
-    const hash = typeof window !== 'undefined' ? window.location.hash.replace(/^#/, '') : '';
-    if (!hash) return;
-    const timer = window.setTimeout(() => {
-      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
-    return () => window.clearTimeout(timer);
+
+    const applyHash = () => {
+      const hash = window.location.hash.replace(/^#/, '');
+      setEditingSection(parseEditSection(hash));
+      if (!hash) return;
+      window.setTimeout(() => {
+        document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    };
+
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
   }, [loading, customer]);
+
+  const startEdit = useCallback((section: EditSection) => {
+    setEditingSection(section);
+    if (customer) applyCustomerToForm(customer);
+    const next = `${window.location.pathname}${window.location.search}#${section}`;
+    window.history.replaceState(null, '', next);
+    window.setTimeout(() => {
+      document.getElementById(section)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 40);
+  }, [customer]);
+
+  const stopEdit = useCallback(() => {
+    setEditingSection(null);
+    if (customer) applyCustomerToForm(customer);
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  }, [customer]);
 
   const allocatedByRemittance = useMemo(() => allocations.reduce<Record<string, number>>((sum, row) => ({ ...sum, [row.remittance_id]: (sum[row.remittance_id] || 0) + Number(row.amount) }), {}), [allocations]);
   const receivableInvoices = useMemo(() => invoices.filter((row) => receivableDocument(row.document_type) && row.status !== 'cancelled'), [invoices]);
@@ -416,156 +461,265 @@ export default function CustomerAccountPage() {
     </div>
 
     <div className="grid gap-6 xl:grid-cols-2">
-      <Card id="profile" className="scroll-mt-24">
-        <CardHeader className="pb-2">
+      <Card id="profile" className={cn('scroll-mt-24', editingSection === 'profile' && 'ring-2 ring-accent/35')}>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2 space-y-0">
           <CardTitle className="flex items-center gap-2 text-lg">
             <UserRound className="h-5 w-5 text-accent" />
             Profile
           </CardTitle>
+          {editingSection === 'profile' ? (
+            <Button type="button" variant="ghost" size="sm" onClick={stopEdit}>
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={() => startEdit('profile')}>
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-customer-id">Customer ID</Label>
-            <Input id="profile-customer-id" value={customer.customer_code} readOnly disabled className="bg-secondary/40" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-full-name">Full name</Label>
-            <Input id="profile-full-name" value={profileForm.full_name} onChange={setField('full_name')} required />
-          </div>
-          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Profile')}>
-            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save profile
-          </Button>
+          {editingSection === 'profile' ? (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-customer-id">Customer ID</Label>
+                <Input id="profile-customer-id" value={customer.customer_code} readOnly disabled className="bg-secondary/40" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-full-name">Full name</Label>
+                <Input id="profile-full-name" value={profileForm.full_name} onChange={setField('full_name')} required />
+              </div>
+              <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Profile')}>
+                {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save profile
+              </Button>
+            </>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ReadField label="Customer ID" value={customer.customer_code} />
+              <ReadField label="Full name" value={customer.full_name} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card id="company" className="scroll-mt-24">
-        <CardHeader className="pb-2">
+      <Card id="company" className={cn('scroll-mt-24', editingSection === 'company' && 'ring-2 ring-accent/35')}>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2 space-y-0">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Building2 className="h-5 w-5 text-accent" />
             Company info
           </CardTitle>
+          {editingSection === 'company' ? (
+            <Button type="button" variant="ghost" size="sm" onClick={stopEdit}>
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={() => startEdit('company')}>
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="company-name">Company name</Label>
-            <Input id="company-name" value={profileForm.company_name} onChange={setField('company_name')} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="company-trn">Tax registration number</Label>
-            <Input id="company-trn" value={profileForm.tax_registration_number} onChange={setField('tax_registration_number')} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="company-country">Country</Label>
-            <Input id="company-country" value={profileForm.country} onChange={setField('country')} />
-          </div>
-          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Company info')}>
-            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save company info
-          </Button>
+          {editingSection === 'company' ? (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="company-name">Company name</Label>
+                <Input id="company-name" value={profileForm.company_name} onChange={setField('company_name')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="company-trn">Tax registration number</Label>
+                <Input id="company-trn" value={profileForm.tax_registration_number} onChange={setField('tax_registration_number')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="company-country">Country</Label>
+                <Input id="company-country" value={profileForm.country} onChange={setField('country')} />
+              </div>
+              <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Company info')}>
+                {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save company info
+              </Button>
+            </>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ReadField label="Company name" value={customer.company_name} />
+              <ReadField label="Tax registration number" value={customer.tax_registration_number} />
+              <ReadField label="Country" value={customer.country} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      <Card id="contact" className="scroll-mt-24">
-        <CardHeader className="pb-2">
+      <Card id="contact" className={cn('scroll-mt-24', editingSection === 'contact' && 'ring-2 ring-accent/35')}>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2 space-y-0">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Contact className="h-5 w-5 text-accent" />
             Contact info
           </CardTitle>
+          {editingSection === 'contact' ? (
+            <Button type="button" variant="ghost" size="sm" onClick={stopEdit}>
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={() => startEdit('contact')}>
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="contact-email">Email</Label>
-              <Input id="contact-email" type="email" value={profileForm.email} onChange={setField('email')} />
+          {editingSection === 'contact' ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="contact-email">Email</Label>
+                  <Input id="contact-email" type="email" value={profileForm.email} onChange={setField('email')} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="contact-phone">Phone</Label>
+                  <Input id="contact-phone" value={profileForm.phone} onChange={setField('phone')} />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="contact-whatsapp">WhatsApp</Label>
+                  <Input id="contact-whatsapp" value={profileForm.whatsapp} onChange={setField('whatsapp')} />
+                </div>
+              </div>
+              <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Contact info')}>
+                {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save contact info
+              </Button>
+            </>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ReadField label="Email" value={customer.email} />
+              <ReadField label="Phone" value={customer.phone} />
+              <ReadField label="WhatsApp" value={customer.whatsapp} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="contact-phone">Phone</Label>
-              <Input id="contact-phone" value={profileForm.phone} onChange={setField('phone')} />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="contact-whatsapp">WhatsApp</Label>
-              <Input id="contact-whatsapp" value={profileForm.whatsapp} onChange={setField('whatsapp')} />
-            </div>
-          </div>
-          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Contact info')}>
-            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save contact info
-          </Button>
+          )}
         </CardContent>
       </Card>
 
-      <Card id="details" className="scroll-mt-24">
-        <CardHeader className="pb-2">
+      <Card id="details" className={cn('scroll-mt-24', editingSection === 'details' && 'ring-2 ring-accent/35')}>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2 space-y-0">
           <CardTitle className="flex items-center gap-2 text-lg">
             <MapPin className="h-5 w-5 text-accent" />
             Customer details
           </CardTitle>
+          {editingSection === 'details' ? (
+            <Button type="button" variant="ghost" size="sm" onClick={stopEdit}>
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={() => startEdit('details')}>
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="details-address">Address</Label>
-            <Input id="details-address" value={profileForm.address} onChange={setField('address')} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="details-notes">Notes</Label>
-            <Input id="details-notes" value={profileForm.notes} onChange={setField('notes')} />
-          </div>
-          <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Customer details')}>
-            {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save customer details
-          </Button>
+          {editingSection === 'details' ? (
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="details-address">Address</Label>
+                <Input id="details-address" value={profileForm.address} onChange={setField('address')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="details-notes">Notes</Label>
+                <Input id="details-notes" value={profileForm.notes} onChange={setField('notes')} />
+              </div>
+              <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Customer details')}>
+                {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save customer details
+              </Button>
+            </>
+          ) : (
+            <div className="grid gap-3">
+              <ReadField label="Address" value={customer.address} />
+              <ReadField label="Notes" value={customer.notes} />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
 
-    <Card id="consignee" className="scroll-mt-24">
-      <CardHeader className="pb-2">
+    <Card id="consignee" className={cn('scroll-mt-24', editingSection === 'consignee' && 'ring-2 ring-accent/35')}>
+      <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2 space-y-0">
         <CardTitle className="flex items-center gap-2 text-lg">
           <ShoppingBag className="h-5 w-5 text-accent" />
           Consignee details
         </CardTitle>
+        {editingSection === 'consignee' ? (
+          <Button type="button" variant="ghost" size="sm" onClick={stopEdit}>
+            <X className="h-4 w-4" />
+            Cancel
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" size="sm" onClick={() => startEdit('consignee')}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">Shipping consignee used on export docs when different from the billing customer.</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="consignee-name">Consignee name</Label>
-            <Input id="consignee-name" value={profileForm.consignee_name} onChange={setField('consignee_name')} />
+        {editingSection === 'consignee' ? (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="consignee-name">Consignee name</Label>
+                <Input id="consignee-name" value={profileForm.consignee_name} onChange={setField('consignee_name')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="consignee-company">Consignee company</Label>
+                <Input id="consignee-company" value={profileForm.consignee_company} onChange={setField('consignee_company')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="consignee-phone">Consignee phone</Label>
+                <Input id="consignee-phone" value={profileForm.consignee_phone} onChange={setField('consignee_phone')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="consignee-email">Consignee email</Label>
+                <Input id="consignee-email" type="email" value={profileForm.consignee_email} onChange={setField('consignee_email')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="consignee-country">Consignee country</Label>
+                <Input id="consignee-country" value={profileForm.consignee_country} onChange={setField('consignee_country')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="consignee-address">Consignee address</Label>
+                <Input id="consignee-address" value={profileForm.consignee_address} onChange={setField('consignee_address')} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="consignee-notes">Consignee notes</Label>
+                <Input id="consignee-notes" value={profileForm.consignee_notes} onChange={setField('consignee_notes')} />
+              </div>
+            </div>
+            <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Consignee details')}>
+              {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save consignee details
+            </Button>
+          </>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ReadField label="Consignee name" value={customer.consignee_name} />
+            <ReadField label="Consignee company" value={customer.consignee_company} />
+            <ReadField label="Consignee phone" value={customer.consignee_phone} />
+            <ReadField label="Consignee email" value={customer.consignee_email} />
+            <ReadField label="Consignee country" value={customer.consignee_country} />
+            <ReadField label="Consignee address" value={customer.consignee_address} />
+            <div className="sm:col-span-2">
+              <ReadField label="Consignee notes" value={customer.consignee_notes} />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="consignee-company">Consignee company</Label>
-            <Input id="consignee-company" value={profileForm.consignee_company} onChange={setField('consignee_company')} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="consignee-phone">Consignee phone</Label>
-            <Input id="consignee-phone" value={profileForm.consignee_phone} onChange={setField('consignee_phone')} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="consignee-email">Consignee email</Label>
-            <Input id="consignee-email" type="email" value={profileForm.consignee_email} onChange={setField('consignee_email')} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="consignee-country">Consignee country</Label>
-            <Input id="consignee-country" value={profileForm.consignee_country} onChange={setField('consignee_country')} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="consignee-address">Consignee address</Label>
-            <Input id="consignee-address" value={profileForm.consignee_address} onChange={setField('consignee_address')} />
-          </div>
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="consignee-notes">Consignee notes</Label>
-            <Input id="consignee-notes" value={profileForm.consignee_notes} onChange={setField('consignee_notes')} />
-          </div>
-        </div>
-        <Button type="button" disabled={profileSaving} onClick={() => void saveProfile('Consignee details')}>
-          {profileSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save consignee details
-        </Button>
+        )}
       </CardContent>
     </Card>
 
-    <Card className="border-accent/25 bg-accent/[0.04]">
+    <Card id="portal" className="scroll-mt-24 border-accent/25 bg-accent/[0.04]">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <KeyRound className="h-5 w-5 text-accent" />

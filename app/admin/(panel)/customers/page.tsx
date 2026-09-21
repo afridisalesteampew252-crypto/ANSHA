@@ -437,7 +437,7 @@ export default function CustomersPage() {
                                   Quick edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}`}>
+                                  <Link href={`/admin/customers/${item.id}#portal`}>
                                     <KeyRound className="h-3.5 w-3.5" />
                                     {portal ? 'Portal' : 'Enable portal'}
                                   </Link>
