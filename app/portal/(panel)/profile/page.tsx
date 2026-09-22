@@ -140,7 +140,7 @@ export default function PortalProfilePage() {
           <Link href="/portal/settings"><Settings className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">Settings</strong><small className="text-muted-foreground">Privacy & deletion</small></span></Link>
         </Button>
         <Button asChild variant="outline" className="h-auto justify-start gap-3 p-4">
-          <Link href="/contact"><Headphones className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">Support</strong><small className="text-muted-foreground">Contact ANSHA team</small></span></Link>
+          <Link href="/portal/support"><Headphones className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">Support</strong><small className="text-muted-foreground">Secure support inbox</small></span></Link>
         </Button>
       </div>
 
