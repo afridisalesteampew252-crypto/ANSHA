@@ -51,3 +51,16 @@ Do not invent passing test counts.
 5. Preview + `verify:deployment` for user-visible or auth/header changes
 
 Manual browser checks are required for admin tables, chat realtime, and invoice print until an E2E suite exists.
+
+
+## Playwright end-to-end suite
+
+Install Chromium with `npm run test:e2e:install`. Run public and anonymous-security checks against a preview with:
+
+```bash
+PLAYWRIGHT_BASE_URL=https://your-preview.vercel.app npm run test:e2e:public
+```
+
+Run `npm run test:e2e` for the complete suite. Configure role accounts and fixture IDs from `.env.example`; missing optional fixtures produce explicit skips.
+
+Stateful stock, remittance, and unknown-TTS tests require `E2E_ALLOW_MUTATIONS=1` and a disposable Supabase branch/project. The suite refuses the production project `ydrnilquojvalhgifest` and production domain, and restores or reverses fixture changes where possible.

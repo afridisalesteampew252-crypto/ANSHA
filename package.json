@@ -15,7 +15,10 @@
     "cap:add:android": "npx cap add android",
     "cap:add:ios": "npx cap add ios",
     "cap:android": "npx cap open android",
-    "cap:ios": "npx cap open ios"
+    "cap:ios": "npx cap open ios",
+    "test:e2e": "playwright test",
+    "test:e2e:public": "playwright test tests/e2e/public.spec.ts tests/e2e/security.spec.ts",
+    "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.70",
@@ -92,7 +95,8 @@
     "@types/react-dom": "19.1.9",
     "@types/sanitize-html": "^2.16.1",
     "eslint": "9.35.0",
-    "eslint-config-next": "16.3.5"
+    "eslint-config-next": "16.3.5",
+    "@playwright/test": "1.63.0"
   },
   "engines": {
     "node": ">=20.9.0"
