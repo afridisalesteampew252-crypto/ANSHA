@@ -8,6 +8,7 @@ import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-im
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
+import { publicPriceLabel } from '@/lib/product-schema';
 import { partImageAlt } from '@/lib/seo';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
 import type { PartWithRelations, SiteOffer } from '@/lib/types';
@@ -23,18 +24,20 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
   const compatibility = part.part_compatibility?.[0];
   const photoUrl = coverPhoto ? publicPartImageUrl(coverPhoto.storage_path) : null;
   const imageAlt = partImageAlt(part);
-  const hasPrice = Boolean(part.show_price && part.price && part.price > 0);
-  const listPrice = hasPrice ? Number(part.price) : null;
+  const listPrice = part.show_price && part.price && part.price > 0 ? Number(part.price) : null;
   const dealPrice =
     part.stock_status !== 'sold' && deal ? effectiveDealPrice(listPrice, deal) : null;
   const discountLabel = deal ? formatDealDiscount(deal.discount_percent) : null;
-  const priceLabel = part.stock_status === 'sold'
-    ? 'Sold'
-    : dealPrice != null
-      ? `${part.currency} ${dealPrice.toLocaleString()}`
-      : hasPrice
-        ? `${part.currency} ${part.price!.toLocaleString()}`
-        : 'Ask for quote';
+  const priceLabel = publicPriceLabel({
+    currency: part.currency,
+    stockStatus: part.stock_status,
+    dealPrice,
+    showPrice: Boolean(part.show_price),
+    price: part.price,
+    priceFob: part.price_fob,
+    priceCf: part.price_cf,
+    priceCif: part.price_cif,
+  });
   const oemOrCode = part.oem_number || part.part_code;
   const waMessage = `Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
@@ -145,7 +148,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
               ) : null}
             </div>
             <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
-              {dealPrice != null ? 'Deal price' : hasPrice ? 'Export price' : 'Price'}
+              {dealPrice != null ? 'Deal price' : listPrice != null ? 'Export price' : 'Price'}
             </span>
             <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">
               {priceLabel}

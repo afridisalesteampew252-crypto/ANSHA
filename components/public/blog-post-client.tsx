@@ -12,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BlogCard } from '@/components/public/blog-card';
 import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 import { blogImageUrl } from '@/lib/blog-image';
+import { sanitizeBlogHtml } from '@/lib/sanitize-html';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import type { BlogPostWithCategory, BlogCategory } from '@/lib/types';
@@ -186,7 +187,7 @@ export function BlogPostClient({ slug }: { slug: string }) {
           {post.content ? (
             <div
               className="prose prose-sm max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-h2:text-xl prose-h3:text-lg prose-a:text-accent prose-img:rounded-lg prose-blockquote:border-accent"
-              dangerouslySetInnerHTML={{ __html: post.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeBlogHtml(post.content) }}
             />
           ) : (
             <p className="text-muted-foreground">No content available.</p>

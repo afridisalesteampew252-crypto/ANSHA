@@ -1,10 +1,13 @@
 import type { MetadataRoute } from 'next';
 import { EXPORT_MARKETS } from '@/lib/export-markets';
 import { siteConfig } from '@/lib/site-config';
-import { supabase } from '@/lib/supabase/client';
+import { createPublicSupabaseClient } from '@/lib/supabase/public';
+
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
+  const supabase = createPublicSupabaseClient();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },

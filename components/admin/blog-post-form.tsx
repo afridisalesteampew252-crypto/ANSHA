@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase/client';
+import { sanitizeBlogHtml } from '@/lib/sanitize-html';
 import { sendWebPush } from '@/lib/web-push';
 import { toast } from 'sonner';
 import type { BlogCategory, BlogPost } from '@/lib/types';
@@ -118,7 +119,7 @@ export function BlogPostForm({ initialPost }: BlogPostFormProps) {
       title: title.trim(),
       slug: slug.trim(),
       excerpt: excerpt.trim() || null,
-      content: content.trim() || null,
+      content: sanitizeBlogHtml(content.trim() || null) || null,
       featured_image: featuredImage || null,
       category_id: categoryId || null,
       status: finalStatus,

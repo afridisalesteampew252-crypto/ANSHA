@@ -1,397 +1,135 @@
-'use client';
-
-import { useState, useEffect, use } from 'react';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import {
-  Car,
-  Gauge,
-  Fuel,
-  Calendar,
-  CheckCircle2,
-  MapPin,
-  Cog,
-  Hash,
-  Palette,
-} from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { InquiryDialog } from '@/components/public/inquiry-dialog';
-import { WhatsAppButton } from '@/components/public/whatsapp-button';
-import { VehicleCard } from '@/components/public/vehicle-card';
-import { VehiclePhotoGallery } from '@/components/public/vehicle-photo-gallery';
-import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
-import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
-import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
-import { supabase } from '@/lib/supabase/client';
-import { siteConfig } from '@/lib/site-config';
-import { effectiveDealPrice } from '@/lib/site-offers';
+import { JsonLd } from '@/components/seo/json-ld';
+import { publicVehicleImageUrl } from '@/lib/public-media';
 import {
   buildProductOffer,
   buildProductReviewFields,
   resolveProductOfferPrice,
 } from '@/lib/product-schema';
-import type { Review, SiteOffer, VehicleWithPhotos } from '@/lib/types';
-import { JsonLd } from '@/components/seo/json-ld';
-import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
-import { publicVehicleImageUrl } from '@/components/public/catalog-image';
-import { publicVehiclePhotos } from '@/lib/vehicle-photos';
+import { getPublishedReviews } from '@/lib/reviews';
+import { absoluteUrl } from '@/lib/seo';
+import { buildBreadcrumbListJsonLd } from '@/lib/seo-schema';
+import { effectiveDealPrice } from '@/lib/site-offers';
+import { siteConfig } from '@/lib/site-config';
+import { createPublicSupabaseClient } from '@/lib/supabase/public';
 import {
   equipmentCategoryLabel,
   isMachineryClass,
   vehicleClassLabel,
 } from '@/lib/vehicle-class';
+import { publicVehiclePhotos } from '@/lib/vehicle-photos';
+import type { SiteOffer } from '@/lib/types';
+import { VehicleDetailClient } from './vehicle-detail-client';
 
-export default function VehicleDetailPage(props: { params: Promise<{ slug: string }> }) {
-  const params = use(props.params);
-  const { slug } = params;
-  const [vehicle, setVehicle] = useState<VehicleWithPhotos | null>(null);
-  const [relatedVehicles, setRelatedVehicles] = useState<VehicleWithPhotos[]>([]);
-  const [deal, setDeal] = useState<SiteOffer | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFoundFlag, setNotFoundFlag] = useState(false);
-  const [coverIndex, setCoverIndex] = useState(0);
+type Props = { params: Promise<{ slug: string }> };
 
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*, vehicle_photos(*)')
-        .eq('slug', slug)
-        .eq('is_published', true)
-        .eq('stock_status', 'available')
-        .maybeSingle();
+export default async function VehicleDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const supabase = createPublicSupabaseClient();
 
-      if (error || !data) {
-        setNotFoundFlag(true);
-        setLoading(false);
-        return;
-      }
+  const { data } = await supabase
+    .from('vehicles')
+    .select(
+      'id, slug, title, description, make, model, year, chassis_code, mileage, currency, show_price, price, price_fob, price_cf, price_cif, vehicle_class, equipment_category, vehicle_photos(storage_path, is_cover, sort_order, is_auction_sheet)'
+    )
+    .eq('slug', slug)
+    .eq('is_published', true)
+    .eq('stock_status', 'available')
+    .maybeSingle();
 
-      const typedData = data as unknown as VehicleWithPhotos;
-      const sortedPhotos = publicVehiclePhotos(typedData.vehicle_photos).sort(
-        (a, b) => a.sort_order - b.sort_order
-      );
-      const nextCover = sortedPhotos.findIndex((p) => p.is_cover);
-      setVehicle({ ...typedData, vehicle_photos: sortedPhotos });
-      setCoverIndex(nextCover >= 0 ? nextCover : 0);
-
-      const [{ data: offerRows }, { data: reviewRows }, relatedRes] = await Promise.all([
-        supabase
-          .from('site_offers')
-          .select('*')
-          .eq('is_published', true)
-          .eq('vehicle_id', typedData.id)
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(1),
-        supabase
-          .from('reviews')
-          .select('*')
-          .eq('is_published', true)
-          .order('sort_order', { ascending: true })
-          .order('created_at', { ascending: false })
-          .limit(10),
-        typedData.make
-          ? supabase
-              .from('vehicles')
-              .select('*, vehicle_photos(*)')
-              .eq('is_published', true)
-              .eq('stock_status', 'available')
-              .eq('make', typedData.make)
-              .neq('id', typedData.id)
-              .order('is_featured', { ascending: false })
-              .order('created_at', { ascending: false })
-              .limit(4)
-          : Promise.resolve({ data: [] as unknown[] }),
-      ]);
-      setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
-      setReviews((reviewRows || []) as Review[]);
-      setRelatedVehicles((relatedRes.data || []) as unknown as VehicleWithPhotos[]);
-      setLoading(false);
-    })();
-  }, [slug]);
-
-  if (notFoundFlag) {
-    notFound();
+  if (!data) {
+    return <VehicleDetailClient slug={slug} />;
   }
 
-  if (loading || !vehicle) {
-    return (
-      <div className="container-page overflow-x-clip py-8">
-        <div className="grid min-w-0 gap-8 lg:grid-cols-2">
-          <Skeleton className="aspect-[4/3] w-full rounded-xl" />
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-40" />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const photos = publicVehiclePhotos(
+    ((data.vehicle_photos || []) as Array<{
+      storage_path: string;
+      is_cover: boolean | null;
+      sort_order: number | null;
+      is_auction_sheet: boolean | null;
+    }>).map((photo) => ({
+      storage_path: photo.storage_path,
+      is_cover: Boolean(photo.is_cover),
+      sort_order: photo.sort_order ?? 0,
+      is_auction_sheet: Boolean(photo.is_auction_sheet),
+    }))
+  ).sort((a, b) => a.sort_order - b.sort_order);
 
-  const photos = vehicle.vehicle_photos || [];
-  const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
-  const dealPrice = deal ? effectiveDealPrice(hasPrice ? vehicle.price : null, deal) : null;
-  const pageUrl = `${siteConfig.url}/vehicles/${vehicle.slug}`;
+  const [{ data: offerRows }, reviews] = await Promise.all([
+    supabase
+      .from('site_offers')
+      .select('*')
+      .eq('is_published', true)
+      .eq('vehicle_id', data.id)
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(1),
+    getPublishedReviews(10),
+  ]);
+
+  const deal = ((offerRows || [])[0] as SiteOffer | undefined) || null;
+  const hasListPrice = Boolean(data.show_price && data.price && Number(data.price) > 0);
+  const dealPrice = deal ? effectiveDealPrice(hasListPrice ? Number(data.price) : null, deal) : null;
+  const pageUrl = absoluteUrl(`/vehicles/${data.slug}`);
   const offerPrice = resolveProductOfferPrice({
     dealPrice,
-    showPrice: Boolean(vehicle.show_price),
-    price: vehicle.price,
-    priceFob: vehicle.price_fob,
-    priceCf: vehicle.price_cf,
-    priceCif: vehicle.price_cif,
+    showPrice: Boolean(data.show_price),
+    price: data.price,
+    priceFob: data.price_fob,
+    priceCf: data.price_cf,
+    priceCif: data.price_cif,
   });
   const offers = buildProductOffer({
     price: offerPrice,
-    currency: vehicle.currency,
+    currency: data.currency,
     url: pageUrl,
     availability: 'https://schema.org/InStock',
   });
   const reviewFields = buildProductReviewFields(reviews, {
-    name: vehicle.title,
+    name: data.title,
     url: pageUrl,
   });
 
-  const machineryUnit = isMachineryClass(vehicle.vehicle_class);
-  const specs = [
-    { icon: Calendar, label: 'Year', value: vehicle.year?.toString() },
-    { icon: Cog, label: 'Transmission', value: vehicle.transmission },
-    { icon: Fuel, label: 'Fuel Type', value: vehicle.fuel_type },
-    {
-      icon: Gauge,
-      label: machineryUnit && vehicle.operating_hours != null ? 'Operating hours' : 'Mileage',
-      value:
-        vehicle.operating_hours != null
-          ? `${vehicle.operating_hours.toLocaleString()} hrs`
-          : vehicle.mileage != null
-            ? `${vehicle.mileage.toLocaleString()} km`
-            : null,
-    },
-    { icon: Palette, label: 'Color', value: vehicle.color },
-    { icon: Hash, label: 'Chassis', value: vehicle.chassis_code },
-    { icon: Cog, label: 'Engine', value: vehicle.engine_code },
-    { icon: Car, label: 'Variant', value: vehicle.variant },
-    {
-      icon: Car,
-      label: 'Class',
-      value: machineryUnit
-        ? [vehicleClassLabel(vehicle.vehicle_class), equipmentCategoryLabel(vehicle.equipment_category)]
-            .filter(Boolean)
-            .join(' · ')
-        : null,
-    },
-  ].filter((s) => s.value);
-
+  const machineryUnit = isMachineryClass(data.vehicle_class);
   const catalogHref = machineryUnit ? '/machinery' : '/vehicles';
   const catalogLabel = machineryUnit ? 'Machinery' : 'Vehicles';
-  const makeHref = vehicle.make
-    ? `${catalogHref}?brand=${encodeURIComponent(vehicle.make)}`
+  const makeHref = data.make
+    ? `${catalogHref}?brand=${encodeURIComponent(data.make)}`
     : catalogHref;
 
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': ['Vehicle', 'Product'],
+    name: data.title,
+    description:
+      data.description || `${data.year || ''} ${data.make} ${data.model} for export`.trim(),
+    brand: { '@type': 'Brand', name: data.make },
+    model: data.model,
+    category: machineryUnit
+      ? equipmentCategoryLabel(data.equipment_category) || vehicleClassLabel(data.vehicle_class)
+      : undefined,
+    vehicleModelDate: data.year?.toString(),
+    vehicleIdentificationNumber: data.chassis_code || undefined,
+    mileageFromOdometer:
+      data.mileage != null
+        ? { '@type': 'QuantitativeValue', value: data.mileage, unitCode: 'KMT' }
+        : undefined,
+    image: photos.map((photo) => publicVehicleImageUrl(photo.storage_path)),
+    url: pageUrl,
+    ...(offers ? { offers } : {}),
+    ...reviewFields,
+  };
+
+  const breadcrumbJsonLd = buildBreadcrumbListJsonLd([
+    { name: 'Home', href: '/' },
+    { name: catalogLabel, href: catalogHref },
+    ...(data.make ? [{ name: data.make, href: makeHref }] : []),
+    { name: data.title },
+  ]);
+
   return (
-    <div className="overflow-x-clip">
-      <div className="page-band">
-        <div className="container-page py-5 sm:py-6">
-          <PageBreadcrumbs
-            items={[
-              { name: 'Home', href: '/' },
-              { name: catalogLabel, href: catalogHref },
-              ...(vehicle.make ? [{ name: vehicle.make, href: makeHref }] : []),
-              { name: vehicle.title },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="surface-cool">
-      <div className="container-page py-8 sm:py-10">
-      <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': ['Vehicle', 'Product'],
-          name: vehicle.title,
-          description: vehicle.description || `${vehicle.year || ''} ${vehicle.make} ${vehicle.model} for export`,
-          brand: { '@type': 'Brand', name: vehicle.make },
-          model: vehicle.model,
-          category: machineryUnit
-            ? equipmentCategoryLabel(vehicle.equipment_category) || vehicleClassLabel(vehicle.vehicle_class)
-            : undefined,
-          vehicleModelDate: vehicle.year?.toString(),
-          vehicleIdentificationNumber: vehicle.chassis_code || undefined,
-          mileageFromOdometer: vehicle.mileage != null ? { '@type': 'QuantitativeValue', value: vehicle.mileage, unitCode: 'KMT' } : undefined,
-          image: photos.map((photo) => publicVehicleImageUrl(photo.storage_path)),
-          url: pageUrl,
-          ...(offers ? { offers } : {}),
-          ...reviewFields,
-        }}
-      />
-
-      <div className="grid min-w-0 gap-8 lg:grid-cols-2 lg:gap-10">
-        <VehiclePhotoGallery
-          title={vehicle.title}
-          photos={photos}
-          featured={vehicle.is_featured}
-          initialIndex={coverIndex}
-          year={vehicle.year}
-          make={vehicle.make}
-          model={vehicle.model}
-        />
-
-        <div className="min-w-0 space-y-6">
-          <div>
-            <p className="eyebrow">
-              {vehicle.stock_pool === 'auction_third_party' ? 'Auction listing' : 'Export vehicle'}
-            </p>
-            <h1 className="mt-2 font-display text-2xl font-black tracking-tight md:text-3xl lg:text-4xl">{vehicle.title}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {vehicle.make} {vehicle.model}
-              {vehicle.variant ? ` • ${vehicle.variant}` : ''}
-              {vehicle.stock_pool === 'auction_third_party' ? ' · Auction stock' : ''}
-            </p>
-          </div>
-
-          {deal ? (
-            <InventoryDealBanner
-              offer={deal}
-              currency={vehicle.currency}
-              listPrice={hasPrice ? vehicle.price : null}
-            />
-          ) : null}
-
-          <div className="flex items-center justify-between rounded-2xl border border-accent/20 bg-[#101114] p-4 text-white sm:p-5">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
-                {dealPrice != null ? 'Deal price' : 'Export price'}
-              </p>
-              {dealPrice != null ? (
-                <div className="mt-1 flex flex-wrap items-baseline gap-2">
-                  <p className="text-2xl font-black tracking-tight sm:text-3xl">
-                    {vehicle.currency} {dealPrice.toLocaleString()}
-                  </p>
-                  {hasPrice ? (
-                    <span className="text-sm text-white/40 line-through">
-                      {vehicle.currency} {vehicle.price!.toLocaleString()}
-                    </span>
-                  ) : null}
-                </div>
-              ) : hasPrice ? (
-                <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-                  {vehicle.currency} {vehicle.price!.toLocaleString()}
-                </p>
-              ) : (
-                <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Ask for quote</p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Status</p>
-              <div className="mt-1 flex items-center justify-end gap-1.5 text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="text-sm font-semibold">Available</span>
-              </div>
-            </div>
-          </div>
-
-          <IncotermQuoteStrip
-            currency={vehicle.currency}
-            showPrice={Boolean(vehicle.show_price)}
-            priceFob={vehicle.price_fob}
-            priceCf={vehicle.price_cf}
-            priceCif={vehicle.price_cif}
-          />
-
-          {specs.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
-              {specs.map((spec) => (
-                <div key={spec.label} className="flex min-w-0 items-center gap-2.5 rounded-xl border border-accent/15 bg-card p-3">
-                  <spec.icon className="h-4 w-4 shrink-0 text-accent" />
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">{spec.label}</p>
-                    <p className="truncate text-sm font-medium">{spec.value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {vehicle.location && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4 shrink-0 text-accent" />
-              <span>Location: {vehicle.location}</span>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-3">
-            <SaveItemActions
-              size="md"
-              showLabels
-              item={toVehicleSaveItem({
-                id: vehicle.id,
-                slug: vehicle.slug,
-                title: vehicle.title,
-                subtitle: [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' '),
-                priceLabel: dealPrice != null
-                  ? `${vehicle.currency} ${dealPrice.toLocaleString()}`
-                  : hasPrice
-                    ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}`
-                    : 'Ask for quote',
-                imageUrl: photos[0] ? publicVehicleImageUrl(photos[0].storage_path) : null,
-              })}
-            />
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <InquiryDialog
-                triggerLabel="Send Inquiry"
-                triggerSize="lg"
-                triggerVariant="accent"
-              />
-              <WhatsAppButton
-                message={`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`}
-                size="lg"
-                variant="outline"
-              />
-            </div>
-          </div>
-
-          {vehicle.description && (
-            <div className="rounded-2xl border border-accent/10 bg-card p-4 sm:p-5">
-              <h2 className="mb-2 text-sm font-semibold">Description</h2>
-              <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
-                {vehicle.description}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {(relatedVehicles.length > 0 || vehicle.make) && (
-        <div className="mt-12 border-t border-accent/10 pt-10">
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="eyebrow">More from stock</p>
-              <h2 className="font-display text-xl font-black tracking-tight">
-                {vehicle.make ? `Related ${vehicle.make} units` : 'Related inventory'}
-              </h2>
-            </div>
-            <Link href={makeHref} className="text-sm font-semibold text-accent hover:underline">
-              Browse {vehicle.make || catalogLabel}
-            </Link>
-          </div>
-          {relatedVehicles.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {relatedVehicles.map((item) => (
-                <VehicleCard key={item.id} vehicle={item} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              See the full {catalogLabel.toLowerCase()} catalog for more published stock.
-            </p>
-          )}
-        </div>
-      )}
-      </div>
-      </div>
-    </div>
+    <>
+      <JsonLd data={productJsonLd} />
+      {breadcrumbJsonLd ? <JsonLd data={breadcrumbJsonLd} /> : null}
+      <VehicleDetailClient slug={slug} />
+    </>
   );
 }

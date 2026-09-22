@@ -54,7 +54,7 @@ Staff may use day-to-day ops (`private.is_ops_user()`). Account-admin actions (`
 
 ## XSS / HTML
 
-Public blog pages render `post.content` as HTML. Only staff can write posts, but a compromised staff account can store script. Sanitize or switch to a safe format before expanding who can author.
+Public blog pages sanitize `post.content` via `lib/sanitize-html.ts` (allowlist) on render; admin save also sanitizes before write. Only staff can author posts — this limits XSS if an account is compromised.
 
 JSON-LD uses `dangerouslySetInnerHTML` from server-built structured data. Public Product markup (`lib/product-schema.ts`) must omit `offers` unless price+currency are valid, and must attach `aggregateRating`/`review` only from real published testimonials — never invent ratings for GSC.
 

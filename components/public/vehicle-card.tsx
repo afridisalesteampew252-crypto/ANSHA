@@ -7,6 +7,7 @@ import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
+import { publicPriceLabel } from '@/lib/product-schema';
 import { siteConfig } from '@/lib/site-config';
 import { equipmentCategoryLabel, isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
 import { vehicleImageAlt } from '@/lib/seo';
@@ -23,18 +24,21 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
   const coverPhoto = pickVehicleCoverPhoto(vehicle.vehicle_photos);
   const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
   const imageAlt = vehicleImageAlt(vehicle);
-  const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
-  const listPrice = hasPrice ? Number(vehicle.price) : null;
+  const listPrice =
+    vehicle.show_price && vehicle.price && vehicle.price > 0 ? Number(vehicle.price) : null;
   const dealPrice =
     vehicle.stock_status !== 'sold' && deal ? effectiveDealPrice(listPrice, deal) : null;
   const discountLabel = deal ? formatDealDiscount(deal.discount_percent) : null;
-  const priceLabel = vehicle.stock_status === 'sold'
-    ? 'Sold'
-    : dealPrice != null
-      ? `${vehicle.currency} ${dealPrice.toLocaleString()}`
-      : hasPrice
-        ? `${vehicle.currency} ${vehicle.price!.toLocaleString()}`
-        : 'Ask for quote';
+  const priceLabel = publicPriceLabel({
+    currency: vehicle.currency,
+    stockStatus: vehicle.stock_status,
+    dealPrice,
+    showPrice: Boolean(vehicle.show_price),
+    price: vehicle.price,
+    priceFob: vehicle.price_fob,
+    priceCf: vehicle.price_cf,
+    priceCif: vehicle.price_cif,
+  });
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`)}`;
   const saveItem = toVehicleSaveItem({
     id: vehicle.id,
@@ -139,7 +143,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
         <div className="mt-auto space-y-2 border-t border-foreground/10 pt-2.5 sm:pt-4">
           <div className="min-w-0">
             <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
-              {dealPrice != null ? 'Deal price' : hasPrice ? 'Export price' : 'Price'}
+              {dealPrice != null ? 'Deal price' : listPrice != null ? 'Export price' : 'Price'}
             </span>
             <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
             {dealPrice != null && listPrice != null && dealPrice < listPrice ? (

@@ -45,6 +45,7 @@ import {
   msUntilNextFeaturedRotation,
   selectRotatingFeatured,
 } from '@/lib/featured-rotation';
+import type { HomeFeaturedData } from '@/lib/home-featured';
 import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { isMachineryClass, MACHINERY_VEHICLE_CLASSES } from '@/lib/vehicle-class';
@@ -55,26 +56,36 @@ interface MakeStat {
   count: number;
 }
 
-export default function HomePageClient({ initialReviews = [] }: { initialReviews?: Review[] }) {
+export default function HomePageClient({
+  initialReviews = [],
+  initialFeatured,
+}: {
+  initialReviews?: Review[];
+  initialFeatured?: HomeFeaturedData;
+}) {
   const router = useRouter();
   const { dealForVehicle, dealForPart } = useInventoryDeals();
   const [query, setQuery] = useState('');
   const [finderBrand, setFinderBrand] = useState('all');
   const [finderCategory, setFinderCategory] = useState('all');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>([]);
-  const [latestParts, setLatestParts] = useState<PartWithRelations[]>([]);
-  const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>([]);
-  const [featuredMachinery, setFeaturedMachinery] = useState<VehicleWithPhotos[]>([]);
-  const [latestPosts, setLatestPosts] = useState<BlogPostWithCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<Category[]>(initialFeatured?.categories ?? []);
+  const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>(initialFeatured?.featuredParts ?? []);
+  const [latestParts, setLatestParts] = useState<PartWithRelations[]>(initialFeatured?.latestParts ?? []);
+  const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>(
+    initialFeatured?.featuredVehicles ?? []
+  );
+  const [featuredMachinery, setFeaturedMachinery] = useState<VehicleWithPhotos[]>(
+    initialFeatured?.featuredMachinery ?? []
+  );
+  const [latestPosts, setLatestPosts] = useState<BlogPostWithCategory[]>(initialFeatured?.latestPosts ?? []);
+  const [loading, setLoading] = useState(!initialFeatured);
 
   useEffect(() => {
     let active = true;
     let rotationTimer: ReturnType<typeof setTimeout> | undefined;
 
     const loadHome = async (isInitial: boolean) => {
-      if (isInitial) setLoading(true);
+      if (isInitial && !initialFeatured) setLoading(true);
 
       const [catRes, partsPoolRes, vehiclesPoolRes, machineryPoolRes, postsRes] = await Promise.all([
         supabase.from('categories').select('*').order('sort_order').limit(12),
@@ -135,7 +146,15 @@ export default function HomePageClient({ initialReviews = [] }: { initialReviews
       }, delay);
     };
 
-    void loadHome(true);
+    if (initialFeatured) {
+      // SSR data already painted — only soft-refresh at the next rotation boundary.
+      const delay = msUntilNextFeaturedRotation() + 250;
+      rotationTimer = setTimeout(() => {
+        void loadHome(false);
+      }, delay);
+    } else {
+      void loadHome(true);
+    }
 
     return () => {
       active = false;

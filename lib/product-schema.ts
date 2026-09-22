@@ -31,6 +31,33 @@ export function resolveProductOfferPrice(input: {
   );
 }
 
+/**
+ * Public catalog card / hero price label.
+ * Mirrors resolveProductOfferPrice (deal → list → FOB → C&F → CIF); never invents amounts.
+ */
+export function publicPriceLabel(input: {
+  currency?: string | null;
+  stockStatus?: string | null;
+  dealPrice?: number | null;
+  showPrice: boolean;
+  price?: number | null;
+  priceFob?: number | null;
+  priceCf?: number | null;
+  priceCif?: number | null;
+  /** When sold, prefer this over quote/price text. Default "Sold". */
+  soldLabel?: string;
+  /** When nothing publishable. Default "Ask for quote". */
+  askLabel?: string;
+}): string {
+  if (input.stockStatus === 'sold') return input.soldLabel ?? 'Sold';
+  const amount = resolveProductOfferPrice(input);
+  const currency = (input.currency || '').trim();
+  if (amount != null && currency) {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
+  return input.askLabel ?? 'Ask for quote';
+}
+
 export type ProductOfferAvailability =
   | 'https://schema.org/InStock'
   | 'https://schema.org/OutOfStock'

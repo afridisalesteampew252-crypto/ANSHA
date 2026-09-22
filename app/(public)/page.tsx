@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { siteConfig } from '@/lib/site-config';
 import { buildPageMetadata } from '@/lib/seo';
+import { getHomeFeaturedData } from '@/lib/home-featured';
 import { getPublishedReviews } from '@/lib/reviews';
 import HomePageClient from './home-page-client';
 
@@ -12,6 +13,6 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default async function HomePage() {
-  const reviews = await getPublishedReviews(4);
-  return <HomePageClient initialReviews={reviews} />;
+  const [reviews, featured] = await Promise.all([getPublishedReviews(4), getHomeFeaturedData()]);
+  return <HomePageClient initialReviews={reviews} initialFeatured={featured} />;
 }
