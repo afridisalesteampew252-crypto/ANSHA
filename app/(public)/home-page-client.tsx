@@ -163,15 +163,9 @@ export default function HomePageClient({
       }, delay);
     };
 
-    if (initialFeatured) {
-      // SSR data already painted — only soft-refresh at the next rotation boundary.
-      const delay = msUntilNextFeaturedRotation() + 250;
-      rotationTimer = setTimeout(() => {
-        void loadHome(false);
-      }, delay);
-    } else {
-      void loadHome(true);
-    }
+    // Revalidate immediately after the SSR paint so CMS changes, including
+    // updated blog images, appear without waiting for the next rotation.
+    void loadHome(!initialFeatured);
 
     return () => {
       active = false;
