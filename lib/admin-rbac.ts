@@ -60,6 +60,7 @@ export const MANAGER_NAV_HREFS = new Set([
   '/admin/remittances/mine',
   '/admin/chat',
   '/admin/live-chat',
+  '/admin/customer-support',
 ]);
 
 export function isManagerAllowedPath(pathname: string): boolean {
@@ -80,6 +81,7 @@ export function isManagerAllowedPath(pathname: string): boolean {
   // Payroll stays ops-only (RLS is_ops_user) — do not allowlist for managers
   if (pathname.startsWith('/admin/chat')) return true;
   if (pathname.startsWith('/admin/live-chat')) return true;
+  if (pathname.startsWith('/admin/customer-support')) return true;
   return false;
 }
 
