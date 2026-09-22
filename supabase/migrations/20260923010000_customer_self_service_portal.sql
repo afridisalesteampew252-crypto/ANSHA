@@ -71,7 +71,7 @@ BEGIN
     AND c.email IS NOT NULL
     AND lower(btrim(c.email)) = caller_email;
 
-  SELECT count(*), min(c.id)
+  SELECT count(*), min(c.id::text)::uuid
   INTO match_count, matched_customer_id
   FROM public.customers c
   WHERE c.is_active = true
