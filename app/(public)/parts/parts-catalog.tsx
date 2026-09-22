@@ -151,7 +151,7 @@ function PartsCatalog() {
           <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff8a8a]">ANSHA inventory</span>
           <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div><h1 className="font-display text-3xl font-black tracking-tight sm:text-4xl">Automotive parts catalog</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">Search live stock by product, OEM number, part code, brand, category, or condition.</p></div>
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><PackageSearch className="h-5 w-5 text-[#ff8a8a]" /><div><strong className="block text-sm">{loading ? 'Checking stock' : `${totalCount} results`}</strong><span className="text-[10px] text-white/45">Published inventory only</span></div></div>
+            <div className="glass-overlay-light flex items-center gap-3 rounded-2xl px-4 py-3"><PackageSearch className="h-5 w-5 text-[#ff8a8a]" /><div><strong className="block text-sm">{loading ? 'Checking stock' : `${totalCount} results`}</strong><span className="text-[10px] text-white/45">Published inventory only</span></div></div>
           </div>
         </div>
       </section>
@@ -160,7 +160,7 @@ function PartsCatalog() {
       <div className="container-page py-7 sm:py-10">
         <form onSubmit={(event) => { event.preventDefault(); setParam('q', query); }} className="relative mb-5">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product, OEM number or part code" className="h-14 rounded-2xl border-[#cdbfc1]/50 bg-white pl-12 pr-28 text-base shadow-sm" />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product, OEM number or part code" className="glass-panel h-14 rounded-2xl border-white/50 bg-white/60 pl-12 pr-28 text-base" />
           <Button type="submit" variant="accent" className="absolute right-1.5 top-1.5 h-11 rounded-xl px-5">Search</Button>
         </form>
 

@@ -214,7 +214,7 @@ export default function HomePageClient({
               </Button>
               <Button
                 asChild
-                className="h-12 w-full rounded-full border border-white/30 bg-transparent px-8 text-sm font-bold uppercase tracking-widest text-white hover:bg-white/10 sm:h-14 sm:w-auto"
+                className="glass-overlay-light h-12 w-full rounded-full px-8 text-sm font-bold uppercase tracking-widest text-white hover:bg-white/20 sm:h-14 sm:w-auto"
               >
                 <a
                   href={`https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent('Hello ANSHA TRADING, I would like help sourcing a vehicle or automotive part.')}`}
@@ -265,7 +265,7 @@ export default function HomePageClient({
           </div>
           <form
             onSubmit={goToParts}
-            className="mx-auto max-w-4xl rounded-2xl border border-white bg-white p-4 shadow-sm sm:p-6"
+            className="glass-panel mx-auto max-w-4xl rounded-2xl p-4 sm:p-6"
           >
             <div className="flex flex-col gap-4 sm:flex-row">
               <label className="relative block flex-1">
@@ -275,7 +275,7 @@ export default function HomePageClient({
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Enter OEM, chassis (e.g. NHP10), or model"
-                  className="h-14 rounded-xl border-[#cdbfc1]/60 bg-[#f7f8fa] pl-12 text-[15px] font-medium focus:border-[#d21e1e] focus:bg-white"
+                  className="h-14 rounded-xl border-white/50 bg-white/55 pl-12 text-[15px] font-medium backdrop-blur-sm focus:border-[#d21e1e] focus:bg-white/85"
                 />
               </label>
               <Button
@@ -300,7 +300,7 @@ export default function HomePageClient({
                     }
                     router.push(`/parts?brand=${encodeURIComponent(chip)}`);
                   }}
-                  className="rounded-full bg-[#d8dee6] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#171415] transition hover:bg-[#d21e1e] hover:text-white"
+                  className="glass-pill rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#171415] transition hover:border-[#d21e1e] hover:bg-[#d21e1e] hover:text-white"
                 >
                   {chip}
                 </button>
@@ -527,7 +527,7 @@ export default function HomePageClient({
               ))}
             </ul>
           </div>
-          <div className="rounded-[28px] border border-border bg-card p-5 shadow-sm sm:p-8">
+          <div className="glass-panel rounded-[28px] p-5 sm:p-8">
             <PartRequestForm />
           </div>
         </div>

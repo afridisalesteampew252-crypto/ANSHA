@@ -8,7 +8,7 @@ export function ExportMarketsStrip() {
   return (
     <section
       id="export-markets"
-      className="max-w-full overflow-x-clip border-y border-[#cdbfc1]/40 bg-white/40 py-12 sm:py-16"
+      className="glass-strip max-w-full overflow-x-clip border-y py-12 sm:py-16"
       aria-labelledby="export-markets-heading"
     >
       <div className="container-page min-w-0 max-w-full text-center">

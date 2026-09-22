@@ -91,11 +91,11 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-x-clip">
-      {/* Light header always — dark wordmark requires paper/frost ground */}
+      {/* Light frosted glass — dark wordmark needs pale ground, never dark glass */}
       <div
         className={cn(
-          'min-w-0 max-w-full overflow-x-clip border-b border-[#cdbfc1]/40 bg-[#f7f8fa] transition-shadow',
-          scrolled && 'shadow-[0_8px_28px_rgba(23,20,21,0.08)]'
+          'glass-header min-w-0 max-w-full overflow-x-clip transition-[background,box-shadow]',
+          scrolled && 'is-scrolled'
         )}
       >
         <div className="container-page flex h-[4.25rem] min-w-0 items-center gap-3 sm:h-[5.5rem] sm:gap-4 lg:h-[6.25rem]">
@@ -123,8 +123,8 @@ export function SiteHeader() {
                     active
                       ? 'border-[#d21e1e] bg-[#d21e1e] text-white shadow-[0_6px_16px_-8px_rgba(210,30,30,0.55)]'
                       : link.accent
-                        ? 'border-[#f0d0d0] bg-[#f8eaea] text-[#c35252] hover:border-[#d21e1e]/40 hover:bg-[#f3dede]'
-                        : 'border-[#d8dee6] bg-[#e8ecf0] text-[#171415] hover:border-[#c8d0db] hover:bg-[#dfe4ea]'
+                        ? 'border-[#f0d0d0]/80 bg-[rgba(248,234,234,0.72)] text-[#c35252] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md hover:border-[#d21e1e]/40 hover:bg-[#f3dede]'
+                        : 'glass-pill text-[#171415] hover:border-white/70 hover:bg-white/70'
                   )}
                 >
                   {link.accent ? <Tag className="h-3.5 w-3.5 shrink-0" /> : null}
@@ -135,7 +135,7 @@ export function SiteHeader() {
           </nav>
 
           <form onSubmit={handleSearch} className="ml-auto hidden max-w-xs flex-1 md:block lg:max-w-[13.5rem] xl:max-w-xs">
-            <div className="relative flex h-9 items-center rounded-full border border-[#d8dee6] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] xl:h-10">
+            <div className="glass-pill relative flex h-9 items-center rounded-full xl:h-10">
               <Search className="pointer-events-none absolute left-3.5 h-4 w-4 shrink-0 text-[#828789]" aria-hidden />
               <Input
                 type="search"
@@ -207,7 +207,7 @@ export function SiteHeader() {
           />
           <div
             id="mobile-site-menu"
-            className="fixed left-0 right-0 top-[4.25rem] z-[60] max-h-[calc(100dvh-4.25rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-[#cdbfc1]/50 bg-[#f7f8fa] shadow-2xl sm:top-[5.5rem] sm:max-h-[calc(100dvh-5.5rem-4rem-env(safe-area-inset-bottom,0px))] lg:hidden"
+            className="glass-panel fixed left-0 right-0 top-[4.25rem] z-[60] max-h-[calc(100dvh-4.25rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain rounded-none border-x-0 shadow-2xl sm:top-[5.5rem] sm:max-h-[calc(100dvh-5.5rem-4rem-env(safe-area-inset-bottom,0px))] lg:hidden"
           >
             <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch}>
@@ -218,7 +218,7 @@ export function SiteHeader() {
                     placeholder="OEM, chassis, make or model..."
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    className="h-12 rounded-xl border-[#cdbfc1] bg-white pl-10"
+                    className="glass-pill h-12 rounded-xl border-white/50 bg-white/60 pl-10"
                   />
                 </div>
               </form>
@@ -234,8 +234,8 @@ export function SiteHeader() {
                         active
                           ? 'border-[#d21e1e] bg-[#d21e1e] text-white'
                           : link.accent
-                            ? 'border-[#f0d0d0] bg-[#f8eaea] text-[#c35252]'
-                            : 'border-[#d8dee6] bg-[#e8ecf0] text-[#171415] hover:bg-[#dfe4ea]'
+                            ? 'border-[#f0d0d0]/80 bg-[rgba(248,234,234,0.72)] text-[#c35252] backdrop-blur-md'
+                            : 'glass-pill text-[#171415] hover:bg-white/70'
                       )}
                     >
                       <span className="inline-flex items-center gap-2">
@@ -246,7 +246,7 @@ export function SiteHeader() {
                     </Link>
                   );
                 })}
-                <div className="rounded-xl border border-[#cdbfc1]/60 bg-white p-2">
+                <div className="glass-panel rounded-xl p-2">
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#828789]">
                     Vehicle stock locations
                   </p>

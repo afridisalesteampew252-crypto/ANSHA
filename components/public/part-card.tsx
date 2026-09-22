@@ -52,7 +52,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
   const categoryLabel = part.categories?.name || 'Automotive part';
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-[#e4e8ed] bg-white text-card-foreground shadow-[0_2px_12px_-4px_rgba(23,20,21,0.08)] transition duration-300 hover:-translate-y-0.5 hover:border-[#d21e1e]/35 hover:shadow-[0_12px_28px_-10px_rgba(23,20,21,0.16)] sm:rounded-[1.35rem]">
+    <article className="inventory-card group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl text-card-foreground sm:rounded-[1.35rem]">
       <div className="relative min-w-0">
         <Link href={`/parts/${part.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#f0f2f5]">
           {photoUrl ? (

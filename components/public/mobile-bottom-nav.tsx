@@ -19,7 +19,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[55] w-full max-w-full overflow-x-clip border-t border-border bg-background/96 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-8px_30px_rgba(15,23,42,0.1)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 lg:hidden"
+      className="glass-header fixed bottom-0 left-0 right-0 z-[55] w-full max-w-full overflow-x-clip border-t border-white/40 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-10px_32px_rgba(23,20,21,0.08)] lg:hidden"
       aria-label="Mobile navigation"
       style={{
         overscrollBehavior: 'none',

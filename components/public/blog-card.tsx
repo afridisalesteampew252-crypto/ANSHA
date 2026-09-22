@@ -22,7 +22,7 @@ export function BlogCard({ post }: BlogCardProps) {
   });
 
   return (
-    <Card className="group overflow-hidden transition-all duration-200 hover:shadow-card-hover hover:border-foreground/15">
+    <Card className="glass-card group overflow-hidden border-white/50 transition-all duration-200 hover:border-[#d21e1e]/35 hover:shadow-[0_12px_32px_-10px_rgba(23,20,21,0.12)]">
       <Link href={`/blog/${post.slug}`} className="block">
         <div className="relative aspect-[16/10] bg-secondary overflow-hidden">
           {imageUrl ? (

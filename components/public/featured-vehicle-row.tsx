@@ -74,13 +74,13 @@ export function FeaturedVehicleRow({
           <span className="inventory-media absolute inset-0 bg-gradient-to-br from-[#828789] to-[#5c6366]" />
         )}
         {vehicle.stock_number ? (
-          <span className="absolute left-3 top-3 z-10 rounded border border-[#cdbfc1] bg-white/90 px-2.5 py-1 font-mono text-[11px] font-bold text-[#171415] backdrop-blur-sm">
+          <span className="absolute left-3 top-3 z-10 rounded border border-white/50 bg-white/70 px-2.5 py-1 font-mono text-[11px] font-bold text-[#171415] backdrop-blur-md">
             REF: {vehicle.stock_number}
           </span>
         ) : null}
       </Link>
 
-      <div className="flex flex-1 flex-col justify-between bg-white p-5 sm:w-[55%] sm:p-6">
+      <div className="flex flex-1 flex-col justify-between bg-white/35 p-5 backdrop-blur-[2px] sm:w-[55%] sm:p-6">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <StockOriginBadge origin={vehicle.stock_origin} compact />

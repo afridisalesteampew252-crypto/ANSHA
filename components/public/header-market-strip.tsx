@@ -37,7 +37,7 @@ export function HeaderMarketStrip({
         <span className="hidden h-4 w-px shrink-0 bg-[#cdbfc1]/80 sm:block lg:hidden" aria-hidden />
 
         <div className="flex min-w-0 shrink-0 items-center gap-2 text-[11px] font-semibold tabular-nums text-[#171415] md:gap-2.5 md:text-xs">
-          <span className="shrink-0 rounded-full border border-[#d21e1e]/35 bg-white/70 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#d21e1e]">
+          <span className="shrink-0 rounded-full border border-[#d21e1e]/35 bg-white/55 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[#d21e1e] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md">
             1 AED
           </span>
           <span className="hidden shrink-0 text-[#828789] md:inline" aria-hidden>

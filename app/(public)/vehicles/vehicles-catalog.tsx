@@ -114,7 +114,7 @@ export default function VehiclesCatalog() {
             className={`h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition ${
               stockOrigin === 'all'
                 ? 'border-[#d21e1e] bg-[#d21e1e] text-white'
-                : 'border-[#cdbfc1] bg-white text-[#5c6366] hover:border-[#d21e1e]/50'
+                : 'glass-pill text-[#5c6366] hover:border-[#d21e1e]/50 hover:bg-white/75'
             }`}
           >
             All stock
@@ -127,7 +127,7 @@ export default function VehiclesCatalog() {
               className={`h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition ${
                 stockOrigin === origin.value
                   ? 'border-[#d21e1e] bg-[#d21e1e] text-white'
-                  : 'border-[#cdbfc1] bg-white text-[#5c6366] hover:border-[#d21e1e]/50'
+                  : 'glass-pill text-[#5c6366] hover:border-[#d21e1e]/50 hover:bg-white/75'
               }`}
             >
               {origin.label}
