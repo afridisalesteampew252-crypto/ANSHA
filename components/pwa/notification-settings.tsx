@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, BellCheck, BellOff, Smartphone } from 'lucide-react';
+import { Bell, BellOff, CheckCircle2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ensurePushSubscription, isWebPushConfigured } from '@/lib/pwa-push-subscribe';
@@ -60,13 +60,13 @@ export function NotificationSettings({ compact = false }: { compact?: boolean })
 
   if (state === 'checking') return null;
   if (compact && state === 'enabled') {
-    return <span className="inline-flex items-center gap-1 text-xs text-emerald-600"><BellCheck className="h-3.5 w-3.5" /> Notifications on</span>;
+    return <span className="inline-flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 className="h-3.5 w-3.5" /> Notifications on</span>;
   }
 
   return (
     <div className="rounded-xl border bg-secondary/25 p-3 text-sm">
       <div className="flex items-start gap-3">
-        {state === 'enabled' ? <BellCheck className="mt-0.5 h-5 w-5 text-emerald-600" /> :
+        {state === 'enabled' ? <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" /> :
           state === 'blocked' ? <BellOff className="mt-0.5 h-5 w-5 text-destructive" /> :
           state === 'install' ? <Smartphone className="mt-0.5 h-5 w-5 text-accent" /> :
           <Bell className="mt-0.5 h-5 w-5 text-accent" />}
