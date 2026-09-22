@@ -81,7 +81,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
     else setSelectedId((current) => current && rows.some((row) => row.id === current) ? current : rows[0]?.id || null);
 
     if (mode === 'agent' && rows.length) {
-      const ids = [...new Set(rows.map((row) => row.customer_profile_id))];
+      const ids = Array.from(new Set(rows.map((row) => row.customer_profile_id)));
       const { data: profiles } = await supabase.from('customer_profiles').select('id,full_name,email').in('id', ids);
       const labels: Record<string, CustomerLabel> = {};
       for (const profile of profiles || []) labels[profile.id] = { full_name: profile.full_name, email: profile.email };
