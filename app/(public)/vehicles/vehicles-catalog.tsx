@@ -13,7 +13,11 @@ import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
-import type { StockOrigin, VehicleWithPhotos } from '@/lib/types';
+import {
+  PUBLIC_VEHICLE_CARD_SELECT,
+  type PublicVehicleCard,
+} from '@/lib/public-card-data';
+import type { StockOrigin } from '@/lib/types';
 
 function syncVehiclesQuery(input: {
   query: string;
@@ -33,7 +37,7 @@ function syncVehiclesQuery(input: {
 export default function VehiclesCatalog() {
   const router = useRouter();
   const { dealForVehicle } = useInventoryDeals();
-  const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
+  const [vehicles, setVehicles] = useState<PublicVehicleCard[]>([]);
   const [query, setQuery] = useState('');
   const [brand, setBrand] = useState('all');
   const [stockOrigin, setStockOrigin] = useState<'all' | StockOrigin>('all');
@@ -69,7 +73,7 @@ export default function VehiclesCatalog() {
 
   const loadVehicles = useCallback(async () => {
     setLoading(true);
-    let request = supabase.from('vehicles').select('*, vehicle_photos(*)').eq('is_published', true).eq('stock_status', 'available');
+    let request = supabase.from('vehicles').select(PUBLIC_VEHICLE_CARD_SELECT).eq('is_published', true).eq('stock_status', 'available');
     const safeQuery = query.trim().replace(/[,%()]/g, ' ');
     if (safeQuery) request = request.or(`title.ilike.%${safeQuery}%,make.ilike.%${safeQuery}%,model.ilike.%${safeQuery}%,chassis_code.ilike.%${safeQuery}%,stock_number.ilike.%${safeQuery}%`);
     if (brand !== 'all') request = request.eq('make', brand);
@@ -78,8 +82,8 @@ export default function VehiclesCatalog() {
     else if (sort === 'price-low') request = request.order('price', { ascending: true, nullsFirst: false });
     else if (sort === 'price-high') request = request.order('price', { ascending: false, nullsFirst: true });
     else request = request.order('created_at', { ascending: false });
-    const { data } = await request;
-    setVehicles((data || []) as unknown as VehicleWithPhotos[]);
+    const { data } = await request.limit(48);
+    setVehicles((data || []) as unknown as PublicVehicleCard[]);
     setLoading(false);
   }, [brand, query, sort, stockOrigin]);
 

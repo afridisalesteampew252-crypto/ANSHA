@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { Calendar, ArrowRight, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { blogImageUrl } from '@/lib/blog-image';
-import type { BlogPostWithCategory } from '@/lib/types';
+import type { PublicBlogCard } from '@/lib/public-card-data';
 
 interface FeaturedArticleProps {
-  post: BlogPostWithCategory;
+  post: PublicBlogCard;
 }
 
 export function FeaturedArticle({ post }: FeaturedArticleProps) {

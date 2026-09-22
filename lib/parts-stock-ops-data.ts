@@ -56,21 +56,24 @@ export type PartsStockOpsRow = StockOpsRow & {
 
 /** Load parts with shipment + invoice enrichment for parts stock ops. */
 export async function loadPartsStockOpsRows(
-  limit = 1000
-): Promise<{ rows: PartsStockOpsRow[]; error: string | null }> {
+  limit = 200,
+  offset = 0
+): Promise<{ rows: PartsStockOpsRow[]; error: string | null; hasMore: boolean }> {
   const { data, error } = await supabase
     .from('parts')
     .select(
       'id,name,slug,part_code,brand,part_number,oem_number,category_id,location,stock_origin,stock_status,quantity,price,price_fob,price_cf,price_cif,currency,purchase_price,purchase_currency,purchase_date,landed_cost,reserved_by,reserved_customer_id,reservation_requester_name,reservation_requester_role,reservation_etd,reservation_eta,reservation_vat_applicable,reservation_price_term,reservation_shipment_term,created_at,sold_at,categories(name),part_photos(storage_path,is_cover,sort_order),part_compatibility(make,model)'
     )
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit);
 
-  if (error) return { rows: [], error: error.message };
+  if (error) return { rows: [], error: error.message, hasMore: false };
 
-  const parts = (data || []) as unknown as RawPart[];
+  const page = (data || []) as unknown as RawPart[];
+  const hasMore = page.length > limit;
+  const parts = page.slice(0, limit);
   const partIds = parts.map((p) => p.id);
-  if (!partIds.length) return { rows: [], error: null };
+  if (!partIds.length) return { rows: [], error: null, hasMore };
 
   const reservedByIds = Array.from(new Set(parts.map((p) => p.reserved_by).filter(Boolean))) as string[];
   const customerIds = Array.from(
@@ -267,5 +270,5 @@ export async function loadPartsStockOpsRows(
   });
 
   // cover_path for parts uses part-images bucket; callers should use publicPartImageUrl
-  return { rows, error: null };
+  return { rows, error: null, hasMore };
 }

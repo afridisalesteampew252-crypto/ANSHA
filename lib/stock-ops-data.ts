@@ -47,7 +47,10 @@ type RawVehicle = {
 };
 
 /** Load vehicles with shipment + invoice enrichment for stock ops screens. */
-export async function loadStockOpsRows(limit = 800): Promise<{ rows: StockOpsRow[]; error: string | null }> {
+export async function loadStockOpsRows(
+  limit = 200,
+  offset = 0
+): Promise<{ rows: StockOpsRow[]; error: string | null; hasMore: boolean }> {
   const { data, error } = await supabase
     .from('vehicles')
     .select(
@@ -55,13 +58,15 @@ export async function loadStockOpsRows(limit = 800): Promise<{ rows: StockOpsRow
     )
     .eq('stock_pool', 'owned')
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit);
 
-  if (error) return { rows: [], error: error.message };
+  if (error) return { rows: [], error: error.message, hasMore: false };
 
-  const vehicles = (data || []) as unknown as RawVehicle[];
+  const page = (data || []) as unknown as RawVehicle[];
+  const hasMore = page.length > limit;
+  const vehicles = page.slice(0, limit);
   const vehicleIds = vehicles.map((v) => v.id);
-  if (!vehicleIds.length) return { rows: [], error: null };
+  if (!vehicleIds.length) return { rows: [], error: null, hasMore };
 
   const reservedByIds = Array.from(new Set(vehicles.map((v) => v.reserved_by).filter(Boolean))) as string[];
   const customerIds = Array.from(new Set(vehicles.map((v) => v.reserved_customer_id).filter(Boolean))) as string[];
@@ -244,5 +249,5 @@ export async function loadStockOpsRows(limit = 800): Promise<{ rows: StockOpsRow
     };
   });
 
-  return { rows, error: null };
+  return { rows, error: null, hasMore };
 }

@@ -46,7 +46,17 @@ import type { HomeFeaturedData } from '@/lib/home-featured';
 import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { isMachineryClass, MACHINERY_VEHICLE_CLASSES } from '@/lib/vehicle-class';
-import type { BlogPostWithCategory, Category, PartWithRelations, Review, VehicleWithPhotos } from '@/lib/types';
+import {
+  PUBLIC_BLOG_CARD_SELECT,
+  PUBLIC_CATEGORY_CARD_SELECT,
+  PUBLIC_PART_CARD_SELECT,
+  PUBLIC_VEHICLE_CARD_SELECT,
+  type PublicBlogCard,
+  type PublicCategoryCard,
+  type PublicPartCard,
+  type PublicVehicleCard,
+} from '@/lib/public-card-data';
+import type { Review } from '@/lib/types';
 
 const ExportMarketsStrip = dynamic(
   () => import('@/components/public/export-markets-strip').then((mod) => mod.ExportMarketsStrip),
@@ -85,16 +95,16 @@ export default function HomePageClient({
   const [query, setQuery] = useState('');
   const [finderBrand, setFinderBrand] = useState('all');
   const [finderCategory, setFinderCategory] = useState('all');
-  const [categories, setCategories] = useState<Category[]>(initialFeatured?.categories ?? []);
-  const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>(initialFeatured?.featuredParts ?? []);
-  const [latestParts, setLatestParts] = useState<PartWithRelations[]>(initialFeatured?.latestParts ?? []);
-  const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>(
+  const [categories, setCategories] = useState<PublicCategoryCard[]>(initialFeatured?.categories ?? []);
+  const [featuredParts, setFeaturedParts] = useState<PublicPartCard[]>(initialFeatured?.featuredParts ?? []);
+  const [latestParts, setLatestParts] = useState<PublicPartCard[]>(initialFeatured?.latestParts ?? []);
+  const [featuredVehicles, setFeaturedVehicles] = useState<PublicVehicleCard[]>(
     initialFeatured?.featuredVehicles ?? []
   );
-  const [featuredMachinery, setFeaturedMachinery] = useState<VehicleWithPhotos[]>(
+  const [featuredMachinery, setFeaturedMachinery] = useState<PublicVehicleCard[]>(
     initialFeatured?.featuredMachinery ?? []
   );
-  const [latestPosts, setLatestPosts] = useState<BlogPostWithCategory[]>(initialFeatured?.latestPosts ?? []);
+  const [latestPosts, setLatestPosts] = useState<PublicBlogCard[]>(initialFeatured?.latestPosts ?? []);
   const [loading, setLoading] = useState(!initialFeatured);
 
   useEffect(() => {
@@ -104,7 +114,7 @@ export default function HomePageClient({
     const fetchLatestPosts = () =>
       supabase
         .from('blog_posts')
-        .select('*, blog_categories(*)')
+        .select(PUBLIC_BLOG_CARD_SELECT)
         .eq('status', 'published')
         .order('published_at', { ascending: false, nullsFirst: false })
         .limit(3);
@@ -113,7 +123,7 @@ export default function HomePageClient({
       const postsRes = await fetchLatestPosts();
       if (active && !postsRes.error) {
         if (!postsRes.error) {
-        setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
+        setLatestPosts((postsRes.data || []) as unknown as PublicBlogCard[]);
       }
       }
     };
@@ -122,10 +132,10 @@ export default function HomePageClient({
       if (isInitial && !initialFeatured) setLoading(true);
 
       const [catRes, partsPoolRes, vehiclesPoolRes, machineryPoolRes, postsRes] = await Promise.all([
-        supabase.from('categories').select('*').order('sort_order').limit(12),
+        supabase.from('categories').select(PUBLIC_CATEGORY_CARD_SELECT).order('sort_order').limit(12),
         supabase
           .from('parts')
-          .select('*, categories(*), part_photos(*), part_compatibility(*)')
+          .select(PUBLIC_PART_CARD_SELECT)
           .eq('is_published', true)
           .eq('stock_status', 'available')
           .order('is_featured', { ascending: false })
@@ -133,7 +143,7 @@ export default function HomePageClient({
           .limit(HOME_FEATURED_PARTS_POOL),
         supabase
           .from('vehicles')
-          .select('*, vehicle_photos(*)')
+          .select(PUBLIC_VEHICLE_CARD_SELECT)
           .eq('is_published', true)
           .eq('stock_status', 'available')
           .order('is_featured', { ascending: false })
@@ -141,7 +151,7 @@ export default function HomePageClient({
           .limit(HOME_FEATURED_VEHICLES_POOL),
         supabase
           .from('vehicles')
-          .select('*, vehicle_photos(*)')
+          .select(PUBLIC_VEHICLE_CARD_SELECT)
           .eq('is_published', true)
           .eq('stock_status', 'available')
           .in('vehicle_class', [...MACHINERY_VEHICLE_CLASSES])
@@ -153,18 +163,18 @@ export default function HomePageClient({
       if (!active) return;
 
       const nowMs = Date.now();
-      const partsPool = (partsPoolRes.data || []) as unknown as PartWithRelations[];
-      const vehiclesPool = ((vehiclesPoolRes.data || []) as unknown as VehicleWithPhotos[]).filter(
+      const partsPool = (partsPoolRes.data || []) as unknown as PublicPartCard[];
+      const vehiclesPool = ((vehiclesPoolRes.data || []) as unknown as PublicVehicleCard[]).filter(
         (vehicle) => !isMachineryClass(vehicle.vehicle_class || 'passenger')
       );
-      const machineryPool = (machineryPoolRes.data || []) as unknown as VehicleWithPhotos[];
+      const machineryPool = (machineryPoolRes.data || []) as unknown as PublicVehicleCard[];
 
-      setCategories((catRes.data || []) as Category[]);
+      setCategories((catRes.data || []) as unknown as PublicCategoryCard[]);
       setFeaturedParts(selectRotatingFeatured(partsPool, HOME_FEATURED_PARTS_LIMIT, nowMs));
       setLatestParts(partsPool.slice(0, HOME_FEATURED_PARTS_LIMIT));
       setFeaturedVehicles(selectRotatingFeatured(vehiclesPool, HOME_FEATURED_VEHICLES_LIMIT, nowMs));
       setFeaturedMachinery(selectRotatingFeatured(machineryPool, HOME_FEATURED_MACHINERY_LIMIT, nowMs));
-      setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
+      setLatestPosts((postsRes.data || []) as unknown as PublicBlogCard[]);
       setLoading(false);
 
       // Refresh at the next 10-minute boundary so open tabs advance without a full reload.

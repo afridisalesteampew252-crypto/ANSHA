@@ -84,6 +84,8 @@ const shipBadge: Record<ShipmentViewStatus, string> = {
 export default function PartsStockOpsPage() {
   const [rows, setRows] = useState<PartsStockOpsRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [agents, setAgents] = useState<Array<{ id: string; label: string }>>([]);
@@ -94,10 +96,11 @@ export default function PartsStockOpsPage() {
     }
   }, []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const [{ rows: data, error }, agentRes] = await Promise.all([
-      loadPartsStockOpsRows(1000),
+  const loadPage = useCallback(async (offset = 0) => {
+    if (offset === 0) setLoading(true);
+    else setLoadingMore(true);
+    const [{ rows: data, error, hasMore: more }, agentRes] = await Promise.all([
+      loadPartsStockOpsRows(200, offset),
       supabase
         .from('admin_profiles')
         .select('id,full_name,email,role')
@@ -107,19 +110,23 @@ export default function PartsStockOpsPage() {
         .limit(200),
     ]);
     if (error) toast.error(error);
-    setRows(data);
-    setAgents(
-      (agentRes.data || []).map((row) => ({
-        id: row.id,
-        label: row.full_name || row.email || row.id.slice(0, 8),
-      }))
-    );
+    setRows((current) => (offset === 0 ? data : [...current, ...data]));
+    setHasMore(more);
+    if (offset === 0) {
+      setAgents(
+        (agentRes.data || []).map((row) => ({
+          id: row.id,
+          label: row.full_name || row.email || row.id.slice(0, 8),
+        }))
+      );
+    }
     setLoading(false);
+    setLoadingMore(false);
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void loadPage(0);
+  }, [loadPage]);
 
   const openShipments = useMemo(
     () =>
@@ -365,6 +372,17 @@ export default function PartsStockOpsPage() {
               ) : (
                 filtered.map((row) => <PartStockRow key={row.id} row={row} />)
               )}
+              {hasMore ? (
+                <div className="flex flex-col items-center gap-2 border-t pt-4">
+                  <Button type="button" variant="outline" disabled={loadingMore} onClick={() => void loadPage(rows.length)}>
+                    {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Load 200 more
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Loaded {rows.length} parts. Filters and summaries apply to loaded records.
+                  </p>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </>

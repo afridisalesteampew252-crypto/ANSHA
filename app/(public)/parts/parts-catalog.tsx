@@ -15,7 +15,13 @@ import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { conditionLabels } from '@/lib/site-config';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
-import type { Category, PartCondition, PartWithRelations } from '@/lib/types';
+import {
+  PUBLIC_CATEGORY_CARD_SELECT,
+  PUBLIC_PART_CARD_SELECT,
+  type PublicCategoryCard,
+  type PublicPartCard,
+} from '@/lib/public-card-data';
+import type { PartCondition } from '@/lib/types';
 
 const conditions: PartCondition[] = ['new', 'used', 'refurbished', 'for-parts'];
 const sortOptions = [
@@ -30,8 +36,8 @@ function PartsCatalog() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { dealForPart } = useInventoryDeals();
-  const [parts, setParts] = useState<PartWithRelations[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [parts, setParts] = useState<PublicPartCard[]>([]);
+  const [categories, setCategories] = useState<PublicCategoryCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -44,7 +50,7 @@ function PartsCatalog() {
   const pageSize = 12;
 
   useEffect(() => {
-    supabase.from('categories').select('*').order('sort_order').then(({ data }) => setCategories((data || []) as Category[]));
+    supabase.from('categories').select(PUBLIC_CATEGORY_CARD_SELECT).order('sort_order').then(({ data }) => setCategories((data || []) as unknown as PublicCategoryCard[]));
   }, []);
 
   useEffect(() => {
@@ -68,7 +74,7 @@ function PartsCatalog() {
     setLoading(true);
     let request = supabase
       .from('parts')
-      .select('*, categories(*), part_photos(*), part_compatibility(*)', { count: 'exact' })
+      .select(PUBLIC_PART_CARD_SELECT, { count: 'exact' })
       .eq('is_published', true)
       .eq('stock_status', 'available');
 
@@ -90,7 +96,7 @@ function PartsCatalog() {
 
     const from = (page - 1) * pageSize;
     const { data, count } = await request.range(from, from + pageSize - 1);
-    setParts((data || []) as unknown as PartWithRelations[]);
+    setParts((data || []) as unknown as PublicPartCard[]);
     setTotalCount(count || 0);
     setLoading(false);
   }, [categories, page, query, selectedBrand, selectedCategory, selectedCondition, selectedStock, sortBy]);

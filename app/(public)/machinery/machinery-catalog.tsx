@@ -19,7 +19,11 @@ import {
   type VehicleClass,
 } from '@/lib/vehicle-class';
 import { supabase } from '@/lib/supabase/client';
-import type { StockOrigin, VehicleWithPhotos } from '@/lib/types';
+import {
+  PUBLIC_VEHICLE_CARD_SELECT,
+  type PublicVehicleCard,
+} from '@/lib/public-card-data';
+import type { StockOrigin } from '@/lib/types';
 
 function syncMachineryQuery(input: {
   query: string;
@@ -41,7 +45,7 @@ function syncMachineryQuery(input: {
 export default function MachineryCatalog() {
   const router = useRouter();
   const { dealForVehicle } = useInventoryDeals();
-  const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
+  const [vehicles, setVehicles] = useState<PublicVehicleCard[]>([]);
   const [query, setQuery] = useState('');
   const [equipmentType, setEquipmentType] = useState('all');
   const [classFilter, setClassFilter] = useState<'all' | VehicleClass>('all');
@@ -87,7 +91,7 @@ export default function MachineryCatalog() {
     setLoading(true);
     let request = supabase
       .from('vehicles')
-      .select('*, vehicle_photos(*)')
+      .select(PUBLIC_VEHICLE_CARD_SELECT)
       .eq('is_published', true)
       .eq('stock_status', 'available')
       .in('vehicle_class', [...MACHINERY_VEHICLE_CLASSES]);
@@ -107,8 +111,8 @@ export default function MachineryCatalog() {
     else if (sort === 'price-high') request = request.order('price', { ascending: false, nullsFirst: true });
     else request = request.order('created_at', { ascending: false });
 
-    const { data } = await request;
-    setVehicles((data || []) as unknown as VehicleWithPhotos[]);
+    const { data } = await request.limit(48);
+    setVehicles((data || []) as unknown as PublicVehicleCard[]);
     setLoading(false);
   }, [classFilter, equipmentType, query, sort, stockOrigin]);
 

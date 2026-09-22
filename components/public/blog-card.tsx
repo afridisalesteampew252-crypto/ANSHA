@@ -5,10 +5,10 @@ import { Calendar, ArrowRight, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { blogImageUrl } from '@/lib/blog-image';
-import type { BlogPostWithCategory } from '@/lib/types';
+import type { PublicBlogCard } from '@/lib/public-card-data';
 
 interface BlogCardProps {
-  post: BlogPostWithCategory;
+  post: PublicBlogCard;
 }
 
 export function BlogCard({ post }: BlogCardProps) {

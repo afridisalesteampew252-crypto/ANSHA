@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { Search, FileText, ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -9,37 +9,35 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BlogCard } from '@/components/public/blog-card';
 import { FeaturedArticle } from '@/components/public/featured-article';
 import { supabase } from '@/lib/supabase/client';
-import type { BlogCategory, BlogPostWithCategory } from '@/lib/types';
+import {
+  PUBLIC_BLOG_CARD_SELECT,
+  type PublicBlogCard,
+  type PublicCategoryCard,
+} from '@/lib/public-card-data';
 
-export function BlogIndexClient() {
-  const [posts, setPosts] = useState<BlogPostWithCategory[]>([]);
-  const [categories, setCategories] = useState<BlogCategory[]>([]);
-  const [featured, setFeatured] = useState<BlogPostWithCategory | null>(null);
-  const [loading, setLoading] = useState(true);
+type Props = {
+  initialPosts: PublicBlogCard[];
+  initialCategories: PublicCategoryCard[];
+  initialFeatured: PublicBlogCard | null;
+  initialHasMore: boolean;
+};
+
+export function BlogIndexClient({
+  initialPosts,
+  initialCategories,
+  initialFeatured,
+  initialHasMore,
+}: Props) {
+  const [posts, setPosts] = useState<PublicBlogCard[]>(initialPosts);
+  const [categories] = useState<PublicCategoryCard[]>(initialCategories);
+  const [featured] = useState<PublicBlogCard | null>(initialFeatured);
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [visibleCount, setVisibleCount] = useState(9);
-  const [hasMore, setHasMore] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const [catRes, featRes] = await Promise.all([
-        supabase.from('blog_categories').select('*').order('name'),
-        supabase
-          .from('blog_posts')
-          .select('*, blog_categories(*)')
-          .eq('status', 'published')
-          .eq('is_featured', true)
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-
-      setCategories((catRes.data || []) as BlogCategory[]);
-      setFeatured((featRes.data || null) as unknown as BlogPostWithCategory | null);
-    })();
-  }, []);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const initialFilterRun = useRef(true);
 
   const selectedCategoryId = useMemo(
     () => categories.find((category) => category.slug === selectedCategory)?.id ?? null,
@@ -50,7 +48,7 @@ export function BlogIndexClient() {
     setLoading(true);
     let query = supabase
       .from('blog_posts')
-      .select('*, blog_categories(*)')
+      .select(PUBLIC_BLOG_CARD_SELECT)
       .eq('status', 'published');
 
     if (categoryId) {
@@ -61,15 +59,20 @@ export function BlogIndexClient() {
       query = query.or(`title.ilike.%${search.trim()}%,excerpt.ilike.%${search.trim()}%`);
     }
 
-    query = query.order('published_at', { ascending: false, nullsFirst: false }).limit(9);
+    query = query.order('published_at', { ascending: false, nullsFirst: false }).limit(10);
     const { data } = await query;
-    setPosts((data || []) as unknown as BlogPostWithCategory[]);
+    const nextPosts = (data || []) as unknown as PublicBlogCard[];
+    setPosts(nextPosts.slice(0, 9));
     setVisibleCount(9);
-    setHasMore((data || []).length >= 9);
+    setHasMore(nextPosts.length > 9);
     setLoading(false);
   }, []);
 
   useEffect(() => {
+    if (initialFilterRun.current) {
+      initialFilterRun.current = false;
+      return;
+    }
     if (selectedCategory !== 'all' && !selectedCategoryId) return;
 
     const timer = setTimeout(() => {
@@ -83,7 +86,7 @@ export function BlogIndexClient() {
     setLoadingMore(true);
     let query = supabase
       .from('blog_posts')
-      .select('*, blog_categories(*)')
+      .select(PUBLIC_BLOG_CARD_SELECT)
       .eq('status', 'published');
 
     if (selectedCategory !== 'all') {
@@ -97,11 +100,12 @@ export function BlogIndexClient() {
 
     query = query
       .order('published_at', { ascending: false, nullsFirst: false })
-      .range(visibleCount, visibleCount + 8);
+      .range(visibleCount, visibleCount + 9);
     const { data } = await query;
-    setPosts((prev) => [...prev, ...((data || []) as unknown as BlogPostWithCategory[])]);
-    setVisibleCount((c) => c + 9);
-    setHasMore((data || []).length >= 9);
+    const nextPosts = (data || []) as unknown as PublicBlogCard[];
+    setPosts((prev) => [...prev, ...nextPosts.slice(0, 9)]);
+    setVisibleCount((count) => count + 9);
+    setHasMore(nextPosts.length > 9);
     setLoadingMore(false);
   };
 

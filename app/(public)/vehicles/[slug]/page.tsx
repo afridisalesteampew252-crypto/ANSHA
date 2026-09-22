@@ -57,7 +57,7 @@ export default async function VehicleDetailPage({ params }: Props) {
   const [{ data: offerRows }, reviews] = await Promise.all([
     supabase
       .from('site_offers')
-      .select('*')
+      .select('sale_price,discount_percent')
       .eq('is_published', true)
       .eq('vehicle_id', data.id)
       .order('published_at', { ascending: false, nullsFirst: false })
@@ -65,7 +65,7 @@ export default async function VehicleDetailPage({ params }: Props) {
     getPublishedReviews(10),
   ]);
 
-  const deal = ((offerRows || [])[0] as SiteOffer | undefined) || null;
+  const deal = ((offerRows || [])[0] as Pick<SiteOffer, 'sale_price' | 'discount_percent'> | undefined) || null;
   const hasListPrice = Boolean(data.show_price && data.price && Number(data.price) > 0);
   const dealPrice = deal ? effectiveDealPrice(hasListPrice ? Number(data.price) : null, deal) : null;
   const pageUrl = absoluteUrl(`/vehicles/${data.slug}`);

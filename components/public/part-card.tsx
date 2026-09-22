@@ -11,10 +11,11 @@ import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
 import { publicPriceLabel } from '@/lib/product-schema';
 import { partImageAlt } from '@/lib/seo';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
-import type { PartWithRelations, SiteOffer } from '@/lib/types';
+import type { PublicPartCard } from '@/lib/public-card-data';
+import type { SiteOffer } from '@/lib/types';
 
 interface PartCardProps {
-  part: PartWithRelations;
+  part: PublicPartCard;
   priority?: boolean;
   deal?: SiteOffer | null;
 }

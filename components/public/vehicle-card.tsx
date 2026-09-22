@@ -12,10 +12,11 @@ import { siteConfig } from '@/lib/site-config';
 import { equipmentCategoryLabel, isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
 import { vehicleImageAlt } from '@/lib/seo';
 import { pickVehicleCoverPhoto } from '@/lib/vehicle-photos';
-import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
+import type { PublicVehicleCard } from '@/lib/public-card-data';
+import type { SiteOffer } from '@/lib/types';
 
 interface VehicleCardProps {
-  vehicle: VehicleWithPhotos;
+  vehicle: PublicVehicleCard;
   priority?: boolean;
   deal?: SiteOffer | null;
 }
