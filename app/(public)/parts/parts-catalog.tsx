@@ -146,22 +146,21 @@ function PartsCatalog() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-[#101114] py-10 text-white sm:py-14">
-        <div className="absolute inset-0 opacity-25 [background-image:radial-gradient(circle_at_80%_20%,rgba(220,38,38,.45),transparent_30%),linear-gradient(rgba(255,255,255,.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.05)_1px,transparent_1px)] [background-size:auto,40px_40px,40px_40px]" />
+      <section className="surface-ink relative overflow-hidden py-10 text-white sm:py-14">
         <div className="container-page relative">
-          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-red-400">ANSHA inventory</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#ff8a8a]">ANSHA inventory</span>
           <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div><h1 className="text-3xl font-black tracking-tight sm:text-4xl">Automotive parts catalog</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">Search live stock by product, OEM number, part code, brand, category, or condition.</p></div>
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><PackageSearch className="h-5 w-5 text-accent" /><div><strong className="block text-sm">{loading ? 'Checking stock' : `${totalCount} results`}</strong><span className="text-[10px] text-white/45">Published inventory only</span></div></div>
+            <div><h1 className="font-display text-3xl font-black tracking-tight sm:text-4xl">Automotive parts catalog</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">Search live stock by product, OEM number, part code, brand, category, or condition.</p></div>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><PackageSearch className="h-5 w-5 text-[#ff8a8a]" /><div><strong className="block text-sm">{loading ? 'Checking stock' : `${totalCount} results`}</strong><span className="text-[10px] text-white/45">Published inventory only</span></div></div>
           </div>
         </div>
       </section>
 
-      <div className="surface-mist border-t border-accent/10">
+      <div className="surface-canvas-deep border-t border-[#cdbfc1]/40">
       <div className="container-page py-7 sm:py-10">
         <form onSubmit={(event) => { event.preventDefault(); setParam('q', query); }} className="relative mb-5">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product, OEM number or part code" className="h-14 rounded-2xl border-accent/15 bg-card pl-12 pr-28 text-base shadow-sm" />
+          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product, OEM number or part code" className="h-14 rounded-2xl border-[#cdbfc1]/50 bg-white pl-12 pr-28 text-base shadow-sm" />
           <Button type="submit" variant="accent" className="absolute right-1.5 top-1.5 h-11 rounded-xl px-5">Search</Button>
         </form>
 

@@ -87,17 +87,16 @@ export default function VehiclesCatalog() {
 
   return (
     <>
-      <section className="relative overflow-hidden bg-[#101114] py-12 text-white sm:py-16">
-        <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle_at_82%_15%,rgba(220,38,38,.45),transparent_32%),linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] [background-size:auto,44px_44px,44px_44px]" />
+      <section className="surface-ink relative overflow-hidden py-12 text-white sm:py-16">
         <div className="container-page relative max-w-3xl">
-          <span className="eyebrow text-accent">Global stock network</span>
+          <span className="eyebrow text-[#ff8a8a]">Published ANSHA inventory</span>
           <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight sm:text-5xl">
             Vehicles for global markets
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
             Browse verified ANSHA stock across Japan, Dubai, Singapore, China, Thailand, and Taiwan — then inquire for export.
             Looking for excavators or trucks? See{' '}
-            <Link href="/machinery" className="font-semibold text-accent underline-offset-2 hover:underline">
+            <Link href="/machinery" className="font-semibold text-[#ff8a8a] underline-offset-2 hover:underline">
               heavy machinery &amp; trucks
             </Link>
             .
@@ -105,7 +104,7 @@ export default function VehiclesCatalog() {
         </div>
       </section>
 
-      <div className="surface-cool border-t border-accent/10">
+      <div className="surface-canvas-deep border-t border-[#cdbfc1]/40">
       <div className="container-page min-w-0 overflow-x-clip py-8 sm:py-12">
         <nav className="mb-5 min-w-0 max-w-full overflow-x-hidden" aria-label="Vehicle stock locations">
           <div className="flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -113,7 +112,9 @@ export default function VehiclesCatalog() {
             type="button"
             onClick={() => setStockOrigin('all')}
             className={`h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition ${
-              stockOrigin === 'all' ? 'border-accent bg-accent text-white' : 'border-border bg-card hover:border-accent/50'
+              stockOrigin === 'all'
+                ? 'border-[#d21e1e] bg-[#d21e1e] text-white'
+                : 'border-[#cdbfc1] bg-white text-[#5c6366] hover:border-[#d21e1e]/50'
             }`}
           >
             All stock
@@ -124,7 +125,9 @@ export default function VehiclesCatalog() {
               type="button"
               onClick={() => setStockOrigin(origin.value)}
               className={`h-11 shrink-0 rounded-full border px-4 text-sm font-semibold transition ${
-                stockOrigin === origin.value ? 'border-accent bg-accent text-white' : 'border-border bg-card hover:border-accent/50'
+                stockOrigin === origin.value
+                  ? 'border-[#d21e1e] bg-[#d21e1e] text-white'
+                  : 'border-[#cdbfc1] bg-white text-[#5c6366] hover:border-[#d21e1e]/50'
               }`}
             >
               {origin.label}
@@ -185,19 +188,19 @@ export default function VehiclesCatalog() {
         </div>
 
         {loading ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, index) => (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
               <Skeleton key={index} className="min-h-[22rem] rounded-2xl sm:min-h-[24rem]" />
             ))}
           </div>
         ) : vehicles.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {vehicles.map((vehicle, index) => (
               <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 4} deal={dealForVehicle(vehicle.id)} />
             ))}
           </div>
         ) : (
-          <div className="relative overflow-hidden rounded-[30px] border border-dashed border-border bg-secondary/35 px-6 py-16 text-center sm:py-24">
+          <div className="relative overflow-hidden rounded-[30px] border border-dashed border-[#cdbfc1] bg-[#d8dee6]/50 px-6 py-16 text-center sm:py-24">
             <div className="relative">
               <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-card text-accent shadow-sm">
                 <CarFront className="h-8 w-8" />

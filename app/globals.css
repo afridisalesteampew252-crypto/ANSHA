@@ -4,39 +4,51 @@
 
 @layer base {
   :root {
-    /* Cool ink-tinted canvas — not pure white, not cream. */
-    --background: 210 18% 96.5%;
-    --foreground: 220 15% 10%;
+    /* Export Yard Editorial v4 — canvas / ink / brand red (not purple or cream). */
+    --background: 214 22% 87%; /* #d8dee6 canvas */
+    --foreground: 345 8% 8%; /* #171415 ink */
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 10%;
+    --card-foreground: 345 8% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 10%;
-    --primary: 220 15% 10%;
+    --popover-foreground: 345 8% 8%;
+    --primary: 345 8% 8%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 92%;
-    --secondary-foreground: 220 15% 12%;
-    --muted: 210 16% 92%;
-    --muted-foreground: 220 10% 40%;
-    --accent: 0 75% 47%;
+    --secondary: 214 18% 82%; /* canvas-deep adjacent */
+    --secondary-foreground: 345 8% 8%;
+    --muted: 214 16% 84%;
+    --muted-foreground: 195 5% 38%; /* steel-deep #5c6366 */
+    --accent: 0 75% 47%; /* #d21e1e */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 14% 84%;
-    --input: 210 14% 86%;
+    --border: 350 8% 78%; /* mist-tinted */
+    --input: 214 14% 86%;
     --ring: 0 75% 47%;
     --success: 142 60% 40%;
     --warning: 38 92% 50%;
-    --chart-1: 220 15% 12%;
+    --chart-1: 345 8% 8%;
     --chart-2: 0 75% 47%;
     --chart-3: 142 60% 40%;
     --chart-4: 38 92% 50%;
-    --chart-5: 217 91% 35%;
+    --chart-5: 214 22% 55%;
     --radius: 0.75rem;
-    /* Public marketing surfaces — ink / red exporter (not purple or cream). */
-    --ink: 220 10% 7%;
-    --surface-cool: 210 26% 93%;
-    --surface-warm: 0 28% 95%;
-    --surface-mist: 210 22% 91%;
+    /* Brand / atmospheric tokens (hex companions for marketing surfaces) */
+    --brand-red: #d21e1e;
+    --brand-red-soft: #c35252;
+    --brand-red-wash: rgba(210, 30, 30, 0.12);
+    --steel: #828789;
+    --steel-deep: #5c6366;
+    --ink: #171415;
+    --ink-deep: #0b0c0f;
+    --mist: #cdbfc1;
+    --canvas: #d8dee6;
+    --canvas-deep: #c8d0db;
+    --steel-sky: #b8c6d4;
+    --paper: #ffffff;
+    --frost: #f7f8fa;
+    --surface-cool: 214 22% 87%;
+    --surface-warm: 350 12% 90%;
+    --surface-mist: 350 10% 88%;
     --surface-featured: 0 48% 94%;
     --accent-soft: 0 75% 47%;
   }
@@ -104,14 +116,20 @@
 
   .public-marketing {
     font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
+    color-scheme: light;
     width: 100%;
     max-width: 100%;
     min-width: 0;
     overflow-x: clip;
-    background:
-      radial-gradient(ellipse 70% 45% at 100% -5%, hsl(0 75% 47% / 0.11), transparent 52%),
-      radial-gradient(ellipse 55% 40% at 0% 35%, hsl(220 20% 20% / 0.04), transparent 50%),
-      linear-gradient(180deg, hsl(210 22% 95%) 0%, hsl(0 22% 96%) 42%, hsl(210 18% 94.5%) 100%);
+    /* Yard dawn atmospheric ground — never flat white */
+    background: linear-gradient(165deg, #d8dee6 0%, #c8d0db 38%, rgba(210, 30, 30, 0.12) 72%, #b8c6d4 100%);
+    background-attachment: fixed;
+  }
+
+  /* Public site: always light chrome (logo requires light header ground) */
+  .public-marketing.dark,
+  .dark .public-marketing {
+    color-scheme: light;
   }
 
   .public-marketing header nav a,
@@ -156,77 +174,110 @@
 
   .surface-cool {
     background:
-      linear-gradient(180deg, hsl(var(--surface-cool)) 0%, hsl(210 24% 95%) 100%);
+      linear-gradient(180deg, #c8d0db 0%, #d8dee6 100%);
   }
 
   .surface-warm {
     background:
-      radial-gradient(ellipse 60% 80% at 100% 0%, hsl(0 75% 47% / 0.08), transparent 55%),
-      linear-gradient(180deg, hsl(var(--surface-warm)) 0%, hsl(210 20% 95%) 100%);
+      radial-gradient(ellipse 60% 80% at 100% 0%, rgba(210, 30, 30, 0.1), transparent 55%),
+      linear-gradient(180deg, rgba(205, 191, 193, 0.45) 0%, #d8dee6 100%);
   }
 
   .surface-mist {
     background:
-      radial-gradient(ellipse 50% 60% at 0% 100%, hsl(0 75% 47% / 0.06), transparent 45%),
-      linear-gradient(180deg, hsl(var(--surface-mist)) 0%, hsl(var(--surface-cool)) 100%);
+      radial-gradient(ellipse 50% 60% at 0% 100%, rgba(210, 30, 30, 0.08), transparent 45%),
+      linear-gradient(180deg, rgba(205, 191, 193, 0.4) 0%, #c8d0db 100%);
   }
 
   .surface-featured {
     background:
-      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(0 75% 47% / 0.18), transparent 50%),
-      radial-gradient(ellipse 55% 60% at 100% 100%, hsl(220 25% 18% / 0.06), transparent 48%),
-      linear-gradient(165deg, hsl(var(--surface-featured)) 0%, hsl(var(--surface-cool)) 100%);
+      radial-gradient(ellipse 70% 80% at 0% 0%, rgba(210, 30, 30, 0.16), transparent 50%),
+      linear-gradient(165deg, #f7f8fa 0%, #c8d0db 100%);
+  }
+
+  .surface-canvas-deep {
+    background-color: #c8d0db;
   }
 
   .surface-ink {
     background:
       radial-gradient(ellipse 55% 70% at 90% 10%, rgba(210, 30, 30, 0.28), transparent 50%),
-      linear-gradient(165deg, #0b0c0f 0%, #14161b 55%, #101114 100%);
+      linear-gradient(180deg, #0b0c0f 0%, #171415 45%, #2a2224 100%);
+    color: #fff;
+  }
+
+  .section-ink-band {
+    background: linear-gradient(135deg, #171415 0%, #1f1819 55%, #2a1a1c 100%);
     color: #fff;
   }
 
   .page-band {
-    @apply border-b bg-[#101114] text-white;
+    @apply border-b text-white;
     border-color: rgba(255, 255, 255, 0.1);
     background:
       radial-gradient(ellipse 60% 80% at 85% 0%, rgba(210, 30, 30, 0.32), transparent 48%),
-      #101114;
+      linear-gradient(135deg, #171415 0%, #1f1819 55%, #2a1a1c 100%);
   }
 
   .catalog-panel {
     @apply rounded-2xl border bg-card;
-    border-color: hsl(var(--accent) / 0.15);
-    box-shadow: 0 12px 40px rgba(16, 17, 20, 0.06);
+    border-color: rgba(130, 135, 137, 0.25);
+    box-shadow: 0 12px 40px rgba(23, 20, 21, 0.06);
   }
 
   .chip-market {
-    @apply inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98];
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition active:scale-[0.98];
     min-height: 2.75rem;
-    border-color: hsl(0 55% 80% / 0.55);
-    background: linear-gradient(180deg, hsl(0 60% 99%) 0%, hsl(0 40% 96%) 100%);
+    border-color: rgba(205, 191, 193, 0.7);
+    background: #d8dee6;
+    color: #5c6366;
   }
 
   .chip-market:hover {
-    border-color: hsl(var(--accent));
-    color: hsl(var(--accent));
+    border-color: #d21e1e;
+    background: #d21e1e;
+    color: #fff;
   }
 
   .header-market-strip {
-    background:
-      linear-gradient(90deg, #101114 0%, #1a1012 42%, #14161b 100%);
-    color: #fff;
+    background: linear-gradient(90deg, rgba(210, 30, 30, 0.16), rgba(205, 191, 193, 0.28), rgba(184, 198, 212, 0.45));
+    color: #171415;
   }
 
   .header-market-chip {
     @apply inline-flex shrink-0 items-baseline gap-1 rounded-full px-2 py-0.5;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(210, 30, 30, 0.18);
+    border: 1px solid rgba(210, 30, 30, 0.22);
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  .inventory-card {
+    border: 1px solid rgba(130, 135, 137, 0.25);
+    background-color: #ffffff;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+  }
+
+  .inventory-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(210, 30, 30, 0.5);
+    box-shadow: 0 8px 24px -8px rgba(210, 30, 30, 0.15), 0 4px 12px -4px rgba(23, 20, 21, 0.1);
+  }
+
+  .inventory-media {
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .inventory-card:hover .inventory-media {
+    transform: scale(1.04);
+  }
+
+  .signal-band {
+    background: linear-gradient(90deg, rgba(210, 30, 30, 0.16), rgba(205, 191, 193, 0.28), rgba(184, 198, 212, 0.45));
   }
 }
 
 @layer utilities {
   .container-page {
-    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10;
+    @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8 xl:px-10;
   }
 
   .container-narrow {
@@ -264,15 +315,19 @@
   }
 
   .animate-fade-up {
-    animation: fade-up 0.55s ease-out both;
+    animation: fade-up 0.52s cubic-bezier(0, 0, 0.2, 1) both;
   }
 
   .animate-fade-up-delay-1 {
-    animation: fade-up 0.55s ease-out 0.12s both;
+    animation: fade-up 0.52s cubic-bezier(0, 0, 0.2, 1) 80ms both;
   }
 
   .animate-fade-up-delay-2 {
-    animation: fade-up 0.55s ease-out 0.24s both;
+    animation: fade-up 0.52s cubic-bezier(0, 0, 0.2, 1) 140ms both;
+  }
+
+  .animate-fade-up-delay-3 {
+    animation: fade-up 0.52s cubic-bezier(0, 0, 0.2, 1) 200ms both;
   }
 
   .animate-hero-ken {
@@ -281,7 +336,7 @@
 }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

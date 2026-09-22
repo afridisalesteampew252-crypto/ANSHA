@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "projectId": "061fd535-d809-40b8-98af-c555fc407169",
+  "projectUrl": "https://superdesign.dev/teams/1a7dcbe8-3758-4cc8-9193-03e5d5165556/projects/061fd535-d809-40b8-98af-c555fc407169",
+  "brandAssets": {
+    "logo": {
+      "assetKey": "public-images-ansha-logo-transparent.webp",
+      "url": "https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/061fd535-d809-40b8-98af-c555fc407169/brand-assets/public-images-ansha-logo-transparent.webp/ansha-logo-transparent.webp"
+    }
+  },
+  "themePolicy": "single-fixed-export-yard-editorial-no-light-dark",
+  "headerPolicy": "light-only-for-dark-wordmark-logo",
+  "headerNote": "Sticky/top header always light (#fff / #f7f8fa). Never place dark ANSHA wordmark on ink/dark nav. Full-bleed dark heroes sit below light header.",
+  "colorPass": "2026-09-22-craft-v4",
+  "colorPassNote": "v4 craft pass: brand-first hero (oversized ANSHA), deeper Yard dawn, hybrid inventory, stronger CTAs, motion notes in design-system. Verified logo on light header + #d21e1e accents on all 6 drafts.",
+  "mobbinNote": "Mobbin MCP requires paid plan — skipped; craft guided by design-system marketplace patterns.",
+  "mobileVariantsNote": "Home + Listing mobile create-design-draft blocked: out of Superdesign credits. Retry after top-up.",
+  "updatedAt": "2026-09-22T03:05:00.000Z",
+  "targets": {
+    "home": {
+      "draftId": "9bd34f80-eff0-4450-af59-27b09a8cf15b",
+      "previewUrl": "https://p.superdesign.dev/draft/9bd34f80-eff0-4450-af59-27b09a8cf15b",
+      "route": "/",
+      "title": "ANSHA Trading Co. - Craft Pass v4",
+      "currentVersion": 4
+    },
+    "vehicles-listing": {
+      "draftId": "62806248-100c-4b79-93a4-41196b972033",
+      "previewUrl": "https://p.superdesign.dev/draft/62806248-100c-4b79-93a4-41196b972033",
+      "route": "/vehicles",
+      "title": "Vehicles Catalog - Hybrid Inventory Craft Pass",
+      "currentVersion": 5,
+      "note": "v5: stripped invented dollar amounts → Inquire"
+    },
+    "vehicle-detail": {
+      "draftId": "51a2d1b2-1128-486c-b9b1-bcc0f8beda78",
+      "previewUrl": "https://p.superdesign.dev/draft/51a2d1b2-1128-486c-b9b1-bcc0f8beda78",
+      "route": "/vehicles/[slug]",
+      "title": "Vehicle Detail | ANSHA Trading Co.",
+      "currentVersion": 4
+    },
+    "export-markets": {
+      "draftId": "9bd808c2-57ad-4443-bc18-b3f04845c3a8",
+      "previewUrl": "https://p.superdesign.dev/draft/9bd808c2-57ad-4443-bc18-b3f04845c3a8",
+      "route": "/markets/[code] + home strip",
+      "title": "ANSHA Export Markets — Craft Pass v4",
+      "currentVersion": 4
+    },
+    "contact-inquiry": {
+      "draftId": "1fdb1a6e-1a91-4acc-a506-1cf60ee91d24",
+      "previewUrl": "https://p.superdesign.dev/draft/1fdb1a6e-1a91-4acc-a506-1cf60ee91d24",
+      "route": "/contact",
+      "title": "ANSHA Trading Co. — Contact (Craft Pass v4)",
+      "currentVersion": 4
+    },
+    "parts-hub": {
+      "draftId": "a6e5f59a-efe5-423f-85a1-2a81e44dae3d",
+      "previewUrl": "https://p.superdesign.dev/draft/a6e5f59a-efe5-423f-85a1-2a81e44dae3d",
+      "route": "/parts",
+      "title": "ANSHA Parts Hub — Craft Pass v4",
+      "currentVersion": 5,
+      "note": "v5: stripped invented AED amounts → Inquire"
+    }
+  }
+}

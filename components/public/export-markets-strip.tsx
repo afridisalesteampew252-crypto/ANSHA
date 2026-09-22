@@ -8,26 +8,23 @@ export function ExportMarketsStrip() {
   return (
     <section
       id="export-markets"
-      className="surface-mist max-w-full overflow-x-clip border-y border-accent/15 py-7 sm:py-9"
+      className="max-w-full overflow-x-clip border-y border-[#cdbfc1]/40 bg-white/40 py-12 sm:py-16"
       aria-labelledby="export-markets-heading"
     >
-      <div className="container-page min-w-0 max-w-full">
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-          <div className="min-w-0">
-            <span className="eyebrow">Export markets</span>
-            <h2 id="export-markets-heading" className="mt-1 text-lg font-extrabold tracking-tight sm:text-xl">
-              We ship worldwide from Dubai
-            </h2>
-            <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-              Tap a flag for import notes and popular vehicles for that destination.
-            </p>
-          </div>
+      <div className="container-page min-w-0 max-w-full text-center">
+        <div className="mx-auto min-w-0 max-w-2xl">
+          <span className="eyebrow">Export markets</span>
+          <h2 id="export-markets-heading" className="mt-2 font-display text-2xl font-bold text-[#171415] sm:text-3xl">
+            Destinations we serve
+          </h2>
+          <p className="mt-2 text-sm text-[#5c6366]">
+            Tap a market for import notes and popular vehicles for that destination.
+          </p>
         </div>
 
-        {/* Isolation wrapper: prevents flex chip row from expanding document width */}
-        <div className="mt-4 min-w-0 max-w-full overflow-x-hidden sm:mt-5 sm:overflow-visible">
+        <div className="mt-8 min-w-0 max-w-full overflow-x-hidden sm:overflow-visible">
           <ul
-            className="flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:touch-auto [&::-webkit-scrollbar]:hidden"
+            className="flex min-w-0 max-w-full justify-start gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 sm:flex-wrap sm:justify-center sm:overflow-visible sm:touch-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             role="list"
           >
             {EXPORT_MARKETS.map((market) => (

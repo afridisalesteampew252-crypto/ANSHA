@@ -1,0 +1,565 @@
+﻿# Theme — ANSHA public site (compact token summary)
+
+## Framework
+- Next.js 16 App Router + React 19 + Tailwind CSS + shadcn/ui (Radix)
+
+## Brand (live Context.dev / anshatradingco.com)
+- Primary red: #d21e1e (maps to --accent ~ hsl(0 75% 47%))
+- Soft red: #c35252
+- Steel gray: #828789
+- Near-black ink: #171415
+- Cool mist: #cdbfc1
+- Position: Dubai-based exporter of vehicles, parts & machinery worldwide
+
+## Color tokens (:root HSL without hsl())
+| Token | Value | Role |
+| background | 210 18% 96.5% | Cool ink-tinted canvas |
+| foreground | 220 15% 10% | Body text |
+| primary | 220 15% 10% | Dark ink CTAs |
+| accent | 0 75% 47% | Brand red |
+| secondary | 210 20% 92% | Soft panels |
+| muted | 210 16% 92% | Subtle fills |
+| border | 210 14% 84% | Rules |
+| ink | 220 10% 7% | Marketing ink surfaces |
+| surface-cool | 210 26% 93% | Cool section band |
+| surface-warm | 0 28% 95% | Warm section band |
+| surface-featured | 0 48% 94% | Featured / deals band |
+| radius | 0.75rem | Base radius |
+
+## Typography
+- Body: Plus Jakarta Sans (`--font-sans`)
+- Display / marketing H1–H3: Outfit (`--font-display`)
+- Mono: JetBrains Mono (`--font-mono`)
+- Avoid Inter / Roboto / Arial / system UI stacks for marketing
+
+## Surfaces & patterns
+- `.public-marketing` radial red + cool mist gradient backdrop
+- `.surface-ink`, `.surface-cool`, `.surface-warm`, `.surface-featured`
+- Hero: full-bleed photo + ink overlay; brand wordmark hero-level
+
+## Spacing / layout
+- `.container-page` max content width with horizontal padding
+- Section rhythm: py-10 sm:py-14 / py-14 sm:py-20
+- Cards: rounded-2xl / rounded-3xl; inventory cards are interactive containers
+
+## Motion (existing)
+- `animate-fade-up`, `animate-fade-up-delay-*` on hero
+- Card hover: slight translate / scale on images
+
+---
+# Raw globals.css
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Cool ink-tinted canvas â€” not pure white, not cream. */
+    --background: 210 18% 96.5%;
+    --foreground: 220 15% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 10%;
+    --primary: 220 15% 10%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 92%;
+    --secondary-foreground: 220 15% 12%;
+    --muted: 210 16% 92%;
+    --muted-foreground: 220 10% 40%;
+    --accent: 0 75% 47%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 14% 84%;
+    --input: 210 14% 86%;
+    --ring: 0 75% 47%;
+    --success: 142 60% 40%;
+    --warning: 38 92% 50%;
+    --chart-1: 220 15% 12%;
+    --chart-2: 0 75% 47%;
+    --chart-3: 142 60% 40%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 217 91% 35%;
+    --radius: 0.75rem;
+    /* Public marketing surfaces â€” ink / red exporter (not purple or cream). */
+    --ink: 220 10% 7%;
+    --surface-cool: 210 26% 93%;
+    --surface-warm: 0 28% 95%;
+    --surface-mist: 210 22% 91%;
+    --surface-featured: 0 48% 94%;
+    --accent-soft: 0 75% 47%;
+  }
+
+  .dark {
+    --background: 220 18% 7%;
+    --foreground: 210 20% 94%;
+    --card: 220 16% 10%;
+    --card-foreground: 210 20% 94%;
+    --popover: 220 16% 10%;
+    --popover-foreground: 210 20% 94%;
+    --primary: 0 0% 92%;
+    --primary-foreground: 220 15% 12%;
+    --secondary: 220 12% 15%;
+    --secondary-foreground: 210 20% 92%;
+    --muted: 220 12% 15%;
+    --muted-foreground: 220 10% 61%;
+    --accent: 0 75% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 12% 18%;
+    --input: 220 12% 20%;
+    --ring: 0 75% 50%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
+    position: relative;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  .font-display,
+  .public-marketing h1,
+  .public-marketing h2,
+  .public-marketing h3,
+  .public-marketing .section-heading h2 {
+    font-family: var(--font-display), 'Outfit', sans-serif;
+    letter-spacing: -0.03em;
+  }
+
+  .public-marketing {
+    font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    background:
+      radial-gradient(ellipse 70% 45% at 100% -5%, hsl(0 75% 47% / 0.11), transparent 52%),
+      radial-gradient(ellipse 55% 40% at 0% 35%, hsl(220 20% 20% / 0.04), transparent 50%),
+      linear-gradient(180deg, hsl(210 22% 95%) 0%, hsl(0 22% 96%) 42%, hsl(210 18% 94.5%) 100%);
+  }
+
+  .public-marketing header nav a,
+  .public-marketing header .font-bold {
+    font-family: var(--font-display), 'Outfit', sans-serif;
+  }
+
+  code, .font-mono {
+    font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  }
+
+  button, a, input, select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .section-heading {
+    @apply mb-7 flex flex-col gap-4 sm:mb-9 sm:flex-row sm:items-end sm:justify-between;
+  }
+
+  .section-heading h2 {
+    @apply mt-2 text-2xl font-black tracking-tight sm:text-3xl;
+  }
+
+  .section-heading p {
+    @apply mt-2 max-w-2xl text-sm leading-6 text-muted-foreground;
+  }
+
+  .eyebrow {
+    @apply text-[10px] font-extrabold uppercase tracking-[0.18em] text-accent;
+  }
+
+  .section-link {
+    @apply inline-flex shrink-0 items-center gap-2 text-sm font-bold text-foreground transition-colors hover:text-accent;
+  }
+
+  .surface-cool {
+    background:
+      linear-gradient(180deg, hsl(var(--surface-cool)) 0%, hsl(210 24% 95%) 100%);
+  }
+
+  .surface-warm {
+    background:
+      radial-gradient(ellipse 60% 80% at 100% 0%, hsl(0 75% 47% / 0.08), transparent 55%),
+      linear-gradient(180deg, hsl(var(--surface-warm)) 0%, hsl(210 20% 95%) 100%);
+  }
+
+  .surface-mist {
+    background:
+      radial-gradient(ellipse 50% 60% at 0% 100%, hsl(0 75% 47% / 0.06), transparent 45%),
+      linear-gradient(180deg, hsl(var(--surface-mist)) 0%, hsl(var(--surface-cool)) 100%);
+  }
+
+  .surface-featured {
+    background:
+      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(0 75% 47% / 0.18), transparent 50%),
+      radial-gradient(ellipse 55% 60% at 100% 100%, hsl(220 25% 18% / 0.06), transparent 48%),
+      linear-gradient(165deg, hsl(var(--surface-featured)) 0%, hsl(var(--surface-cool)) 100%);
+  }
+
+  .surface-ink {
+    background:
+      radial-gradient(ellipse 55% 70% at 90% 10%, rgba(210, 30, 30, 0.28), transparent 50%),
+      linear-gradient(165deg, #0b0c0f 0%, #14161b 55%, #101114 100%);
+    color: #fff;
+  }
+
+  .page-band {
+    @apply border-b bg-[#101114] text-white;
+    border-color: rgba(255, 255, 255, 0.1);
+    background:
+      radial-gradient(ellipse 60% 80% at 85% 0%, rgba(210, 30, 30, 0.32), transparent 48%),
+      #101114;
+  }
+
+  .catalog-panel {
+    @apply rounded-2xl border bg-card;
+    border-color: hsl(var(--accent) / 0.15);
+    box-shadow: 0 12px 40px rgba(16, 17, 20, 0.06);
+  }
+
+  .chip-market {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98];
+    min-height: 2.75rem;
+    border-color: hsl(0 55% 80% / 0.55);
+    background: linear-gradient(180deg, hsl(0 60% 99%) 0%, hsl(0 40% 96%) 100%);
+  }
+
+  .chip-market:hover {
+    border-color: hsl(var(--accent));
+    color: hsl(var(--accent));
+  }
+
+  .header-market-strip {
+    background:
+      linear-gradient(90deg, #101114 0%, #1a1012 42%, #14161b 100%);
+    color: #fff;
+  }
+
+  .header-market-chip {
+    @apply inline-flex shrink-0 items-baseline gap-1 rounded-full px-2 py-0.5;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(210, 30, 30, 0.18);
+  }
+}
+
+@layer utilities {
+  .container-page {
+    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 xl:px-10;
+  }
+
+  .container-narrow {
+    @apply mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bg-grid {
+    background-image: linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .bg-grid-dark {
+    background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .bg-grid-fine {
+    background-image: linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .accent-bar {
+    @apply inline-block h-1 w-10 rounded-full bg-accent;
+  }
+
+  .section-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-border to-transparent;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.55s ease-out both;
+  }
+
+  .animate-fade-up-delay-1 {
+    animation: fade-up 0.55s ease-out 0.12s both;
+  }
+
+  .animate-fade-up-delay-2 {
+    animation: fade-up 0.55s ease-out 0.24s both;
+  }
+
+  .animate-hero-ken {
+    animation: hero-ken 18s ease-out both;
+  }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-ken {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, hsl(var(--secondary)) 25%, hsl(var(--muted)) 50%, hsl(var(--secondary)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Admin ERP shell â€” ink + accent red, professional (not marketing-loud). */
+.admin-shell {
+  background:
+    radial-gradient(ellipse 55% 40% at 100% 0%, hsl(0 75% 47% / 0.06), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 0% 100%, hsl(220 20% 12% / 0.04), transparent 50%),
+    hsl(var(--secondary) / 0.55);
+}
+
+.admin-sidebar {
+  background:
+    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(210 18% 98%) 100%);
+}
+
+.dark .admin-sidebar {
+  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(220 16% 9%) 100%);
+}
+
+.admin-topbar {
+  background: hsl(var(--card) / 0.92);
+  box-shadow: inset 0 -1px 0 hsl(var(--border) / 0.7);
+}
+
+.admin-dash-hero {
+  background:
+    radial-gradient(ellipse 70% 90% at 100% 0%, hsl(0 75% 47% / 0.12), transparent 55%),
+    linear-gradient(135deg, hsl(var(--card)) 0%, hsl(210 20% 97%) 55%, hsl(0 30% 97%) 100%);
+}
+
+.dark .admin-dash-hero {
+  background:
+    radial-gradient(ellipse 70% 90% at 100% 0%, hsl(0 75% 47% / 0.18), transparent 55%),
+    linear-gradient(135deg, hsl(var(--card)) 0%, hsl(220 14% 12%) 100%);
+}
+
+.admin-market-chrome {
+  min-width: 0;
+}
+
+/* Keep wide admin tables inside the viewport; scroll horizontally when needed. */
+.admin-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-table-scroll > table {
+  min-width: 36rem;
+}
+
+/* Intentionally read-only fields (not broken disabled). */
+.admin-readonly-field {
+  @apply cursor-default border-border/80 bg-muted/40 text-foreground;
+}
+
+.admin-readonly-field:disabled,
+.admin-readonly-field[readonly] {
+  @apply opacity-100;
+}
+
+/* Avoid browser :invalid red chrome on untouched required selects. */
+.admin-shell select:invalid:not(:focus):not([data-touched='true']) {
+  border-color: hsl(var(--input));
+  box-shadow: none;
+}
+
+body.admin-nav-open {
+  overflow: hidden;
+}
+
+/* A4 invoice sheet â€” screen preview mirrors print content box (A4 âˆ’ 10mm margins) */
+.invoice-a4-label {
+  margin: 0;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
+.invoice-a4 {
+  /* Full A4 sheet; 10mm inset matches @page margin so screen â‰ˆ print */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  margin-inline: auto;
+  padding: 10mm;
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 2px hsl(220 15% 10% / 0.04), 0 12px 28px hsl(220 15% 10% / 0.06);
+  background: #fff;
+  color: #111827;
+  font-feature-settings: "tnum" 1;
+}
+
+.invoice-print-stage {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.invoice-a4-table {
+  font-variant-numeric: tabular-nums;
+}
+
+.invoice-a4-totals dl > div:last-child {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111827 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .no-print,
+  .admin-invoice-actions,
+  .admin-sidebar,
+  .admin-topbar,
+  .admin-shell > aside,
+  .admin-market-chrome,
+  nav,
+  header.admin-topbar {
+    display: none !important;
+  }
+
+  .admin-shell,
+  .admin-shell > div,
+  main {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  .invoice-detail-page,
+  .invoice-print-stage {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .invoice-print,
+  .invoice-a4 {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .invoice-a4-table thead tr {
+    background: #111827 !important;
+    color: #fff !important;
+  }
+
+  .invoice-a4-table thead th {
+    color: #fff !important;
+  }
+
+  .invoice-a4-totals dl > div:last-child {
+    background: #111827 !important;
+    color: #fff !important;
+  }
+
+  .invoice-a4-amount-due,
+  .invoice-a4-banking,
+  .invoice-a4-qr,
+  .invoice-a4-table-wrap {
+    break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}
+
+
+```

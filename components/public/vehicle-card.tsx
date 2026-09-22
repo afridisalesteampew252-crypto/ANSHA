@@ -50,9 +50,9 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
   });
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-foreground/10 bg-card text-card-foreground transition duration-300 hover:-translate-y-0.5 hover:border-accent sm:rounded-2xl">
+    <article className="inventory-card group flex h-full min-w-0 flex-col overflow-hidden rounded-xl text-card-foreground sm:rounded-2xl">
       <div className="relative min-w-0">
-        <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#101114]/[0.04]">
+        <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#e4e8ed]">
           {photoUrl ? (
             <CatalogImage
               src={photoUrl}
@@ -60,7 +60,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               fill
               priority={priority}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-              className="transition-transform duration-500 group-hover:scale-105"
+              className="inventory-media"
               objectFit="cover"
             />
           ) : (
@@ -68,14 +68,14 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               <Car className="h-12 w-12 text-muted-foreground/25 sm:h-14 sm:w-14" />
             </span>
           )}
-          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#101114]/75 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#171415]/75 to-transparent" />
           {vehicle.year ? (
             <span className="absolute bottom-2.5 left-2.5 text-xs font-bold text-white sm:bottom-3 sm:left-3 sm:text-sm">
               {vehicle.year} {vehicle.model}
             </span>
           ) : null}
           {vehicle.stock_status === 'sold' ? (
-            <span className="absolute inset-0 grid place-items-center bg-[#101114]/40 text-2xl font-black uppercase tracking-[0.2em] text-white sm:text-3xl">
+            <span className="absolute inset-0 grid place-items-center bg-[#171415]/40 text-2xl font-black uppercase tracking-[0.2em] text-white sm:text-3xl">
               Sold
             </span>
           ) : null}
@@ -163,10 +163,10 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               <MessageCircle className="h-4 w-4" />
             </a>
             <Link
-              href={`/vehicles/${vehicle.slug}`}
-              className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-accent px-2.5 text-[11px] font-bold text-accent-foreground transition hover:bg-accent/90 sm:h-11 sm:flex-none sm:gap-1.5 sm:px-3.5 sm:text-xs"
+              href={`/contact?vehicle=${encodeURIComponent(vehicle.slug)}`}
+              className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-[#d21e1e] px-2.5 text-[11px] font-bold text-white transition hover:bg-[#c35252] sm:h-11 sm:flex-none sm:gap-1.5 sm:px-3.5 sm:text-xs"
             >
-              View <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
+              Inquire <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
             </Link>
           </div>
         </div>

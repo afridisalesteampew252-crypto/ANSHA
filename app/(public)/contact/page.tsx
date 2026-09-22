@@ -46,9 +46,9 @@ export default function ContactPage() {
 
   return (
     <div>
-      <section className="page-band">
+      <section className="section-ink-band">
         <div className="container-page py-10 sm:py-14">
-          <p className="eyebrow text-accent mb-1">Get in Touch</p>
+          <p className="eyebrow text-[#ff8a8a] mb-1">Get in touch</p>
           <h1 className="font-display text-2xl font-black tracking-tight md:text-4xl">Contact Us</h1>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
             Have a question about a part or need help finding something? Send us a message or reach out on WhatsApp.
@@ -56,14 +56,14 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <div className="surface-warm border-t border-accent/10">
+      <div className="surface-canvas-deep border-t border-[#cdbfc1]/40">
         <div className="container-page py-10 sm:py-12">
           <div className="mx-auto max-w-4xl">
             <div className="grid gap-6 md:grid-cols-2 md:gap-8">
               <div className="space-y-5">
-                <Card className="border-accent/15 shadow-sm">
+                <Card className="border-[#cdbfc1]/50 bg-white shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg">Get in Touch</CardTitle>
+                    <CardTitle className="text-lg text-[#171415]">Get in Touch</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-3">

@@ -6,8 +6,8 @@ import { InstallAppButton } from '@/components/pwa/install-prompt';
 
 export function SiteFooter() {
   return (
-    <footer className="min-w-0 max-w-full overflow-x-clip border-t border-white/10 bg-[#101114] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] text-white lg:pb-0">
-      <div className="h-0.5 w-full bg-accent" />
+    <footer className="section-ink-band min-w-0 max-w-full overflow-x-clip border-t border-white/10 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] text-white lg:pb-0">
+      <div className="h-0.5 w-full bg-[#d21e1e]" />
       <div className="container-page py-10 sm:py-12">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
           <div className="sm:col-span-2 lg:col-span-1">

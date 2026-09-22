@@ -60,3 +60,6 @@ _import_japan_stock_report.json
 scripts/tmp/
 scripts/seed-part-0.sql
 supabase/.temp/
+
+.superdesign/tmp/
+

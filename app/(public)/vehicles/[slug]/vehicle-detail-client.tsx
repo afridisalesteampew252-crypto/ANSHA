@@ -189,10 +189,10 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <div className="surface-cool">
+      <div className="surface-canvas-deep">
       <div className="container-page py-8 sm:py-10">
 
-      <div className="grid min-w-0 gap-8 lg:grid-cols-2 lg:gap-10">
+      <div className="grid min-w-0 gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
         <VehiclePhotoGallery
           title={vehicle.title}
           photos={photos}
@@ -203,15 +203,16 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
           model={vehicle.model}
         />
 
-        <div className="min-w-0 space-y-6">
+        <div className="min-w-0 space-y-6 lg:sticky lg:top-28 lg:self-start">
           <div>
             <p className="eyebrow">
               {vehicle.stock_pool === 'auction_third_party' ? 'Auction listing' : 'Export vehicle'}
             </p>
             <h1 className="mt-2 font-display text-2xl font-black tracking-tight md:text-3xl lg:text-4xl">{vehicle.title}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 font-mono text-sm text-[#5c6366]">
               {vehicle.make} {vehicle.model}
               {vehicle.variant ? ` • ${vehicle.variant}` : ''}
+              {vehicle.stock_number ? ` · ${vehicle.stock_number}` : ''}
               {vehicle.stock_pool === 'auction_third_party' ? ' · Auction stock' : ''}
             </p>
           </div>
@@ -224,7 +225,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
             />
           ) : null}
 
-          <div className="flex items-center justify-between rounded-2xl border border-accent/20 bg-[#101114] p-4 text-white sm:p-5">
+          <div className="flex items-center justify-between rounded-2xl border border-[#d21e1e]/25 bg-[#171415] p-4 text-white sm:p-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-white/50">
                 {dealPrice != null ? 'Deal price' : 'Export price'}
@@ -243,7 +244,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
               ) : displayPrice != null ? (
                 <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">{priceLabel}</p>
               ) : (
-                <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Ask for quote</p>
+                <p className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Inquire</p>
               )}
             </div>
             <div className="text-right">
@@ -299,7 +300,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
             />
             <div className="flex flex-col gap-3 sm:flex-row">
               <InquiryDialog
-                triggerLabel="Send Inquiry"
+                triggerLabel="Request quote"
                 triggerSize="lg"
                 triggerVariant="accent"
               />
