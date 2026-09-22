@@ -13,6 +13,8 @@ type CatalogImageProps = {
   sizes?: string;
   priority?: boolean;
   objectFit?: 'contain' | 'cover';
+  placeholder?: 'blur' | 'empty';
+  blurDataURL?: string;
 };
 
 /** Optimized catalog/media image. Use for Supabase public buckets and local /images. */
@@ -26,6 +28,8 @@ export function CatalogImage({
   sizes = '(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw',
   priority = false,
   objectFit = 'contain',
+  placeholder,
+  blurDataURL,
 }: CatalogImageProps) {
   return (
     <Image
@@ -37,6 +41,8 @@ export function CatalogImage({
       sizes={sizes}
       priority={priority}
       quality={65}
+      placeholder={placeholder}
+      blurDataURL={blurDataURL}
       className={cn(objectFit === 'cover' ? 'object-cover' : 'object-contain', className)}
     />
   );

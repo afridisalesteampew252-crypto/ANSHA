@@ -15,15 +15,7 @@ import {
   MapPin,
   Box,
   ShieldCheck,
-  ZoomIn,
-  ChevronLeft,
-  Images,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +28,8 @@ import { BrandLogo } from '@/components/public/brand-logo';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
-import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-image';
+import { publicPartImageUrl } from '@/components/public/catalog-image';
+import { PublicImageGallery } from '@/components/public/public-image-gallery';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { supabase } from '@/lib/supabase/client';
 import { partImageAlt } from '@/lib/seo';
@@ -53,8 +46,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
   const [deal, setDeal] = useState<SiteOffer | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFoundFlag, setNotFoundFlag] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [coverIndex, setCoverIndex] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -76,7 +68,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
       const sortedPhotos = (typedData.part_photos || []).sort((a, b) => a.sort_order - b.sort_order);
       const coverIndex = sortedPhotos.findIndex((p) => p.is_cover);
       setPart({ ...typedData, part_photos: sortedPhotos });
-      setSelectedImage(coverIndex >= 0 ? coverIndex : 0);
+      setCoverIndex(coverIndex >= 0 ? coverIndex : 0);
 
       const { data: offerRows } = await supabase
         .from('site_offers')
@@ -125,9 +117,11 @@ export function PartDetailClient({ slug }: { slug: string }) {
 
   const photos = part.part_photos || [];
   const compatibilities = part.part_compatibility || [];
-  const currentPhoto = photos[selectedImage];
-  const photoUrl = currentPhoto ? publicPartImageUrl(currentPhoto.storage_path) : null;
-  const imageAlt = partImageAlt(part, { photoIndex: selectedImage + 1 });
+  const galleryImages = photos.map((photo, index) => ({
+    id: photo.id,
+    src: publicPartImageUrl(photo.storage_path),
+    alt: partImageAlt(part, { photoIndex: index + 1 }),
+  }));
   const hasListPrice = Boolean(part.show_price && part.price && part.price > 0);
   const dealPrice = deal ? effectiveDealPrice(hasListPrice ? part.price : null, deal) : null;
   const displayPrice = resolveProductOfferPrice({
@@ -149,13 +143,6 @@ export function PartDetailClient({ slug }: { slug: string }) {
     priceCif: part.price_cif,
     askLabel: 'Ask Price',
   });
-
-  const navigatePhoto = (dir: 'prev' | 'next') => {
-    setSelectedImage((prev) => {
-      if (dir === 'prev') return prev === 0 ? photos.length - 1 : prev - 1;
-      return prev === photos.length - 1 ? 0 : prev + 1;
-    });
-  };
 
   return (
     <div className="overflow-x-clip">
@@ -179,101 +166,18 @@ export function PartDetailClient({ slug }: { slug: string }) {
       <div className="container-page py-8 sm:py-10">
 
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
-        {/* Image gallery */}
-        <div className="space-y-4">
-          <div
-            className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl border border-accent/15 bg-card shadow-sm"
-            onClick={() => photoUrl && setLightboxOpen(true)}
-            role={photoUrl ? 'button' : undefined}
-            tabIndex={photoUrl ? 0 : undefined}
-            onKeyDown={(event) => {
-              if (photoUrl && (event.key === 'Enter' || event.key === ' ')) {
-                event.preventDefault();
-                setLightboxOpen(true);
-              }
-            }}
-            aria-label={photoUrl ? `Open ${partImageAlt(part)} image ${selectedImage + 1} in full screen` : undefined}
-          >
-            {photoUrl ? (
-              <CatalogImage
-                src={photoUrl}
-                alt={imageAlt}
-                fill
-                priority={selectedImage === 0}
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                objectFit="contain"
-                className="p-3 sm:p-6"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <Wrench className="h-20 w-20 text-muted-foreground/30" />
-              </div>
-            )}
-            <div className="absolute top-3 left-3">
-              <Badge variant="outline" className={`capitalize ${conditionBadgeClasses[part.condition] || ''}`}>
-                {conditionLabels[part.condition] || part.condition}
-              </Badge>
-            </div>
-            {photoUrl && (
-              <div className="absolute inset-0 hidden items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/15 group-hover:opacity-100 sm:flex">
-                <div className="flex items-center gap-2 rounded-lg bg-background/95 px-3 py-1.5 text-sm font-medium shadow-lg">
-                  <ZoomIn className="h-4 w-4" />
-                  Click to view
-                </div>
-              </div>
-            )}
-            {photos.length > 1 && (
-              <>
-                <button
-                  onClick={(e) => { e.stopPropagation(); navigatePhoto('prev'); }}
-                  className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-md transition hover:bg-background sm:opacity-0 sm:group-hover:opacity-100"
-                  aria-label="Previous photo"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); navigatePhoto('next'); }}
-                  className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-md transition hover:bg-background sm:opacity-0 sm:group-hover:opacity-100"
-                  aria-label="Next photo"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-                <div className="absolute bottom-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
-                  {selectedImage + 1} / {photos.length}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Thumbnails */}
-          {photos.length > 1 && (
-            <div className="flex snap-x gap-2 overflow-x-auto pb-2" aria-label="Part photo thumbnails">
-              {photos.map((photo, idx) => {
-                const thumbUrl = publicPartImageUrl(photo.storage_path);
-                return (
-                  <button
-                    key={photo.id}
-                    onClick={() => setSelectedImage(idx)}
-                    aria-label={`Show photo ${idx + 1} of ${photos.length}`}
-                    aria-current={idx === selectedImage ? 'true' : undefined}
-                    className={`relative aspect-square w-20 shrink-0 snap-start overflow-hidden rounded-lg border-2 bg-secondary/60 transition-all sm:w-24 ${
-                      idx === selectedImage ? 'border-accent ring-2 ring-accent/15' : 'border-border hover:border-foreground/40'
-                    }`}
-                  >
-                    <CatalogImage
-                      src={thumbUrl}
-                      alt={partImageAlt(part, { photoIndex: idx + 1 })}
-                      fill
-                      sizes="96px"
-                      objectFit="contain"
-                      className="p-1"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <PublicImageGallery
+          images={galleryImages}
+          initialIndex={coverIndex}
+          aspectClassName="aspect-square"
+          objectFit="contain"
+          emptyIcon={<Wrench className="h-20 w-20 text-muted-foreground/30" />}
+          badge={
+            <Badge variant="outline" className={`capitalize ${conditionBadgeClasses[part.condition] || ''}`}>
+              {conditionLabels[part.condition] || part.condition}
+            </Badge>
+          }
+        />
 
         {/* Product info */}
         <div className="space-y-6">
@@ -490,68 +394,6 @@ export function PartDetailClient({ slug }: { slug: string }) {
           </CardContent>
         </Card>
       )}
-
-      {/* Lightbox */}
-      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="h-[92vh] max-w-[96vw] overflow-hidden border-white/10 bg-black/95 p-0 sm:max-w-6xl">
-          <DialogTitle className="sr-only">{part.name} — Image {selectedImage + 1}</DialogTitle>
-          <div className="relative flex h-full min-h-[50vh] flex-col items-center justify-center p-4 pb-24 sm:p-8 sm:pb-28">
-            {photoUrl && (
-              <div className="relative min-h-0 w-full flex-1">
-                <CatalogImage
-                  src={photoUrl}
-                  alt={imageAlt}
-                  fill
-                  sizes="96vw"
-                  objectFit="contain"
-                />
-              </div>
-            )}
-            {photos.length > 1 && (
-              <>
-                <button
-                  onClick={() => navigatePhoto('prev')}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-                  aria-label="Previous photo"
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </button>
-                <button
-                  onClick={() => navigatePhoto('next')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-                  aria-label="Next photo"
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </button>
-                <div className="absolute bottom-3 left-3 right-3 flex items-center gap-3 overflow-x-auto rounded-xl bg-white/10 p-2 backdrop-blur-sm">
-                  <div className="flex shrink-0 items-center gap-1.5 px-1 text-xs text-white/80">
-                    <Images className="h-4 w-4" />
-                    {selectedImage + 1}/{photos.length}
-                  </div>
-                  {photos.map((photo, index) => (
-                    <button
-                      key={photo.id}
-                      type="button"
-                      onClick={() => setSelectedImage(index)}
-                      aria-label={`Show photo ${index + 1}`}
-                      aria-current={index === selectedImage ? 'true' : undefined}
-                      className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 bg-white/5 ${index === selectedImage ? 'border-white' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                    >
-                      <CatalogImage
-                        src={publicPartImageUrl(photo.storage_path)}
-                        alt=""
-                        fill
-                        sizes="56px"
-                        objectFit="contain"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Related parts */}
       {relatedParts.length > 0 && (
