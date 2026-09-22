@@ -98,20 +98,20 @@ export function SiteHeader() {
           scrolled && 'shadow-[0_8px_28px_rgba(23,20,21,0.08)]'
         )}
       >
-        <div className="container-page flex h-16 min-w-0 items-center gap-3 sm:h-20 sm:gap-4 lg:h-[5.25rem]">
+        <div className="container-page flex h-[4.25rem] min-w-0 items-center gap-3 sm:h-[5.5rem] sm:gap-4 lg:h-[6.25rem]">
           <Link href="/" className="flex min-w-0 shrink-0 items-center" aria-label="ANSHA Trading home">
             <Image
               src="/images/ansha-logo-transparent.webp"
               alt="ANSHA Trading Co. LLC-FZ"
-              width={280}
-              height={139}
+              width={320}
+              height={158}
               priority
-              sizes="(max-width: 640px) 160px, (max-width: 1024px) 200px, 240px"
-              className="h-10 w-auto max-w-[min(48vw,160px)] object-contain object-left sm:h-12 sm:max-w-[200px] lg:h-14 lg:max-w-[240px]"
+              sizes="(max-width: 640px) 200px, (max-width: 1024px) 260px, 300px"
+              className="h-12 w-auto max-w-[min(52vw,200px)] object-contain object-left sm:h-[3.75rem] sm:max-w-[260px] lg:h-[4.5rem] lg:max-w-[300px]"
             />
           </Link>
 
-          <nav className="ml-2 hidden h-full items-center gap-1 lg:flex xl:gap-2" aria-label="Primary">
+          <nav className="ml-1 hidden items-center gap-1.5 lg:flex xl:ml-2 xl:gap-2" aria-label="Primary">
             {navLinks.map((link) => {
               const active = isActive(link.href);
               return (
@@ -119,36 +119,30 @@ export function SiteHeader() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    'relative flex h-full items-center px-2.5 text-sm font-semibold transition-colors xl:px-3',
-                    link.accent && !active && 'text-[#c35252]',
-                    active ? 'text-[#d21e1e]' : 'text-[#171415] hover:text-[#d21e1e]'
+                    'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold transition-colors xl:h-10 xl:px-4 xl:text-sm',
+                    active
+                      ? 'border-[#d21e1e] bg-[#d21e1e] text-white shadow-[0_6px_16px_-8px_rgba(210,30,30,0.55)]'
+                      : link.accent
+                        ? 'border-[#f0d0d0] bg-[#f8eaea] text-[#c35252] hover:border-[#d21e1e]/40 hover:bg-[#f3dede]'
+                        : 'border-[#d8dee6] bg-[#e8ecf0] text-[#171415] hover:border-[#c8d0db] hover:bg-[#dfe4ea]'
                   )}
                 >
-                  {link.accent ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <Tag className="h-3.5 w-3.5" />
-                      {link.label}
-                    </span>
-                  ) : (
-                    link.label
-                  )}
-                  {active && (
-                    <span className="absolute inset-x-2.5 bottom-2 h-0.5 rounded-full bg-[#d21e1e] xl:inset-x-3" />
-                  )}
+                  {link.accent ? <Tag className="h-3.5 w-3.5 shrink-0" /> : null}
+                  {link.label}
                 </Link>
               );
             })}
           </nav>
 
-          <form onSubmit={handleSearch} className="ml-auto hidden max-w-xs flex-1 md:block lg:max-w-[14rem] xl:max-w-xs">
-            <div className="relative flex h-10 items-center overflow-hidden rounded-full border border-[#cdbfc1] bg-white">
-              <Search className="absolute left-3 h-4 w-4 text-[#828789]" />
+          <form onSubmit={handleSearch} className="ml-auto hidden max-w-xs flex-1 md:block lg:max-w-[13.5rem] xl:max-w-xs">
+            <div className="relative flex h-9 items-center rounded-full border border-[#d8dee6] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] xl:h-10">
+              <Search className="pointer-events-none absolute left-3.5 h-4 w-4 shrink-0 text-[#828789]" aria-hidden />
               <Input
                 type="search"
-                placeholder="Search stock or OEM"
+                placeholder="Search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-full rounded-full border-0 bg-transparent pl-9 pr-3 text-sm text-[#171415] placeholder:text-[#828789] focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-full min-w-0 rounded-full border-0 bg-transparent py-0 pl-10 pr-4 text-sm font-medium leading-none text-[#171415] placeholder:text-[#828789] focus-visible:ring-0 focus-visible:ring-offset-0"
                 aria-label="Search catalog"
               />
             </div>
@@ -213,7 +207,7 @@ export function SiteHeader() {
           />
           <div
             id="mobile-site-menu"
-            className="fixed left-0 right-0 top-16 z-[60] max-h-[calc(100dvh-4rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-[#cdbfc1]/50 bg-[#f7f8fa] shadow-2xl sm:top-20 sm:max-h-[calc(100dvh-5rem-4rem-env(safe-area-inset-bottom,0px))] lg:hidden"
+            className="fixed left-0 right-0 top-[4.25rem] z-[60] max-h-[calc(100dvh-4.25rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-[#cdbfc1]/50 bg-[#f7f8fa] shadow-2xl sm:top-[5.5rem] sm:max-h-[calc(100dvh-5.5rem-4rem-env(safe-area-inset-bottom,0px))] lg:hidden"
           >
             <div className="container-page space-y-5 py-5 pb-8">
               <form onSubmit={handleSearch}>
@@ -228,7 +222,7 @@ export function SiteHeader() {
                   />
                 </div>
               </form>
-              <nav className="grid gap-1">
+              <nav className="grid gap-1.5">
                 {navLinks.map((link) => {
                   const active = isActive(link.href);
                   return (
@@ -236,8 +230,12 @@ export function SiteHeader() {
                       key={link.href}
                       href={link.href}
                       className={cn(
-                        'flex min-h-12 items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold',
-                        active ? 'bg-[#d21e1e] text-white' : 'text-[#171415] hover:bg-[#d8dee6]'
+                        'flex min-h-12 items-center justify-between rounded-full border px-4 py-3 text-sm font-semibold',
+                        active
+                          ? 'border-[#d21e1e] bg-[#d21e1e] text-white'
+                          : link.accent
+                            ? 'border-[#f0d0d0] bg-[#f8eaea] text-[#c35252]'
+                            : 'border-[#d8dee6] bg-[#e8ecf0] text-[#171415] hover:bg-[#dfe4ea]'
                       )}
                     >
                       <span className="inline-flex items-center gap-2">

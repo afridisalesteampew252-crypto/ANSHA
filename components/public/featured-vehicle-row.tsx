@@ -55,7 +55,7 @@ export function FeaturedVehicleRow({
   )}`;
 
   return (
-    <article className="inventory-card group flex flex-col overflow-hidden rounded-[20px] sm:flex-row">
+    <article className="inventory-card group flex flex-col overflow-hidden rounded-[1.35rem] sm:flex-row">
       <Link
         href={`/vehicles/${vehicle.slug}`}
         className="relative h-[220px] w-full shrink-0 overflow-hidden bg-[#e4e8ed] sm:h-auto sm:w-[45%] sm:min-h-[240px]"
@@ -102,24 +102,22 @@ export function FeaturedVehicleRow({
           <p className="mt-3 text-sm font-extrabold tracking-tight text-[#171415]">{priceLabel}</p>
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-[#cdbfc1]/40 pt-4">
-          <div className="flex items-center gap-2">
-            <SaveItemActions item={saveItem} size="sm" />
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="grid h-10 w-10 place-items-center rounded-full border border-[#cdbfc1] text-[#128C7E] transition hover:border-[#128C7E]"
-              aria-label={`WhatsApp about ${vehicle.title}`}
-            >
-              <MessageCircle className="h-4 w-4" />
-            </a>
-          </div>
+        <div className="mt-4 flex items-center gap-2 border-t border-[#cdbfc1]/40 pt-4">
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-white shadow-sm transition hover:brightness-110"
+            aria-label={`WhatsApp about ${vehicle.title}`}
+          >
+            <MessageCircle className="h-4 w-4" />
+          </a>
+          <SaveItemActions item={saveItem} size="sm" />
           <Link
             href={inquireHref}
-            className="rounded-full bg-[#d21e1e] px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-[#c35252]"
+            className="ml-auto inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-[#d21e1e] px-5 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-[#c35252]"
           >
-            Request quote
+            Inquire
           </Link>
         </div>
       </div>

@@ -16,9 +16,11 @@ import {
   ShieldCheck,
   Tag,
   Truck,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CatalogImage } from '@/components/public/catalog-image';
 import { PartCard } from '@/components/public/part-card';
 import { VehicleCard } from '@/components/public/vehicle-card';
 import { FeaturedVehicleRow } from '@/components/public/featured-vehicle-row';
@@ -28,6 +30,7 @@ import { PartRequestForm } from '@/components/public/part-request-form';
 import { TestimonialsSection } from '@/components/public/testimonials-section';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { siteConfig } from '@/lib/site-config';
+import { resolveCategoryImage } from '@/lib/category-images';
 import { publicVehicleImageUrl } from '@/lib/public-media';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import {
@@ -43,7 +46,7 @@ import {
 import type { HomeFeaturedData } from '@/lib/home-featured';
 import { supabase } from '@/lib/supabase/client';
 import { isMachineryClass, MACHINERY_VEHICLE_CLASSES } from '@/lib/vehicle-class';
-import type { BlogPostWithCategory, PartWithRelations, Review, VehicleWithPhotos } from '@/lib/types';
+import type { BlogPostWithCategory, Category, PartWithRelations, Review, VehicleWithPhotos } from '@/lib/types';
 
 export default function HomePageClient({
   initialReviews = [],
@@ -55,6 +58,7 @@ export default function HomePageClient({
   const router = useRouter();
   const { dealForVehicle, dealForPart } = useInventoryDeals();
   const [query, setQuery] = useState('');
+  const [categories, setCategories] = useState<Category[]>(initialFeatured?.categories ?? []);
   const [featuredParts, setFeaturedParts] = useState<PartWithRelations[]>(initialFeatured?.featuredParts ?? []);
   const [latestParts, setLatestParts] = useState<PartWithRelations[]>(initialFeatured?.latestParts ?? []);
   const [featuredVehicles, setFeaturedVehicles] = useState<VehicleWithPhotos[]>(
@@ -73,7 +77,8 @@ export default function HomePageClient({
     const loadHome = async (isInitial: boolean) => {
       if (isInitial && !initialFeatured) setLoading(true);
 
-      const [partsPoolRes, vehiclesPoolRes, machineryPoolRes, postsRes] = await Promise.all([
+      const [catRes, partsPoolRes, vehiclesPoolRes, machineryPoolRes, postsRes] = await Promise.all([
+        supabase.from('categories').select('*').order('sort_order').limit(12),
         supabase
           .from('parts')
           .select('*, categories(*), part_photos(*), part_compatibility(*)')
@@ -115,6 +120,7 @@ export default function HomePageClient({
       );
       const machineryPool = (machineryPoolRes.data || []) as unknown as VehicleWithPhotos[];
 
+      setCategories((catRes.data || []) as Category[]);
       setFeaturedParts(selectRotatingFeatured(partsPool, HOME_FEATURED_PARTS_LIMIT, nowMs));
       setLatestParts(partsPool.slice(0, HOME_FEATURED_PARTS_LIMIT));
       setFeaturedVehicles(selectRotatingFeatured(vehiclesPool, HOME_FEATURED_VEHICLES_LIMIT, nowMs));
@@ -366,6 +372,72 @@ export default function HomePageClient({
         </div>
       </section>
 
+      <section className="surface-cool border-y border-accent/10 py-14 sm:py-20">
+        <div className="container-page min-w-0">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Catalog departments</span>
+              <h2>Shop by category</h2>
+              <p>Move directly into the part family you need.</p>
+            </div>
+            <Link href="/categories" className="section-link">
+              All categories <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {loading && categories.length === 0 ? (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />
+              ))}
+            </div>
+          ) : categories.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+              {categories.map((category) => {
+                const imageSrc = resolveCategoryImage(category.slug, category.image_url);
+                return (
+                  <Link
+                    key={category.id}
+                    href={`/categories/${category.slug}`}
+                    className="group relative block aspect-[4/3] min-h-[9rem] overflow-hidden rounded-2xl border border-border bg-secondary"
+                  >
+                    {imageSrc ? (
+                      <CatalogImage
+                        src={imageSrc}
+                        alt={category.name}
+                        fill
+                        sizes="(max-width: 768px) 50vw, 16vw"
+                        className="transition duration-500 group-hover:scale-105"
+                        objectFit="cover"
+                      />
+                    ) : (
+                      <span className="absolute inset-0 grid place-items-center">
+                        <Wrench className="h-10 w-10 text-muted-foreground/15" />
+                      </span>
+                    )}
+                    <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent" />
+                    <span className="absolute inset-x-0 bottom-0 p-4 text-white">
+                      <strong className="block text-sm">{category.name}</strong>
+                      <span className="mt-1 block text-[11px] text-white/65">Browse parts</span>
+                    </span>
+                    <ChevronRight className="absolute right-3 top-3 h-7 w-7 rounded-full bg-white/90 p-1.5 text-black opacity-0 transition group-hover:opacity-100" />
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-card/60 px-6 py-10 text-center">
+              <Boxes className="mx-auto h-9 w-9 text-muted-foreground/30" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                Browse the full parts catalog while categories load.
+              </p>
+              <Button asChild variant="outline" className="mt-4 h-10 rounded-full">
+                <Link href="/parts">View parts</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </section>
+
       <ExportMarketsStrip />
 
       <section className="surface-featured border-y border-accent/15 py-10 sm:py-14">
@@ -461,40 +533,47 @@ export default function HomePageClient({
         </div>
       </section>
 
-      {latestPosts.length > 0 ? (
-        <section className="surface-mist border-t border-accent/10 py-14 sm:py-20">
-          <div className="container-page min-w-0">
-            <div className="section-heading">
-              <div>
-                <span className="eyebrow">Export insights</span>
-                <h2>Latest from ANSHA</h2>
-                <p>Guides and updates for automotive buyers.</p>
-              </div>
-              <Link href="/blog" className="section-link">All insights <ArrowRight className="h-4 w-4" /></Link>
+      <section id="insights" className="surface-mist border-t border-accent/10 py-14 sm:py-20">
+        <div className="container-page min-w-0">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Insights</span>
+              <h2>Latest from ANSHA</h2>
+              <p>Guides and updates for automotive buyers and exporters.</p>
             </div>
+            <Link href="/blog" className="section-link">
+              All insights <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {latestPosts.length > 0 ? (
             <div className="grid gap-5 md:grid-cols-3">
               {latestPosts.map((post) => (
                 <BlogCard key={post.id} post={post} />
               ))}
             </div>
-          </div>
-        </section>
-      ) : (
-        <section className="surface-mist border-t border-accent/10 py-10 sm:py-12">
-          <div className="container-page flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-            <div>
-              <span className="eyebrow">Export insights</span>
-              <h2 className="mt-1 text-lg font-extrabold tracking-tight">Buying guides &amp; market notes</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Practical export reading from the ANSHA team.</p>
+          ) : (
+            <div className="rounded-[28px] border border-dashed border-border bg-card/70 px-6 py-12 text-center">
+              <h3 className="font-display text-xl font-bold text-[#171415]">Buying guides &amp; market notes</h3>
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                Practical export reading from the ANSHA team will appear here as posts are published.
+              </p>
+              <Button asChild variant="outline" className="mt-5 h-11 rounded-full">
+                <Link href="/blog">Visit insights</Link>
+              </Button>
             </div>
-            <Link href="/blog" className="section-link">
-              Visit insights <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </section>
-      )}
+          )}
+        </div>
+      </section>
 
-      <TestimonialsSection reviews={initialReviews} limit={4} />
+      <section id="reviews">
+        <TestimonialsSection
+          reviews={initialReviews}
+          limit={4}
+          eyebrow="Reviews"
+          heading="What buyers say about working with ANSHA"
+          subheading="Importers, workshops, and fleet buyers who source Japanese vehicles, auto parts, and machinery through Dubai."
+        />
+      </section>
 
       <section className="section-ink-band border-t border-white/10 py-10 sm:py-12">
         <div className="container-page flex min-w-0 flex-col items-center justify-between gap-4 text-center md:flex-row md:gap-5 md:text-left">
