@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, FileText, ArrowRight, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export function BlogIndexClient() {
 
   useEffect(() => {
     (async () => {
-      const [catRes, featRes, postsRes] = await Promise.all([
+      const [catRes, featRes] = await Promise.all([
         supabase.from('blog_categories').select('*').order('name'),
         supabase
           .from('blog_posts')
@@ -34,33 +34,27 @@ export function BlogIndexClient() {
           .order('published_at', { ascending: false, nullsFirst: false })
           .limit(1)
           .maybeSingle(),
-        supabase
-          .from('blog_posts')
-          .select('*, blog_categories(*)')
-          .eq('status', 'published')
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(9),
       ]);
 
       setCategories((catRes.data || []) as BlogCategory[]);
       setFeatured((featRes.data || null) as unknown as BlogPostWithCategory | null);
-      setPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
-      setLoading(false);
     })();
   }, []);
 
-  const fetchByCategory = useCallback(async (categorySlug: string, search: string) => {
+  const selectedCategoryId = useMemo(
+    () => categories.find((category) => category.slug === selectedCategory)?.id ?? null,
+    [categories, selectedCategory]
+  );
+
+  const fetchByCategory = useCallback(async (categoryId: string | null, search: string) => {
     setLoading(true);
     let query = supabase
       .from('blog_posts')
       .select('*, blog_categories(*)')
       .eq('status', 'published');
 
-    if (categorySlug !== 'all') {
-      const cat = categories.find((c) => c.slug === categorySlug);
-      if (cat) {
-        query = query.eq('category_id', cat.id);
-      }
+    if (categoryId) {
+      query = query.eq('category_id', categoryId);
     }
 
     if (search.trim()) {
@@ -73,16 +67,17 @@ export function BlogIndexClient() {
     setVisibleCount(9);
     setHasMore((data || []).length >= 9);
     setLoading(false);
-  }, [categories]);
+  }, []);
 
   useEffect(() => {
-    if (categories.length > 0 || selectedCategory === 'all') {
-      const timer = setTimeout(() => {
-        fetchByCategory(selectedCategory, searchQuery);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedCategory, searchQuery, fetchByCategory]);
+    if (selectedCategory !== 'all' && !selectedCategoryId) return;
+
+    const timer = setTimeout(() => {
+      void fetchByCategory(selectedCategoryId, searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [selectedCategory, selectedCategoryId, searchQuery, fetchByCategory]);
 
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -129,6 +124,7 @@ export function BlogIndexClient() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
             <Input
               type="search"
+              aria-label="Search articles"
               placeholder="Search articles, parts guides, export information..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -151,6 +147,8 @@ export function BlogIndexClient() {
         {categories.length > 0 && (
           <div className="mb-6 flex max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
+              type="button"
+              aria-pressed={selectedCategory === 'all'}
               onClick={() => setSelectedCategory('all')}
               className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                 selectedCategory === 'all'
@@ -163,6 +161,8 @@ export function BlogIndexClient() {
             {categories.map((cat) => (
               <button
                 key={cat.id}
+                type="button"
+                aria-pressed={selectedCategory === cat.slug}
                 onClick={() => setSelectedCategory(cat.slug)}
                 className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                   selectedCategory === cat.slug

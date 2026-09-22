@@ -101,6 +101,23 @@ export default function HomePageClient({
     let active = true;
     let rotationTimer: ReturnType<typeof setTimeout> | undefined;
 
+    const fetchLatestPosts = () =>
+      supabase
+        .from('blog_posts')
+        .select('*, blog_categories(*)')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false, nullsFirst: false })
+        .limit(3);
+
+    const refreshLatestPosts = async () => {
+      const postsRes = await fetchLatestPosts();
+      if (active && !postsRes.error) {
+        if (!postsRes.error) {
+        setLatestPosts((postsRes.data || []) as unknown as BlogPostWithCategory[]);
+      }
+      }
+    };
+
     const loadHome = async (isInitial: boolean) => {
       if (isInitial && !initialFeatured) setLoading(true);
 
@@ -131,12 +148,7 @@ export default function HomePageClient({
           .order('is_featured', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(HOME_FEATURED_MACHINERY_POOL),
-        supabase
-          .from('blog_posts')
-          .select('*, blog_categories(*)')
-          .eq('status', 'published')
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(3),
+        fetchLatestPosts(),
       ]);
       if (!active) return;
 
@@ -163,9 +175,17 @@ export default function HomePageClient({
       }, delay);
     };
 
-    // Revalidate immediately after the SSR paint so CMS changes, including
-    // updated blog images, appear without waiting for the next rotation.
-    void loadHome(!initialFeatured);
+    if (initialFeatured) {
+      // Refresh CMS-backed posts immediately without repeating every inventory query.
+      void refreshLatestPosts();
+
+      const delay = msUntilNextFeaturedRotation() + 250;
+      rotationTimer = setTimeout(() => {
+        void loadHome(false);
+      }, delay);
+    } else {
+      void loadHome(true);
+    }
 
     return () => {
       active = false;
