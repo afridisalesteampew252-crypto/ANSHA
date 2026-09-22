@@ -267,7 +267,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
           {specs.length > 0 && (
             <div className="grid grid-cols-2 gap-3">
               {specs.map((spec) => (
-                <div key={spec.label} className="flex min-w-0 items-center gap-2.5 rounded-xl border border-accent/15 bg-card p-3">
+                <div key={spec.label} className="detail-panel flex min-w-0 items-center gap-2.5 p-3">
                   <spec.icon className="h-4 w-4 shrink-0 text-accent" />
                   <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">{spec.label}</p>
@@ -313,7 +313,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
           </div>
 
           {vehicle.description && (
-            <div className="rounded-2xl border border-accent/10 bg-card p-4 sm:p-5">
+            <div className="detail-panel p-4 sm:p-5">
               <h2 className="mb-2 text-sm font-semibold">Description</h2>
               <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
                 {vehicle.description}

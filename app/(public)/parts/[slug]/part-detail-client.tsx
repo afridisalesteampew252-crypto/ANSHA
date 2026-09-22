@@ -182,7 +182,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
         {/* Image gallery */}
         <div className="space-y-4">
           <div
-            className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl border border-accent/15 bg-card shadow-sm"
+            className="group relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl border border-[#d21e1e]/30 bg-[linear-gradient(165deg,#f8f0f0_0%,#e8ecf2_100%)] shadow-sm"
             onClick={() => photoUrl && setLightboxOpen(true)}
             role={photoUrl ? 'button' : undefined}
             tabIndex={photoUrl ? 0 : undefined}
@@ -301,7 +301,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
           {/* Key info grid */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {part.oem_number && (
-              <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+              <div className="detail-panel flex items-center gap-2 p-3">
                 <Hash className="h-4 w-4 text-accent" />
                 <div>
                   <p className="text-xs text-muted-foreground">OEM Number</p>
@@ -310,7 +310,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
               </div>
             )}
             {part.part_number && (
-              <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+              <div className="detail-panel flex items-center gap-2 p-3">
                 <Tag className="h-4 w-4 text-accent" />
                 <div>
                   <p className="text-xs text-muted-foreground">Part Number</p>
@@ -319,7 +319,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
               </div>
             )}
             {part.brand && (
-              <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+              <div className="detail-panel flex items-center gap-2 p-3">
                 <Box className="h-4 w-4 text-accent" />
                 <div>
                   <p className="text-xs text-muted-foreground">Brand</p>
@@ -329,7 +329,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2 rounded-xl border border-accent/15 bg-card p-3">
+            <div className="detail-panel flex items-center gap-2 p-3">
               <ShieldCheck className="h-4 w-4 text-accent" />
               <div>
                 <p className="text-xs text-muted-foreground">Condition</p>

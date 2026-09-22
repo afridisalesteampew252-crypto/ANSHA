@@ -196,33 +196,27 @@ export default function HomePageClient({
               ANSHA
             </p>
             <h1 className="animate-fade-up-delay-1 mt-5 max-w-3xl font-display text-3xl font-bold leading-[1.1] tracking-[-0.03em] text-white sm:mt-6 sm:text-4xl lg:text-5xl">
-              Export-ready vehicles &amp; parts
+              Auto parts &amp; export vehicles
               <br className="hidden sm:block" />
               {' '}direct from Dubai.
             </h1>
             <p className="animate-fade-up-delay-2 mt-5 max-w-xl text-base font-medium leading-relaxed text-white/70 sm:mt-6 sm:text-lg">
-              Published inventory, reliable inspection, and worldwide export shipping coordinated by a single dedicated team.
+              OEM-matched parts first, plus inspected vehicles — published inventory and worldwide export shipping from one team.
             </p>
             <div className="animate-fade-up-delay-3 mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row sm:gap-4">
               <Button
                 asChild
                 className="h-12 w-full rounded-full bg-[#d21e1e] px-8 text-sm font-bold uppercase tracking-widest text-white hover:bg-[#c35252] sm:h-14 sm:w-auto"
               >
-                <Link href="/vehicles">
-                  Browse stock <ArrowRight className="h-4 w-4" />
+                <Link href="/parts">
+                  Browse parts <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button
                 asChild
                 className="glass-overlay-light h-12 w-full rounded-full px-8 text-sm font-bold uppercase tracking-widest text-white hover:bg-white/20 sm:h-14 sm:w-auto"
               >
-                <a
-                  href={`https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent('Hello ANSHA TRADING, I would like help sourcing a vehicle or automotive part.')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  WhatsApp inquiry
-                </a>
+                <Link href="/vehicles">Browse vehicles</Link>
               </Button>
             </div>
           </div>
@@ -257,15 +251,15 @@ export default function HomePageClient({
         <div className="container-page min-w-0">
           <div className="mx-auto mb-8 max-w-4xl text-center sm:mb-10">
             <h2 className="font-display text-3xl font-bold text-[#171415] sm:text-4xl">
-              Find vehicles &amp; parts
+              Find auto parts
             </h2>
             <p className="mt-3 font-medium text-[#5c6366]">
-              Search by make, model, OEM, or chassis number across published stock.
+              Search by OEM, part code, chassis, or brand across published parts stock.
             </p>
           </div>
           <form
             onSubmit={goToParts}
-            className="glass-panel mx-auto max-w-4xl rounded-2xl p-4 sm:p-6"
+            className="glass-panel mx-auto max-w-4xl rounded-2xl border border-[#d21e1e]/25 p-4 sm:p-6"
           >
             <div className="flex flex-col gap-4 sm:flex-row">
               <label className="relative block flex-1">
@@ -280,9 +274,9 @@ export default function HomePageClient({
               </label>
               <Button
                 type="submit"
-                className="h-14 shrink-0 rounded-xl bg-[#171415] px-8 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#2a2224]"
+                className="h-14 shrink-0 rounded-xl bg-[#d21e1e] px-8 text-sm font-bold uppercase tracking-wider text-white hover:bg-[#c35252]"
               >
-                Search stock
+                Search parts
               </Button>
             </div>
             <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
@@ -311,6 +305,60 @@ export default function HomePageClient({
               Published ANSHA inventory only.
             </p>
           </form>
+        </div>
+      </section>
+
+      <section className="surface-featured border-y border-accent/15 py-14 sm:py-20">
+        <div className="container-page min-w-0">
+          <div className="mb-8 flex items-end justify-between gap-4 sm:mb-10">
+            <div>
+              <span className="mb-2 block text-xs font-black uppercase tracking-[0.2em] text-[#d21e1e]">
+                Priority catalog
+              </span>
+              <h2 className="font-display text-3xl font-bold text-[#171415] sm:text-4xl">
+                Featured auto parts
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm font-medium text-[#5c6366]">
+                Published stock that rotates every 10 minutes — team-featured items stay prioritized in the pool.
+              </p>
+            </div>
+            <Link
+              href="/parts"
+              className="hidden items-center gap-1 text-sm font-bold uppercase tracking-wider text-[#d21e1e] transition hover:text-[#c35252] sm:inline-flex"
+            >
+              View parts catalog <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="min-h-[18rem] animate-pulse rounded-2xl bg-muted sm:min-h-[22rem]" />
+              ))}
+            </div>
+          ) : featured.length ? (
+            <div className="grid grid-cols-2 gap-2 sm:gap-5 lg:grid-cols-4">
+              {featured.slice(0, 8).map((part, index) => (
+                <PartCard key={part.id} part={part} priority={index < 4} deal={dealForPart(part.id)} />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-dashed border-[#d21e1e]/30 bg-[rgba(248,234,234,0.45)] p-10 text-center">
+              <Boxes className="mx-auto h-10 w-10 text-[#d21e1e]" />
+              <h3 className="mt-4 font-bold text-[#171415]">Looking for a specific part?</h3>
+              <p className="mt-1 text-sm text-[#5c6366]">Send your OEM or chassis requirements and the team will source it.</p>
+              <Button asChild className="mt-5 h-11 rounded-full bg-[#d21e1e] hover:bg-[#c35252]">
+                <Link href="/parts">Browse parts catalog</Link>
+              </Button>
+            </div>
+          )}
+          <div className="mt-8 text-center sm:hidden">
+            <Link
+              href="/parts"
+              className="inline-flex w-full items-center justify-center rounded-full bg-[#d21e1e] px-6 py-3 text-xs font-bold uppercase tracking-widest text-white"
+            >
+              View full parts catalog
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -376,7 +424,7 @@ export default function HomePageClient({
         <div className="container-page min-w-0">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">Catalog departments</span>
+              <span className="eyebrow">Parts departments</span>
               <h2>Shop by category</h2>
               <p>Move directly into the part family you need.</p>
             </div>
@@ -439,38 +487,6 @@ export default function HomePageClient({
       </section>
 
       <ExportMarketsStrip />
-
-      <section className="surface-featured border-y border-accent/15 py-10 sm:py-14">
-        <div className="container-page min-w-0">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">Ready to ship</span>
-              <h2>Featured parts</h2>
-              <p>Published stock that rotates every 10 minutes — team-featured items stay prioritized in the pool.</p>
-            </div>
-            <Link href="/parts" className="section-link">View catalog <ArrowRight className="h-4 w-4" /></Link>
-          </div>
-          {loading ? (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="min-h-[18rem] animate-pulse rounded-2xl bg-muted sm:min-h-[22rem]" />
-              ))}
-            </div>
-          ) : featured.length ? (
-            <div className="grid grid-cols-2 gap-2 sm:gap-5 lg:grid-cols-4">
-              {featured.slice(0, 8).map((part) => (
-                <PartCard key={part.id} part={part} deal={dealForPart(part.id)} />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-3xl border border-dashed border-border bg-card p-10 text-center">
-              <Boxes className="mx-auto h-10 w-10 text-muted-foreground/30" />
-              <h3 className="mt-4 font-bold">Inventory is being prepared</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Send your requirements and the team will source the right part.</p>
-            </div>
-          )}
-        </div>
-      </section>
 
       <section className="surface-cool border-y border-accent/10 py-14 sm:py-20">
         <div className="container-page min-w-0">

@@ -25,11 +25,11 @@ import { useCustomerLists } from '@/hooks/use-customer-lists';
 import { HeaderMarketStrip } from '@/components/public/header-market-strip';
 import { InstallAppButton } from '@/components/pwa/install-prompt';
 
-/** Primary nav — About + Insights live in the footer per design system. */
+/** Primary nav — Parts first (core catalog). About + Insights live in the footer. */
 const navLinks = [
+  { href: '/parts', label: 'Parts', priority: true },
   { href: '/vehicles', label: 'Vehicles' },
   { href: '/machinery', label: 'Machinery' },
-  { href: '/parts', label: 'Parts' },
   { href: '/#export-markets', label: 'Markets' },
   { href: '/offers', label: 'Deals', accent: true },
   { href: '/contact', label: 'Contact' },
@@ -81,7 +81,7 @@ export function SiteHeader() {
     const query = searchQuery.trim();
     if (!query) return;
     setMobileOpen(false);
-    router.push(`/vehicles?q=${encodeURIComponent(query)}`);
+    router.push(`/parts?q=${encodeURIComponent(query)}`);
   };
 
   const isActive = (href: string) => {
@@ -122,9 +122,11 @@ export function SiteHeader() {
                     'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold transition-colors xl:h-10 xl:px-4 xl:text-sm',
                     active
                       ? 'border-[#d21e1e] bg-[#d21e1e] text-white shadow-[0_6px_16px_-8px_rgba(210,30,30,0.55)]'
-                      : link.accent
-                        ? 'border-[#f0d0d0]/80 bg-[rgba(248,234,234,0.72)] text-[#c35252] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md hover:border-[#d21e1e]/40 hover:bg-[#f3dede]'
-                        : 'glass-pill text-[#171415] hover:border-white/70 hover:bg-white/70'
+                      : link.priority
+                        ? 'border-[#d21e1e]/45 bg-[rgba(248,234,234,0.85)] text-[#d21e1e] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] backdrop-blur-md hover:border-[#d21e1e] hover:bg-[#f3dede]'
+                        : link.accent
+                          ? 'border-[#f0d0d0]/80 bg-[rgba(248,234,234,0.72)] text-[#c35252] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md hover:border-[#d21e1e]/40 hover:bg-[#f3dede]'
+                          : 'glass-pill text-[#171415] hover:border-white/70 hover:bg-white/70'
                   )}
                 >
                   {link.accent ? <Tag className="h-3.5 w-3.5 shrink-0" /> : null}
@@ -139,11 +141,11 @@ export function SiteHeader() {
               <Search className="pointer-events-none absolute left-3.5 h-4 w-4 shrink-0 text-[#828789]" aria-hidden />
               <Input
                 type="search"
-                placeholder="Search"
+                placeholder="Search parts"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 className="h-full min-w-0 rounded-full border-0 bg-transparent py-0 pl-10 pr-4 text-sm font-medium leading-none text-[#171415] placeholder:text-[#828789] focus-visible:ring-0 focus-visible:ring-offset-0"
-                aria-label="Search catalog"
+                aria-label="Search auto parts"
               />
             </div>
           </form>
@@ -233,9 +235,11 @@ export function SiteHeader() {
                         'flex min-h-12 items-center justify-between rounded-full border px-4 py-3 text-sm font-semibold',
                         active
                           ? 'border-[#d21e1e] bg-[#d21e1e] text-white'
-                          : link.accent
-                            ? 'border-[#f0d0d0]/80 bg-[rgba(248,234,234,0.72)] text-[#c35252] backdrop-blur-md'
-                            : 'glass-pill text-[#171415] hover:bg-white/70'
+                          : link.priority
+                            ? 'border-[#d21e1e]/45 bg-[rgba(248,234,234,0.85)] text-[#d21e1e]'
+                            : link.accent
+                              ? 'border-[#f0d0d0]/80 bg-[rgba(248,234,234,0.72)] text-[#c35252] backdrop-blur-md'
+                              : 'glass-pill text-[#171415] hover:bg-white/70'
                       )}
                     >
                       <span className="inline-flex items-center gap-2">
@@ -265,10 +269,10 @@ export function SiteHeader() {
               </nav>
               <div className="grid grid-cols-2 gap-2">
                 <Button asChild className="h-12 bg-[#d21e1e] text-white hover:bg-[#c35252]">
-                  <Link href="/vehicles">Browse stock</Link>
+                  <Link href="/parts">Browse parts</Link>
                 </Button>
                 <Button asChild variant="outline" className="h-12 border-[#171415] text-[#171415]">
-                  <Link href="/contact">Get a quote</Link>
+                  <Link href="/vehicles">Browse vehicles</Link>
                 </Button>
               </div>
               <InstallAppButton className="h-12 w-full justify-center rounded-xl" size="default" label="Download / Install app" />

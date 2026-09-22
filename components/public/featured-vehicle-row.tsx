@@ -80,13 +80,11 @@ export function FeaturedVehicleRow({
         ) : null}
       </Link>
 
-      <div className="flex flex-1 flex-col justify-between bg-white/35 p-5 backdrop-blur-[2px] sm:w-[55%] sm:p-6">
+      <div className="inventory-card-body flex flex-1 flex-col justify-between p-5 sm:w-[55%] sm:p-6">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <StockOriginBadge origin={vehicle.stock_origin} compact />
-            <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-              Available
-            </span>
+            <span className="meta-chip rounded-md">Available</span>
             {discountLabel ? (
               <span className="rounded bg-[#171415] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                 {discountLabel}
@@ -102,7 +100,8 @@ export function FeaturedVehicleRow({
           <p className="mt-3 text-sm font-extrabold tracking-tight text-[#171415]">{priceLabel}</p>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 border-t border-[#cdbfc1]/40 pt-4">
+        <div className="inventory-card-footer mt-4 -mx-5 px-5 pt-4 sm:-mx-6 sm:px-6">
+          <div className="flex items-center gap-2">
           <a
             href={waHref}
             target="_blank"
@@ -119,6 +118,7 @@ export function FeaturedVehicleRow({
           >
             Inquire
           </Link>
+          </div>
         </div>
       </div>
     </article>

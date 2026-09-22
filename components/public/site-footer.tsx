@@ -51,7 +51,7 @@ export function SiteFooter() {
               Browse
             </h3>
             <ul className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm sm:block sm:space-y-2">
-              <li><Link href="/parts" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">All Parts</Link></li>
+              <li><Link href="/parts" className="inline-flex min-h-9 items-center font-semibold text-white hover:text-accent">Auto Parts</Link></li>
               <li><Link href="/vehicles" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Vehicles</Link></li>
               <li><Link href="/machinery" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Machinery &amp; trucks</Link></li>
               <li><Link href="/#export-markets" className="inline-flex min-h-9 items-center text-white/70 hover:text-accent">Export markets</Link></li>

@@ -54,7 +54,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
   return (
     <article className="inventory-card group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl text-card-foreground sm:rounded-[1.35rem]">
       <div className="relative min-w-0">
-        <Link href={`/parts/${part.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#f0f2f5]">
+        <Link href={`/parts/${part.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[linear-gradient(165deg,#f3e8e8_0%,#e4e8ed_100%)]">
           {photoUrl ? (
             <CatalogImage
               src={photoUrl}
@@ -93,19 +93,19 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4">
+      <div className="inventory-card-body flex min-w-0 flex-1 flex-col p-3 sm:p-4">
         <div className="mb-2 flex min-w-0 flex-wrap items-center gap-1.5">
           {part.is_featured ? (
             <Badge className="h-6 rounded-full border-0 bg-[#d21e1e] px-2.5 text-[10px] font-bold text-white">
               Featured
             </Badge>
           ) : (
-            <Badge className="h-6 rounded-full border-0 bg-[#e8ecf0] px-2.5 text-[10px] font-bold capitalize text-[#171415]">
+            <span className="meta-chip h-6 capitalize">
               {conditionLabels[part.condition] || part.condition}
-            </Badge>
+            </span>
           )}
           {part.stock_status !== 'sold' && part.quantity > 0 && (
-            <Badge className="h-6 gap-1 rounded-full border-0 bg-[#171415] px-2.5 text-[10px] font-bold text-white">
+            <Badge className="h-6 gap-1 rounded-full border border-[#d21e1e]/35 bg-[#171415] px-2.5 text-[10px] font-bold text-white">
               <PackageCheck className="h-3 w-3 text-[#d21e1e]" />
               Stock
             </Badge>
@@ -138,7 +138,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
           </p>
         )}
 
-        <div className="mt-auto space-y-3 border-t border-[#e4e8ed] pt-3">
+        <div className="inventory-card-footer mt-auto space-y-3 pt-3 -mx-3 px-3 sm:-mx-4 sm:px-4 sm:pb-1">
           <div className="min-w-0">
             <div className="mb-0.5 flex flex-wrap items-center gap-1">
               {discountLabel && part.stock_status !== 'sold' ? (
@@ -160,7 +160,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
               </span>
             ) : null}
           </div>
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2 pb-0.5">
             <a
               href={waHref}
               target="_blank"

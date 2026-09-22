@@ -8,7 +8,7 @@ import { siteConfig } from '@/lib/site-config';
 
 const items = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/parts', label: 'Parts', icon: Wrench },
+  { href: '/parts', label: 'Parts', icon: Wrench, priority: true },
   { href: '/vehicles', label: 'Vehicles', icon: CarFront },
   { href: '/offers', label: 'Deals', icon: Tag },
 ];
@@ -36,11 +36,11 @@ export function MobileBottomNav() {
               href={item.href}
               className={cn(
                 'flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold transition-colors',
-                active ? 'text-foreground' : 'text-muted-foreground'
+                active ? 'text-[#d21e1e]' : item.priority ? 'text-[#c35252]' : 'text-muted-foreground'
               )}
             >
-              <item.icon className={cn('h-5 w-5 shrink-0', active && 'text-accent')} />
-              <span className="max-w-full truncate">{item.label}</span>
+              <item.icon className={cn('h-5 w-5 shrink-0', (active || item.priority) && 'text-accent')} />
+              <span className={cn('max-w-full truncate', item.priority && !active && 'font-bold')}>{item.label}</span>
             </Link>
           );
         })}

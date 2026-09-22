@@ -94,30 +94,28 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-5">
+      <div className="inventory-card-body flex min-w-0 flex-1 flex-col p-3 sm:p-5">
         <div className="mb-2 flex min-w-0 flex-wrap items-center gap-1.5">
           {vehicle.stock_pool === 'auction_third_party' ? (
-            <Badge variant="outline" className="h-6 w-fit rounded-full border-violet-500/40 px-2.5 text-[10px] font-bold text-violet-800 dark:text-violet-200">
+            <Badge variant="outline" className="h-6 w-fit rounded-full border-violet-500/40 bg-violet-50/80 px-2.5 text-[10px] font-bold text-violet-800 dark:text-violet-200">
               Auction
             </Badge>
           ) : null}
           {vehicle.stock_status !== 'sold' ? (
-            <Badge className="h-6 w-fit rounded-full border-0 bg-[#e8ecf0] px-2.5 text-[10px] font-bold text-[#171415]">
-              Available
-            </Badge>
+            <span className="meta-chip h-6">Available</span>
           ) : null}
           {vehicle.is_featured && vehicle.stock_status !== 'sold' ? (
-            <Badge className="h-6 w-fit rounded-full border-0 bg-[#d21e1e] px-2.5 text-[10px] font-bold text-white">
+            <Badge className="h-6 w-fit rounded-full border border-[#d21e1e]/40 bg-[#d21e1e] px-2.5 text-[10px] font-bold text-white">
               Featured
             </Badge>
           ) : null}
           {discountLabel && vehicle.stock_status !== 'sold' ? (
-            <Badge className="h-6 w-fit rounded-full border-0 bg-[#171415] px-2.5 text-[10px] font-bold text-white">
+            <Badge className="h-6 w-fit rounded-full border border-[#171415]/20 bg-[#171415] px-2.5 text-[10px] font-bold text-white">
               {discountLabel}
             </Badge>
           ) : null}
           {deal && !discountLabel && dealPrice != null && vehicle.stock_status !== 'sold' ? (
-            <Badge className="h-6 w-fit rounded-full border-0 bg-[#171415] px-2.5 text-[10px] font-bold text-white">
+            <Badge className="h-6 w-fit rounded-full border border-[#171415]/20 bg-[#171415] px-2.5 text-[10px] font-bold text-white">
               Deal
             </Badge>
           ) : null}
@@ -137,21 +135,21 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
         </Link>
         <div className="mt-2 flex flex-wrap gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:mt-3 sm:gap-x-3 sm:gap-y-1.5 sm:text-[11px]">
           {vehicle.year ? (
-            <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.year}</span>
+            <span className="meta-chip gap-1 py-0.5"><Calendar className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.year}</span>
           ) : null}
           {vehicle.fuel_type ? (
-            <span className="inline-flex items-center gap-1"><Fuel className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.fuel_type}</span>
+            <span className="meta-chip gap-1 py-0.5"><Fuel className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.fuel_type}</span>
           ) : null}
           {vehicle.transmission ? (
-            <span className="inline-flex items-center gap-1"><Car className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.transmission}</span>
+            <span className="meta-chip gap-1 py-0.5"><Car className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.transmission}</span>
           ) : null}
           {vehicle.operating_hours != null ? (
-            <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.operating_hours.toLocaleString()} hrs</span>
+            <span className="meta-chip gap-1 py-0.5"><Gauge className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.operating_hours.toLocaleString()} hrs</span>
           ) : vehicle.mileage != null ? (
-            <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.mileage.toLocaleString()} km</span>
+            <span className="meta-chip gap-1 py-0.5"><Gauge className="h-3.5 w-3.5 text-[#d21e1e]" />{vehicle.mileage.toLocaleString()} km</span>
           ) : null}
         </div>
-        <div className="mt-auto space-y-3 border-t border-[#e4e8ed] pt-3 sm:pt-4">
+        <div className="inventory-card-footer mt-auto space-y-3 -mx-3 px-3 pt-3 pb-0 sm:-mx-5 sm:px-5 sm:pt-4">
           <div className="min-w-0">
             <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-[#828789]">
               {dealPrice != null ? 'Deal price' : listPrice != null ? 'Export price' : 'Price'}
@@ -163,7 +161,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               </span>
             ) : null}
           </div>
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2 pb-3 sm:pb-0">
             <a
               href={waHref}
               target="_blank"
@@ -175,7 +173,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
             </a>
             <Link
               href={`/contact?vehicle=${encodeURIComponent(vehicle.slug)}`}
-              className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#d21e1e] px-3 text-xs font-bold text-white transition hover:bg-[#c35252] sm:h-11 sm:text-[13px]"
+              className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-[#d21e1e]/30 bg-[#d21e1e] px-3 text-xs font-bold text-white shadow-[0_6px_16px_-8px_rgba(210,30,30,0.45)] transition hover:bg-[#c35252] sm:h-11 sm:text-[13px]"
             >
               Inquire <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
             </Link>
