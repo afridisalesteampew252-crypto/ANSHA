@@ -57,6 +57,13 @@ function PartsCatalog() {
     setPage(Math.max(1, Number(searchParams.get('page')) || 1));
   }, [searchParams]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash !== '#catalog-search') return;
+    const input = document.querySelector<HTMLInputElement>('#catalog-search input');
+    input?.focus({ preventScroll: false });
+  }, []);
+
   const fetchParts = useCallback(async () => {
     setLoading(true);
     let request = supabase
@@ -159,10 +166,10 @@ function PartsCatalog() {
 
       <div className="surface-mist border-t border-accent/10">
       <div className="container-page py-7 sm:py-10">
-        <form onSubmit={(event) => { event.preventDefault(); setParam('q', query); }} className="relative mb-5">
+        <form id="catalog-search" onSubmit={(event) => { event.preventDefault(); setParam('q', query); }} className="relative mb-5 scroll-mt-28">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search product, OEM number or part code" className="h-14 rounded-2xl border-accent/15 bg-card pl-12 pr-28 text-base shadow-sm" />
-          <Button type="submit" variant="accent" className="absolute right-1.5 top-1.5 h-11 rounded-xl px-5">Search</Button>
+          <Button type="submit" variant="accent" className="absolute right-1.5 top-1.5 h-11 min-w-[5.5rem] rounded-xl px-5">Search</Button>
         </form>
 
         {activeFilters.length > 0 && <div className="mb-5 flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-muted-foreground">Active:</span>{activeFilters.map((filter) => <Badge key={filter.key} variant="secondary" className="gap-1.5 rounded-full px-3 py-1.5">{filter.label}<button onClick={() => setParam(filter.key, 'all')} aria-label={`Remove ${filter.label} filter`}><X className="h-3 w-3" /></button></Badge>)}</div>}
@@ -178,15 +185,29 @@ function PartsCatalog() {
           <main className="min-w-0 flex-1">
             <div className="mb-5 flex items-center justify-between gap-3">
               <Sheet>
-                <SheetTrigger asChild><Button variant="outline" className="rounded-xl lg:hidden"><SlidersHorizontal className="h-4 w-4" />Filters{activeFilters.length > 0 && <Badge className="ml-1 h-5 min-w-5 rounded-full bg-accent px-1.5">{activeFilters.length}</Badge>}</Button></SheetTrigger>
-                <SheetContent side="left" className="w-[88vw] max-w-sm overflow-y-auto">
-                  <SheetHeader><SheetTitle>Filter inventory</SheetTitle></SheetHeader>
-                  <div className="mt-7">{filterControls}</div>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="h-11 min-h-11 rounded-xl lg:hidden">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Filters
+                    {activeFilters.length > 0 && (
+                      <Badge className="ml-1 h-5 min-w-5 rounded-full bg-accent px-1.5">{activeFilters.length}</Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="bottom"
+                  className="flex max-h-[85dvh] flex-col overflow-hidden rounded-t-3xl px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] pt-3 lg:hidden"
+                >
+                  <div className="mx-auto mb-3 h-1.5 w-12 shrink-0 rounded-full bg-border" aria-hidden />
+                  <SheetHeader className="shrink-0 text-left">
+                    <SheetTitle>Filter inventory</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">{filterControls}</div>
                 </SheetContent>
               </Sheet>
               <p className="hidden text-sm text-muted-foreground sm:block">{loading ? 'Loading…' : `Showing ${parts.length} of ${totalCount}`}</p>
               <Select value={sortBy} onValueChange={(value) => setParam('sort', value)}>
-                <SelectTrigger className="ml-auto h-10 w-[170px] rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="ml-auto h-11 w-[170px] rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>{sortOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
