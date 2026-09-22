@@ -44,6 +44,7 @@ import {
   Upload,
   UserCog,
   UserPlus,
+  UserX,
   Users,
   WalletCards,
   type LucideIcon,
@@ -109,6 +110,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: Users,
     items: [
       { href: '/admin/customers', label: 'Customers & portal', icon: Users },
+      { href: '/admin/account-deletions', label: 'Account deletions', icon: UserX },
       { href: '/admin/reservations', label: 'Reserve stock', icon: BookmarkPlus },
       { href: '/admin/invoices', label: 'Invoices', icon: ReceiptText },
       { href: '/admin/commissions', label: 'Commissions', icon: Banknote },
