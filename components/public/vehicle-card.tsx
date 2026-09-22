@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowUpRight, Calendar, Car, Fuel, Gauge, MessageCircle } from 'lucide-react';
+import { ArrowUpRight, Calendar, Car, Fuel, Gauge, Images, MessageCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
@@ -77,6 +77,12 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
           {vehicle.stock_status === 'sold' ? (
             <span className="absolute inset-0 grid place-items-center bg-[#101114]/40 text-2xl font-black uppercase tracking-[0.2em] text-white sm:text-3xl">
               Sold
+            </span>
+          ) : null}
+          {(vehicle.vehicle_photos?.length || 0) > 0 ? (
+            <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-[#101114]/85 px-1.5 py-0.5 text-[9px] font-semibold text-white backdrop-blur sm:bottom-2.5 sm:right-2.5 sm:px-2 sm:py-1 sm:text-[10px]">
+              <Images className="h-3 w-3" />
+              Photos: {vehicle.vehicle_photos?.length}
             </span>
           ) : null}
         </Link>
@@ -157,14 +163,14 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#25D366] text-white transition hover:brightness-110 sm:h-11 sm:w-11"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-white transition hover:brightness-110"
               aria-label={`Ask about ${vehicle.title} on WhatsApp`}
             >
               <MessageCircle className="h-4 w-4" />
             </a>
             <Link
               href={`/vehicles/${vehicle.slug}`}
-              className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-accent px-2.5 text-[11px] font-bold text-accent-foreground transition hover:bg-accent/90 sm:h-11 sm:flex-none sm:gap-1.5 sm:px-3.5 sm:text-xs"
+              className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-accent px-2.5 text-[11px] font-bold text-accent-foreground transition hover:bg-accent/90 sm:flex-none sm:gap-1.5 sm:px-3.5 sm:text-xs"
             >
               View <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
             </Link>

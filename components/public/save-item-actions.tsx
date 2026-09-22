@@ -19,7 +19,8 @@ export function SaveItemActions({ item, className, size = 'sm', showLabels = fal
   const { cartHas, favoriteHas, addToCart, toggleFavorite } = useCustomerLists();
   const inCart = cartHas(item.id, item.kind);
   const saved = favoriteHas(item.id, item.kind);
-  const dim = size === 'md' ? 'h-11 w-11' : size === 'xs' ? 'h-9 w-9' : 'h-9 w-9';
+  // xs stays visually compact on dense cards but keeps a 44px tap target via min size.
+  const dim = size === 'md' ? 'h-11 w-11' : size === 'xs' ? 'h-11 w-11 sm:h-9 sm:w-9' : 'h-11 w-11';
   const icon = size === 'md' ? 'h-[18px] w-[18px]' : size === 'xs' ? 'h-3.5 w-3.5' : 'h-4 w-4';
 
   const onFavorite = (event: React.MouseEvent) => {
