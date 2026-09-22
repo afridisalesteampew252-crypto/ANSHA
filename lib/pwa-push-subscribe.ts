@@ -2,6 +2,14 @@ import { supabase } from '@/lib/supabase/client';
 
 const VAPID_FINGERPRINT_KEY = 'ansha-vapid-public';
 
+export type PushTopics = {
+  insights: boolean;
+  deals: boolean;
+  support: boolean;
+};
+
+const DEFAULT_TOPICS: PushTopics = { insights: true, deals: true, support: false };
+
 export function isWebPushConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim());
 }
@@ -21,28 +29,27 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export async function savePushSubscription(
   subscription: PushSubscription,
-  topics: { insights: boolean; deals: boolean } = { insights: true, deals: true }
+  topics: PushTopics = DEFAULT_TOPICS
 ) {
   const json = subscription.toJSON();
   if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
     throw new Error('Browser did not return a complete push subscription.');
   }
-  await supabase.from('push_subscriptions').delete().eq('endpoint', json.endpoint);
-  const { error } = await supabase.from('push_subscriptions').insert({
-    endpoint: json.endpoint,
-    p256dh: json.keys.p256dh,
-    auth: json.keys.auth,
-    notify_insights: topics.insights,
-    notify_deals: topics.deals,
-    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 300) : null,
+
+  const { error } = await supabase.rpc('register_push_subscription', {
+    p_endpoint: json.endpoint,
+    p_p256dh: json.keys.p256dh,
+    p_auth: json.keys.auth,
+    p_notify_insights: topics.insights,
+    p_notify_deals: topics.deals,
+    p_notify_support: topics.support,
+    p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 300) : null,
   });
   if (error) throw error;
 }
 
-/** Subscribe this browser to Web Push and persist to `push_subscriptions`. No-op if VAPID public key is unset. */
-export async function ensurePushSubscription(
-  topics: { insights: boolean; deals: boolean } = { insights: true, deals: true }
-) {
+/** Subscribe this browser to Web Push and persist a user-linked subscription when signed in. */
+export async function ensurePushSubscription(topics: PushTopics = DEFAULT_TOPICS) {
   const vapidPublic = getVapidPublicKey();
   if (!vapidPublic) {
     return { subscribed: false as const, reason: 'missing_vapid' as const };
@@ -66,7 +73,7 @@ export async function ensurePushSubscription(
     try {
       localStorage.setItem(VAPID_FINGERPRINT_KEY, vapidPublic);
     } catch {
-      // ignore quota / private mode
+      // Private browsing can deny local storage while push still works.
     }
   }
 
