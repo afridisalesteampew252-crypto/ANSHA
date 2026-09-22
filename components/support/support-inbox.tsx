@@ -282,7 +282,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
         {mode === 'customer' ? (
           <div className="flex items-center gap-2 text-sm">
             <Circle className={cn('h-3 w-3 fill-current', teamOnline ? 'text-emerald-500' : 'text-muted-foreground')} />
-            <span>{teamOnline ? 'Team online' : teamLastSeen ? `Last active ${formatDistanceToNow(new Date(teamLastSeen), { addSuffix: true })}` : 'Team offline — leave a message'}</span>
+            <Badge variant="outline" className={cn('gap-1.5 rounded-full px-3 py-1', teamOnline ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-secondary/70')}><span>{teamOnline ? 'Team online' : teamLastSeen ? `Last active ${formatDistanceToNow(new Date(teamLastSeen), { addSuffix: true })}` : 'Team offline — leave a message'}</span></Badge>
           </div>
         ) : (
           <Button type="button" variant="outline" size="sm" onClick={() => void loadThreads()}>
@@ -291,18 +291,18 @@ export function SupportInbox({ mode }: { mode: Mode }) {
         )}
       </div>
 
-      {mode === 'customer' ? <NotificationSettings /> : null}
+      <NotificationSettings compact={mode === 'agent'} />
 
-      <div className={cn('grid min-h-[560px] overflow-hidden rounded-xl border bg-background', mode === 'agent' && 'lg:grid-cols-[300px_1fr]')}>
+      <div className={cn('grid min-h-[560px] overflow-hidden rounded-3xl border border-white/50 bg-background/75 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10', mode === 'agent' && 'lg:grid-cols-[300px_1fr]')}>
         {mode === 'agent' ? (
           <aside className="border-b lg:border-b-0 lg:border-r">
-            <div className="border-b p-3 text-sm font-semibold">Customers ({threads.length})</div>
+            <div className="border-b border-white/40 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-violet-500/10 p-3 text-sm font-semibold dark:border-white/10">Customers ({threads.length})</div>
             <div className="max-h-[240px] overflow-y-auto lg:max-h-[620px]">
               {threads.length === 0 ? <p className="p-5 text-sm text-muted-foreground">No support conversations yet.</p> : threads.map((thread) => {
                 const customer = customers[thread.customer_profile_id];
                 return (
                   <button key={thread.id} type="button" onClick={() => setSelectedId(thread.id)}
-                    className={cn('w-full border-b p-3 text-left hover:bg-secondary/50', selectedId === thread.id && 'bg-accent/10')}>
+                    className={cn('w-full border-b border-white/40 p-3 text-left transition hover:bg-white/60 dark:border-white/10 dark:hover:bg-white/5', selectedId === thread.id && 'bg-gradient-to-r from-cyan-500/15 to-blue-500/10')}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-medium">{customer?.full_name || customer?.email || 'Customer'}</span>
                       <Badge variant={thread.status === 'open' ? 'default' : 'outline'} className="text-[10px] capitalize">{thread.status}</Badge>
@@ -318,7 +318,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
         ) : null}
 
         <section className="flex min-h-[560px] min-w-0 flex-col">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/40 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-transparent p-3 backdrop-blur-xl dark:border-white/10">
             <div>
               <p className="font-semibold">{title}</p>
               {unread ? <p className="text-xs text-accent">{unread} unread</p> : <p className="text-xs text-muted-foreground">Messages stay inside your secure account</p>}
@@ -333,7 +333,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
             ) : null}
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto bg-secondary/20 p-3 sm:p-5">
+          <div className="flex-1 space-y-3 overflow-y-auto bg-gradient-to-br from-slate-50/80 via-cyan-50/40 to-blue-50/50 p-3 dark:from-slate-950/70 dark:via-cyan-950/20 dark:to-blue-950/20 sm:p-5">
             {messages.length === 0 ? (
               <div className="mx-auto max-w-md py-20 text-center">
                 <UserRound className="mx-auto h-10 w-10 text-muted-foreground/40" />
@@ -344,7 +344,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
               const mine = message.sender_kind === mode;
               return (
                 <div key={message.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
-                  <div className={cn('max-w-[88%] rounded-2xl px-3 py-2 sm:max-w-[72%]', mine ? 'bg-accent text-accent-foreground' : 'border bg-background')}>
+                  <div className={cn('max-w-[88%] rounded-2xl px-3 py-2 sm:max-w-[72%]', mine ? 'bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-lg shadow-cyan-900/10' : 'border border-white/70 bg-white/80 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-slate-900/80')}>
                     {message.body ? <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p> : null}
                     {(attachments[message.id] || []).map((file) => (
                       <a key={file.id} href={file.url} target="_blank" rel="noreferrer"
@@ -368,7 +368,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
           </div>
 
           {(mode === 'customer' || selected) ? (
-            <form onSubmit={(event) => void send(event)} className="border-t p-3">
+            <form onSubmit={(event) => void send(event)} className="border-t border-white/40 bg-background/70 p-3 backdrop-blur-xl dark:border-white/10">
               {files.length ? (
                 <div className="mb-2 flex flex-wrap gap-2">
                   {files.map((file, index) => (
