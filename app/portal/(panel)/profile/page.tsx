@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarDays, FileText, Headphones, Loader2, Mail, MapPin, Phone, Settings, ShieldCheck, UserRound, WalletCards } from 'lucide-react';
+import { BookmarkCheck, CalendarDays, FileText, Headphones, Loader2, Mail, MapPin, Phone, Settings, ShieldCheck, UserRound, WalletCards } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -126,9 +126,12 @@ export default function PortalProfilePage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Button asChild variant="outline" className="h-auto justify-start gap-3 p-4">
           <Link href="/portal/account"><WalletCards className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">Statement</strong><small className="text-muted-foreground">SOA & remittances</small></span></Link>
+        </Button>
+        <Button asChild variant="outline" className="h-auto justify-start gap-3 p-4">
+          <Link href="/portal/reservations"><BookmarkCheck className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">Reservations</strong><small className="text-muted-foreground">Reserved stock</small></span></Link>
         </Button>
         <Button asChild variant="outline" className="h-auto justify-start gap-3 p-4">
           <Link href="/portal/invoices"><FileText className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">Invoices</strong><small className="text-muted-foreground">Documents & balances</small></span></Link>
