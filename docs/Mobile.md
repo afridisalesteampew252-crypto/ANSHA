@@ -87,3 +87,14 @@ Windows can fully support the Android path (Studio + Gradle). iOS requires a Mac
 - Not a second Supabase project or API
 
 Public catalog, portal, and staff ERP stay on the same Next.js + Supabase deployment. See `docs/Architecture.md` and `docs/Deployment.md`.
+
+
+## Google Play account deletion
+
+The wrapped site supports account creation and deletion on the same production origin:
+
+- In app: Portal → Settings → Request account deletion.
+- External web resource: `https://www.anshatradingco.com/account-deletion`.
+- Admin review is limited to ownership/fraud checks. Approval deletes the Auth login and anonymizes personal customer fields.
+- Only records required for legal, tax, fraud-prevention, or audit obligations may remain, in anonymized form.
+- Enter the external URL in the Play Console Data safety account-deletion field before release.

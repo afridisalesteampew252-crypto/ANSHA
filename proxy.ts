@@ -149,7 +149,7 @@ export async function proxy(request: NextRequest) {
       return redirectWithSession(dashboardUrl);
     }
 
-    if (profile.role !== 'admin' && pathname.startsWith('/admin/audit-log')) {
+    if (profile.role !== 'admin' && (pathname.startsWith('/admin/audit-log') || pathname.startsWith('/admin/account-deletions'))) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/admin/dashboard';
       dashboardUrl.search = '';
