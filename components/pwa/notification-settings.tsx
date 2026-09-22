@@ -1,0 +1,100 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Bell, BellCheck, BellOff, Smartphone } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { ensurePushSubscription, isWebPushConfigured } from '@/lib/pwa-push-subscribe';
+
+type State = 'checking' | 'enabled' | 'available' | 'blocked' | 'unsupported' | 'install';
+
+function isIos() {
+  return typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
+function isStandalone() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches ||
+    ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+}
+
+export function NotificationSettings({ compact = false }: { compact?: boolean }) {
+  const [state, setState] = useState<State>('checking');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isWebPushConfigured() || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setState(isIos() && !isStandalone() ? 'install' : 'unsupported');
+      return;
+    }
+    if (isIos() && !isStandalone()) {
+      setState('install');
+      return;
+    }
+    if (Notification.permission === 'denied') setState('blocked');
+    else if (Notification.permission === 'granted') {
+      setState('enabled');
+      void ensurePushSubscription({ insights: true, deals: true, support: true }).catch(() => setState('available'));
+    } else setState('available');
+  }, []);
+
+  const enable = async () => {
+    setBusy(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setState('blocked');
+        toast.error('Notifications are blocked. Enable them in your browser settings.');
+        return;
+      }
+      const result = await ensurePushSubscription({ insights: true, deals: true, support: true });
+      if (!result.subscribed) throw new Error('Web Push is not available on this device.');
+      setState('enabled');
+      toast.success('Support reply notifications are enabled on this device.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not enable notifications.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (state === 'checking') return null;
+  if (compact && state === 'enabled') {
+    return <span className="inline-flex items-center gap-1 text-xs text-emerald-600"><BellCheck className="h-3.5 w-3.5" /> Notifications on</span>;
+  }
+
+  return (
+    <div className="rounded-xl border bg-secondary/25 p-3 text-sm">
+      <div className="flex items-start gap-3">
+        {state === 'enabled' ? <BellCheck className="mt-0.5 h-5 w-5 text-emerald-600" /> :
+          state === 'blocked' ? <BellOff className="mt-0.5 h-5 w-5 text-destructive" /> :
+          state === 'install' ? <Smartphone className="mt-0.5 h-5 w-5 text-accent" /> :
+          <Bell className="mt-0.5 h-5 w-5 text-accent" />}
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold">
+            {state === 'enabled' ? 'Reply notifications enabled' :
+              state === 'blocked' ? 'Notifications blocked' :
+              state === 'install' ? 'Install the app for notifications' :
+              state === 'unsupported' ? 'Notifications unavailable' : 'Get support replies on this device'}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {state === 'install'
+              ? 'On iPhone or iPad, use Share → Add to Home Screen, open ANSHA from the new icon, then enable notifications.'
+              : state === 'blocked'
+                ? 'Open this site in browser settings and allow notifications, then return here.'
+                : state === 'unsupported'
+                  ? 'Use a current mobile browser with Web Push support.'
+                  : state === 'enabled'
+                    ? 'You can leave the portal and still receive new team replies.'
+                    : 'Enable once; the browser will ask for permission.'}
+          </p>
+          {state === 'available' ? (
+            <Button type="button" size="sm" className="mt-2" disabled={busy} onClick={() => void enable()}>
+              {busy ? 'Enabling…' : 'Enable notifications'}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
