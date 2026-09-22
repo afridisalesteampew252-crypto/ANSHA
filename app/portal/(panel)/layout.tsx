@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookmarkCheck, FileText, LogOut, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
+import { BookmarkCheck, FileText, LogOut, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,8 @@ const nav = [
   { href: '/portal/catalog', label: 'Stock', icon: PackageSearch },
   { href: '/portal/reservations', label: 'Reserved', icon: BookmarkCheck },
   { href: '/portal/invoices', label: 'Invoices', icon: ReceiptText },
-  { href: '/portal/profile', label: 'Account', icon: UserRound },
+  { href: '/portal/account', label: 'Account', icon: UserRound },
+  { href: '/portal/support', label: 'Support', icon: MessageCircle },
   { href: '/portal/settings', label: 'Settings', icon: Settings },
 ] as const;
 
