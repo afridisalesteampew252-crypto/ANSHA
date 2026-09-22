@@ -4,24 +4,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CarFront, Home, MessageCircle, UserRound, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { siteConfig } from '@/lib/site-config';
 
 const items = [
   { href: '/', label: 'Home', icon: Home, match: 'home' },
   { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock' },
   { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts' },
-  { href: '/portal/profile', label: 'Account', icon: UserRound, match: 'portal' },
+  { href: '/portal/account', label: 'Account', icon: UserRound, match: 'portal' },
+  { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support' },
 ] as const;
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const whatsappUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent('Hello ANSHA TRADING, I need help finding an automotive part or vehicle.')}`;
-
   const isActive = (match: (typeof items)[number]['match']) => {
     if (match === 'home') return pathname === '/';
     if (match === 'stock') return pathname.startsWith('/vehicles') || pathname.startsWith('/machinery');
     if (match === 'parts') return pathname.startsWith('/parts') || pathname.startsWith('/categories');
-    return pathname === '/portal' || pathname.startsWith('/portal/');
+    if (match === 'support') return pathname.startsWith('/portal/support');
+    return pathname.startsWith('/portal/account') || pathname.startsWith('/portal/profile') || pathname.startsWith('/portal/settings');
   };
 
   return (
@@ -47,18 +46,6 @@ export function MobileBottomNav() {
             </Link>
           );
         })}
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-[10px] font-semibold text-[#199c4b]"
-          aria-label="Chat with ANSHA on WhatsApp"
-        >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#128C7E] text-white shadow-md">
-            <MessageCircle className="h-4 w-4" />
-          </span>
-          <span className="max-w-full truncate">Chat</span>
-        </a>
       </div>
     </nav>
   );
