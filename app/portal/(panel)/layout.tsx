@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { BookmarkCheck, FileText, LogOut, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase/client';
 
@@ -44,7 +45,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     <div className="min-h-screen bg-secondary/25">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-3 sm:h-20 sm:px-5">
-          <Link href="/portal/catalog" className="flex min-w-0 items-center" aria-label="ANSHA customer portal">
+          <Link href="/" className="flex min-w-0 items-center" aria-label="ANSHA home">
             <Image
               src="/images/ansha-logo-transparent.webp"
               alt="Ansha Trading Co. LLC-FZ"
@@ -94,29 +95,8 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-3 py-5 pb-28 sm:px-5 sm:py-7 md:pb-8">{children}</main>
-
-      <nav
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-background/98 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden"
-        aria-label="Mobile customer portal navigation"
-      >
-        {nav.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(`${href}/`);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-semibold',
-                active ? 'bg-accent/10 text-accent' : 'text-muted-foreground'
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span className="max-w-full truncate">{label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      <main className="mx-auto max-w-6xl px-3 py-5 pb-28 sm:px-5 sm:py-7 lg:pb-8">{children}</main>
+      <MobileBottomNav />
     </div>
   );
 }
