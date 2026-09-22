@@ -123,7 +123,7 @@ Deno.serve(async (request) => {
     const isAgentReply = message.sender_kind === 'agent';
     const notification = JSON.stringify({
       title: isAgentReply ? 'New reply from ANSHA Support' : 'New customer support message',
-      body: String(message.body || 'Sent an attachment').slice(0, 180),
+      body: isAgentReply ? 'Open your secure portal to read the reply.' : 'Open the secure staff inbox to respond.',
       url: isAgentReply ? '/portal/support' : `/admin/customer-support?thread=${message.thread_id}`,
       topic: 'support',
       tag: `support-${message.thread_id}`,
