@@ -6,7 +6,6 @@ import { CheckCheck, Circle, FileText, Loader2, Paperclip, RefreshCw, Send, User
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NotificationSettings } from '@/components/pwa/notification-settings';
 import { supabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -245,7 +244,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
       const { error: pushError } = await supabase.functions.invoke('send-support-push', {
         body: { message_id: message.id },
       });
-      if (pushError) console.warn('Support push could not be sent', pushError.message);
+      if (pushError) toast.message('Message sent. Push delivery is unavailable on some devices.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Message could not be sent.');
     } finally {
