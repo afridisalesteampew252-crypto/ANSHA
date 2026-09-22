@@ -1,9 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, ReceiptText, UserPlus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -147,8 +147,15 @@ function PortalLoginInner() {
     <div className="flex min-h-screen items-center justify-center bg-secondary/30 px-4 py-10">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent">
-            {mode === 'signup' ? <UserPlus className="h-6 w-6 text-white" /> : <ReceiptText className="h-6 w-6 text-white" />}
+          <div className="mx-auto mb-4 flex h-20 items-center justify-center">
+            <Image
+              src="/images/ansha-logo-transparent.webp"
+              alt="Ansha Trading Co. LLC-FZ"
+              width={240}
+              height={119}
+              priority
+              className="h-20 w-auto max-w-[240px] object-contain"
+            />
           </div>
           <CardTitle className="text-2xl">{mode === 'signup' ? 'Create customer account' : 'Customer portal'}</CardTitle>
           <CardDescription>
@@ -203,9 +210,6 @@ function PortalLoginInner() {
               </p>
             </>
           )}
-          <div className="mt-5 border-t pt-4 text-center text-xs text-muted-foreground">
-            Staff use the <Link href="/admin" className="font-medium text-primary hover:underline">admin login</Link>.
-          </div>
         </CardContent>
       </Card>
     </div>
