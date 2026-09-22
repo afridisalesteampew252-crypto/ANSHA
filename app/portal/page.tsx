@@ -40,7 +40,7 @@ function PortalLoginInner() {
           .eq('is_active', true)
           .maybeSingle();
         if (profile) {
-          router.replace('/portal/invoices');
+          router.replace('/portal/account');
           return;
         }
       }
@@ -71,7 +71,7 @@ function PortalLoginInner() {
         return;
       }
 
-      const callback = `${window.location.origin}/auth/callback?next=/portal/invoices`;
+      const callback = `${window.location.origin}/auth/callback?next=/portal/account`;
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -132,7 +132,7 @@ function PortalLoginInner() {
     }
 
     toast.success('Welcome to your portal.');
-    router.push('/portal/invoices');
+    router.push('/portal/account');
   };
 
   if (checking) {
