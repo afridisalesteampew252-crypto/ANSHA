@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/lib/supabase/client';
 
 function PortalLoginInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
@@ -30,23 +29,42 @@ function PortalLoginInner() {
   }, [searchParams]);
 
   useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase
+    let active = true;
+    const safetyTimer = window.setTimeout(() => {
+      if (active) setChecking(false);
+    }, 5000);
+
+    void (async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session) return;
+
+        const { data: profile, error: profileError } = await supabase
           .from('customer_profiles')
           .select('id')
           .eq('id', session.user.id)
           .eq('is_active', true)
           .maybeSingle();
+        if (profileError) throw profileError;
+
         if (profile) {
-          router.replace('/portal/account');
-          return;
+          // A full navigation ensures the SSR proxy receives the freshly written auth cookies.
+          window.location.replace('/portal/account');
         }
+      } catch {
+        if (active) toast.error('Session check failed. Please sign in again.');
+      } finally {
+        window.clearTimeout(safetyTimer);
+        if (active) setChecking(false);
       }
-      setChecking(false);
     })();
-  }, [router]);
+
+    return () => {
+      active = false;
+      window.clearTimeout(safetyTimer);
+    };
+  }, []);
 
   const ensureProfile = async (name?: string) => {
     const { error } = await supabase.rpc('ensure_customer_portal_profile', {
@@ -91,7 +109,7 @@ function PortalLoginInner() {
         try {
           await ensureProfile(fullName);
           toast.success('Your customer portal is ready.');
-          router.push('/portal/catalog');
+          window.location.assign('/portal/catalog');
         } catch (setupError) {
           toast.error(setupError instanceof Error ? setupError.message : 'Portal setup failed.');
         }
@@ -132,7 +150,8 @@ function PortalLoginInner() {
     }
 
     toast.success('Welcome to your portal.');
-    router.push('/portal/account');
+    // Avoid Next.js prefetch racing ahead of Supabase cookie persistence.
+    window.location.assign('/portal/account');
   };
 
   if (checking) {
