@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,10 +30,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PartCard } from '@/components/public/part-card';
 import { VehicleCard } from '@/components/public/vehicle-card';
-import { BlogCard } from '@/components/public/blog-card';
-import { ExportMarketsStrip } from '@/components/public/export-markets-strip';
-import { PartRequestForm } from '@/components/public/part-request-form';
-import { TestimonialsSection } from '@/components/public/testimonials-section';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import {
@@ -50,6 +47,26 @@ import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { isMachineryClass, MACHINERY_VEHICLE_CLASSES } from '@/lib/vehicle-class';
 import type { BlogPostWithCategory, Category, PartWithRelations, Review, VehicleWithPhotos } from '@/lib/types';
+
+const ExportMarketsStrip = dynamic(
+  () => import('@/components/public/export-markets-strip').then((mod) => mod.ExportMarketsStrip),
+  { ssr: true }
+);
+const PartRequestForm = dynamic(
+  () => import('@/components/public/part-request-form').then((mod) => mod.PartRequestForm),
+  {
+    ssr: true,
+    loading: () => <div className="min-h-[22rem] animate-pulse rounded-2xl bg-muted" aria-hidden />,
+  }
+);
+const TestimonialsSection = dynamic(
+  () => import('@/components/public/testimonials-section').then((mod) => mod.TestimonialsSection),
+  { ssr: true }
+);
+const BlogCard = dynamic(
+  () => import('@/components/public/blog-card').then((mod) => mod.BlogCard),
+  { ssr: true }
+);
 
 interface MakeStat {
   make: string;
@@ -398,8 +415,8 @@ export default function HomePageClient({
             </div>
           ) : featured.length ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-5 lg:grid-cols-4">
-              {featured.slice(0, 8).map((part) => (
-                <PartCard key={part.id} part={part} deal={dealForPart(part.id)} />
+              {featured.slice(0, 8).map((part, index) => (
+                <PartCard key={part.id} part={part} priority={index < 4} deal={dealForPart(part.id)} />
               ))}
             </div>
           ) : (
