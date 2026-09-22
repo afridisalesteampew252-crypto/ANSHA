@@ -14,7 +14,7 @@ Hosting: Vercel project `anshanew`
 | Staff ERP (purchase → GL → VAT/payroll) | **~99%** | Phases 28–38, 46–48, 50, 53–57, **61–71**, **72–78** + post-78: remittances; commissions; bulk reserve; config yards/shipping/freight; reports + Excel; customer auto ID + Actions; **MoneyBreakdown** KPIs (dashboard/analytics/invoices/SOA — All currencies, no FX mixing); stock invoice badges; Make Available clears reservation SOA (SECURITY DEFINER fix) |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror; advisor harden on `tawk_webhook_receipts` + `touch_admin_last_seen` |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~93%** | Phase 66 campaigns; subscribers Subscribe this device + Send test push; VAPID on Vercel + Edge. Still no open tracking / cron ESP |
-| Customer portal | **~94%** | Invoices + SOA (**Buying details**, per-currency **MoneyBreakdown**) + **reservations** (`get_my_reservations`); no remittance UX for customers |
+| Customer portal | **~98%** | Verified-email self-registration; safe exact-email CRM linking; stock catalog shortcuts; invoices + SOA, reservations, remittances; Tawk support; admin-approved account deletion |
 | PWA / Capacitor | **~88%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; Capacitor shell docs |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
 | Docs (this set) | **~99%** | Audit refresh 2026-09-22 (Complete SEO Repair SEO-10 + Deployment SEO checklist) |
@@ -141,3 +141,15 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 | [Database](./Database.md) / [Security](./Security.md) | Data & authz |
 | [API](./API.md) | Health/FX/AI + RPCs + Edge |
 | [Architecture](./Architecture.md) | Surfaces and dependency direction |
+
+
+## Customer self-service portal (2026-09-23)
+
+- New customers can register at `/portal` with email verification.
+- `ensure_customer_portal_profile` links a single exact, unclaimed CRM email match; otherwise it creates an isolated customer record. Ambiguous matches are flagged `review_required` and never expose another customer's history.
+- Portal Stock links to published parts, vehicles, and machinery. Reservations, invoices, remittances, buying details, and per-currency SOA remain protected by customer RLS.
+- Tawk live chat now loads in the portal, using the existing public widget configuration.
+- Portal Settings provides in-app deletion requests; `/account-deletion` is the public web deletion resource required for store listings.
+- Only an active admin can approve a deletion. The Edge Function deletes the Supabase Auth user and anonymizes customer PII; transaction records may remain only for legal, tax, fraud-prevention, or audit obligations.
+- Migration: `20260923010000_customer_self_service_portal.sql`.
+- Edge Function: `portal-delete-account` (JWT required).
