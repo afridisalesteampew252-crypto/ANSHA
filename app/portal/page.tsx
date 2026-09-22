@@ -1,9 +1,9 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, ReceiptText, UserPlus } from 'lucide-react';
+import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/lib/supabase/client';
 
 function PortalLoginInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
@@ -30,23 +29,42 @@ function PortalLoginInner() {
   }, [searchParams]);
 
   useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase
+    let active = true;
+    const safetyTimer = window.setTimeout(() => {
+      if (active) setChecking(false);
+    }, 5000);
+
+    void (async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!session) return;
+
+        const { data: profile, error: profileError } = await supabase
           .from('customer_profiles')
           .select('id')
           .eq('id', session.user.id)
           .eq('is_active', true)
           .maybeSingle();
+        if (profileError) throw profileError;
+
         if (profile) {
-          router.replace('/portal/invoices');
-          return;
+          // A full navigation ensures the SSR proxy receives the freshly written auth cookies.
+          window.location.replace('/portal/account');
         }
+      } catch {
+        if (active) toast.error('Session check failed. Please sign in again.');
+      } finally {
+        window.clearTimeout(safetyTimer);
+        if (active) setChecking(false);
       }
-      setChecking(false);
     })();
-  }, [router]);
+
+    return () => {
+      active = false;
+      window.clearTimeout(safetyTimer);
+    };
+  }, []);
 
   const ensureProfile = async (name?: string) => {
     const { error } = await supabase.rpc('ensure_customer_portal_profile', {
@@ -71,7 +89,7 @@ function PortalLoginInner() {
         return;
       }
 
-      const callback = `${window.location.origin}/auth/callback?next=/portal/invoices`;
+      const callback = `${window.location.origin}/auth/callback?next=/portal/account`;
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -91,7 +109,7 @@ function PortalLoginInner() {
         try {
           await ensureProfile(fullName);
           toast.success('Your customer portal is ready.');
-          router.push('/portal/catalog');
+          window.location.assign('/portal/catalog');
         } catch (setupError) {
           toast.error(setupError instanceof Error ? setupError.message : 'Portal setup failed.');
         }
@@ -132,7 +150,8 @@ function PortalLoginInner() {
     }
 
     toast.success('Welcome to your portal.');
-    router.push('/portal/invoices');
+    // Avoid Next.js prefetch racing ahead of Supabase cookie persistence.
+    window.location.assign('/portal/account');
   };
 
   if (checking) {
@@ -147,8 +166,15 @@ function PortalLoginInner() {
     <div className="flex min-h-screen items-center justify-center bg-secondary/30 px-4 py-10">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent">
-            {mode === 'signup' ? <UserPlus className="h-6 w-6 text-white" /> : <ReceiptText className="h-6 w-6 text-white" />}
+          <div className="mx-auto mb-4 flex h-20 items-center justify-center">
+            <Image
+              src="/images/ansha-logo-transparent.webp"
+              alt="Ansha Trading Co. LLC-FZ"
+              width={240}
+              height={119}
+              priority
+              className="h-20 w-auto max-w-[240px] object-contain"
+            />
           </div>
           <CardTitle className="text-2xl">{mode === 'signup' ? 'Create customer account' : 'Customer portal'}</CardTitle>
           <CardDescription>
@@ -203,9 +229,6 @@ function PortalLoginInner() {
               </p>
             </>
           )}
-          <div className="mt-5 border-t pt-4 text-center text-xs text-muted-foreground">
-            Staff use the <Link href="/admin" className="font-medium text-primary hover:underline">admin login</Link>.
-          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,9 +38,49 @@ export function InquiryDialog({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [usingPortalProfile, setUsingPortalProfile] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [message, setMessage] = useState(
     partName ? `I'm interested in: ${partName}` : ''
   );
+
+  useEffect(() => {
+    if (!open || usingPortalProfile) return;
+    void (async () => {
+      setProfileLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setProfileLoading(false);
+        return;
+      }
+      const { data: profile } = await supabase
+        .from('customer_profiles')
+        .select('customer_id,full_name,email')
+        .eq('id', session.user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (!profile) {
+        setProfileLoading(false);
+        return;
+      }
+
+      let savedPhone = '';
+      if (profile.customer_id) {
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('phone')
+          .eq('id', profile.customer_id)
+          .maybeSingle();
+        savedPhone = customer?.phone || '';
+      }
+
+      setName(profile.full_name || session.user.user_metadata?.full_name || 'Customer');
+      setEmail(profile.email || session.user.email || '');
+      setPhone(savedPhone);
+      setUsingPortalProfile(true);
+      setProfileLoading(false);
+    })();
+  }, [open, usingPortalProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,9 +106,11 @@ export function InquiryDialog({
 
     toast.success('Your inquiry has been sent. We will contact you soon.');
     setOpen(false);
-    setName('');
-    setEmail('');
-    setPhone('');
+    if (!usingPortalProfile) {
+      setName('');
+      setEmail('');
+      setPhone('');
+    }
     setMessage(partName ? `I'm interested in: ${partName}` : '');
   };
 
@@ -90,37 +132,55 @@ export function InquiryDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="inquiry-name">Name *</Label>
-            <Input
-              id="inquiry-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              placeholder="Your full name"
-            />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="inquiry-email">Email</Label>
-              <Input
-                id="inquiry-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
+          {profileLoading ? (
+            <div className="rounded-xl border border-dashed bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
+              Loading your account details…
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="inquiry-phone">Phone</Label>
-              <Input
-                id="inquiry-phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+00 000 000 0000"
-              />
+          ) : usingPortalProfile ? (
+            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                Using your portal account
+              </p>
+              <p className="mt-1 text-sm font-medium">{name}</p>
+              <p className="text-xs text-muted-foreground">
+                {[email, phone].filter(Boolean).join(' · ') || 'Signed-in customer'}
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="inquiry-name">Name *</Label>
+                <Input
+                  id="inquiry-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  placeholder="Your full name"
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="inquiry-email">Email</Label>
+                  <Input
+                    id="inquiry-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="inquiry-phone">Phone</Label>
+                  <Input
+                    id="inquiry-phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+00 000 000 0000"
+                  />
+                </div>
+              </div>
+            </>
+          )}
           <div className="space-y-2">
             <Label htmlFor="inquiry-message">Message *</Label>
             <Textarea

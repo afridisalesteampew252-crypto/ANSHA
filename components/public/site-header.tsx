@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
-  CircleUserRound,
   Headphones,
   Heart,
   Mail,
@@ -103,9 +102,6 @@ export function SiteHeader() {
           <div className="flex items-center gap-5 text-white/65">
             <span className="hidden items-center gap-1.5 xl:flex"><ShieldCheck className="h-3.5 w-3.5 text-accent" />Verified inventory</span>
             <span className="hidden items-center gap-1.5 xl:flex"><Headphones className="h-3.5 w-3.5 text-accent" />Export support</span>
-            <Link href="/admin" className="flex items-center gap-1.5 transition-colors hover:text-white">
-              <CircleUserRound className="h-3.5 w-3.5" />Staff login
-            </Link>
           </div>
         </div>
       </div>

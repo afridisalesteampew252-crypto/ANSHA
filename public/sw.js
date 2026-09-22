@@ -1,5 +1,5 @@
 /* ANSHA PWA service worker — public shell only. Never cache admin, API, or auth. */
-const VERSION = 'ansha-pwa-v1.3.0';
+const VERSION = 'ansha-pwa-v1.4.0';
 const PRECACHE = [
   '/',
   '/offline',
@@ -105,6 +105,8 @@ self.addEventListener('push', (event) => {
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       data: { url: data.url || '/' },
+      tag: data.tag || undefined,
+      renotify: Boolean(data.tag),
     })
   );
 });

@@ -164,6 +164,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { href: '/admin/inquiries', label: 'Inquiries', icon: Inbox },
       { href: '/admin/live-chat', label: 'Live chat', icon: Headphones },
+      { href: '/admin/customer-support', label: 'Portal support', icon: MessageCircle },
       { href: '/admin/requests', label: 'Requests', icon: ClipboardList },
       { href: '/admin/chat', label: 'Team Chat', icon: MessageCircle },
       { href: '/admin/mail', label: 'Internal Mail', icon: Mail },
