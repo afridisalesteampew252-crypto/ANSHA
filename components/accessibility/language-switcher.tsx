@@ -58,9 +58,13 @@ export function LanguageSwitcher({ compact = false, className }: { compact?: boo
 
   const changeLanguage = (code: string) => {
     window.localStorage.setItem(STORAGE_KEY, code);
-    document.cookie = code === 'en'
+    const cookieValue = code === 'en'
       ? 'googtrans=; path=/; max-age=0; SameSite=Lax'
       : `googtrans=/en/${code}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = cookieValue;
+    if (window.location.hostname === 'anshatradingco.com' || window.location.hostname.endsWith('.anshatradingco.com')) {
+      document.cookie = `${cookieValue}; domain=.anshatradingco.com`;
+    }
     window.location.reload();
   };
 

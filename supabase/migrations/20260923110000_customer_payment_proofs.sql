@@ -51,6 +51,8 @@ with check (
   and status = 'submitted'
   and matched_remittance_id is null
   and reviewed_by is null
+  and reviewed_at is null
+  and review_note is null
   and exists (
     select 1 from public.customer_profiles cp
     where cp.id = (select auth.uid()) and cp.customer_id = customer_payment_proofs.customer_id and cp.is_active

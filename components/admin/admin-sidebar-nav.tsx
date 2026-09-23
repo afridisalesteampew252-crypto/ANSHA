@@ -425,7 +425,6 @@ export function AdminSidebarNav({
     setOpenIds(Array.from(next));
     setHydrated(true);
     // Hydrate once from localStorage; pathname-driven open is handled below
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

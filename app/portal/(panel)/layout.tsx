@@ -72,7 +72,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             </Link>
           </div>
 
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Customer portal navigation">
+          <nav className="hidden items-center gap-1 xl:flex" aria-label="Customer portal navigation">
             {nav.map(({ href, label, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
