@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useChat } from '@ai-sdk/react';
 import { Loader2, MessageSquarePlus, Send, Sparkles, Trash2 } from 'lucide-react';
@@ -31,24 +31,14 @@ function dbMessagesToUi(rows: AiChatMessage[]): UIMessage[] {
 
 export function AiAssistantChat() {
   const [threads, setThreads] = useState<AiChatThread[]>([]);
-  const [threadId, setThreadIdState] = useState<string | null>(null);
-  const threadIdRef = useRef<string | null>(null);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [bootstrapping, setBootstrapping] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  const setThreadId = useCallback((id: string | null) => {
-    threadIdRef.current = id;
-    setThreadIdState(id);
-  }, []);
-
   const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: '/api/ai/chat',
-        body: () => ({ threadId: threadIdRef.current }),
-      }),
+    () => new DefaultChatTransport({ api: '/api/ai/chat' }),
     []
   );
 
@@ -171,7 +161,7 @@ export function AiAssistantChat() {
 
     setInput('');
     if (activeThreadId) setThreadId(activeThreadId);
-    await sendMessage({ text });
+    await sendMessage({ text }, { body: { threadId: activeThreadId } });
     if (userId) void refreshThreads(userId);
   };
 

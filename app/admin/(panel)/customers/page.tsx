@@ -550,7 +550,14 @@ export default function CustomersPage() {
           <form onSubmit={(event) => void save(event)} className="space-y-5">
             <div className="flex flex-wrap items-center gap-4">
               {avatarPreview ? (
-                <img src={avatarPreview} alt="Customer" className="h-16 w-16 rounded-full object-cover" />
+                <Image
+                  src={avatarPreview}
+                  alt="Customer"
+                  width={64}
+                  height={64}
+                  unoptimized
+                  className="h-16 w-16 rounded-full object-cover"
+                />
               ) : existingAvatarSrc ? (
                 <Image
                   src={existingAvatarSrc}

@@ -555,3 +555,10 @@ body.admin-nav-open {
     content: none !important;
   }
 }
+
+
+/* Keep the opt-in translation engine UI out of the layout; ANSHA renders its own picker. */
+.goog-te-banner-frame,
+.goog-te-gadget-icon,
+#goog-gt-tt { display: none !important; }
+body { top: 0 !important; }

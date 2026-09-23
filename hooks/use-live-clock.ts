@@ -51,7 +51,6 @@ export function useLiveClocks(zones: LiveClockZone[]) {
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
     // zoneKey captures id+timeZone; zones list is stable for ADMIN_CLOCK_ZONES.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoneKey]);
 
   return times;

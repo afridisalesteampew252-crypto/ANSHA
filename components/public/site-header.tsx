@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Tag,
+  User,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ import { STOCK_ORIGINS } from '@/lib/stock';
 import { useCustomerLists } from '@/hooks/use-customer-lists';
 import { HeaderMarketStrip } from '@/components/public/header-market-strip';
 import { InstallAppButton } from '@/components/pwa/install-prompt';
+import { LanguageSwitcher } from '@/components/accessibility/language-switcher';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -159,10 +161,18 @@ export function SiteHeader() {
               <span className="grid h-9 w-9 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_6px_16px_rgba(37,211,102,0.28)]"><Phone className="h-4 w-4" /></span>
               <span><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">WhatsApp support</span><strong className="font-semibold">{siteConfig.whatsappDisplay}</strong></span>
             </a>
+            <LanguageSwitcher />
             <ThemeToggle />
+            <Button asChild variant="accent" size="sm" className="h-10 rounded-full px-4 shadow-[0_8px_22px_rgba(210,30,30,0.22)]">
+              <Link href="/portal"><User className="h-4 w-4" />Customer Account</Link>
+            </Button>
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0 xl:hidden">
+            <LanguageSwitcher compact className="hidden md:inline-flex" />
+            <Button asChild variant="accent" size="sm" className="hidden h-10 w-10 rounded-xl px-0 shadow-[0_8px_20px_rgba(210,30,30,0.22)] md:inline-flex sm:h-11 sm:w-11 lg:w-auto lg:px-3" title="Customer Account">
+              <Link href="/portal" aria-label="Customer Account"><User className="h-4 w-4" /><span className="hidden lg:inline">Customer Account</span></Link>
+            </Button>
             <Link href="/favorites" className="relative grid h-10 w-10 place-items-center rounded-xl border border-rose-500/10 bg-rose-500/10 text-rose-600 shadow-sm transition active:scale-95 sm:h-11 sm:w-11" aria-label={`Favorites${favoritesCount ? `, ${favoritesCount} saved` : ''}`}>
               <Heart className={cn('h-5 w-5', favoritesCount > 0 && 'fill-accent text-accent')} />
               <CountBadge count={favoritesCount} />
@@ -282,6 +292,7 @@ export function SiteHeader() {
                 <Button asChild variant="outline" className="h-12"><Link href="/contact">Get a quote</Link></Button>
               </div>
               <InstallAppButton className="h-12 w-full justify-center rounded-xl" size="default" label="Download / Install app" />
+              <LanguageSwitcher className="h-12 w-full justify-center rounded-xl" />
               <div className="space-y-1 border-t border-border pt-4 text-sm text-muted-foreground">
                 <a href={`tel:${siteConfig.phone}`} className="flex min-h-11 items-center gap-2"><Phone className="h-4 w-4 text-accent" />{siteConfig.phone}</a>
                 <a href={`mailto:${siteConfig.email}`} className="flex min-h-11 items-center gap-2 break-all"><Mail className="h-4 w-4 shrink-0 text-accent" />{siteConfig.email}</a>

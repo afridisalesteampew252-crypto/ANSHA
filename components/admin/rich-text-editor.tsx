@@ -22,6 +22,17 @@ function exec(command: string, value?: string) {
   document.execCommand(command, false, value);
 }
 
+const FORMAT_TOOLS = [
+  { label: 'Bold', icon: Bold, command: 'bold' },
+  { label: 'Italic', icon: Italic, command: 'italic' },
+  { label: 'Heading 2', icon: Heading2, command: 'formatBlock', value: 'h2' },
+  { label: 'Heading 3', icon: Heading3, command: 'formatBlock', value: 'h3' },
+  { label: 'Paragraph', icon: Type, command: 'formatBlock', value: 'p' },
+  { label: 'Bullet list', icon: List, command: 'insertUnorderedList' },
+  { label: 'Numbered list', icon: ListOrdered, command: 'insertOrderedList' },
+  { label: 'Quote', icon: Quote, command: 'formatBlock', value: 'blockquote' },
+] as const;
+
 export function RichTextEditor({
   value,
   onChange,
@@ -72,7 +83,7 @@ export function RichTextEditor({
     run('insertImage', url);
   };
 
-  const uploadInlineImage = async (file: File) => {
+  const uploadInlineImage = async (file: File, uploadId: string) => {
     if (!file.type.startsWith('image/')) {
       window.alert('Only image files are allowed.');
       return;
@@ -83,7 +94,7 @@ export function RichTextEditor({
     }
     setUploading(true);
     const ext = file.name.split('.').pop() || 'jpg';
-    const path = `inline/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const path = `inline/${uploadId}.${ext}`;
     const { error } = await supabase.storage.from('blog-images').upload(path, file, { upsert: false });
     setUploading(false);
     if (error) {
@@ -93,19 +104,6 @@ export function RichTextEditor({
     const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/blog-images/${path}`;
     run('insertImage', publicUrl);
   };
-
-  const tools: { label: string; icon: typeof Bold; action: () => void }[] = [
-    { label: 'Bold', icon: Bold, action: () => run('bold') },
-    { label: 'Italic', icon: Italic, action: () => run('italic') },
-    { label: 'Heading 2', icon: Heading2, action: () => run('formatBlock', 'h2') },
-    { label: 'Heading 3', icon: Heading3, action: () => run('formatBlock', 'h3') },
-    { label: 'Paragraph', icon: Type, action: () => run('formatBlock', 'p') },
-    { label: 'Bullet list', icon: List, action: () => run('insertUnorderedList') },
-    { label: 'Numbered list', icon: ListOrdered, action: () => run('insertOrderedList') },
-    { label: 'Quote', icon: Quote, action: () => run('formatBlock', 'blockquote') },
-    { label: 'Link', icon: Link2, action: insertLink },
-    { label: 'Image URL', icon: ImageIcon, action: insertImage },
-  ];
 
   return (
     <div className={cn('overflow-hidden rounded-xl border border-border', className)}>
@@ -133,7 +131,7 @@ export function RichTextEditor({
         </div>
         {mode === 'write' ? (
           <div className="flex flex-wrap gap-0.5 border-l border-border pl-2">
-            {tools.map((tool) => (
+            {FORMAT_TOOLS.map((tool) => (
               <Button
                 key={tool.label}
                 type="button"
@@ -143,11 +141,35 @@ export function RichTextEditor({
                 title={tool.label}
                 aria-label={tool.label}
                 onMouseDown={(event) => event.preventDefault()}
-                onClick={tool.action}
+                onClick={() => run(tool.command, 'value' in tool ? tool.value : undefined)}
               >
                 <tool.icon className="h-3.5 w-3.5" />
               </Button>
             ))}
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Link"
+              aria-label="Link"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={insertLink}
+            >
+              <Link2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              title="Image URL"
+              aria-label="Image URL"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={insertImage}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+            </Button>
             <Button
               type="button"
               size="icon"
@@ -169,7 +191,7 @@ export function RichTextEditor({
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 event.target.value = '';
-                if (file) void uploadInlineImage(file);
+                if (file) void uploadInlineImage(file, crypto.randomUUID());
               }}
             />
           </div>
