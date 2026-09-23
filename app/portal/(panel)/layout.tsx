@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, BookmarkCheck, FileText, LogOut, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
+import { ArrowLeft, Banknote, BookmarkCheck, FileText, LogOut, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { cn } from '@/lib/utils';
@@ -14,6 +14,7 @@ const nav = [
   { href: '/portal/catalog', label: 'Stock', icon: PackageSearch },
   { href: '/portal/reservations', label: 'Reserved', icon: BookmarkCheck },
   { href: '/portal/invoices', label: 'Invoices', icon: ReceiptText },
+  { href: '/portal/payments', label: 'TT copy', icon: Banknote },
   { href: '/portal/profile', label: 'Account', icon: UserRound },
   { href: '/portal/support', label: 'Support', icon: MessageCircle },
   { href: '/portal/settings', label: 'Settings', icon: Settings },
@@ -100,6 +101,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </nav>
 
           <div className="flex min-w-0 items-center gap-2">
+            <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full text-emerald-600 md:hidden" aria-label="Upload TT copy">
+              <Link href="/portal/payments"><Banknote className="h-5 w-5" /></Link>
+            </Button>
             <span className="hidden max-w-36 truncate text-sm text-muted-foreground lg:inline">{name}</span>
             <Button type="button" variant="outline" size="sm" onClick={() => void signOut()} aria-label="Sign out">
               <LogOut className="h-4 w-4" />

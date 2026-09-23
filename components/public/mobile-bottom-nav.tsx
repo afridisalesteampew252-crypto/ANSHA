@@ -20,7 +20,7 @@ export function MobileBottomNav() {
     if (match === 'stock') return pathname.startsWith('/vehicles') || pathname.startsWith('/machinery');
     if (match === 'parts') return pathname.startsWith('/parts') || pathname.startsWith('/categories');
     if (match === 'support') return pathname.startsWith('/portal/support');
-    return pathname.startsWith('/portal/account') || pathname.startsWith('/portal/profile') || pathname.startsWith('/portal/settings');
+    return pathname.startsWith('/portal/account') || pathname.startsWith('/portal/profile') || pathname.startsWith('/portal/payments') || pathname.startsWith('/portal/settings');
   };
 
   return (
