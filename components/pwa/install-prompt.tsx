@@ -124,7 +124,7 @@ export function InstallPrompt() {
       return;
     }
     // Show quickly when native prompt is ready; otherwise soft-delay for iOS / manual.
-    const delay = canNativePrompt ? 600 : 2200;
+    const delay = canNativePrompt ? 8000 : 12000;
     const timer = window.setTimeout(() => setVisible(true), delay);
     return () => window.clearTimeout(timer);
   }, [installed, dismissed, canNativePrompt]);
