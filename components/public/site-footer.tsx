@@ -96,10 +96,6 @@ export function SiteFooter() {
                 Customer portal
                 <ArrowRight className="h-3 w-3" />
               </Link>
-              <Link href="/admin" className="flex min-h-9 items-center gap-1.5 text-white/70 hover:text-accent">
-                Staff login
-                <ArrowRight className="h-3 w-3" />
-              </Link>
             </div>
           </div>
         </div>
