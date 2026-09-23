@@ -14,7 +14,7 @@ const nav = [
   { href: '/portal/catalog', label: 'Stock', icon: PackageSearch },
   { href: '/portal/reservations', label: 'Reserved', icon: BookmarkCheck },
   { href: '/portal/invoices', label: 'Invoices', icon: ReceiptText },
-  { href: '/portal/account', label: 'Account', icon: UserRound },
+  { href: '/portal/profile', label: 'Account', icon: UserRound },
   { href: '/portal/support', label: 'Support', icon: MessageCircle },
   { href: '/portal/settings', label: 'Settings', icon: Settings },
 ] as const;

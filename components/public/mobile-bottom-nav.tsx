@@ -9,7 +9,7 @@ const items = [
   { href: '/', label: 'Home', icon: Home, match: 'home' },
   { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock' },
   { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts' },
-  { href: '/portal/account', label: 'Account', icon: UserRound, match: 'portal' },
+  { href: '/portal/profile', label: 'Account', icon: UserRound, match: 'portal' },
   { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support' },
 ] as const;
 
