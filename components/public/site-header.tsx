@@ -110,31 +110,31 @@ export function SiteHeader() {
         'min-w-0 max-w-full overflow-x-clip border-b border-white/60 bg-[hsl(210_25%_98%/0.94)] transition-shadow backdrop-blur-xl dark:border-white/10 dark:bg-background/95',
         scrolled && 'shadow-[0_8px_28px_rgba(15,23,42,0.08)]'
       )}>
-        <div className="container-page flex h-[72px] min-w-0 items-center gap-2 sm:h-[84px] sm:gap-4 lg:h-[96px]">
+        <div className="container-page flex h-[68px] min-w-0 items-center gap-2 sm:h-[78px] sm:gap-4 lg:h-[84px]">
           <Link href="/" className="flex min-w-0 shrink-0 items-center rounded-2xl transition active:scale-[0.98]" aria-label="Ansha Trading home">
             <Image
               src="/images/ansha-logo-transparent.webp"
               alt="Ansha Trading Co. LLC-FZ"
-              width={340}
+              width={300}
               height={169}
               priority
-              sizes="(max-width: 640px) 200px, (max-width: 1024px) 260px, 340px"
-              className="h-12 w-auto max-w-[min(52vw,200px)] object-contain object-left sm:h-[64px] sm:max-w-[260px] lg:h-[84px] lg:max-w-[340px]"
+              sizes="(max-width: 640px) 190px, (max-width: 1024px) 240px, 300px"
+              className="h-11 w-auto max-w-[min(50vw,190px)] object-contain object-left sm:h-[58px] sm:max-w-[240px] lg:h-[70px] lg:max-w-[300px]"
             />
           </Link>
 
           <form onSubmit={handleSearch} className="mx-auto hidden max-w-xl flex-1 md:block">
-            <div className="relative flex h-11 items-center overflow-hidden rounded-full border border-border bg-secondary/45 shadow-inner lg:h-12">
+            <div className="relative flex h-11 items-center overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-card lg:h-12">
               <Search className="absolute left-4 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search OEM, part number, chassis, make or model"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-full rounded-full border-0 bg-transparent pl-11 pr-32 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="h-full rounded-xl border-0 bg-transparent pl-11 pr-32 focus-visible:ring-0 focus-visible:ring-offset-0"
                 aria-label="Search catalog"
               />
-              <Button type="submit" variant="accent" size="sm" className="absolute right-1.5 h-9 rounded-full px-5">
+              <Button type="submit" variant="accent" size="sm" className="absolute right-1.5 h-9 rounded-lg px-5">
                 Search
               </Button>
             </div>
@@ -175,10 +175,10 @@ export function SiteHeader() {
 
         <HeaderMarketStrip />
 
-        <div className="hidden border-t border-border/70 bg-secondary/40 md:block">
+        <div className="hidden border-t border-border/70 bg-white/95 dark:bg-card/95 md:block">
           <div className="container-page flex h-11 items-center gap-1.5 overflow-x-auto overscroll-x-contain touch-pan-x lg:h-12 lg:gap-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Link href="/categories" className="flex h-full shrink-0 items-center gap-2 border-r border-border/80 pr-3 text-sm font-bold lg:pr-5">
-              <PackageSearch className="h-4 w-4 text-accent" />
+            <Link href="/categories" className="-ml-2 flex h-[calc(100%_-_8px)] shrink-0 items-center gap-2 rounded-lg bg-[#101114] px-3 text-sm font-bold text-white lg:px-5">
+              <PackageSearch className="h-4 w-4 text-red-400" />
               <span className="hidden lg:inline">Browse categories</span>
               <span className="lg:hidden">Categories</span>
             </Link>
@@ -219,7 +219,7 @@ export function SiteHeader() {
                 );
               })}
             </nav>
-            <Button asChild variant="accent" size="sm" className="ml-1 shrink-0 rounded-full px-3.5 lg:ml-3 lg:px-5">
+            <Button asChild variant="accent" size="sm" className="ml-1 shrink-0 rounded-lg px-3.5 lg:ml-3 lg:px-5">
               <Link href="/contact"><span className="lg:hidden">Quote</span><span className="hidden lg:inline">Request a quote</span></Link>
             </Button>
           </div>
@@ -231,7 +231,7 @@ export function SiteHeader() {
           <button className="fixed inset-0 z-[58] bg-[#0b0c0f]/55 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
           <div
             id="mobile-site-menu"
-            className="mobile-drawer-glass fixed left-2 right-2 top-[calc(4.5rem+2.25rem+0.4rem)] z-[60] max-h-[calc(100dvh-4.5rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] overflow-x-clip overflow-y-auto overscroll-contain rounded-[1.75rem] border border-white/60 shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:left-4 sm:right-4 sm:top-[calc(5.25rem+2.25rem+0.5rem)] sm:max-h-[calc(100dvh-5.25rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] md:hidden"
+            className="mobile-drawer-glass fixed left-2 right-2 top-[calc(4.25rem+2.25rem+0.4rem)] z-[60] max-h-[calc(100dvh-4.25rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] overflow-x-clip overflow-y-auto overscroll-contain rounded-[1.5rem] border border-white/60 shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:left-4 sm:right-4 sm:top-[calc(4.875rem+2.25rem+0.5rem)] sm:max-h-[calc(100dvh-4.875rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] md:hidden"
           >
             <div className="space-y-4 p-4 pb-6 sm:p-5">
               <div className="flex items-center justify-between rounded-2xl bg-[#101114] px-4 py-3 text-white">

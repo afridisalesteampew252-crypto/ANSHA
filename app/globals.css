@@ -4,8 +4,8 @@
 
 @layer base {
   :root {
-    /* Cool ink-tinted canvas — not pure white, not cream. */
-    --background: 210 18% 96.5%;
+    /* Clean workshop canvas with high-contrast catalog surfaces. */
+    --background: 210 16% 96%;
     --foreground: 220 15% 10%;
     --card: 0 0% 100%;
     --card-foreground: 220 15% 10%;
@@ -13,7 +13,7 @@
     --popover-foreground: 220 15% 10%;
     --primary: 220 15% 10%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 92%;
+    --secondary: 210 18% 93%;
     --secondary-foreground: 220 15% 12%;
     --muted: 210 16% 92%;
     --muted-foreground: 220 10% 40%;
@@ -21,7 +21,7 @@
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 210 14% 84%;
+    --border: 210 12% 82%;
     --input: 210 14% 86%;
     --ring: 0 75% 47%;
     --success: 142 60% 40%;
@@ -31,8 +31,8 @@
     --chart-3: 142 60% 40%;
     --chart-4: 38 92% 50%;
     --chart-5: 217 91% 35%;
-    --radius: 0.75rem;
-    /* Public marketing surfaces — ink / red exporter (not purple or cream). */
+    --radius: 0.65rem;
+    /* Public marketing surfaces — automotive ink, steel and ANSHA red. */
     --ink: 220 10% 7%;
     --surface-cool: 210 26% 93%;
     --surface-warm: 0 28% 95%;
@@ -109,9 +109,8 @@
     min-width: 0;
     overflow-x: clip;
     background:
-      radial-gradient(ellipse 70% 45% at 100% -5%, hsl(0 75% 47% / 0.11), transparent 52%),
-      radial-gradient(ellipse 55% 40% at 0% 35%, hsl(220 20% 20% / 0.04), transparent 50%),
-      linear-gradient(180deg, hsl(210 22% 95%) 0%, hsl(0 22% 96%) 42%, hsl(210 18% 94.5%) 100%);
+      radial-gradient(ellipse 60% 35% at 100% 0%, hsl(0 75% 47% / 0.08), transparent 55%),
+      linear-gradient(180deg, hsl(210 16% 96%) 0%, hsl(210 14% 94.5%) 100%);
   }
 
   .public-marketing header nav a,
@@ -138,7 +137,7 @@
   }
 
   .section-heading h2 {
-    @apply mt-2 text-2xl font-black tracking-tight sm:text-3xl;
+    @apply mt-2 text-2xl font-black tracking-tight sm:text-[2rem];
   }
 
   .section-heading p {
@@ -146,7 +145,7 @@
   }
 
   .eyebrow {
-    @apply text-[10px] font-extrabold uppercase tracking-[0.18em] text-accent;
+    @apply inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-accent;
   }
 
   .section-link {
@@ -193,7 +192,7 @@
   }
 
   .catalog-panel {
-    @apply rounded-2xl border bg-card;
+    @apply rounded-xl border bg-card;
     border-color: hsl(var(--accent) / 0.15);
     box-shadow: 0 12px 40px rgba(16, 17, 20, 0.06);
   }
@@ -224,9 +223,8 @@
 
   .mobile-nav-glass {
     background:
-      radial-gradient(circle at 12% 0%, hsl(199 89% 58% / 0.12), transparent 34%),
-      radial-gradient(circle at 86% 100%, hsl(142 71% 45% / 0.10), transparent 32%),
-      hsl(var(--card) / 0.9);
+      radial-gradient(circle at 50% 120%, hsl(var(--accent) / 0.22), transparent 45%),
+      rgba(13, 15, 18, 0.94);
   }
 
   .mobile-drawer-glass {

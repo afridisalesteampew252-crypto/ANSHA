@@ -83,6 +83,11 @@ interface MakeStat {
   count: number;
 }
 
+const HERO_DEPARTMENTS = [
+  { href: '/vehicles', icon: CarFront, label: 'Vehicle stock', copy: 'Available export units' },
+  { href: '/machinery', icon: Truck, label: 'Heavy equipment', copy: 'Machinery & trucks' },
+] as const;
+
 export default function HomePageClient({
   initialReviews = [],
   initialFeatured,
@@ -122,9 +127,7 @@ export default function HomePageClient({
     const refreshLatestPosts = async () => {
       const postsRes = await fetchLatestPosts();
       if (active && !postsRes.error) {
-        if (!postsRes.error) {
         setLatestPosts((postsRes.data || []) as unknown as PublicBlogCard[]);
-      }
       }
     };
 
@@ -221,48 +224,63 @@ export default function HomePageClient({
 
   return (
     <>
-      <section className="relative max-w-full overflow-hidden bg-[#101114] text-white">
+      <section className="relative max-w-full overflow-hidden bg-[#0d0f12] text-white">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_-10%,rgba(210,30,30,0.38),transparent_42%),radial-gradient(ellipse_at_12%_110%,rgba(255,255,255,0.06),transparent_46%),linear-gradient(165deg,#0b0c0f_0%,#14161b_55%,#101114_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_82%_5%,rgba(210,30,30,0.30),transparent_38%),radial-gradient(ellipse_at_10%_110%,rgba(255,255,255,0.06),transparent_44%),linear-gradient(135deg,#090a0c_0%,#15171b_58%,#0d0f12_100%)]"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.03))]"
+          className="bg-grid-dark pointer-events-none absolute inset-y-0 right-0 w-[58%] opacity-40 [mask-image:linear-gradient(to_left,black,transparent)]"
         />
-        <div className="container-page relative py-10 sm:py-14 lg:py-16">
+        <div className="container-page relative grid gap-8 py-10 sm:py-14 lg:grid-cols-[minmax(0,1.08fr)_minmax(25rem,.92fr)] lg:items-center lg:gap-12 lg:py-20">
           <div className="max-w-2xl">
-            <p className="animate-fade-up text-xs font-black uppercase tracking-[0.22em] text-accent sm:text-sm">
-              ANSHA Trading Co.
-            </p>
-            <h1 className="animate-fade-up-delay-1 mt-3 max-w-xl font-display text-[1.85rem] font-extrabold leading-[1.08] tracking-[-0.04em] sm:mt-4 sm:text-4xl lg:text-5xl">
-              Export-ready vehicles, parts &amp; machinery from Dubai.
+            <div className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/75 backdrop-blur sm:text-xs">
+              <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_0_4px_rgba(210,30,30,.15)]" />
+              Dubai export desk · Worldwide supply
+            </div>
+            <h1 className="animate-fade-up-delay-1 mt-5 max-w-2xl font-display text-[2rem] font-black leading-[1.03] tracking-[-0.045em] sm:text-5xl lg:text-[3.55rem]">
+              The smarter way to source <span className="text-accent">vehicles &amp; parts</span> from Dubai.
             </h1>
-            <p className="animate-fade-up-delay-2 mt-3 max-w-lg text-[14px] leading-6 text-white/70 sm:mt-4 sm:text-base sm:leading-7">
-              Published stock, OEM fitment support, and worldwide shipping coordination — one export team.
+            <p className="animate-fade-up-delay-2 mt-4 max-w-xl text-[14px] leading-6 text-white/70 sm:text-base sm:leading-7">
+              Verified public stock, OEM and chassis matching, heavy equipment, and coordinated worldwide export support from one experienced team.
             </p>
-            <div className="animate-fade-up-delay-2 mt-6 grid grid-cols-2 gap-2.5 sm:mt-7 sm:flex sm:flex-wrap sm:gap-3">
-              <Button asChild variant="accent" size="lg" className="col-span-2 h-12 w-full rounded-2xl px-6 text-sm font-bold shadow-lg shadow-red-950/20 sm:h-12 sm:w-auto sm:rounded-full sm:px-7">
-                <Link href="/vehicles">Browse vehicles <ArrowRight className="h-4 w-4" /></Link>
+            <div className="animate-fade-up-delay-2 mt-7 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:gap-3">
+              <Button asChild variant="accent" size="lg" className="col-span-2 h-12 w-full rounded-xl px-6 text-sm font-extrabold shadow-[0_12px_32px_rgba(210,30,30,.28)] sm:w-auto sm:px-7">
+                <Link href="/vehicles">Browse vehicle stock <ArrowRight className="h-4 w-4" /></Link>
               </Button>
-              <Button asChild size="lg" className="h-12 w-full rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 text-xs font-bold text-white hover:bg-amber-400/15 sm:h-12 sm:w-auto sm:rounded-full sm:px-7 sm:text-sm">
-                <Link href="/machinery"><Truck className="h-4 w-4 text-amber-300" />Machinery</Link>
+              <Button asChild size="lg" className="h-12 w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 text-xs font-bold text-white hover:bg-white/10 sm:w-auto sm:px-6 sm:text-sm">
+                <Link href="/parts"><Wrench className="h-4 w-4 text-red-300" />Find parts</Link>
               </Button>
-              <Button asChild size="lg" className="h-12 w-full rounded-2xl border border-sky-300/20 bg-sky-400/10 px-3 text-xs font-bold text-white hover:bg-sky-400/15 sm:h-12 sm:w-auto sm:rounded-full sm:px-7 sm:text-sm">
-                <Link href="/parts"><Wrench className="h-4 w-4 text-sky-300" />Explore parts</Link>
+              <Button asChild size="lg" className="h-12 w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 text-xs font-bold text-white hover:bg-white/10 sm:w-auto sm:px-6 sm:text-sm">
+                <Link href="/machinery"><Truck className="h-4 w-4 text-red-300" />Machinery</Link>
               </Button>
             </div>
-            <p className="animate-fade-up-delay-2 mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/55">
-              <Link href="/#export-markets" className="hover:text-white hover:underline">
-                Export markets
+            <div className="animate-fade-up-delay-2 mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-white/50 sm:text-sm">
+              <span className="inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-accent" />Verified listings</span>
+              <span className="inline-flex items-center gap-1.5"><Ship className="h-4 w-4 text-accent" />Global shipping support</span>
+              <span className="inline-flex items-center gap-1.5"><Headphones className="h-4 w-4 text-accent" />Direct human service</span>
+            </div>
+          </div>
+
+          <div className="animate-fade-up-delay-2 relative grid grid-cols-2 gap-3 lg:gap-4">
+            <Link href="/parts" className="group col-span-2 flex min-h-36 items-end justify-between overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.03))] p-5 backdrop-blur transition hover:border-accent/60 hover:bg-white/[0.09] sm:min-h-44 sm:p-6">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-red-300">Parts catalog</span>
+                <h2 className="mt-2 max-w-xs text-xl font-black leading-tight text-white sm:text-2xl">Search by OEM, chassis, brand or category.</h2>
+                <span className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-white/65">Explore catalog <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" /></span>
+              </div>
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-accent text-white shadow-[0_18px_40px_rgba(210,30,30,.25)] sm:h-20 sm:w-20">
+                <PackageSearch className="h-8 w-8 sm:h-10 sm:w-10" />
+              </span>
+            </Link>
+            {HERO_DEPARTMENTS.map((item) => (
+              <Link key={item.href} href={item.href} className="group min-h-32 rounded-2xl border border-white/10 bg-black/25 p-4 transition hover:-translate-y-0.5 hover:border-accent/55 hover:bg-black/35 sm:min-h-36 sm:p-5">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-red-300 transition group-hover:bg-accent group-hover:text-white"><item.icon className="h-5 w-5" /></span>
+                <strong className="mt-5 block text-sm font-extrabold text-white sm:text-base">{item.label}</strong>
+                <span className="mt-1 block text-[11px] text-white/50 sm:text-xs">{item.copy}</span>
               </Link>
-              <Link href="/blog" className="hover:text-white hover:underline">
-                Insights &amp; guides
-              </Link>
-              <Link href="/categories" className="hover:text-white hover:underline">
-                Parts categories
-              </Link>
-            </p>
+            ))}
           </div>
         </div>
       </section>
@@ -289,7 +307,7 @@ export default function HomePageClient({
         <div className="container-page min-w-0">
           <form
             onSubmit={goToParts}
-            className="grid gap-3 rounded-[22px] border border-accent/20 bg-[#101114] p-4 text-white shadow-[0_16px_48px_rgba(16,17,20,0.28)] sm:p-5 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
+            className="grid gap-3 rounded-2xl border border-accent/20 bg-[#101114] p-4 text-white shadow-[0_18px_50px_rgba(16,17,20,0.22)] sm:p-6 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
           >
             <div className="lg:col-span-4">
               <span className="eyebrow text-[#ff8a8a]">Catalog finder</span>

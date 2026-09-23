@@ -52,7 +52,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
   });
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-card/95 text-card-foreground shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-card-hover dark:border-white/10 sm:rounded-3xl">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border/85 border-t-2 border-t-accent bg-card text-card-foreground shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-accent/55 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
       <div className="relative min-w-0">
         <Link href={`/parts/${part.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#101114]/[0.04]">
           {photoUrl ? (
@@ -172,7 +172,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
             </a>
             <Link
               href={`/parts/${part.slug}`}
-              className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-accent px-2.5 text-[11px] font-bold text-accent-foreground transition hover:bg-accent/90 sm:flex-none sm:px-3.5 sm:text-xs"
+              className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-accent px-2.5 text-[11px] font-bold text-accent-foreground transition hover:bg-accent/90 sm:flex-none sm:px-3.5 sm:text-xs"
             >
               View <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
             </Link>

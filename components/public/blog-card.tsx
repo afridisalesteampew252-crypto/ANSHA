@@ -22,7 +22,7 @@ export function BlogCard({ post }: BlogCardProps) {
   });
 
   return (
-    <Card className="group overflow-hidden rounded-2xl border-white/70 bg-card/90 shadow-[0_12px_35px_rgba(15,23,42,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-card-hover dark:border-white/10 sm:rounded-3xl">
+    <Card className="group overflow-hidden rounded-xl border-border/85 border-t-2 border-t-accent bg-card shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
       <Link href={`/blog/${post.slug}`} className="block">
         <div className="relative aspect-[16/10] overflow-hidden bg-[linear-gradient(145deg,hsl(var(--secondary)),hsl(var(--surface-featured)))]">
           {imageUrl ? (
@@ -62,7 +62,7 @@ export function BlogCard({ post }: BlogCardProps) {
         )}
         <Link
           href={`/blog/${post.slug}`}
-          className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-full bg-accent/10 px-3 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-white"
+          className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-accent/10 px-3 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-white"
         >
           Read Article
           <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />

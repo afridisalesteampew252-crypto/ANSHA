@@ -6,11 +6,11 @@ import { CarFront, Home, MessageCircle, UserRound, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const items = [
-  { href: '/', label: 'Home', icon: Home, match: 'home', tone: 'text-sky-600', glow: 'bg-sky-500/12' },
-  { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock', tone: 'text-orange-600', glow: 'bg-orange-500/12' },
-  { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts', tone: 'text-red-600', glow: 'bg-red-500/12' },
-  { href: '/portal/account', label: 'Account', icon: UserRound, match: 'portal', tone: 'text-violet-600', glow: 'bg-violet-500/12' },
-  { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support', tone: 'text-emerald-600', glow: 'bg-emerald-500/12' },
+  { href: '/', label: 'Home', icon: Home, match: 'home' },
+  { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock' },
+  { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts' },
+  { href: '/portal/account', label: 'Account', icon: UserRound, match: 'portal' },
+  { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support' },
 ] as const;
 
 export function MobileBottomNav() {
@@ -29,7 +29,7 @@ export function MobileBottomNav() {
       aria-label="ANSHA mobile app navigation"
       style={{ overscrollBehavior: 'none', touchAction: 'manipulation', transform: 'translateZ(0)' }}
     >
-      <div className="mobile-nav-glass pointer-events-auto mx-auto grid h-[4.65rem] w-full max-w-xl grid-cols-5 rounded-[1.4rem] border border-white/65 px-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.22)] backdrop-blur-2xl dark:border-white/10">
+      <div className="mobile-nav-glass pointer-events-auto mx-auto grid h-[4.5rem] w-full max-w-xl grid-cols-5 rounded-2xl border border-white/10 px-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.30)] backdrop-blur-2xl">
         {items.map((item) => {
           const active = isActive(item.match);
           return (
@@ -39,12 +39,12 @@ export function MobileBottomNav() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'relative my-1 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1rem] px-0.5 text-[10px] font-bold transition-all duration-200 active:scale-95',
-                active ? `${item.glow} ${item.tone}` : 'text-muted-foreground hover:bg-white/55 hover:text-foreground dark:hover:bg-white/5'
+                active ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/[0.06] hover:text-white'
               )}
             >
               <span className={cn(
                 'grid h-7 w-9 place-items-center rounded-full transition-all duration-200',
-                active && 'bg-white/80 shadow-sm dark:bg-white/10'
+                active && 'bg-accent text-white shadow-[0_6px_18px_rgba(210,30,30,.32)]'
               )}>
                 <item.icon className={cn('h-[19px] w-[19px] shrink-0', active && 'stroke-[2.4]')} />
               </span>
