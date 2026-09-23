@@ -8,6 +8,12 @@ import { cn } from '@/lib/utils';
 import { ensurePushSubscription, getVapidPublicKey, isWebPushConfigured } from '@/lib/pwa-push-subscribe';
 
 const DISMISS_KEY = 'ansha-push-prompt-dismissed';
+const INSTALL_DISMISS_KEY = 'ansha-pwa-install-dismissed';
+
+function isInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches
+    || ('standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+}
 
 export function PushOptIn() {
   const [visible, setVisible] = useState(false);
@@ -15,20 +21,18 @@ export function PushOptIn() {
   const vapidReady = isWebPushConfigured();
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    if (!vapidReady) return;
-
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window) || !vapidReady) return;
     if (Notification.permission === 'granted') {
-      void ensurePushSubscription().catch(() => {
-        // Silent: visitor may be offline or RLS not applied yet.
-      });
+      void ensurePushSubscription().catch(() => undefined);
       return;
     }
+    if (Notification.permission === 'denied' || localStorage.getItem(DISMISS_KEY) === '1') return;
 
-    if (Notification.permission === 'denied') return;
-    if (localStorage.getItem(DISMISS_KEY) === '1') return;
-    setVisible(true);
+    // Never stack this with the install prompt. Ask about alerts only after the
+    // app is installed or the visitor has already dismissed the install offer.
+    if (!isInstalled() && localStorage.getItem(INSTALL_DISMISS_KEY) !== '1') return;
+    const timer = window.setTimeout(() => setVisible(true), 12000);
+    return () => window.clearTimeout(timer);
   }, [vapidReady]);
 
   if (!visible || !vapidReady) return null;
@@ -48,20 +52,13 @@ export function PushOptIn() {
       }
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        toast.error('Notifications were blocked. You can enable them in browser settings.');
+        toast.error('Notifications were not enabled. You can change this in browser settings.');
         dismiss();
         return;
       }
       const result = await ensurePushSubscription();
-      if (!result.subscribed) {
-        toast.error(
-          result.reason === 'unsupported'
-            ? 'This browser does not support Web Push.'
-            : 'Push alerts are not configured yet.'
-        );
-        return;
-      }
-      toast.success('You will get alerts for new insights and deals.');
+      if (!result.subscribed) throw new Error(result.reason === 'unsupported' ? 'This browser does not support Web Push.' : 'Push alerts are unavailable.');
+      toast.success('Alerts enabled for insights and deals.');
       dismiss();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not enable notifications.');
@@ -73,40 +70,23 @@ export function PushOptIn() {
   return (
     <div
       className={cn(
-        'fixed left-3 right-3 z-40 max-w-full rounded-xl border border-border/80 bg-background/95 p-3.5 shadow-lg backdrop-blur-md',
-        'bottom-[calc(8.5rem+env(safe-area-inset-bottom,0px))] sm:left-auto sm:right-4 sm:bottom-6 sm:w-[22rem]',
-        'lg:bottom-24'
+        'fixed left-3 right-3 z-40 max-w-full rounded-2xl border border-white/60 bg-background/90 p-3 shadow-[0_18px_50px_rgba(15,23,42,.20)] backdrop-blur-xl dark:border-white/10',
+        'bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:left-auto sm:right-4 sm:bottom-6 sm:w-[21rem] lg:bottom-24'
       )}
       role="dialog"
       aria-label="Enable notifications"
     >
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
-          <Bell className="h-4 w-4" />
-        </span>
+        <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent"><Bell className="h-4 w-4" /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold leading-snug">Alerts for insights and deals</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Get a push when ANSHA publishes a new insight or export offer.
-          </p>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <Button size="sm" type="button" className="w-full sm:w-auto" disabled={busy} onClick={() => void enable()}>
-              {busy ? 'Enabling…' : 'Enable alerts'}
-            </Button>
-            <Button size="sm" type="button" variant="ghost" className="w-full sm:w-auto" onClick={dismiss}>
-              <BellOff className="h-4 w-4" />
-              Not now
-            </Button>
+          <p className="text-sm font-semibold leading-snug">Optional alerts</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Get new insight and export-deal notifications on this device.</p>
+          <div className="mt-2.5 flex gap-2">
+            <Button size="sm" type="button" disabled={busy} onClick={() => void enable()}>{busy ? 'Enabling…' : 'Enable'}</Button>
+            <Button size="sm" type="button" variant="ghost" onClick={dismiss}><BellOff className="h-4 w-4" />Not now</Button>
           </div>
         </div>
-        <button
-          type="button"
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
-          aria-label="Dismiss notification prompt"
-          onClick={dismiss}
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary" aria-label="Dismiss notification prompt" onClick={dismiss}><X className="h-4 w-4" /></button>
       </div>
     </div>
   );

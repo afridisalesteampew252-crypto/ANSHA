@@ -150,8 +150,13 @@ export function SiteHeader() {
               <ShoppingBag className="h-[18px] w-[18px]" />
               <CountBadge count={cartCount} />
             </Link>
-            <a href={`tel:${siteConfig.phone}`} className="flex items-center gap-2.5 rounded-xl px-2 py-1 text-sm">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-accent/10 text-accent"><Phone className="h-4 w-4" /></span>
+            <a
+              href={`https://wa.me/${siteConfig.whatsappNumber}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2.5 rounded-xl px-2 py-1 text-sm transition hover:bg-[#25D366]/10"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_6px_16px_rgba(37,211,102,0.28)]"><Phone className="h-4 w-4" /></span>
               <span><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">WhatsApp support</span><strong className="font-semibold">{siteConfig.whatsappDisplay}</strong></span>
             </a>
             <ThemeToggle />

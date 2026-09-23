@@ -32,7 +32,7 @@ export function SiteFooter() {
               href={`https://wa.me/${siteConfig.whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-[#128C7E] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md border border-[#1fb858] bg-[#25D366] px-4 py-2.5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(37,211,102,0.28)] transition hover:bg-[#20bd5a] hover:shadow-[0_12px_28px_rgba(37,211,102,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 focus-visible:ring-offset-[#101114]"
             >
               <MessageCircle className="h-4 w-4" />
               Chat on WhatsApp

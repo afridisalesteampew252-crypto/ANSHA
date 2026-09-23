@@ -28,7 +28,10 @@ export function WhatsAppButton({
       asChild
       variant={variant}
       size={size}
-      className={cn('bg-[#128C7E] text-white hover:bg-[#0f7368]', className)}
+      className={cn(
+        'border border-[#1fb858] bg-[#25D366] font-bold text-white shadow-[0_10px_24px_rgba(37,211,102,0.28)] hover:bg-[#20bd5a] hover:text-white hover:shadow-[0_12px_28px_rgba(37,211,102,0.38)] focus-visible:ring-[#25D366]',
+        className
+      )}
     >
       <a href={href} target="_blank" rel="noopener noreferrer">
         <MessageCircle className="h-4 w-4" />

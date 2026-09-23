@@ -164,10 +164,10 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-white transition hover:brightness-110"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#1fb858] bg-[#25D366] text-white shadow-[0_8px_20px_rgba(37,211,102,0.28)] transition hover:bg-[#20bd5a] hover:shadow-[0_10px_24px_rgba(37,211,102,0.38)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
               aria-label={`Ask about ${vehicle.title} on WhatsApp`}
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-5 w-5" />
             </a>
             <Link
               href={`/vehicles/${vehicle.slug}`}

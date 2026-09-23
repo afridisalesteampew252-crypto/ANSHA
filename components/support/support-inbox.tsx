@@ -383,13 +383,26 @@ export function SupportInbox({ mode }: { mode: Mode }) {
                   <Paperclip className="h-4 w-4" />
                   <input type="file" multiple className="sr-only" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,.doc,.docx" onChange={onFiles} />
                 </label>
-                <textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={4000} rows={1}
-                  placeholder="Type your message…" className="min-h-10 flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                <textarea
+                  value={text}
+                  onChange={(event) => setText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                      event.preventDefault();
+                      event.currentTarget.form?.requestSubmit();
+                    }
+                  }}
+                  maxLength={4000}
+                  rows={1}
+                  placeholder="Type your message…"
+                  aria-label="Message"
+                  className="min-h-10 flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
                 <Button type="submit" size="icon" disabled={sending || (!text.trim() && files.length === 0)} aria-label="Send message">
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
               </div>
-              <p className="mt-1.5 text-[10px] text-muted-foreground">Up to 5 images, PDFs or documents · 10 MB each</p>
+              <p className="mt-1.5 text-[10px] text-muted-foreground">Enter to send · Shift+Enter for a new line · Up to 5 files, 10 MB each</p>
             </form>
           ) : null}
         </section>
