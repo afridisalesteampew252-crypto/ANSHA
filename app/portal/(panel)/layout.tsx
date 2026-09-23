@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BookmarkCheck, FileText, LogOut, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
+import { ArrowLeft, BookmarkCheck, FileText, LogOut, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { cn } from '@/lib/utils';
@@ -46,16 +46,29 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     <div className="min-h-screen bg-secondary/25">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-3 sm:h-20 sm:px-5">
-          <Link href="/" className="flex min-w-0 items-center" aria-label="ANSHA home">
-            <Image
-              src="/images/ansha-logo-transparent.webp"
-              alt="Ansha Trading Co. LLC-FZ"
-              width={210}
-              height={104}
-              priority
-              className="h-12 w-auto max-w-[165px] object-contain object-left sm:h-16 sm:max-w-[210px]"
-            />
-          </Link>
+          <div className="flex min-w-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              aria-label="Go back"
+              title="Back"
+              className="h-10 w-10 shrink-0 rounded-full border border-white/60 bg-background/70 shadow-sm backdrop-blur-xl dark:border-white/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Link href="/" className="flex min-w-0 items-center" aria-label="ANSHA home">
+              <Image
+                src="/images/ansha-logo-transparent.webp"
+                alt="Ansha Trading Co. LLC-FZ"
+                width={210}
+                height={104}
+                priority
+                className="h-12 w-auto max-w-[132px] object-contain object-left sm:h-16 sm:max-w-[210px]"
+              />
+            </Link>
+          </div>
 
           <nav className="hidden items-center gap-1 md:flex" aria-label="Customer portal navigation">
             {nav.map(({ href, label, icon: Icon }) => {
@@ -101,3 +114,4 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     </div>
   );
 }
+

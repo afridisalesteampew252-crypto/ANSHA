@@ -11,6 +11,7 @@ import {
   LockKeyhole,
   Save,
   ShieldCheck,
+  UserRoundCheck,
   WalletCards,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,6 +61,11 @@ type ProfileForm = {
   consigneeEmail: string;
   consigneeAddress: string;
   consigneeCountry: string;
+};
+
+type AccountOwner = {
+  full_name: string;
+  role: string;
 };
 
 const EMPTY_FORM: ProfileForm = {
@@ -118,14 +124,16 @@ export default function PortalProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [accountOwner, setAccountOwner] = useState<AccountOwner | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: authData }, { data, error }] = await Promise.all([
+    const [{ data: authData }, { data, error }, { data: ownerRows }] = await Promise.all([
       supabase.auth.getUser(),
       supabase
         .from('customer_profiles')
         .select('full_name,email,link_status,created_at,customers(customer_code,full_name,company_name,email,phone,whatsapp,country,address,avatar_url,consignee_name,consignee_company,consignee_phone,consignee_email,consignee_address,consignee_country)')
         .maybeSingle(),
+      supabase.rpc('get_my_customer_owner'),
     ]);
     if (error) toast.error(error.message);
     const next = (data as ProfileRecord | null) ?? null;
@@ -133,6 +141,7 @@ export default function PortalProfilePage() {
     const customer = Array.isArray(related) ? related[0] : related;
     setVerified(Boolean(authData.user?.email_confirmed_at));
     setProfile(next);
+    setAccountOwner(((ownerRows || [])[0] as AccountOwner | undefined) || null);
     if (next && customer) {
       setForm(toForm(next, customer));
       setAvatarPath(customer.avatar_url);
@@ -262,6 +271,20 @@ export default function PortalProfilePage() {
           </Badge>
         </div>
       </section>
+
+      <Card className="border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 via-card/90 to-red-500/5 shadow-lg backdrop-blur-xl">
+        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-300"><UserRoundCheck className="h-5 w-5" /></span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Your ANSHA account contact</p>
+              <p className="font-semibold">{accountOwner?.full_name || 'Team assignment pending'}</p>
+              <p className="text-xs capitalize text-muted-foreground">{accountOwner ? accountOwner.role : 'An admin or manager will assign your account owner'}</p>
+            </div>
+          </div>
+          <Button asChild variant="outline" className="w-full sm:w-auto"><Link href="/portal/support"><Headphones className="h-4 w-4" />Message the team</Link></Button>
+        </CardContent>
+      </Card>
 
       <form onSubmit={(event) => void saveProfile(event)} className="grid gap-5 xl:grid-cols-2">
         <Card className="border-white/60 bg-card/85 shadow-lg backdrop-blur-xl dark:border-white/10">

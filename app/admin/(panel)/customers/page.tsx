@@ -11,6 +11,7 @@ import {
   Search,
   Trash2,
   Upload,
+  UserRoundCheck,
   Users,
   WalletCards,
 } from 'lucide-react';
@@ -51,6 +52,7 @@ const emptyForm = {
 };
 type CustomerForm = typeof emptyForm;
 type PortalMap = Record<string, { email: string; is_active: boolean }>;
+type CustomerAssignee = { id: string; full_name: string; role: 'manager' | 'sales' | 'freelancer' };
 
 const FORM_FIELDS: { key: keyof Omit<CustomerForm, 'avatar_url'>; label: string; required?: boolean }[] = [
   { key: 'full_name', label: 'Full name', required: true },
@@ -79,16 +81,20 @@ export default function CustomersPage() {
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [assignees, setAssignees] = useState<CustomerAssignee[]>([]);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const [selfId, setSelfId] = useState('');
   const [selfRole, setSelfRole] = useState<string>('staff');
 
   const load = useCallback(async () => {
-    const [{ data }, { data: portals }, { data: auth }] = await Promise.all([
+    const [{ data }, { data: portals }, { data: auth }, { data: ownerRows }] = await Promise.all([
       supabase.from('customers').select('*').order('created_at', { ascending: false }),
       supabase.from('customer_profiles').select('customer_id,email,is_active'),
       supabase.auth.getUser(),
+      supabase.rpc('list_customer_assignees'),
     ]);
+    setAssignees((ownerRows || []) as CustomerAssignee[]);
     const userId = auth.user?.id || '';
     setSelfId(userId);
     if (userId) {
@@ -193,7 +199,7 @@ export default function CustomersPage() {
       const payload = {
         ...trimmed,
         avatar_url: avatarUrl,
-        ...(editingId || !selfId ? {} : { owner_id: selfId }),
+        ...(editingId || !selfId || !isFieldAgentRole(selfRole) ? {} : { owner_id: selfId }),
       };
       // Omit customer_code on create — DB default / trigger assigns next Customer ID.
       const operation = editingId
@@ -227,6 +233,21 @@ export default function CustomersPage() {
     await load();
   };
 
+  const assignCustomer = async (customerId: string, ownerId: string) => {
+    setAssigningId(customerId);
+    const { error } = await supabase.rpc('assign_customer_owner', {
+      p_customer_id: customerId,
+      p_owner_id: ownerId || null,
+    });
+    setAssigningId(null);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setMessage(ownerId ? 'Account owner assigned.' : 'Customer moved to the unassigned queue.');
+    await load();
+  };
+
   const visible = customers.filter((item) => {
     const portal = portalByCustomer[item.id];
     return matchesQuery(query, [
@@ -243,11 +264,15 @@ export default function CustomersPage() {
       item.consignee_name,
       item.consignee_company,
       portal?.email,
+      assignees.find((owner) => owner.id === item.owner_id)?.full_name,
+      assignees.find((owner) => owner.id === item.owner_id)?.role,
     ]);
   });
 
   const existingAvatarSrc = editingId ? avatarUrls[editingId] : null;
   const fieldAgentScoped = isFieldAgentRole(selfRole);
+  const canAssign = selfRole === 'admin' || selfRole === 'manager';
+  const unassignedCount = customers.filter((customer) => !customer.owner_id).length;
 
   return (
     <div className="space-y-6">
@@ -256,7 +281,7 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
           <p className="text-sm text-muted-foreground">
             Manage CRM profiles{fieldAgentScoped ? ' assigned to you' : ''}. Enable customer portal login from each
-            customer&apos;s account page.
+            customer&apos;s account page. Account ownership controls the sales and freelancer workflow scope.
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-3 sm:items-end">
@@ -270,6 +295,16 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
+
+      {canAssign && unassignedCount > 0 ? (
+        <div className="flex flex-col gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-semibold text-foreground">{unassignedCount} customer{unassignedCount === 1 ? '' : 's'} need an account owner</p>
+            <p className="text-muted-foreground">Assign a manager, sales agent or freelancer so their customer workflow is scoped correctly.</p>
+          </div>
+          <Badge variant="outline" className="w-fit border-amber-500/40 bg-background/60 text-amber-700 dark:text-amber-300">Unassigned queue</Badge>
+        </div>
+      ) : null}
 
       {message ? (
         <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-3 text-sm">
@@ -325,12 +360,13 @@ export default function CustomersPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
+              <table className="w-full min-w-[920px] text-sm">
                 <thead className="bg-secondary/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="p-4">Customer ID / Full name</th>
                     <th className="p-4">Country</th>
                     <th className="p-4">Primary contact / Email</th>
+                    <th className="p-4">Account owner</th>
                     <th className="p-4">Portal</th>
                     <th className="p-4 text-right">Actions</th>
                   </tr>
@@ -380,6 +416,42 @@ export default function CustomersPage() {
                         <td className="p-4">
                           <p className="truncate">{item.phone || '—'}</p>
                           <p className="truncate text-xs text-muted-foreground">{item.email || portal?.email || '—'}</p>
+                        </td>
+                        <td className="p-4">
+                          {(() => {
+                            const owner = assignees.find((person) => person.id === item.owner_id);
+                            if (canAssign) {
+                              return (
+                                <label className="block min-w-[12rem]">
+                                  <span className="sr-only">Account owner for {item.full_name}</span>
+                                  <select
+                                    value={owner?.id || ''}
+                                    disabled={assigningId === item.id}
+                                    onChange={(event) => void assignCustomer(item.id, event.target.value)}
+                                    className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none transition focus:ring-2 focus:ring-ring disabled:opacity-60"
+                                  >
+                                    <option value="">Unassigned</option>
+                                    {assignees.map((person) => (
+                                      <option key={person.id} value={person.id}>
+                                        {person.full_name} · {person.role}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              );
+                            }
+                            return owner ? (
+                              <div className="flex items-center gap-2">
+                                <UserRoundCheck className="h-4 w-4 text-accent" />
+                                <div>
+                                  <p className="font-medium">{owner.full_name}</p>
+                                  <p className="text-xs capitalize text-muted-foreground">{owner.role}</p>
+                                </div>
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="border-amber-500/30 text-amber-700 dark:text-amber-300">Unassigned</Badge>
+                            );
+                          })()}
                         </td>
                         <td className="p-4">
                           {portal ? (
@@ -551,3 +623,4 @@ export default function CustomersPage() {
     </div>
   );
 }
+
