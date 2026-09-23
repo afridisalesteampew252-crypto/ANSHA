@@ -22,9 +22,9 @@ export function BlogCard({ post }: BlogCardProps) {
   });
 
   return (
-    <Card className="group overflow-hidden transition-all duration-200 hover:shadow-card-hover hover:border-foreground/15">
+    <Card className="group overflow-hidden rounded-2xl border-white/70 bg-card/90 shadow-[0_12px_35px_rgba(15,23,42,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-card-hover dark:border-white/10 sm:rounded-3xl">
       <Link href={`/blog/${post.slug}`} className="block">
-        <div className="relative aspect-[16/10] bg-secondary overflow-hidden">
+        <div className="relative aspect-[16/10] overflow-hidden bg-[linear-gradient(145deg,hsl(var(--secondary)),hsl(var(--surface-featured)))]">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -36,36 +36,33 @@ export function BlogCard({ post }: BlogCardProps) {
             />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <FileText className="h-10 w-10 text-muted-foreground/25" />
+              <span className="grid h-16 w-16 place-items-center rounded-2xl bg-white/60 shadow-sm"><FileText className="h-8 w-8 text-accent/45" /></span>
             </div>
           )}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#101114]/55 to-transparent" />
+          {post.blog_categories ? <Badge className="absolute bottom-3 left-3 border border-white/25 bg-[#101114]/80 text-[10px] text-white shadow-sm backdrop-blur-md">{post.blog_categories.name}</Badge> : null}
         </div>
       </Link>
-      <CardContent className="p-4">
+      <CardContent className="p-4 sm:p-5">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {post.blog_categories && (
-            <Badge variant="secondary" className="text-xs font-medium">
-              {post.blog_categories.name}
-            </Badge>
-          )}
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
             {date}
           </span>
         </div>
         <Link href={`/blog/${post.slug}`} className="block mt-2.5">
-          <h3 className="font-semibold text-sm leading-snug line-clamp-2 transition-colors group-hover:text-accent">
+          <h3 className="line-clamp-2 text-base font-extrabold leading-snug transition-colors group-hover:text-accent sm:text-lg">
             {post.title}
           </h3>
         </Link>
         {post.excerpt && (
-          <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
             {post.excerpt}
           </p>
         )}
         <Link
           href={`/blog/${post.slug}`}
-          className="mt-3 flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="mt-4 inline-flex min-h-10 items-center gap-1.5 rounded-full bg-accent/10 px-3 text-xs font-bold text-accent transition-colors hover:bg-accent hover:text-white"
         >
           Read Article
           <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />

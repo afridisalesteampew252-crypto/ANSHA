@@ -11,6 +11,17 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
 
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
+      <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.87h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.75 2.98-4.33 2.98-7.35Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.42l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.07v2.59A10 10 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.41 13.91A6.02 6.02 0 0 1 6.1 12c0-.66.11-1.3.31-1.91V7.5H3.07A10 10 0 0 0 2 12c0 1.61.38 3.14 1.07 4.5l3.34-2.59Z" />
+      <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.5l2.87-2.88A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.93 5.5l3.34 2.59C7.2 7.73 9.4 5.97 12 5.97Z" />
+    </svg>
+  );
+}
+
 function PortalLoginInner() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -18,6 +29,7 @@ function PortalLoginInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [verificationSent, setVerificationSent] = useState(false);
 
@@ -154,6 +166,23 @@ function PortalLoginInner() {
     window.location.assign('/portal/account');
   };
 
+  const handleGoogleSignIn = async () => {
+    setOauthLoading(true);
+    const callback = `${window.location.origin}/auth/callback?next=/portal/account`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: callback,
+        queryParams: { prompt: 'select_account' },
+      },
+    });
+
+    if (error) {
+      toast.error(error.message || 'Google sign-in could not start.');
+      setOauthLoading(false);
+    }
+  };
+
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary/30">
@@ -163,8 +192,11 @@ function PortalLoginInner() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary/30 px-4 py-10">
-      <Card className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[linear-gradient(145deg,hsl(210_30%_94%),hsl(0_35%_96%))] px-4 py-10 dark:bg-[linear-gradient(145deg,hsl(220_18%_7%),hsl(0_18%_10%))]">
+      <div aria-hidden className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-sky-400/15 blur-3xl" />
+      <div aria-hidden className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-red-500/15 blur-3xl" />
+      <Card className="relative w-full max-w-md overflow-hidden rounded-[2rem] border-white/70 bg-card/85 shadow-[0_28px_80px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-white/10">
+        <div className="h-1.5 bg-gradient-to-r from-sky-500 via-accent to-amber-400" />
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-20 items-center justify-center">
             <Image
@@ -196,7 +228,14 @@ function PortalLoginInner() {
             </div>
           ) : (
             <>
-              <div className="mb-5 grid grid-cols-2 rounded-lg bg-secondary p-1">
+              <Button type="button" variant="outline" className="h-12 w-full rounded-2xl border-border/70 bg-white font-bold text-foreground shadow-sm hover:bg-white/80 dark:bg-white/5" onClick={() => void handleGoogleSignIn()} disabled={oauthLoading || loading}>
+                {oauthLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <GoogleMark />}
+                Continue with Google
+              </Button>
+              <div className="my-5 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /><span>or use email</span><span className="h-px flex-1 bg-border" />
+              </div>
+              <div className="mb-5 grid grid-cols-2 rounded-xl bg-secondary p-1">
                 <Button type="button" size="sm" variant={mode === 'signin' ? 'default' : 'ghost'} onClick={() => setMode('signin')}>
                   Sign in
                 </Button>
@@ -219,7 +258,7 @@ function PortalLoginInner() {
                   <Label htmlFor="portal-password">Password</Label>
                   <Input id="portal-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} required />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="h-11 w-full rounded-xl" disabled={loading || oauthLoading}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {mode === 'signup' ? 'Create customer account' : 'Sign in'}
                 </Button>

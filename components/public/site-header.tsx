@@ -107,11 +107,11 @@ export function SiteHeader() {
       </div>
 
       <div className={cn(
-        'min-w-0 max-w-full overflow-x-clip border-b border-border/80 bg-[hsl(210_20%_97%)] transition-shadow dark:bg-background',
+        'min-w-0 max-w-full overflow-x-clip border-b border-white/60 bg-[hsl(210_25%_98%/0.94)] transition-shadow backdrop-blur-xl dark:border-white/10 dark:bg-background/95',
         scrolled && 'shadow-[0_8px_28px_rgba(15,23,42,0.08)]'
       )}>
         <div className="container-page flex h-[72px] min-w-0 items-center gap-2 sm:h-[84px] sm:gap-4 lg:h-[96px]">
-          <Link href="/" className="flex min-w-0 shrink-0 items-center" aria-label="Ansha Trading home">
+          <Link href="/" className="flex min-w-0 shrink-0 items-center rounded-2xl transition active:scale-[0.98]" aria-label="Ansha Trading home">
             <Image
               src="/images/ansha-logo-transparent.webp"
               alt="Ansha Trading Co. LLC-FZ"
@@ -157,17 +157,17 @@ export function SiteHeader() {
             <ThemeToggle />
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-0.5 md:ml-0 xl:hidden">
-            <Link href="/favorites" className="relative grid h-11 w-11 place-items-center rounded-full text-foreground" aria-label={`Favorites${favoritesCount ? `, ${favoritesCount} saved` : ''}`}>
+          <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0 xl:hidden">
+            <Link href="/favorites" className="relative grid h-10 w-10 place-items-center rounded-xl border border-rose-500/10 bg-rose-500/10 text-rose-600 shadow-sm transition active:scale-95 sm:h-11 sm:w-11" aria-label={`Favorites${favoritesCount ? `, ${favoritesCount} saved` : ''}`}>
               <Heart className={cn('h-5 w-5', favoritesCount > 0 && 'fill-accent text-accent')} />
               <CountBadge count={favoritesCount} />
             </Link>
-            <Link href="/cart" className="relative grid h-11 w-11 place-items-center rounded-full text-foreground" aria-label={`Inquiry cart${cartCount ? `, ${cartCount} items` : ''}`}>
+            <Link href="/cart" className="relative grid h-10 w-10 place-items-center rounded-xl border border-amber-500/10 bg-amber-500/10 text-amber-700 shadow-sm transition active:scale-95 sm:h-11 sm:w-11" aria-label={`Inquiry cart${cartCount ? `, ${cartCount} items` : ''}`}>
               <ShoppingBag className="h-5 w-5" />
               <CountBadge count={cartCount} />
             </Link>
-            <ThemeToggle className="h-11 w-11" />
-            <Button variant="ghost" size="icon" className="h-11 w-11 md:hidden" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+            <ThemeToggle className="hidden h-10 w-10 rounded-xl border border-border/60 bg-card/70 sm:grid sm:h-11 sm:w-11" />
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl border border-accent/15 bg-accent/10 text-accent shadow-sm md:hidden sm:h-11 sm:w-11" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
@@ -228,23 +228,28 @@ export function SiteHeader() {
 
       {mobileOpen && (
         <>
-          <button className="fixed inset-0 z-[58] bg-black/45 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
+          <button className="fixed inset-0 z-[58] bg-[#0b0c0f]/55 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
           <div
             id="mobile-site-menu"
-            className="fixed left-0 right-0 top-[calc(4.5rem+2.25rem)] z-[60] max-h-[calc(100dvh-4.5rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] w-full max-w-full overflow-x-clip overflow-y-auto overscroll-contain border-b border-border bg-background shadow-2xl sm:top-[calc(5.25rem+2.25rem)] sm:max-h-[calc(100dvh-5.25rem-2.25rem-4rem-env(safe-area-inset-bottom,0px))] md:hidden"
+            className="mobile-drawer-glass fixed left-2 right-2 top-[calc(4.5rem+2.25rem+0.4rem)] z-[60] max-h-[calc(100dvh-4.5rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] overflow-x-clip overflow-y-auto overscroll-contain rounded-[1.75rem] border border-white/60 shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:left-4 sm:right-4 sm:top-[calc(5.25rem+2.25rem+0.5rem)] sm:max-h-[calc(100dvh-5.25rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] md:hidden"
           >
-            <div className="container-page space-y-5 py-5 pb-8">
+            <div className="space-y-4 p-4 pb-6 sm:p-5">
+              <div className="flex items-center justify-between rounded-2xl bg-[#101114] px-4 py-3 text-white">
+                <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Explore ANSHA</p><p className="mt-0.5 text-sm font-bold">Stock, parts &amp; export support</p></div>
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10"><PackageSearch className="h-4 w-4 text-red-400" /></span>
+              </div>
               <form onSubmit={handleSearch} className="md:hidden">
                 <div className="relative">
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input type="search" placeholder="OEM, part number, chassis..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="h-12 rounded-xl bg-secondary/50 pl-10" />
+                  <Input type="search" placeholder="OEM, part number, chassis..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="h-12 rounded-2xl border-accent/15 bg-white/80 pl-10 pr-20 shadow-sm dark:bg-card/80" />
+                  <Button type="submit" size="sm" variant="accent" className="absolute right-1.5 top-1.5 h-9 rounded-xl px-3">Go</Button>
                 </div>
               </form>
-              <nav className="grid gap-1">
+              <nav className="grid grid-cols-2 gap-2">
                 <Link
                   href="/offers"
                   className={cn(
-                    'flex min-h-12 items-center justify-between rounded-xl px-4 py-3 text-sm font-bold',
+                    'col-span-2 flex min-h-12 items-center justify-between rounded-2xl px-4 py-3 text-sm font-bold shadow-sm',
                     pathname.startsWith('/offers') ? 'bg-accent text-white' : 'bg-accent/10 text-accent hover:bg-accent/15'
                   )}
                 >
@@ -255,16 +260,16 @@ export function SiteHeader() {
                   const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                   return (
                     <Link key={link.href} href={link.href} className={cn(
-                      'flex min-h-12 items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold',
-                      active ? 'bg-accent text-white' : 'text-foreground hover:bg-secondary'
+                      'flex min-h-12 items-center justify-between rounded-2xl border px-3 py-3 text-sm font-semibold transition active:scale-[0.98]',
+                      active ? 'border-accent bg-accent text-white shadow-md shadow-accent/20' : 'border-white/65 bg-white/65 text-foreground shadow-sm hover:bg-white dark:border-white/10 dark:bg-white/5'
                     )}>
                       {link.label}<ChevronRight className="h-4 w-4 opacity-50" />
                     </Link>
                   );
                 })}
-                <div className="rounded-xl border border-border p-2">
+                <div className="col-span-2 rounded-2xl border border-white/65 bg-white/55 p-2.5 shadow-sm dark:border-white/10 dark:bg-white/5">
                   <p className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Vehicle stock locations</p>
-                  <div className="grid grid-cols-2 gap-1">{STOCK_ORIGINS.map((origin) => <a key={origin.value} href={`/vehicles?stock=${origin.value}`} className="flex min-h-11 items-center rounded-lg px-2 py-2.5 text-xs font-semibold hover:bg-secondary">{origin.label}</a>)}</div>
+                  <div className="grid grid-cols-2 gap-1">{STOCK_ORIGINS.map((origin) => <a key={origin.value} href={`/vehicles?stock=${origin.value}`} className="flex min-h-11 items-center rounded-xl px-2 py-2.5 text-xs font-semibold hover:bg-secondary">{origin.label}</a>)}</div>
                 </div>
               </nav>
               <div className="grid grid-cols-2 gap-2">

@@ -51,7 +51,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
   });
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-foreground/10 bg-card text-card-foreground transition duration-300 hover:-translate-y-0.5 hover:border-accent sm:rounded-2xl">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-card/95 text-card-foreground shadow-[0_10px_30px_rgba(15,23,42,0.07)] transition duration-300 hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-card-hover dark:border-white/10 sm:rounded-3xl">
       <div className="relative min-w-0">
         <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#101114]/[0.04]">
           {photoUrl ? (
