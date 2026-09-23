@@ -3,8 +3,10 @@
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+  Banknote,
   BookmarkCheck,
   Camera,
+  ChevronRight,
   FileText,
   Headphones,
   Loader2,
@@ -21,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
 
 type CustomerRecord = {
   customer_code: string;
@@ -91,6 +94,7 @@ const CONSIGNEE_FIELDS = [
 ] as const;
 
 const ACCOUNT_LINKS = [
+  { href: '/portal/payments', title: 'Submit Bank Transfer Proof', description: 'Upload your TT copy securely', icon: Banknote },
   { href: '/portal/account', title: 'Statement', description: 'SOA & remittances', icon: WalletCards },
   { href: '/portal/reservations', title: 'Reservations', description: 'Reserved stock', icon: BookmarkCheck },
   { href: '/portal/invoices', title: 'Invoices', description: 'Documents & balances', icon: FileText },
@@ -125,6 +129,7 @@ export default function PortalProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [accountOwner, setAccountOwner] = useState<AccountOwner | null>(null);
+  const [mobileDetailsSection, setMobileDetailsSection] = useState<'personal' | 'consignee' | null>(null);
 
   const load = useCallback(async () => {
     const [{ data: authData }, { data, error }, { data: ownerRows }] = await Promise.all([
@@ -272,6 +277,60 @@ export default function PortalProfilePage() {
         </div>
       </section>
 
+      <nav className="grid grid-cols-2 gap-2 lg:hidden" aria-label="Customer account sections">
+        <Button
+          type="button"
+          variant={mobileDetailsSection === 'personal' ? 'default' : 'outline'}
+          className="h-auto min-h-16 justify-start gap-3 p-3"
+          aria-pressed={mobileDetailsSection === 'personal'}
+          onClick={() => setMobileDetailsSection('personal')}
+        >
+          <UserRoundCheck className="h-5 w-5 shrink-0" />
+          <span className="min-w-0 flex-1 text-left">
+            <strong className="block">Personal Details</strong>
+            <small className="block truncate font-normal opacity-70">Name and contact</small>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
+        </Button>
+        <Button
+          type="button"
+          variant={mobileDetailsSection === 'consignee' ? 'default' : 'outline'}
+          className="h-auto min-h-16 justify-start gap-3 p-3"
+          aria-pressed={mobileDetailsSection === 'consignee'}
+          onClick={() => setMobileDetailsSection('consignee')}
+        >
+          <BookmarkCheck className="h-5 w-5 shrink-0" />
+          <span className="min-w-0 flex-1 text-left">
+            <strong className="block">Consignee Details</strong>
+            <small className="block truncate font-normal opacity-70">Shipping information</small>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
+        </Button>
+        {ACCOUNT_LINKS.map(({ href, title, description, icon: Icon }) => {
+          const paymentAction = href === '/portal/payments';
+          return (
+            <Button
+              key={href}
+              asChild
+              variant={paymentAction ? 'accent' : 'outline'}
+              className={cn(
+                'h-auto min-h-16 justify-start gap-3 p-3',
+                paymentAction && 'col-span-2 min-h-14 shadow-lg'
+              )}
+            >
+              <Link href={href}>
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="min-w-0 flex-1 text-left">
+                  <strong className="block">{title}</strong>
+                  <small className={cn('block truncate font-normal', paymentAction ? 'text-white/80' : 'text-muted-foreground')}>{description}</small>
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 opacity-70" />
+              </Link>
+            </Button>
+          );
+        })}
+      </nav>
+
       <Card className="border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 via-card/90 to-red-500/5 shadow-lg backdrop-blur-xl">
         <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex items-center gap-3">
@@ -287,7 +346,13 @@ export default function PortalProfilePage() {
       </Card>
 
       <form onSubmit={(event) => void saveProfile(event)} className="grid gap-5 xl:grid-cols-2">
-        <Card className="border-white/60 bg-card/85 shadow-lg backdrop-blur-xl dark:border-white/10">
+        <Card
+          id="personal-details"
+          className={cn(
+            'border-white/60 bg-card/85 shadow-lg backdrop-blur-xl dark:border-white/10',
+            mobileDetailsSection !== 'personal' && 'hidden lg:block'
+          )}
+        >
           <CardHeader><CardTitle>Personal details</CardTitle><CardDescription>Edit the contact information used by our team.</CardDescription></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {PROFILE_FIELDS.map(([field, label, placeholder, type]) => (
@@ -298,10 +363,17 @@ export default function PortalProfilePage() {
             ))}
             <div className="space-y-2 sm:col-span-2"><Label htmlFor="portal-email">Portal email</Label><Input id="portal-email" value={profile.email} disabled /><p className="text-xs text-muted-foreground">Contact support to change the login email.</p></div>
             <div className="space-y-2 sm:col-span-2"><Label htmlFor="address">Address</Label><textarea id="address" value={form.address} onChange={(event) => setField('address', event.target.value)} rows={3} className="w-full resize-y rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="Full billing or contact address" /></div>
+            <Button type="submit" className="h-11 sm:col-span-2 lg:hidden" disabled={saving || uploading}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save personal details</Button>
           </CardContent>
         </Card>
 
-        <Card className="border-white/60 bg-card/85 shadow-lg backdrop-blur-xl dark:border-white/10">
+        <Card
+          id="consignee-details"
+          className={cn(
+            'border-white/60 bg-card/85 shadow-lg backdrop-blur-xl dark:border-white/10',
+            mobileDetailsSection !== 'consignee' && 'hidden lg:block'
+          )}
+        >
           <CardHeader><CardTitle>Consignee details</CardTitle><CardDescription>These details help prepare shipping and delivery documents accurately.</CardDescription></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {CONSIGNEE_FIELDS.map(([field, label, placeholder, type]) => (
@@ -311,12 +383,12 @@ export default function PortalProfilePage() {
               </div>
             ))}
             <div className="space-y-2 sm:col-span-2"><Label htmlFor="consigneeAddress">Consignee address</Label><textarea id="consigneeAddress" value={form.consigneeAddress} onChange={(event) => setField('consigneeAddress', event.target.value)} rows={3} className="w-full resize-y rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" placeholder="Complete destination address" /></div>
-            <Button type="submit" className="h-11 sm:col-span-2" disabled={saving || uploading}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save profile and consignee</Button>
+            <Button type="submit" className="h-11 sm:col-span-2" disabled={saving || uploading}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save consignee details</Button>
           </CardContent>
         </Card>
       </form>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="hidden gap-3 lg:grid lg:grid-cols-3 xl:grid-cols-6">
         {ACCOUNT_LINKS.map(({ href, title, description, icon: Icon }) => (
           <Button key={href} asChild variant="outline" className="h-auto justify-start gap-3 p-4"><Link href={href}><Icon className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">{title}</strong><small className="text-muted-foreground">{description}</small></span></Link></Button>
         ))}
