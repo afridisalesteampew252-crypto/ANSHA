@@ -241,15 +241,15 @@ export default function HomePageClient({
             <p className="animate-fade-up-delay-2 mt-3 max-w-lg text-[14px] leading-6 text-white/70 sm:mt-4 sm:text-base sm:leading-7">
               Published stock, OEM fitment support, and worldwide shipping coordination — one export team.
             </p>
-            <div className="animate-fade-up-delay-2 mt-6 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-3">
-              <Button asChild variant="accent" size="lg" className="h-11 w-full rounded-full px-6 text-sm font-bold sm:h-12 sm:w-auto sm:px-7">
+            <div className="animate-fade-up-delay-2 mt-6 grid grid-cols-2 gap-2.5 sm:mt-7 sm:flex sm:flex-wrap sm:gap-3">
+              <Button asChild variant="accent" size="lg" className="col-span-2 h-12 w-full rounded-2xl px-6 text-sm font-bold shadow-lg shadow-red-950/20 sm:h-12 sm:w-auto sm:rounded-full sm:px-7">
                 <Link href="/vehicles">Browse vehicles <ArrowRight className="h-4 w-4" /></Link>
               </Button>
-              <Button asChild size="lg" className="h-11 w-full rounded-full border border-white/25 bg-white/10 px-6 text-sm font-bold text-white hover:bg-white/15 sm:h-12 sm:w-auto sm:px-7">
-                <Link href="/machinery">Machinery &amp; trucks</Link>
+              <Button asChild size="lg" className="h-12 w-full rounded-2xl border border-amber-300/20 bg-amber-400/10 px-3 text-xs font-bold text-white hover:bg-amber-400/15 sm:h-12 sm:w-auto sm:rounded-full sm:px-7 sm:text-sm">
+                <Link href="/machinery"><Truck className="h-4 w-4 text-amber-300" />Machinery</Link>
               </Button>
-              <Button asChild size="lg" className="h-11 w-full rounded-full border border-white/25 bg-white/10 px-6 text-sm font-bold text-white hover:bg-white/15 sm:h-12 sm:w-auto sm:px-7">
-                <Link href="/parts">Explore parts</Link>
+              <Button asChild size="lg" className="h-12 w-full rounded-2xl border border-sky-300/20 bg-sky-400/10 px-3 text-xs font-bold text-white hover:bg-sky-400/15 sm:h-12 sm:w-auto sm:rounded-full sm:px-7 sm:text-sm">
+                <Link href="/parts"><Wrench className="h-4 w-4 text-sky-300" />Explore parts</Link>
               </Button>
             </div>
             <p className="animate-fade-up-delay-2 mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-white/55">

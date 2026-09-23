@@ -6,11 +6,11 @@ import { CarFront, Home, MessageCircle, UserRound, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const items = [
-  { href: '/', label: 'Home', icon: Home, match: 'home' },
-  { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock' },
-  { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts' },
-  { href: '/portal/account', label: 'Account', icon: UserRound, match: 'portal' },
-  { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support' },
+  { href: '/', label: 'Home', icon: Home, match: 'home', tone: 'text-sky-600', glow: 'bg-sky-500/12' },
+  { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock', tone: 'text-orange-600', glow: 'bg-orange-500/12' },
+  { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts', tone: 'text-red-600', glow: 'bg-red-500/12' },
+  { href: '/portal/account', label: 'Account', icon: UserRound, match: 'portal', tone: 'text-violet-600', glow: 'bg-violet-500/12' },
+  { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support', tone: 'text-emerald-600', glow: 'bg-emerald-500/12' },
 ] as const;
 
 export function MobileBottomNav() {
@@ -25,24 +25,31 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[55] w-full max-w-full overflow-x-clip border-t border-border bg-background/96 pb-[max(0.35rem,env(safe-area-inset-bottom,0px))] shadow-[0_-8px_30px_rgba(15,23,42,0.1)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 lg:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] w-full max-w-full px-2 pb-[max(0.45rem,env(safe-area-inset-bottom,0px))] lg:hidden"
       aria-label="ANSHA mobile app navigation"
       style={{ overscrollBehavior: 'none', touchAction: 'manipulation', transform: 'translateZ(0)' }}
     >
-      <div className="mx-auto grid h-[4.25rem] w-full max-w-full grid-cols-5">
+      <div className="mobile-nav-glass pointer-events-auto mx-auto grid h-[4.65rem] w-full max-w-xl grid-cols-5 rounded-[1.4rem] border border-white/65 px-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.22)] backdrop-blur-2xl dark:border-white/10">
         {items.map((item) => {
           const active = isActive(item.match);
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? 'page' : undefined}
               className={cn(
-                'relative flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-[10px] font-semibold transition-colors',
-                active ? 'bg-accent/10 text-accent' : 'text-muted-foreground'
+                'relative my-1 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1rem] px-0.5 text-[10px] font-bold transition-all duration-200 active:scale-95',
+                active ? `${item.glow} ${item.tone}` : 'text-muted-foreground hover:bg-white/55 hover:text-foreground dark:hover:bg-white/5'
               )}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
+              <span className={cn(
+                'grid h-7 w-9 place-items-center rounded-full transition-all duration-200',
+                active && 'bg-white/80 shadow-sm dark:bg-white/10'
+              )}>
+                <item.icon className={cn('h-[19px] w-[19px] shrink-0', active && 'stroke-[2.4]')} />
+              </span>
               <span className="max-w-full truncate">{item.label}</span>
+              {active ? <span className="absolute -bottom-0.5 h-1 w-1 rounded-full bg-current" aria-hidden /> : null}
             </Link>
           );
         })}
