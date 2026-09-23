@@ -3,13 +3,22 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Banknote, CheckCircle2, Loader2, ReceiptText, ShoppingBag, WalletCards } from 'lucide-react';
+import { Banknote, CheckCircle2, FileText, Loader2, ReceiptText, RotateCcw, ShoppingBag, WalletCards } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MoneyBreakdown } from '@/components/money-breakdown';
 import { addToCurrencyMap } from '@/lib/money';
 import { supabase } from '@/lib/supabase/client';
+import {
+  buildSoaLedgerLines,
+  inDateRange,
+  printSoaPdf,
+  todayYmd,
+} from '@/lib/soa/export';
 
 type SoaSummary = {
   currency: string;
@@ -85,15 +94,26 @@ const receivableDocument = (type: string) => type === 'tax_invoice' || type === 
 function PortalAccountInner() {
   const [data, setData] = useState<SoaPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [soaFrom, setSoaFrom] = useState('');
+  const [soaTo, setSoaTo] = useState(() => todayYmd());
+  const [partyName, setPartyName] = useState('Customer');
+  const [partyEmail, setPartyEmail] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data: payload, error } = await supabase.rpc('get_my_customer_soa');
+    const [{ data: payload, error }, profileRes] = await Promise.all([
+      supabase.rpc('get_my_customer_soa'),
+      supabase.from('customer_profiles').select('full_name,email').maybeSingle(),
+    ]);
     if (error) {
       toast.error(error.message);
       setData(null);
     } else {
       setData(payload as SoaPayload);
+    }
+    if (profileRes.data) {
+      setPartyName(profileRes.data.full_name || 'Customer');
+      setPartyEmail(profileRes.data.email || null);
     }
     setLoading(false);
   }, []);
@@ -108,6 +128,8 @@ function PortalAccountInner() {
   const allocations = data?.allocations || [];
   const buying = data?.buying || [];
   const fallbackCurrency = summary?.currency || 'AED';
+
+  const soaRange = useMemo(() => ({ from: soaFrom, to: soaTo || todayYmd() }), [soaFrom, soaTo]);
 
   // Build per-currency KPIs from line data so mixed books never sum AED+USD as one total.
   const soaTotals = useMemo(() => {
@@ -145,6 +167,7 @@ function PortalAccountInner() {
     }> = [];
 
     for (const invoice of invoices) {
+      if (!inDateRange(invoice.issue_date, soaRange)) continue;
       const debit = receivableDocument(invoice.document_type) ? Number(invoice.total_amount) : 0;
       rows.push({
         key: `inv-${invoice.id}`,
@@ -160,7 +183,47 @@ function PortalAccountInner() {
     }
 
     return rows.sort((a, b) => b.date.localeCompare(a.date));
-  }, [invoices]);
+  }, [invoices, soaRange]);
+
+  const soaLedgerLines = useMemo(
+    () =>
+      buildSoaLedgerLines({
+        invoices: invoices.map((inv) => ({
+          id: inv.id,
+          invoice_number: inv.invoice_number,
+          document_type: inv.document_type,
+          issue_date: inv.issue_date,
+          currency: inv.currency,
+          status: inv.status,
+          total_amount: inv.total_amount,
+          amount_paid: inv.amount_paid,
+          balance_due: inv.balance_due,
+        })),
+        remittances: remittances.map((rem) => ({
+          id: rem.id,
+          remittance_number: rem.remittance_number,
+          received_date: rem.received_date,
+          amount: rem.amount,
+          currency: rem.currency,
+          status: 'confirmed',
+          method: rem.method,
+          bank_reference: rem.bank_reference,
+        })),
+        range: soaRange,
+      }),
+    [invoices, remittances, soaRange]
+  );
+
+  const handleSoaPdf = () => {
+    printSoaPdf({
+      party: {
+        name: partyName,
+        email: partyEmail,
+      },
+      range: soaRange,
+      lines: soaLedgerLines,
+    });
+  };
 
   if (loading) {
     return (
@@ -189,12 +252,57 @@ function PortalAccountInner() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Account statement</h1>
-        <p className="text-sm text-muted-foreground">
-          Read-only summary of your invoices, confirmed remittances, and how payments were applied.
-          Balances are listed per currency — amounts are not converted.
-        </p>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Account statement</h1>
+          <p className="text-sm text-muted-foreground">
+            Read-only summary of your invoices, confirmed remittances, and how payments were applied.
+            Balances are listed per currency — amounts are not converted. Download PDF for the selected period.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="space-y-1.5">
+            <Label htmlFor="portal-soa-from">From</Label>
+            <Input
+              id="portal-soa-from"
+              type="date"
+              value={soaFrom}
+              max={soaTo || todayYmd()}
+              onChange={(event) => setSoaFrom(event.target.value)}
+              className="w-[160px]"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="portal-soa-to">To</Label>
+            <Input
+              id="portal-soa-to"
+              type="date"
+              value={soaTo}
+              min={soaFrom || undefined}
+              max={todayYmd()}
+              onChange={(event) => setSoaTo(event.target.value || todayYmd())}
+              className="w-[160px]"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={handleSoaPdf}>
+              <FileText className="h-4 w-4" />
+              Download PDF
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSoaFrom('');
+                setSoaTo(todayYmd());
+              }}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset dates
+            </Button>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
