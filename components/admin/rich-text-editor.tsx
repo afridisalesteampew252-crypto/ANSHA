@@ -83,7 +83,7 @@ export function RichTextEditor({
     run('insertImage', url);
   };
 
-  const uploadInlineImage = async (file: File) => {
+  const uploadInlineImage = async (file: File, uploadId: string) => {
     if (!file.type.startsWith('image/')) {
       window.alert('Only image files are allowed.');
       return;
@@ -94,7 +94,7 @@ export function RichTextEditor({
     }
     setUploading(true);
     const ext = file.name.split('.').pop() || 'jpg';
-    const path = `inline/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const path = `inline/${uploadId}.${ext}`;
     const { error } = await supabase.storage.from('blog-images').upload(path, file, { upsert: false });
     setUploading(false);
     if (error) {
@@ -191,7 +191,7 @@ export function RichTextEditor({
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 event.target.value = '';
-                if (file) void uploadInlineImage(file);
+                if (file) void uploadInlineImage(file, crypto.randomUUID());
               }}
             />
           </div>
