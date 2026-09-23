@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase/client';
+import { LanguageSwitcher } from '@/components/accessibility/language-switcher';
 
 const nav = [
   { href: '/portal/catalog', label: 'Stock', icon: PackageSearch },
@@ -101,6 +102,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </nav>
 
           <div className="flex min-w-0 items-center gap-2">
+            <LanguageSwitcher compact className="h-9 w-[5.25rem] sm:w-auto" />
             <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full text-emerald-600 md:hidden" aria-label="Upload TT copy">
               <Link href="/portal/payments"><Banknote className="h-5 w-5" /></Link>
             </Button>
