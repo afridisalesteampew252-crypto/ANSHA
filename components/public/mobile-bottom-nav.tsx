@@ -25,11 +25,11 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] w-full max-w-full px-2 pb-[max(0.45rem,env(safe-area-inset-bottom,0px))] lg:hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] w-full max-w-full px-3 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] lg:hidden"
       aria-label="ANSHA mobile app navigation"
       style={{ overscrollBehavior: 'none', touchAction: 'manipulation', transform: 'translateZ(0)' }}
     >
-      <div className="mobile-nav-glass pointer-events-auto mx-auto grid h-[4.5rem] w-full max-w-xl grid-cols-5 rounded-2xl border border-white/10 px-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.30)] backdrop-blur-2xl">
+      <div className="mobile-nav-glass pointer-events-auto mx-auto grid h-[4.5rem] w-full max-w-xl grid-cols-5 rounded-[1.4rem] border border-white/30 px-1.5 shadow-[0_20px_50px_rgba(4,8,15,0.28)]">
         {items.map((item) => {
           const active = isActive(item.match);
           return (
@@ -39,7 +39,7 @@ export function MobileBottomNav() {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'relative my-1 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1rem] px-0.5 text-[10px] font-bold transition-all duration-200 active:scale-95',
-                active ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/[0.06] hover:text-white'
+                active ? 'bg-white/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]' : 'text-white/65 hover:bg-white/10 hover:text-white'
               )}
             >
               <span className={cn(
