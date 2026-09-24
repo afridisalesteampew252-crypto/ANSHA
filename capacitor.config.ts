@@ -2,14 +2,14 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
  * Native shell for the public catalog PWA.
- * Loads the production (or override) URL in a WebView — does not bundle the Next.js build.
+ * Loads the dedicated mobile frontend (or an override) in a WebView — does not bundle the Next.js build.
  *
  * Override at sync/open time:
  *   CAPACITOR_SERVER_URL=https://preview.example.com npx cap sync
  */
 const serverUrl =
   process.env.CAPACITOR_SERVER_URL?.trim() ||
-  'https://www.anshatradingco.com';
+  'https://www.anshatradingco.com/mobile';
 
 const config: CapacitorConfig = {
   appId: 'com.anshatrading.app',

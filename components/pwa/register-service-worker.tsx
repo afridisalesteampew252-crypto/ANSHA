@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { isNativeCapacitorRuntime } from '@/lib/capacitor/runtime';
 
 function trackWaiting(registration: ServiceWorkerRegistration, setWaiting: (sw: ServiceWorker | null) => void) {
   if (registration.waiting) {
@@ -24,6 +25,7 @@ export function RegisterServiceWorker() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (isNativeCapacitorRuntime()) return;
 
     const isLocal =
       window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';

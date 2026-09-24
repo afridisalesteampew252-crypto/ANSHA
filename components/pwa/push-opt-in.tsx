@@ -5,6 +5,7 @@ import { Bell, BellOff, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { isNativeCapacitorRuntime } from '@/lib/capacitor/runtime';
 import { ensurePushSubscription, getVapidPublicKey, isWebPushConfigured } from '@/lib/pwa-push-subscribe';
 
 const DISMISS_KEY = 'ansha-push-prompt-dismissed';
@@ -21,6 +22,7 @@ export function PushOptIn() {
   const vapidReady = isWebPushConfigured();
 
   useEffect(() => {
+    if (isNativeCapacitorRuntime()) return;
     if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window) || !vapidReady) return;
     if (Notification.permission === 'granted') {
       void ensurePushSubscription().catch(() => undefined);

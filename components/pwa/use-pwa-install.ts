@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { isNativeCapacitorRuntime } from '@/lib/capacitor/runtime';
 
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -87,8 +88,12 @@ function ensureGlobalListener() {
 export function usePwaInstall() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [isIos, setIsIos] = useState(false);
+  const [native, setNative] = useState(false);
 
   useEffect(() => {
+    const isNative = isNativeCapacitorRuntime();
+    setNative(isNative);
+    if (isNative) return;
     ensureGlobalListener();
     setIsIos(detectIos());
   }, []);
@@ -115,6 +120,7 @@ export function usePwaInstall() {
   }, []);
 
   return {
+    native,
     canNativePrompt: Boolean(snapshot.deferred) && !snapshot.installed,
     deferred: snapshot.deferred,
     installed: snapshot.installed,

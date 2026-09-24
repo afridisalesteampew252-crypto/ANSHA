@@ -18,10 +18,10 @@ export function InstallAppButton({
   size?: 'sm' | 'default' | 'icon' | 'lg';
   label?: string;
 }) {
-  const { installed, canNativePrompt, isIos, promptInstall, clearDismiss } = usePwaInstall();
+  const { native, installed, canNativePrompt, isIos, promptInstall, clearDismiss } = usePwaInstall();
   const [hintOpen, setHintOpen] = useState(false);
 
-  if (installed) return null;
+  if (native || installed) return null;
 
   const onClick = async () => {
     clearDismiss();
@@ -110,13 +110,14 @@ export function InstallPrompt() {
     canNativePrompt,
     isIos,
     showManualHint,
+    native,
     promptInstall,
     dismissBanner,
   } = usePwaInstall();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (installed || dismissed) {
+    if (native || installed || dismissed) {
       setVisible(false);
       return;
     }
@@ -124,9 +125,9 @@ export function InstallPrompt() {
     const delay = canNativePrompt ? 8000 : 12000;
     const timer = window.setTimeout(() => setVisible(true), delay);
     return () => window.clearTimeout(timer);
-  }, [installed, dismissed, canNativePrompt]);
+  }, [native, installed, dismissed, canNativePrompt]);
 
-  if (!visible || installed || dismissed) return null;
+  if (!visible || native || installed || dismissed) return null;
 
   const install = async () => {
     if (canNativePrompt) {

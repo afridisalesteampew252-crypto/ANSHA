@@ -13,6 +13,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { RegisterServiceWorker } from '@/components/pwa/register-service-worker';
 import { NativeBackHandler } from '@/components/mobile/native-back-handler';
 import { NativePushNotifications } from '@/components/mobile/native-push-notifications';
+import { NativeAppUrlHandler } from '@/components/mobile/native-app-url-handler';
 
 /** Body: Plus Jakarta Sans — clear marketplace UI (Amazon Ember / eBay Market Sans energy). */
 const plusJakarta = Plus_Jakarta_Sans({
@@ -102,6 +103,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <RegisterServiceWorker />
           <NativeBackHandler />
           <NativePushNotifications />
+          <NativeAppUrlHandler />
           <Analytics /><SpeedInsights />
         </ThemeProvider>
       </body>
