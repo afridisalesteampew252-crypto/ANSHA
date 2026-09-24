@@ -48,6 +48,8 @@ export default function ImportsPage() {
 
   const importExcel = async () => {
     if (!file || rows.length === 0) return;
+    const confirmed = window.confirm(`Import ${rows.length} ${entity} rows into ANSHA? Existing matching records may be updated.`);
+    if (!confirmed) return;
     setBusy(true); setMessage('Importing…');
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setBusy(false); return setMessage('Session expired.'); }
@@ -84,11 +86,16 @@ export default function ImportsPage() {
   };
 
   const importZip = async (selected: File) => {
+    if (selected.size > 500 * 1024 * 1024) return setMessage('ZIP is too large. Maximum supported size is 500 MB.');
     setBusy(true); setMessage('Reading ZIP and matching filenames…');
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setBusy(false); return setMessage('Session expired.'); }
     const archive = unzipSync(new Uint8Array(await selected.arrayBuffer()));
     const imageEntries = Object.entries(archive).filter(([name]) => /\.(jpe?g|png|webp|gif|avif)$/i.test(name));
+    if (imageEntries.length > 1000) {
+      setBusy(false);
+      return setMessage('ZIP contains more than 1,000 images. Split it into smaller import jobs.');
+    }
     const lookupColumn = entity === 'vehicles' ? 'chassis_number' : 'part_number';
     const table = entity === 'vehicles' ? 'vehicles' : 'parts';
     const bucket = entity === 'vehicles' ? 'vehicle-images' : 'part-images';
