@@ -1,6 +1,6 @@
 # Mobile
 
-Capacitor provides a thin iOS/Android shell around the existing public catalog PWA. It does not rewrite admin or ship a second app codebase. The WebView loads the live site URL (default `https://www.anshatradingco.com`).
+Capacitor provides an iOS/Android shell around the dedicated mobile frontend at `/mobile`. The website and APK have different UI routes, but they use the same Next.js deployment, Supabase project, Supabase Auth, Storage, and database. The WebView loads `https://www.anshatradingco.com/mobile` by default.
 
 The installable PWA (Phase 22) remains the primary mobile path in the browser. Capacitor is additive for store-ready wrappers. PWA details: `docs/PWA.md`.
 
@@ -17,10 +17,11 @@ Native project folders (`android/`, `ios/`) are generated locally and are gitign
 
 | File | Role |
 |---|---|
-| `capacitor.config.ts` | App id `com.anshatrading.app`, `webDir: native/www`, `server.url` |
+| `capacitor.config.ts` | App id `com.anshatrading.app`, `webDir: native/www`, mobile `server.url` |
+| `app/mobile/` | Dedicated mobile-first app shell, dashboard, catalogs, sign-in, and account routes |
 | `native/www/` | Minimal placeholder required by `cap sync` (not the Next.js build) |
 
-Default server URL: `https://www.anshatradingco.com`.
+Default server URL: `https://www.anshatradingco.com/mobile`.
 
 Override for a preview or staging host:
 
@@ -30,7 +31,7 @@ npx cap sync
 ```
 
 ```bash
-CAPACITOR_SERVER_URL=https://your-preview.vercel.app npx cap sync
+CAPACITOR_SERVER_URL=https://your-preview.vercel.app/mobile npx cap sync
 ```
 
 ## One-time: add platforms
@@ -75,6 +76,12 @@ npm scripts: `npm run cap:sync`, `npm run cap:android`, `npm run cap:ios`.
 4. Xcode (macOS): select a simulator/device → Run. Configure signing for physical devices / App Store.
 
 Store listing, push certificates, and deep-link schemes are out of scope for this MVP shell.
+
+## Shared admin and data architecture
+
+The website and mobile frontend intentionally share the same Supabase project and tables. The existing admin site remains the single control center: publishing a vehicle, part, offer, invoice, reservation, or notification target makes that data available to both frontends without copying records or introducing a second database. The mobile dashboard reads published `vehicles`, `parts`, and `site_offers` directly through the existing public Supabase policies.
+
+Normal mobile UI changes are deployed with the website and become available the next time the APK opens because the Capacitor shell loads `/mobile` remotely. Native changes—Firebase/FCM integration, Android permissions, icons, splash screens, deep links, or Capacitor plugins—still require a new signed APK/AAB and store/direct-download release.
 
 ## Windows note
 
