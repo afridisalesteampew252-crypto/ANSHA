@@ -2,8 +2,8 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ function GoogleMark() {
 }
 
 function PortalLoginInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
@@ -183,6 +184,14 @@ function PortalLoginInner() {
     }
   };
 
+  const goBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+  };
+
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-secondary/30">
@@ -195,6 +204,17 @@ function PortalLoginInner() {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[linear-gradient(145deg,hsl(210_30%_94%),hsl(0_35%_96%))] px-4 py-10 dark:bg-[linear-gradient(145deg,hsl(220_18%_7%),hsl(0_18%_10%))]">
       <div aria-hidden className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-sky-400/15 blur-3xl" />
       <div aria-hidden className="pointer-events-none absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-red-500/15 blur-3xl" />
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={goBack}
+        className="absolute left-4 top-4 z-10 h-10 rounded-full border border-border/70 bg-background/75 px-3 shadow-sm backdrop-blur-xl sm:left-6 sm:top-6 sm:px-4"
+        aria-label="Back to ANSHA home"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span className="hidden sm:inline">Back to ANSHA</span>
+        <span className="sm:hidden">Back</span>
+      </Button>
       <Card className="relative w-full max-w-md overflow-hidden rounded-[2rem] border-white/70 bg-card/85 shadow-[0_28px_80px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-white/10">
         <div className="h-1.5 bg-gradient-to-r from-sky-500 via-accent to-amber-400" />
         <CardHeader className="text-center">

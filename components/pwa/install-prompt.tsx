@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Download, Share, X } from 'lucide-react';
+import { Bell, Download, Rocket, Share, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { siteConfig } from '@/lib/site-config';
@@ -40,9 +40,9 @@ export function InstallAppButton({
         size={size}
         className={cn('gap-1.5', className)}
         onClick={() => void onClick()}
-        aria-label={`Download or install ${siteConfig.pwaName}`}
+        aria-label={`Get ${siteConfig.pwaName}`}
       >
-        <Download className="h-4 w-4" />
+        <Rocket className="h-4 w-4" />
         {label}
       </Button>
       {hintOpen ? (
@@ -61,8 +61,8 @@ export function InstallAppButton({
                 <p className="text-sm font-bold">{siteConfig.pwaName}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {isIos
-                    ? 'On iPhone or iPad, add the app from Safari’s share menu.'
-                    : 'Use your browser menu to install, or try again after browsing a few pages.'}
+                    ? 'Add ANSHA to your Home Screen for a clean, app-like experience.'
+                    : 'Install ANSHA for faster access to live stock, parts, deals, and export support.'}
                 </p>
               </div>
               <button
@@ -84,20 +84,17 @@ export function InstallAppButton({
                   <span className="font-bold text-accent">2.</span>
                   Choose <strong>Add to Home Screen</strong>.
                 </li>
-                <li className="flex gap-2">
-                  <span className="font-bold text-accent">3.</span>
-                  Confirm — {siteConfig.pwaName} opens like an app.
-                </li>
+                <li className="flex gap-2"><span className="font-bold text-accent">3.</span>Confirm — {siteConfig.pwaName} opens like an app.</li>
               </ol>
             ) : (
               <ul className="mt-4 list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
-                <li>Chrome / Edge: menu → <strong>Install app</strong> or <strong>Install {siteConfig.pwaName}</strong>.</li>
-                <li>Android: browser menu → <strong>Add to Home screen</strong> / Install.</li>
-                <li>If Install is missing, keep browsing — Chrome shows it after eligibility.</li>
+                <li>Chrome / Edge: menu → <strong>Install app</strong>.</li>
+                <li>Android: browser menu → <strong>Add to Home screen</strong>.</li>
+                <li>Your account, live catalog, and Supabase data stay connected.</li>
               </ul>
             )}
             <Button type="button" className="mt-5 w-full" onClick={() => setHintOpen(false)}>
-              Got it
+              Continue browsing
             </Button>
           </div>
         </div>
@@ -154,19 +151,23 @@ export function InstallPrompt() {
         'bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] lg:bottom-4 lg:left-auto lg:right-4 lg:w-[22rem]'
       )}
       role="dialog"
-      aria-label={`Install ${siteConfig.pwaName}`}
+      aria-label={`Get ${siteConfig.pwaName}`}
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
-          <Download className="h-4 w-4" />
+          <Rocket className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Install {siteConfig.pwaName}</p>
+          <p className="text-sm font-semibold">Get the ANSHA app</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {isIos || showManualHint
-              ? 'Add the catalog to your home screen for faster access.'
-              : 'Download the app for quicker browsing. Staff ERP stays online-only.'}
+              ? 'Add ANSHA to your home screen for a polished, app-like catalog experience.'
+              : 'One tap to live inventory, parts, deals, and export support.'}
           </p>
+          <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1 rounded-lg bg-secondary/70 px-2 py-1"><Sparkles className="h-3 w-3 text-accent" />Faster access</span>
+            <span className="flex items-center gap-1 rounded-lg bg-secondary/70 px-2 py-1"><Bell className="h-3 w-3 text-accent" />Updates ready</span>
+          </div>
           {(isIos || (showManualHint && !canNativePrompt)) ? (
             <ol className="mt-2 space-y-1 text-[11px] leading-snug text-muted-foreground">
               {isIos ? (
@@ -185,7 +186,7 @@ export function InstallPrompt() {
           <div className="mt-3 flex flex-wrap gap-2">
             {canNativePrompt ? (
               <Button size="sm" type="button" onClick={() => void install()}>
-                Install app
+                Add ANSHA
               </Button>
             ) : (
               <Button size="sm" type="button" variant="accent" onClick={dismissBanner}>
