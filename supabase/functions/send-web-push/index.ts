@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0';
 import * as webpush from 'jsr:@negrel/webpush@0.5.0';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { isFcmConfigured, isFcmStaleError, sendFcmMessage } from '../_shared/fcm.ts';
 
 type Topic = 'insights' | 'deals' | 'all';
 
@@ -156,7 +157,10 @@ Deno.serve(async (request) => {
       vapidKeys,
     });
 
-    let query = serviceClient.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('platform', 'web');
+    let query = serviceClient
+      .from('push_subscriptions')
+      .select('id, platform, endpoint, p256dh, auth, device_token')
+      .in('platform', ['web', 'android']);
     if (topic === 'insights') query = query.eq('notify_insights', true);
     if (topic === 'deals') query = query.eq('notify_deals', true);
 
@@ -166,22 +170,31 @@ Deno.serve(async (request) => {
     const message = JSON.stringify({ title, body, url: targetUrl, topic });
     let sent = 0;
     let failed = 0;
+    let nativeSent = 0;
+    let nativeFailed = 0;
     const staleIds: string[] = [];
 
     for (const row of rows || []) {
       try {
-        const subscriber = appServer.subscribe({
-          endpoint: row.endpoint,
-          keys: {
-            p256dh: normalizeBase64Url(row.p256dh),
-            auth: normalizeBase64Url(row.auth),
-          },
-        });
-        await subscriber.pushTextMessage(message, { ttl: 60 * 60 * 12 });
+        if (row.platform === 'android') {
+          if (!isFcmConfigured() || !row.device_token) continue;
+          await sendFcmMessage({ token: row.device_token, title, body, url: targetUrl, topic });
+          nativeSent += 1;
+        } else {
+          const subscriber = appServer.subscribe({
+            endpoint: row.endpoint,
+            keys: {
+              p256dh: normalizeBase64Url(row.p256dh),
+              auth: normalizeBase64Url(row.auth),
+            },
+          });
+          await subscriber.pushTextMessage(message, { ttl: 60 * 60 * 12 });
+        }
         sent += 1;
       } catch (error) {
         failed += 1;
-        if (isStalePushError(error)) staleIds.push(row.id);
+        if (row.platform === 'android') nativeFailed += 1;
+        if (isStalePushError(error) || isFcmStaleError(error)) staleIds.push(row.id);
         else console.error('push send failed', error instanceof Error ? error.message : error);
       }
     }
@@ -195,6 +208,10 @@ Deno.serve(async (request) => {
       subscribers: (rows || []).length,
       sent,
       failed,
+      native_configured: isFcmConfigured(),
+      native_subscribers: (rows || []).filter((row) => row.platform === 'android').length,
+      native_sent: nativeSent,
+      native_failed: nativeFailed,
       removed_stale: staleIds.length,
     });
   } catch (error) {

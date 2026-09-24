@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0';
 import * as webpush from 'jsr:@negrel/webpush@0.5.0';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { isFcmConfigured, isFcmStaleError, sendFcmMessage } from '../_shared/fcm.ts';
 
 function normalizeBase64Url(value: string) {
   return value.trim().replace(/\s+/g, '').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
@@ -108,42 +109,67 @@ Deno.serve(async (request) => {
     const { data: subscriptions, error: subscriptionError } = recipientIds.length
       ? await serviceClient
           .from('push_subscriptions')
-          .select('id,endpoint,p256dh,auth')
+          .select('id,platform,endpoint,p256dh,auth,device_token')
           .in('user_id', recipientIds)
-          .eq('platform', 'web')
+          .in('platform', ['web', 'android'])
           .eq('notify_support', true)
       : { data: [], error: null };
     if (subscriptionError) return json(request, { error: subscriptionError.message }, 500);
     if (dryRun) return json(request, { subscribers: subscriptions?.length || 0, sent: 0, failed: 0, removed_stale: 0, dry_run: true });
 
-    const vapidKeys = await webpush.importVapidKeys(
-      vapidKeysToJwk(normalizeBase64Url(vapidPublic), normalizeBase64Url(vapidPrivate)),
-      { extractable: false }
-    );
-    const appServer = await webpush.ApplicationServer.new({ contactInformation: vapidSubject, vapidKeys });
     const isAgentReply = message.sender_kind === 'agent';
+    const notificationTitle = isAgentReply ? 'New reply from ANSHA Support' : 'New customer support message';
+    const notificationBody = isAgentReply ? 'Open your secure portal to read the reply.' : 'Open the secure staff inbox to respond.';
+    const notificationUrl = isAgentReply ? '/portal/support' : `/admin/customer-support?thread=${message.thread_id}`;
     const notification = JSON.stringify({
-      title: isAgentReply ? 'New reply from ANSHA Support' : 'New customer support message',
-      body: isAgentReply ? 'Open your secure portal to read the reply.' : 'Open the secure staff inbox to respond.',
-      url: isAgentReply ? '/portal/support' : `/admin/customer-support?thread=${message.thread_id}`,
+      title: notificationTitle,
+      body: notificationBody,
+      url: notificationUrl,
       topic: 'support',
       tag: `support-${message.thread_id}`,
     });
 
+    const webSubscriptions = (subscriptions || []).filter((row) => row.platform === 'web');
+    const appServer = webSubscriptions.length
+      ? await (async () => {
+          const vapidKeys = await webpush.importVapidKeys(
+            vapidKeysToJwk(normalizeBase64Url(vapidPublic), normalizeBase64Url(vapidPrivate)),
+            { extractable: false },
+          );
+          return webpush.ApplicationServer.new({ contactInformation: vapidSubject, vapidKeys });
+        })()
+      : null;
+
     let sent = 0;
     let failed = 0;
+    let nativeSent = 0;
+    let nativeFailed = 0;
     const staleIds: string[] = [];
     for (const row of subscriptions || []) {
       try {
-        const subscriber = appServer.subscribe({
-          endpoint: row.endpoint,
-          keys: { p256dh: normalizeBase64Url(row.p256dh), auth: normalizeBase64Url(row.auth) },
-        });
-        await subscriber.pushTextMessage(notification, { ttl: 60 * 60 * 24 });
+        if (row.platform === 'android') {
+          if (!isFcmConfigured() || !row.device_token) continue;
+          await sendFcmMessage({
+            token: row.device_token,
+            title: notificationTitle,
+            body: notificationBody,
+            url: notificationUrl,
+            topic: 'support',
+            tag: `support-${message.thread_id}`,
+          });
+          nativeSent += 1;
+        } else if (appServer) {
+          const subscriber = appServer.subscribe({
+            endpoint: row.endpoint,
+            keys: { p256dh: normalizeBase64Url(row.p256dh), auth: normalizeBase64Url(row.auth) },
+          });
+          await subscriber.pushTextMessage(notification, { ttl: 60 * 60 * 24 });
+        }
         sent += 1;
       } catch (error) {
         failed += 1;
-        if (isStalePushError(error)) staleIds.push(row.id);
+        if (row.platform === 'android') nativeFailed += 1;
+        if (isStalePushError(error) || isFcmStaleError(error)) staleIds.push(row.id);
         else console.error('support push failed', error instanceof Error ? error.message : error);
       }
     }
@@ -153,6 +179,10 @@ Deno.serve(async (request) => {
       subscribers: subscriptions?.length || 0,
       sent,
       failed,
+      native_configured: isFcmConfigured(),
+      native_subscribers: (subscriptions || []).filter((row) => row.platform === 'android').length,
+      native_sent: nativeSent,
+      native_failed: nativeFailed,
       removed_stale: staleIds.length,
     });
   } catch (error) {

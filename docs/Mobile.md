@@ -128,7 +128,17 @@ The Android 13+ notification permission is requested at runtime. Android devices
 2. Register an Android app with package name `com.anshatrading.app`.
 3. Download `google-services.json` and replace `firebase/google-services.json` only when the Firebase project changes.
 4. Do not commit a Firebase service-account private key. The client JSON contains app identifiers and is used by the Android build; it is not a server credential.
-5. To send from ANSHA admin workflows rather than the Firebase Console, configure a server-side Firebase Admin/FCM HTTP v1 sender using protected Edge Function secrets. Never put a service-account JSON, private key, or FCM server credential in the web bundle or `NEXT_PUBLIC_*` environment variables.
+5. To send from ANSHA admin workflows rather than the Firebase Console, configure the repository's Firebase HTTP v1 sender with the protected Supabase Edge Function secret `FCM_SERVICE_ACCOUNT_JSON`. Its value is the complete Firebase service-account JSON containing `project_id`, `client_email`, and `private_key`. Never put a service-account JSON, private key, or FCM server credential in the web bundle or `NEXT_PUBLIC_*` environment variables.
+
+The existing `send-web-push` admin function is platform-aware: it continues delivering browser notifications through VAPID and also sends Android notifications through FCM when the secret is configured. Targeted support notifications use the same behavior. Invalid Android tokens are removed after FCM reports them as unregistered. The response reports native subscriber, sent, failed, and configuration counts so operators can distinguish a configured sender from a browser-only send.
+
+Configure the secret from a trusted operator environment, never from the website or APK:
+
+```bash
+supabase secrets set --project-ref ydrnilquojvalhgifest FCM_SERVICE_ACCOUNT_JSON="$(cat firebase/fcm-service-account.json)"
+```
+
+Keep `firebase/fcm-service-account.json` outside the repository or in a protected local path; only `firebase/google-services.json` belongs in the repository. After deployment, install an APK, sign in, send a test push from `/admin/subscribers`, and verify both the admin response's `native_sent` count and the device notification. Do not treat a token-registration success as proof of delivery.
 
 ### Supabase migration
 

@@ -161,9 +161,12 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 - POST, JWT required
 - Caller must exist in `admin_profiles` (admin or staff)
 - Body: `{ topic: 'insights'|'deals'|'all', title, body, url }`
-- Sends Web Push to rows in `push_subscriptions` filtered by topic flags
+- Sends Web Push and, when configured, Android FCM notifications to rows in `push_subscriptions` filtered by topic flags
 - Requires Edge secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, optional `VAPID_SUBJECT` (must match Vercel `NEXT_PUBLIC_VAPID_PUBLIC_KEY`)
+- Android delivery additionally requires the protected `FCM_SERVICE_ACCOUNT_JSON` secret containing the Firebase service account `project_id`, `client_email`, and `private_key`; never expose or commit this JSON
 - Removes stale endpoints (HTTP 404/410)
+- Removes Android tokens rejected by FCM as `UNREGISTERED` or invalid
+- Response includes `native_configured`, `native_subscribers`, `native_sent`, and `native_failed`
 - Staff verify path: `/admin/subscribers` Subscribe this device + Send test push; Next.js helpers no-op when public key unset
 
 
