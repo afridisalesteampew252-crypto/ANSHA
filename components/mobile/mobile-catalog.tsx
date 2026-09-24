@@ -66,7 +66,7 @@ export function MobileCatalog({ kind }: { kind: CatalogKind }) {
             const cover = photos?.find((photo) => photo.is_cover) || photos?.[0];
             const image = cover ? (vehicle ? publicVehicleImageUrl(cover.storage_path) : publicPartImageUrl(cover.storage_path)) : null;
             const title = vehicle?.title || part?.name || 'Inventory item';
-            const href = vehicle ? `/vehicles/${vehicle.slug}` : `/parts/${part?.slug}`;
+            const href = vehicle ? `/mobile/stock/${vehicle.slug}` : `/mobile/parts/${part?.slug}`;
             return (
               <Link key={item.id} href={href} className="group overflow-hidden rounded-2xl border border-black/5 bg-white shadow-sm transition active:scale-[.98]">
                 <div className="relative aspect-[1.1] overflow-hidden bg-[#e7eaee]">
@@ -83,7 +83,7 @@ export function MobileCatalog({ kind }: { kind: CatalogKind }) {
           })}
         </div>
       ) : <div className="rounded-3xl bg-white px-6 py-16 text-center shadow-sm"><PackageSearch className="mx-auto h-10 w-10 text-black/15" /><p className="mt-3 font-bold">No matching stock right now.</p><p className="mt-1 text-sm text-black/45">Try another search or contact the ANSHA team.</p></div>}
-      <Link href={kind === 'vehicles' ? '/vehicles' : '/parts'} className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white py-3.5 text-sm font-black">Open full catalog <ArrowRight className="h-4 w-4" /></Link>
+      <Link href={kind === 'vehicles' ? '/mobile/stock' : '/mobile/parts'} className="mt-6 flex items-center justify-center gap-2 rounded-2xl border border-black/10 bg-white py-3.5 text-sm font-black">Refresh catalog <ArrowRight className="h-4 w-4" /></Link>
     </section>
   );
 }
