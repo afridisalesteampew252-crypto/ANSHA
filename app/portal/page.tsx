@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
+import { isNativeCapacitorRuntime } from '@/lib/capacitor/runtime';
 
 function GoogleMark() {
   return (
@@ -20,6 +21,12 @@ function GoogleMark() {
       <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.5l2.87-2.88A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.93 5.5l3.34 2.59C7.2 7.73 9.4 5.97 12 5.97Z" />
     </svg>
   );
+}
+
+function portalAuthCallback() {
+  return isNativeCapacitorRuntime()
+    ? 'ansha://auth/callback?next=/portal/account'
+    : `${window.location.origin}/auth/callback?next=/portal/account`;
 }
 
 function PortalLoginInner() {
@@ -102,7 +109,7 @@ function PortalLoginInner() {
         return;
       }
 
-      const callback = `${window.location.origin}/auth/callback?next=/portal/account`;
+      const callback = portalAuthCallback();
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -169,7 +176,7 @@ function PortalLoginInner() {
 
   const handleGoogleSignIn = async () => {
     setOauthLoading(true);
-    const callback = `${window.location.origin}/auth/callback?next=/portal/account`;
+    const callback = portalAuthCallback();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

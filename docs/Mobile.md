@@ -130,3 +130,9 @@ Apply `supabase/migrations/20260924010000_native_fcm_push.sql` to the ANSHA Supa
 ### Data and notification behavior
 
 The APK still loads the live site URL from `capacitor.config.ts`; it does not bundle a separate database or catalog. Data uploaded through the website and stored in the ANSHA Supabase project appears in the app when the corresponding live page is opened or refreshed. FCM registration is separate from data synchronization: it identifies an app installation so a future server-side sender can deliver targeted notifications and deep-link the user to the relevant ANSHA page.
+
+### Native portal sign-in and PWA separation
+
+The native shell uses the deep-link callback `ansha://auth/callback?next=/portal/account` for customer email confirmation and Google OAuth. Add this exact URL to Supabase Authentication → URL Configuration → Redirect URLs before testing native OAuth. The Android preparation script adds the matching `ansha://auth/callback` intent filter to the generated manifest. The app URL handler converts that deep link into the live site's `/auth/callback` route inside the WebView, so the user returns to `/portal/account` without being left in Chrome or the PWA.
+
+PWA install prompts, browser Web Push opt-ins, and the service worker are disabled when `Capacitor.isNativePlatform()` is true. Desktop and mobile browser users retain the PWA experience; Android APK users remain in the native ANSHA app.
