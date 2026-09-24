@@ -38,6 +38,7 @@ export default function AdminOffersPage() {
   const [discountPercent, setDiscountPercent] = useState('');
   const [salePrice, setSalePrice] = useState('');
   const [notify, setNotify] = useState(true);
+  const [publishNow, setPublishNow] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -169,8 +170,8 @@ export default function AdminOffersPage() {
         part_id: linkTarget === 'part' ? partId : null,
         discount_percent: discountValue,
         sale_price: saleValue,
-        is_published: true,
-        published_at: new Date().toISOString(),
+        is_published: publishNow,
+        published_at: publishNow ? new Date().toISOString() : null,
         created_by: sessionData.session?.user.id || null,
       })
       .select('*')
@@ -181,7 +182,7 @@ export default function AdminOffersPage() {
       return;
     }
 
-    if (notify) {
+    if (notify && publishNow) {
       try {
         const result = await sendWebPush({
           topic: 'deals',
@@ -197,8 +198,10 @@ export default function AdminOffersPage() {
       } catch (pushError) {
         toast.error(pushError instanceof Error ? pushError.message : 'Offer saved, but push failed. Check VAPID secrets.');
       }
-    } else {
+    } else if (publishNow) {
       toast.success('Offer published.');
+    } else {
+      toast.success('Offer saved as draft. Review and publish it when ready.');
     }
 
     setTitle('');
@@ -209,6 +212,7 @@ export default function AdminOffersPage() {
     setHref('/parts');
     setDiscountPercent('');
     setSalePrice('');
+    setPublishNow(false);
     setSaving(false);
     await load();
   };
@@ -446,9 +450,14 @@ export default function AdminOffersPage() {
               <Switch id="notify-push" checked={notify} onCheckedChange={setNotify} />
             </div>
 
+            <label className="flex items-start gap-3 rounded-lg border border-accent/25 bg-accent/[0.04] px-3 py-3 text-sm">
+              <input type="checkbox" checked={publishNow} onChange={(event) => setPublishNow(event.target.checked)} className="mt-1 h-4 w-4 accent-[#d21e1e]" />
+              <span><span className="font-medium">Publish immediately</span><span className="mt-0.5 block text-xs text-muted-foreground">Leave unchecked to save a draft. Drafts stay hidden from the public website and do not send notifications.</span></span>
+            </label>
+
             <Button type="submit" disabled={saving} className="w-full sm:w-auto">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {saving ? 'Publishing…' : 'Publish offer'}
+              {saving ? (publishNow ? 'Publishing…' : 'Saving draft…') : (publishNow ? 'Publish offer' : 'Save draft')}
             </Button>
           </form>
         </CardContent>

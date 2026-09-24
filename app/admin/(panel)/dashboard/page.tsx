@@ -110,9 +110,11 @@ export default function AdminDashboardPage() {
   const [recentInquiries, setRecentInquiries] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<OpsAnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [moneyCurrency, setMoneyCurrency] = useState('all');
 
   useEffect(() => {
+    setLoadError('');
     void (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       const from = rangeFrom();
@@ -204,7 +206,10 @@ export default function AdminDashboardPage() {
         setAnalytics(analyticsRes.data as OpsAnalyticsSummary);
       }
       setLoading(false);
-    })();
+    })().catch(() => {
+      setLoadError('Dashboard data could not be loaded completely. Retry to fetch the latest operational figures.');
+      setLoading(false);
+    });
   }, []);
 
   const fieldAgent = isFieldAgentRole(role);
@@ -337,9 +342,17 @@ export default function AdminDashboardPage() {
     })).filter((row) => row.value > 0);
   }, [analytics, inventory]);
 
+  const errorBanner = loadError ? (
+    <div role="alert" className="flex flex-col gap-3 rounded-xl border border-destructive/25 bg-destructive/[0.06] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <span>{loadError}</span>
+      <Button type="button" size="sm" variant="outline" onClick={() => window.location.reload()}>Retry</Button>
+    </div>
+  ) : null;
+
   if (fieldAgent) {
     return (
       <div className="mx-auto max-w-5xl space-y-8">
+        {errorBanner}
         <section className="admin-dash-hero overflow-hidden rounded-2xl border border-border/80 px-5 py-5 sm:px-6 sm:py-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
@@ -380,6 +393,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
+      {errorBanner}
       <section className="admin-dash-hero overflow-hidden rounded-2xl border border-border/80 px-5 py-5 sm:px-6 sm:py-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
