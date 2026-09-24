@@ -83,6 +83,17 @@ function isStalePushError(error: unknown) {
   return false;
 }
 
+function safeTargetUrl(raw: unknown) {
+  if (typeof raw !== 'string' || !raw.trim()) return '/';
+  try {
+    const parsed = new URL(raw, 'https://www.anshatradingco.com');
+    if (parsed.origin !== 'https://www.anshatradingco.com') return '/';
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return '/';
+  }
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(request) });
   if (request.method !== 'POST') return json(request, { error: 'Method not allowed.' }, 405);
@@ -117,8 +128,10 @@ Deno.serve(async (request) => {
 
     const { data: profile } = await serviceClient
       .from('admin_profiles')
-      .select('id')
+      .select('id,role,is_active')
       .eq('id', user.id)
+      .eq('is_active', true)
+      .in('role', ['admin', 'staff'])
       .maybeSingle();
     if (!profile) return json(request, { error: 'Only staff can send push notifications.' }, 403);
 
@@ -126,7 +139,7 @@ Deno.serve(async (request) => {
     const topic = String(payload.topic || 'all') as Topic;
     const title = String(payload.title || '').trim();
     const body = String(payload.body || '').trim();
-    const targetUrl = String(payload.url || '/').trim() || '/';
+    const targetUrl = safeTargetUrl(payload.url);
 
     if (!['insights', 'deals', 'all'].includes(topic)) {
       return json(request, { error: 'Topic must be insights, deals, or all.' }, 422);
@@ -143,7 +156,7 @@ Deno.serve(async (request) => {
       vapidKeys,
     });
 
-    let query = serviceClient.from('push_subscriptions').select('id, endpoint, p256dh, auth');
+    let query = serviceClient.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('platform', 'web');
     if (topic === 'insights') query = query.eq('notify_insights', true);
     if (topic === 'deals') query = query.eq('notify_deals', true);
 

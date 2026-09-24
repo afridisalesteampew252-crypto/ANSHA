@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { safeMobileRoute } from '@/lib/capacitor/safe-mobile-route';
 
 /**
  * Capacitor-only FCM registration. On browsers the dynamic import fails safely,
@@ -29,8 +30,7 @@ export function NativePushNotifications() {
             console.warn('FCM registration failed:', error);
           }),
           await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
-            const target = typeof notification.data?.url === 'string' ? notification.data.url : '/';
-            window.location.assign(target.startsWith('http') ? target : `${window.location.origin}${target}`);
+            window.location.assign(safeMobileRoute(notification.data?.url));
           }),
         );
 
@@ -41,7 +41,8 @@ export function NativePushNotifications() {
             ? await PushNotifications.requestPermissions()
             : permission;
 
-        if (!cancelled && granted.receive === 'granted') {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!cancelled && session && granted.receive === 'granted') {
           await PushNotifications.register();
         }
       })

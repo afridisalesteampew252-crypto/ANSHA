@@ -19,9 +19,9 @@ CREATE INDEX IF NOT EXISTS push_subscriptions_platform_idx
   ON public.push_subscriptions (platform);
 
 /*
- * Device registration is intentionally public: an FCM token is an address for
- * this app installation, not an authorization credential. The function only
- * upserts the caller-provided token and never exposes subscriber rows.
+ * Native registrations are tied to the authenticated customer/staff account
+ * that owns the app session. Anonymous registration would allow token
+ * pollution and would make targeted support notifications unreliable.
  */
 CREATE OR REPLACE FUNCTION public.register_fcm_push_token(
   p_token text,
@@ -30,9 +30,12 @@ CREATE OR REPLACE FUNCTION public.register_fcm_push_token(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 BEGIN
+  IF (SELECT auth.uid()) IS NULL THEN
+    RAISE EXCEPTION 'Authentication required for native notifications';
+  END IF;
   IF p_token IS NULL OR char_length(trim(p_token)) NOT BETWEEN 20 AND 4096 THEN
     RAISE EXCEPTION 'Invalid FCM token';
   END IF;
@@ -41,6 +44,7 @@ BEGIN
     endpoint,
     p256dh,
     auth,
+    user_id,
     platform,
     device_token,
     user_agent,
@@ -51,6 +55,7 @@ BEGIN
     '',
     '',
     'android',
+    (SELECT auth.uid()),
     trim(p_token),
     NULLIF(left(trim(coalesce(p_user_agent, '')), 300), ''),
     now()
@@ -58,6 +63,7 @@ BEGIN
   ON CONFLICT (device_token) WHERE device_token IS NOT NULL
   DO UPDATE SET
     endpoint = EXCLUDED.endpoint,
+    user_id = EXCLUDED.user_id,
     platform = 'android',
     user_agent = EXCLUDED.user_agent,
     last_seen_at = now(),
@@ -66,4 +72,26 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.register_fcm_push_token(text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.register_fcm_push_token(text, text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.register_fcm_push_token(text, text) TO authenticated;
+
+DROP POLICY IF EXISTS workspace_delete_push_subscriptions ON public.push_subscriptions;
+CREATE POLICY owner_delete_push_subscriptions
+  ON public.push_subscriptions FOR DELETE TO authenticated
+  USING (user_id = (SELECT auth.uid()));
+
+REVOKE DELETE ON public.push_subscriptions FROM authenticated;
+GRANT DELETE ON public.push_subscriptions TO authenticated;
+
+DROP POLICY IF EXISTS workspace_read_push_subscriptions ON public.push_subscriptions;
+CREATE POLICY ops_read_push_subscriptions
+  ON public.push_subscriptions FOR SELECT TO authenticated
+  USING ((SELECT private.is_ops_user()));
+
+REVOKE SELECT ON public.push_subscriptions FROM authenticated;
+GRANT SELECT ON public.push_subscriptions TO authenticated;
+
+DROP POLICY IF EXISTS workspace_manage_site_offers ON public.site_offers;
+CREATE POLICY ops_manage_site_offers
+  ON public.site_offers FOR ALL TO authenticated
+  USING ((SELECT private.is_ops_user()))
+  WITH CHECK ((SELECT private.is_ops_user()));

@@ -110,6 +110,7 @@ Deno.serve(async (request) => {
           .from('push_subscriptions')
           .select('id,endpoint,p256dh,auth')
           .in('user_id', recipientIds)
+          .eq('platform', 'web')
           .eq('notify_support', true)
       : { data: [], error: null };
     if (subscriptionError) return json(request, { error: subscriptionError.message }, 500);
