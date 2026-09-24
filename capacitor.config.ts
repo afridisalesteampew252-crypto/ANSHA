@@ -19,6 +19,11 @@ const config: CapacitorConfig = {
     url: serverUrl,
     cleartext: false,
   },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert', 'banner', 'list'],
+    },
+  },
 };
 
 export default config;

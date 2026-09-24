@@ -98,3 +98,35 @@ The wrapped site supports account creation and deletion on the same production o
 - Admin review is limited to ownership/fraud checks. Approval deletes the Auth login and anonymizes personal customer fields.
 - Only records required for legal, tax, fraud-prevention, or audit obligations may remain, in anonymized form.
 - Enter the external URL in the Play Console Data safety account-deletion field before release.
+
+## Native Android notifications (FCM)
+
+The Android wrapper uses Capacitor Push Notifications with Firebase Cloud Messaging (FCM). The registered Firebase Android app must use the exact package name `com.anshatrading.app`. The Firebase client configuration is kept at `firebase/google-services.json`; the generated native project is ignored, so the file is copied into `android/app/google-services.json` by the preparation script before every Android sync.
+
+The repository includes the native notification client and Supabase registration flow. When the APK starts on Android, it requests notification permission when required, registers with FCM, and upserts the installation token through the `register_fcm_push_token` RPC. Desktop and mobile browsers continue using the existing Web Push/VAPID flow and do not load the native bridge.
+
+Prepare the generated Android project after cloning or after removing the ignored `android/` directory:
+
+```bash
+npm ci --legacy-peer-deps
+npx cap add android                         # only if android/ does not exist
+npm run cap:sync:android
+```
+
+The Android 13+ notification permission is requested at runtime. Android devices and emulators must have Google Play services available. FCM delivery can be smoke-tested from Firebase Console → Messaging after installing an APK built from the configured project.
+
+### Firebase Console checklist
+
+1. Open the [Firebase Console](https://console.firebase.google.com/) and create or select the ANSHA Trading project.
+2. Register an Android app with package name `com.anshatrading.app`.
+3. Download `google-services.json` and replace `firebase/google-services.json` only when the Firebase project changes.
+4. Do not commit a Firebase service-account private key. The client JSON contains app identifiers and is used by the Android build; it is not a server credential.
+5. To send from ANSHA admin workflows rather than the Firebase Console, configure a server-side Firebase Admin/FCM HTTP v1 sender using protected Edge Function secrets. Never put a service-account JSON, private key, or FCM server credential in the web bundle or `NEXT_PUBLIC_*` environment variables.
+
+### Supabase migration
+
+Apply `supabase/migrations/20260924010000_native_fcm_push.sql` to the ANSHA Supabase project before testing device registration. It extends `push_subscriptions` with platform and FCM token fields and adds the public registration RPC. The RPC only upserts a caller-provided device token; it does not expose subscriber rows. Workspace/admin reads remain protected by the existing row-level security policies.
+
+### Data and notification behavior
+
+The APK still loads the live site URL from `capacitor.config.ts`; it does not bundle a separate database or catalog. Data uploaded through the website and stored in the ANSHA Supabase project appears in the app when the corresponding live page is opened or refreshed. FCM registration is separate from data synchronization: it identifies an app installation so a future server-side sender can deliver targeted notifications and deep-link the user to the relevant ANSHA page.

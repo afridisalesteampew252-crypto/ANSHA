@@ -12,6 +12,8 @@
     "verify:brands": "node scripts/verify-brand-assets.mjs",
     "verify:release": "npm run lint && npm run typecheck && npm run verify:brands && npm run build",
     "cap:sync": "npx cap sync",
+    "android:prepare-firebase": "node scripts/prepare-android-firebase.mjs",
+    "cap:sync:android": "npm run android:prepare-firebase && npx cap sync android",
     "cap:add:android": "npx cap add android",
     "cap:add:ios": "npx cap add ios",
     "cap:android": "npx cap open android",
@@ -24,6 +26,8 @@
   "dependencies": {
     "@ai-sdk/openai": "^4.0.70",
     "@ai-sdk/react": "^4.0.109",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/push-notifications": "^8.1.2",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -92,12 +96,12 @@
     "@capacitor/cli": "^8.5.2",
     "@capacitor/core": "^8.5.2",
     "@capacitor/ios": "^8.5.2",
+    "@playwright/test": "1.63.0",
     "@types/react": "19.1.16",
     "@types/react-dom": "19.1.9",
     "@types/sanitize-html": "^2.16.1",
     "eslint": "9.35.0",
-    "eslint-config-next": "16.3.5",
-    "@playwright/test": "1.63.0"
+    "eslint-config-next": "16.3.5"
   },
   "engines": {
     "node": ">=20.9.0"
