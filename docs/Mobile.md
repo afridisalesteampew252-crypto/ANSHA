@@ -143,3 +143,7 @@ The APK still loads the live site URL from `capacitor.config.ts`; it does not bu
 The native shell uses the deep-link callback `ansha://auth/callback?next=/portal/account` for customer email confirmation and Google OAuth. Add this exact URL to Supabase Authentication → URL Configuration → Redirect URLs before testing native OAuth. The Android preparation script adds the matching `ansha://auth/callback` intent filter to the generated manifest. The app URL handler converts that deep link into the live site's `/auth/callback` route inside the WebView, so the user returns to `/portal/account` without being left in Chrome or the PWA.
 
 PWA install prompts, browser Web Push opt-ins, and the service worker are disabled when `Capacitor.isNativePlatform()` is true. Desktop and mobile browser users retain the PWA experience; Android APK users remain in the native ANSHA app.
+
+### Website APK download route
+
+The public website exposes `/download` as the customer-facing Android download page. The current APK is served from `/downloads/ansha-trading-mobile.apk`, and the page explains Android's direct-install permission flow. Keep the downloadable file replaced with the latest signed release APK before public distribution; the checked-in artifact is currently the validated debug build for testing. The website header includes a `Download app` link so desktop and mobile browser visitors can find it without entering the APK UI.

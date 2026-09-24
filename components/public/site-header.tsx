@@ -41,6 +41,7 @@ const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/blog', label: 'Insights' },
   { href: '/contact', label: 'Contact' },
+  { href: '/download', label: 'Download app' },
 ];
 
 function CountBadge({ count }: { count: number }) {

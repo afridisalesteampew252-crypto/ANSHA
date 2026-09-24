@@ -22,7 +22,7 @@ export function MobileAppShell({ children }: { children: React.ReactNode }) {
           <Link href="/mobile" className="flex items-center gap-2" aria-label="ANSHA mobile home">
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={112} height={56} priority className="h-10 w-auto object-contain" />
           </Link>
-          <Link href="/portal" className="rounded-full bg-[#16181c] px-3.5 py-2 text-xs font-bold text-white shadow-sm">
+          <Link href="/mobile/account" className="rounded-full bg-[#16181c] px-3.5 py-2 text-xs font-bold text-white shadow-sm">
             Customer portal
           </Link>
         </div>
