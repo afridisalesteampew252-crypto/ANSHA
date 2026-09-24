@@ -32,13 +32,13 @@ export default function MobileHomePage() {
         <Link href="/mobile/stock" className="rounded-2xl bg-white p-4 shadow-sm transition active:scale-[.98]"><CarFront className="h-6 w-6 text-[#d21e1e]" /><p className="mt-5 text-sm font-black">Vehicles</p><p className="mt-1 text-xs text-black/45">Live export stock</p></Link>
         <Link href="/mobile/parts" className="rounded-2xl bg-white p-4 shadow-sm transition active:scale-[.98]"><PackageSearch className="h-6 w-6 text-[#d21e1e]" /><p className="mt-5 text-sm font-black">Parts</p><p className="mt-1 text-xs text-black/45">Search OEM inventory</p></Link>
         <Link href="/mobile/account" className="rounded-2xl bg-white p-4 shadow-sm transition active:scale-[.98]"><ShieldCheck className="h-6 w-6 text-[#d21e1e]" /><p className="mt-5 text-sm font-black">Customer portal</p><p className="mt-1 text-xs text-black/45">Invoices and reservations</p></Link>
-        <Link href="/portal/support" className="rounded-2xl bg-white p-4 shadow-sm transition active:scale-[.98]"><MessageCircle className="h-6 w-6 text-[#d21e1e]" /><p className="mt-5 text-sm font-black">Support</p><p className="mt-1 text-xs text-black/45">Talk to the team</p></Link>
+        <Link href="/mobile/support" className="rounded-2xl bg-white p-4 shadow-sm transition active:scale-[.98]"><MessageCircle className="h-6 w-6 text-[#d21e1e]" /><p className="mt-5 text-sm font-black">Support</p><p className="mt-1 text-xs text-black/45">Talk to the team</p></Link>
       </div>
 
       <section>
         <div className="mb-3 flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#d21e1e]">Admin published</p><h2 className="mt-1 text-xl font-black">Latest offers</h2></div><Sparkles className="h-5 w-5 text-[#d21e1e]" /></div>
         <div className="space-y-3">
-          {offers.length ? offers.map((offer) => <Link key={offer.id} href={offer.href || '/offers'} className="block rounded-2xl border border-black/5 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-4"><div><h3 className="font-black">{offer.title}</h3><p className="mt-1 text-sm leading-5 text-black/50">{offer.summary || 'Explore the latest ANSHA inventory update.'}</p></div><ArrowRight className="mt-1 h-4 w-4 shrink-0 text-[#d21e1e]" /></div></Link>) : <div className="rounded-2xl bg-white p-5 text-sm text-black/45 shadow-sm">New offers published by the ANSHA admin team will appear here automatically.</div>}
+          {offers.length ? offers.map((offer) => <Link key={offer.id} href="/mobile/offers" className="block rounded-2xl border border-black/5 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-4"><div><h3 className="font-black">{offer.title}</h3><p className="mt-1 text-sm leading-5 text-black/50">{offer.summary || 'Explore the latest ANSHA inventory update.'}</p></div><ArrowRight className="mt-1 h-4 w-4 shrink-0 text-[#d21e1e]" /></div></Link>) : <div className="rounded-2xl bg-white p-5 text-sm text-black/45 shadow-sm">New offers published by the ANSHA admin team will appear here automatically.</div>}
         </div>
       </section>
 

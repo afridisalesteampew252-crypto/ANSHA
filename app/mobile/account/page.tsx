@@ -28,8 +28,8 @@ export default function MobileAccountPage() {
       </div>
       {email ? (
         <div className="space-y-3">
-          <Link href="/portal/account" className="flex items-center justify-between rounded-2xl bg-white p-4 font-black shadow-sm"><span>Open customer portal</span><ArrowRight className="h-5 w-5 text-[#d21e1e]" /></Link>
-          <Link href="/portal/reservations" className="flex items-center justify-between rounded-2xl bg-white p-4 font-black shadow-sm"><span>My reservations</span><ArrowRight className="h-5 w-5 text-[#d21e1e]" /></Link>
+          <Link href="/mobile/orders" className="flex items-center justify-between rounded-2xl bg-white p-4 font-black shadow-sm"><span>My reservations and invoices</span><ArrowRight className="h-5 w-5 text-[#d21e1e]" /></Link>
+          <Link href="/mobile/support" className="flex items-center justify-between rounded-2xl bg-white p-4 font-black shadow-sm"><span>Contact support</span><ArrowRight className="h-5 w-5 text-[#d21e1e]" /></Link>
           <button type="button" onClick={() => void supabase.auth.signOut().then(() => setEmail(null))} className="w-full rounded-2xl border border-black/10 bg-transparent p-4 text-sm font-black">Sign out</button>
         </div>
       ) : (
