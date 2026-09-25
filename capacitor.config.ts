@@ -9,7 +9,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const serverUrl =
   process.env.CAPACITOR_SERVER_URL?.trim() ||
-  'https://www.anshatradingco.com/mobile';
+  'https://www.anshatradingco.com';
 
 const config: CapacitorConfig = {
   appId: 'com.anshatrading.app',
