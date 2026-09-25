@@ -1032,6 +1032,7 @@ export default function RemittancesPage() {
                   <option>USD</option>
                   <option>EUR</option>
                   <option>GBP</option>
+                  <option>PKR</option>
                 </select>
               </div>
               <div className="space-y-1.5">
