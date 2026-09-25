@@ -1,6 +1,9 @@
 name: Build ANSHA Admin APK
 
 on:
+  push:
+    branches:
+      - codex/run-admin-apk-once
   workflow_dispatch:
     inputs:
       server_url:
