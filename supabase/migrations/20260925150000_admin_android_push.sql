@@ -50,7 +50,7 @@ BEGIN
     last_seen_at = now(),
     updated_at = now();
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.register_fcm_push_token(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.register_fcm_push_token(text, text) TO authenticated;
