@@ -1,6 +1,6 @@
 /** Shared money formatting — never invent FX conversion across currencies. */
 
-const CURRENCY_PRIORITY = ['AED', 'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'CHF', 'CAD', 'AUD'];
+const CURRENCY_PRIORITY = ['AED', 'PKR', 'USD', 'EUR', 'GBP', 'JPY', 'CNY, 'SGD', 'CHF', 'CAD', 'AUD'];
 
 export function normalizeCurrency(code?: string | null): string {
   const cur = String(code || 'AED').trim().toUpperCase();
