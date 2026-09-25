@@ -252,7 +252,20 @@ export default function ExpensesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Currency</Label>
-                <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
+                <Input list="expense-currency-options" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
+                <datalist id="expense-currency-options">
+                  <option value="AED" />
+                  <option value="PKR" />
+                  <option value="USD" />
+                  <option value="EUR" />
+                  <option value="GBP" />
+                  <option value="JPY" />
+                  <option value="CNY" />
+                  <option value="SGD" />
+                  <option value="CHF" />
+                  <option value="CAD" />
+                  <option value="AUD" />
+                </datalist>
               </div>
               <div className="space-y-1.5">
                 <Label>Category</Label>

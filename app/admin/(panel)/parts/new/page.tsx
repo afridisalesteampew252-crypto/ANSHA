@@ -457,6 +457,7 @@ export default function AddPartPage() {
                     <SelectItem value="GBP">GBP</SelectItem>
                     <SelectItem value="JPY">JPY</SelectItem>
                     <SelectItem value="AED">AED</SelectItem>
+                    <SelectItem value="PKR">PKR</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
