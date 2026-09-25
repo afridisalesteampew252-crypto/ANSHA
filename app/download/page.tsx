@@ -21,7 +21,7 @@ export default function DownloadPage() {
             <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">ANSHA Trading in your pocket.</h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-white/65">Browse live export vehicles and parts, view admin-published offers, send purchase requests, check customer invoices, and contact ANSHA support from one mobile-first app.</p>
             <a href={apkUrl} download className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-[#d21e1e] px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-red-950/25 transition hover:bg-red-600"><Download className="h-5 w-5" />Download APK</a>
-            <p className="mt-3 text-xs text-white/45">Android package: com.anshatrading.app · Test release 1.0</p>
+            <p className="mt-3 text-xs text-white/45">Android package: com.anshatrading.app · Version 1.1 · Updated 26 September 2026</p>
           </div>
         </section>
 
