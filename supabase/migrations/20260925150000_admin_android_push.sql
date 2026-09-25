@@ -48,8 +48,7 @@ BEGIN
     platform = 'android',
     user_agent = EXCLUDED.user_agent,
     last_seen_at = now(),
-    updated_at = now()
-  WHERE public.push_subscriptions.user_id = EXCLUDED.user_id;
+    updated_at = now();
 END;
 $;
 
