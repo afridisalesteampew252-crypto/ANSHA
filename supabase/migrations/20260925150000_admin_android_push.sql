@@ -48,9 +48,10 @@ BEGIN
     platform = 'android',
     user_agent = EXCLUDED.user_agent,
     last_seen_at = now(),
-    updated_at = now();
+    updated_at = now()
+  WHERE public.push_subscriptions.user_id = EXCLUDED.user_id;
 END;
-$$;
+$;
 
 REVOKE ALL ON FUNCTION public.register_fcm_push_token(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.register_fcm_push_token(text, text) TO authenticated;
