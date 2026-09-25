@@ -9,7 +9,7 @@ on:
       server_url:
         description: Customer mobile app URL to load in the APK
         required: true
-        default: https://www.anshatradingco.com/mobile
+        default: https://www.anshatradingco.com
         type: string
 
 jobs:
