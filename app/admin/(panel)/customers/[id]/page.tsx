@@ -9,10 +9,12 @@ import {
   Building2,
   CheckCircle2,
   Contact,
+  FileSpreadsheet,
   KeyRound,
   Loader2,
   MapPin,
   Pencil,
+  Printer,
   ReceiptText,
   RotateCcw,
   Save,
@@ -31,6 +33,7 @@ import { Label } from '@/components/ui/label';
 import { addToCurrencyMap, formatMoney, normalizeCurrency } from '@/lib/money';
 import { MoneyBreakdown } from '@/components/money-breakdown';
 import { cn } from '@/lib/utils';
+import { downloadRowsAsXlsx } from '@/lib/export-excel';
 
 const money = (value: number, currency = 'AED') => formatMoney(value, currency);
 const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
@@ -334,6 +337,49 @@ export default function CustomerAccountPage() {
     }
     return map;
   }, [items]);
+
+  const exportSoaExcel = async () => {
+    if (!customer) return;
+    await downloadRowsAsXlsx({
+      filename: `${customer.customer_code}-soa`,
+      sheetName: 'Customer SOA',
+      columns: [
+        { key: 'date', header: 'Date', width: 14 },
+        { key: 'reference', header: 'Reference', width: 24 },
+        { key: 'entry_type', header: 'Entry type', width: 18 },
+        { key: 'stock', header: 'Stock', width: 28 },
+        { key: 'currency', header: 'Currency', width: 12 },
+        { key: 'debit', header: 'Debit', width: 16 },
+        { key: 'credit', header: 'Credit', width: 16 },
+        { key: 'balance', header: 'Balance', width: 16 },
+        { key: 'status', header: 'Status', width: 16 },
+      ],
+      rows: [
+        ...invoices.map((invoice) => ({
+          date: invoice.issue_date,
+          reference: invoice.invoice_number,
+          entry_type: invoice.document_type.replaceAll('_', ' '),
+          stock: stockRefsByInvoice[invoice.id]?.join(', ') || '',
+          currency: invoice.currency,
+          debit: receivableDocument(invoice.document_type) ? Number(invoice.total_amount || 0) : 0,
+          credit: Number(invoice.amount_paid || 0),
+          balance: receivableDocument(invoice.document_type) ? Number(invoice.balance_due || 0) : 0,
+          status: invoice.status,
+        })),
+        ...remittances.filter((row) => row.status === 'confirmed').map((row) => ({
+          date: row.received_date,
+          reference: row.remittance_number,
+          entry_type: 'confirmed remittance',
+          stock: '',
+          currency: row.currency,
+          debit: 0,
+          credit: Number(row.amount || 0),
+          balance: Math.max(0, Number(row.amount || 0) - (allocatedByRemittance[row.id] || 0)),
+          status: row.status,
+        })),
+      ],
+    });
+  };
 
   const reservedStockIds = useMemo(() => new Set(reservedBuying.map((row) => row.stock_id)), [reservedBuying]);
   const buyingInvoiceItems = useMemo(
@@ -761,11 +807,23 @@ export default function CustomerAccountPage() {
     </Card>
 
     <section id="soa" className="scroll-mt-24 space-y-6">
-      <div>
-        <h2 className="text-lg font-bold tracking-tight">Statement of Account</h2>
-        <p className="text-sm text-muted-foreground">
-          Balances listed per currency — amounts are not converted. Allocate only matching currencies.
-        </p>
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight">Statement of Account</h2>
+          <p className="text-sm text-muted-foreground">
+            Balances listed per currency — amounts are not converted. Allocate only matching currencies.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={() => void exportSoaExcel()} disabled={invoices.length === 0 && remittances.length === 0}>
+            <FileSpreadsheet className="h-4 w-4" />
+            Download Excel
+          </Button>
+          <Button type="button" variant="outline" onClick={() => window.print()}>
+            <Printer className="h-4 w-4" />
+            Save / Print PDF
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

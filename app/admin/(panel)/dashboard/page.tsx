@@ -22,6 +22,7 @@ import {
   normalizeCurrency,
 } from '@/lib/money';
 import { MoneyBreakdown } from '@/components/money-breakdown';
+import { TodaysWorkQueue } from '@/components/admin/todays-work-queue';
 import { SystemHealthStatus } from '@/components/admin/system-health-status';
 
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
@@ -512,6 +513,8 @@ export default function AdminDashboardPage() {
           </div>
         </section>
       ) : null}
+
+      <TodaysWorkQueue />
 
       <section className="space-y-3">
         <h3 className="text-sm font-bold uppercase tracking-[0.12em] text-muted-foreground">Catalog &amp; people</h3>
