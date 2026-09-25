@@ -505,6 +505,7 @@ export default function BankAccountsPage() {
                   <option>USD</option>
                   <option>EUR</option>
                   <option>GBP</option>
+                  <option>PKR</option>
                   <option>JPY</option>
                 </select>
               </div>
