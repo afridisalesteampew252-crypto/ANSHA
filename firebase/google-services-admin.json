@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "1055767511224",
+    "project_id": "anshatradingco-d9738",
+    "storage_bucket": "anshatradingco-d9738.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1055767511224:android:2c67028365e3334d76b44d",
+        "android_client_info": {
+          "package_name": "com.anshatrading.admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1055767511224-vdi1qvg63f9ai8ra13l992i8h7qsah1l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAM9yoGydQ4k-W8o1h92ASQuyvSIw1S3Wc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1055767511224-8dku13h7jpvl12fhq7vbhlq5ndoql189.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1055767511224:android:1d98d5723898f2d576b44d",
+        "android_client_info": {
+          "package_name": "com.anshatrading.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1055767511224-vdi1qvg63f9ai8ra13l992i8h7qsah1l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAM9yoGydQ4k-W8o1h92ASQuyvSIw1S3Wc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1055767511224-8dku13h7jpvl12fhq7vbhlq5ndoql189.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
