@@ -38,11 +38,11 @@ jobs:
           import { readFileSync, writeFileSync } from 'node:fs';
           const path = 'android/app/build.gradle';
           let gradle = readFileSync(path, 'utf8');
-          if (!/versionCode\\s+\\d+/.test(gradle) || !/versionName\\s+['\"][^'\"]+['\"]/.test(gradle)) {
+          if (!/versionCode\s+\d+/.test(gradle) || !/versionName\s+['"][^'"]+['"]/.test(gradle)) {
             throw new Error('Android version fields were not found in app/build.gradle');
           }
-          gradle = gradle.replace(/versionCode\\s+\\d+/, 'versionCode 2');
-          gradle = gradle.replace(/versionName\\s+['\"][^'\"]+['\"]/, 'versionName "1.1"');
+          gradle = gradle.replace(/versionCode\s+\d+/, 'versionCode 2');
+          gradle = gradle.replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.1"');
           writeFileSync(path, gradle);
           NODE
       - name: Add customer Firebase config and sync Capacitor
