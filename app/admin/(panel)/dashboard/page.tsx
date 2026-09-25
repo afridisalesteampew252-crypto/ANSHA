@@ -22,6 +22,7 @@ import {
   normalizeCurrency,
 } from '@/lib/money';
 import { MoneyBreakdown } from '@/components/money-breakdown';
+import { SystemHealthStatus } from '@/components/admin/system-health-status';
 
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
@@ -394,6 +395,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       {errorBanner}
+      <SystemHealthStatus />
       <section className="admin-dash-hero overflow-hidden rounded-2xl border border-border/80 px-5 py-5 sm:px-6 sm:py-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
