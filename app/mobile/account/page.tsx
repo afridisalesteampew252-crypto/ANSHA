@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Banknote, BookmarkCheck, FileText, Headphones, Loader2, LogIn, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound, WalletCards } from 'lucide-react';
+import { ArrowRight, Banknote, BookmarkCheck, Loader2, LogIn, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound, WalletCards } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
