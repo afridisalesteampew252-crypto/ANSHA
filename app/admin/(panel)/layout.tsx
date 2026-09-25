@@ -23,6 +23,7 @@ import {
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
+import { AdminCommandCenter, AdminCommandTrigger } from '@/components/admin/admin-command-center';
 import { AdminMarketChrome } from '@/components/admin/admin-market-chrome';
 import { UnifiedRecordSearch } from '@/components/admin/unified-record-search';
 import { AdminPresenceProvider } from '@/components/admin/admin-presence-provider';
@@ -184,6 +185,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <AdminPresenceProvider userId={profile.id}>
       <div className="admin-shell flex min-h-screen min-w-0">
+      <AdminCommandCenter groups={visibleGroups} />
       <aside className={cn('admin-sidebar relative hidden shrink-0 flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
         <div className={cn('flex h-24 items-center border-b border-border/80', collapsed ? 'justify-center px-2' : 'px-4')}>
           <Link href="/admin/dashboard" className="flex min-w-0 items-center" aria-label="ANSHA operations dashboard">
@@ -224,6 +226,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <AdminCommandTrigger compact />
               <AdminNotificationCenter userId={profile.id} />
               <ThemeToggle />
               <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
@@ -275,6 +278,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               <Button asChild variant="accent"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />New invoice</Link></Button>
             ) : null}
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
+            <AdminCommandTrigger />
             <AdminNotificationCenter userId={profile.id} />
             <ThemeToggle />
             <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />

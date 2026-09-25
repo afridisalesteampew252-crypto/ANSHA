@@ -1,0 +1,45 @@
+name: Build ANSHA Admin APK
+
+on:
+  push:
+    branches:
+      - codex/run-admin-apk-once
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: Admin dashboard URL to load in the APK
+        required: true
+        default: https://www.anshatradingco.com/admin/dashboard
+        type: string
+
+jobs:
+  build-admin-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci --legacy-peer-deps
+      - name: Select the admin Capacitor config
+        run: cp capacitor.admin.config.ts capacitor.config.ts
+      - name: Generate the admin Android project
+        run: npm run cap:add:admin:android
+      - name: Add Firebase config and sync Capacitor
+        run: npm run cap:sync:admin:android
+        env:
+          CAPACITOR_ADMIN_SERVER_URL: ${{ inputs.server_url }}
+      - name: Build installable debug APK
+        run: cd android && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ansha-admin-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

@@ -21,7 +21,10 @@
     "test:e2e": "playwright test",
     "test:e2e:public": "playwright test tests/e2e/public.spec.ts tests/e2e/security.spec.ts",
     "test:e2e:install": "playwright install --with-deps chromium",
-    "analyze:bundle": "next experimental-analyze --output"
+    "analyze:bundle": "next experimental-analyze --output",
+    "cap:add:admin:android": "npx cap add android",
+    "cap:sync:admin:android": "node scripts/prepare-admin-android-firebase.mjs && npx cap sync android",
+    "cap:open:admin:android": "npx cap open android"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.70",

@@ -1,5 +1,7 @@
 # Mobile
 
+For the separate staff APK, dashboard health status, and admin FCM setup, see [Admin Android APK](Admin-Android.md).
+
 Capacitor provides an iOS/Android shell around the dedicated mobile frontend at `/mobile`. The website and APK have different UI routes, but they use the same Next.js deployment, Supabase project, Supabase Auth, Storage, and database. The WebView loads `https://www.anshatradingco.com/mobile` by default.
 
 The installable PWA (Phase 22) remains the primary mobile path in the browser. Capacitor is additive for store-ready wrappers. PWA details: `docs/PWA.md`.

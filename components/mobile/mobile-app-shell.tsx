@@ -16,7 +16,7 @@ const tabs = [
 export function MobileAppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
-    <div className="min-h-screen bg-[#f4f6f8] text-[#15171a]">
+    <div className="mobile-app-shell min-h-screen bg-[#f4f6f8] text-[#15171a]">
       <header className="sticky top-0 z-40 border-b border-black/5 bg-[#f4f6f8]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-xl items-center justify-between px-4">
           <Link href="/mobile" className="flex items-center gap-2" aria-label="ANSHA mobile home">

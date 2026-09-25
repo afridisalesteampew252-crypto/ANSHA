@@ -358,10 +358,17 @@
 
 /* Admin ERP shell — ink + accent red, professional (not marketing-loud). */
 .admin-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(ellipse 55% 40% at 100% 0%, hsl(0 75% 47% / 0.06), transparent 55%),
     radial-gradient(ellipse 45% 35% at 0% 100%, hsl(220 20% 12% / 0.04), transparent 50%),
     hsl(var(--secondary) / 0.55);
+}
+
+.mobile-app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .admin-sidebar {
