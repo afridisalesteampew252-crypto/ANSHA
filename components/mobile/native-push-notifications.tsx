@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { safeMobileRoute } from '@/lib/capacitor/safe-mobile-route';
+import { safeAdminRoute } from '@/lib/capacitor/safe-admin-route';
 
 /**
  * Capacitor-only FCM registration. On browsers the dynamic import fails safely,
@@ -30,7 +31,10 @@ export function NativePushNotifications() {
             console.warn('FCM registration failed:', error);
           }),
           await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
-            window.location.assign(safeMobileRoute(notification.data?.url));
+            const route = window.location.pathname.startsWith('/admin')
+              ? safeAdminRoute(notification.data?.url)
+              : safeMobileRoute(notification.data?.url);
+            window.location.assign(route);
           }),
         );
 
