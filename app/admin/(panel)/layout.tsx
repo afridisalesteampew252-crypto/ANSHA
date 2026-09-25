@@ -24,6 +24,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
 import { AdminMarketChrome } from '@/components/admin/admin-market-chrome';
+import { UnifiedRecordSearch } from '@/components/admin/unified-record-search';
 import { AdminPresenceProvider } from '@/components/admin/admin-presence-provider';
 import {
   ADMIN_NAV_GROUPS,
@@ -231,6 +232,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="border-t border-border/60 px-3 py-2">
             <AdminMarketChrome compact />
           </div>
+          <div className="border-t border-border/60 px-3 py-2">
+            <UnifiedRecordSearch />
+          </div>
         </header>
 
         <header className="admin-topbar hidden min-h-[4.5rem] items-center gap-4 border-b border-border/80 px-6 py-3 backdrop-blur md:flex xl:px-8">
@@ -241,6 +245,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="mx-2 hidden min-w-0 flex-1 justify-center lg:flex xl:mx-6">
             <AdminMarketChrome className="w-full max-w-3xl justify-center" />
           </div>
+          <UnifiedRecordSearch className="hidden w-full max-w-md lg:block" />
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {!fieldAgent && !isManager && !accounts ? (
             <DropdownMenu>
