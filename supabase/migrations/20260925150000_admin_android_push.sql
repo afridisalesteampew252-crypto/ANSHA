@@ -2,7 +2,7 @@
 -- The Vault value is optional: without it, web notifications keep working and this
 -- trigger quietly skips native delivery until the operator configures the secret.
 
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pg_net;
 
 CREATE OR REPLACE FUNCTION public.register_fcm_push_token(
   p_token text,
