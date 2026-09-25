@@ -1,5 +1,8 @@
 name: Build ANSHA Customer APK
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -29,12 +32,43 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - name: Generate the customer Android project
         run: npm run cap:add:android
+      - name: Set customer APK version
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = 'android/app/build.gradle';
+          let gradle = readFileSync(path, 'utf8');
+          if (!/versionCode\s+\d+/.test(gradle) || !/versionName\s+['"][^'"]+['"]/.test(gradle)) {
+            throw new Error('Android version fields were not found in app/build.gradle');
+          }
+          gradle = gradle.replace(/versionCode\s+\d+/, 'versionCode 2');
+          gradle = gradle.replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.1"');
+          writeFileSync(path, gradle);
+          NODE
       - name: Add customer Firebase config and sync Capacitor
         run: npm run cap:sync:android
         env:
           CAPACITOR_SERVER_URL: ${{ inputs.server_url }}
       - name: Build installable customer debug APK
         run: cd android && ./gradlew assembleDebug
+      - name: Publish APK to the website download
+        if: github.event_name == 'push' && github.ref == 'refs/heads/codex/build-customer-apk-once'
+        env:
+          APK_PATH: android/app/build/outputs/apk/debug/app-debug.apk
+          PUBLISH_PATH: public/downloads/ansha-trading-mobile.apk
+        run: |
+          publish_dir="$RUNNER_TEMP/customer-apk-publish"
+          mkdir -p "$publish_dir"
+          git fetch origin main
+          git worktree add "$publish_dir" origin/main
+          install -D "$APK_PATH" "$publish_dir/$PUBLISH_PATH"
+          git -C "$publish_dir" config user.name "github-actions[bot]"
+          git -C "$publish_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$publish_dir" add "$PUBLISH_PATH"
+          if ! git -C "$publish_dir" diff --cached --quiet; then
+            git -C "$publish_dir" commit -m "Publish customer APK v1.1"
+            git -C "$publish_dir" push origin HEAD:main
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: ansha-customer-debug-apk
