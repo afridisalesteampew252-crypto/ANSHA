@@ -94,7 +94,9 @@ const nextConfig = {
     ];
   },
   images: {
-    unoptimized: false,
+    // Serve source images directly to avoid Vercel Image Optimization usage.
+    // Catalog uploads are already converted to compressed WebP before storage.
+    unoptimized: true,
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 7,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
