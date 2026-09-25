@@ -411,7 +411,7 @@ function ReservationsPageInner() {
         >
           {([
             { id: 'single' as const, label: 'Single + proforma' },
-            { id: 'bulk' as const, label: 'Bulk reserve' },
+            ...(!fieldAgent ? [{ id: 'bulk' as const, label: 'Bulk reserve' }] : []),
           ]).map((item) => {
             const active = mode === item.id;
             return (
