@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 
 interface InquiryDialogProps {
   partId?: string;
+  vehicleId?: string;
   partName?: string;
   triggerLabel?: string;
   triggerVariant?: 'default' | 'outline' | 'accent';
@@ -28,6 +29,7 @@ interface InquiryDialogProps {
 
 export function InquiryDialog({
   partId,
+  vehicleId,
   partName,
   triggerLabel = 'Send Inquiry',
   triggerVariant = 'default',
@@ -39,6 +41,7 @@ export function InquiryDialog({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [usingPortalProfile, setUsingPortalProfile] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [message, setMessage] = useState(
     partName ? `I'm interested in: ${partName}` : ''
@@ -74,6 +77,7 @@ export function InquiryDialog({
         savedPhone = customer?.phone || '';
       }
 
+      setProfileId(profile.id);
       setName(profile.full_name || session.user.user_metadata?.full_name || 'Customer');
       setEmail(profile.email || session.user.email || '');
       setPhone(savedPhone);
@@ -91,6 +95,8 @@ export function InquiryDialog({
     setLoading(true);
     const { error } = await supabase.from('inquiries').insert({
       part_id: partId || null,
+      vehicle_id: vehicleId || null,
+      customer_profile_id: profileId,
       customer_name: name.trim(),
       customer_email: email.trim() || null,
       customer_phone: phone.trim() || null,
