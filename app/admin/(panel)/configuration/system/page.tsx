@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabase/client';
 import { FALLBACK_FINANCE_SETTINGS, type FinanceSettings } from '@/lib/use-finance-settings';
 
 const sections = [
+  { href: '/admin/system-health', title: 'System health', description: 'Website, database and notifications with alert history' },
+  { href: '/admin/presence', title: 'Online now', description: 'Active staff and customer portal accounts' },
   { href: '/admin/configuration', title: 'Export master lists', description: 'Countries, ports, vessels and voyages' },
   { href: '/admin/trade-config', title: 'Trade and market policies', description: 'Reference rates, freight notes and country policy' },
   { href: '/admin/configuration/shipping-companies', title: 'Shipping companies', description: 'Carriers used in export operations' },
