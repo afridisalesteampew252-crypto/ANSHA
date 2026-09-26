@@ -299,6 +299,8 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
             />
             <div className="flex flex-col gap-3 sm:flex-row">
               <InquiryDialog
+                vehicleId={vehicle.id}
+                partName={[vehicle.title, vehicle.stock_number ? `#${vehicle.stock_number}` : null].filter(Boolean).join(' · ')}
                 triggerLabel="Send Inquiry"
                 triggerSize="lg"
                 triggerVariant="accent"
