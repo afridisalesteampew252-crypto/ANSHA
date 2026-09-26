@@ -24,6 +24,7 @@ AS $$
 DECLARE
   previous_status text;
   failures integer;
+  last_check timestamptz;
   next_status text;
   safe_details text := left(COALESCE(p_details, ''), 240);
 BEGIN
@@ -34,16 +35,17 @@ BEGIN
     RAISE EXCEPTION 'Invalid service status';
   END IF;
 
-  INSERT INTO public.system_health_incidents(service)
-  VALUES (p_service)
+  INSERT INTO public.system_health_incidents(service, checked_at)
+  VALUES (p_service, now() - interval '30 seconds')
   ON CONFLICT (service) DO NOTHING;
 
-  SELECT status, consecutive_failures
-  INTO previous_status, failures
+  SELECT status, consecutive_failures, checked_at
+  INTO previous_status, failures, last_check
   FROM public.system_health_incidents
   WHERE service = p_service
   FOR UPDATE;
 
+  IF last_check > now() - interval '30 seconds' THEN RETURN; END IF;
   failures := CASE WHEN p_healthy THEN 0 ELSE failures + 1 END;
   next_status := CASE WHEN p_healthy THEN 'healthy'
                       WHEN failures >= 2 THEN 'degraded'
