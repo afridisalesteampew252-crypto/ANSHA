@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { downloadRowsAsXlsx } from '@/lib/export-excel';
 import { supabase } from '@/lib/supabase/client';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 import type { GlBalanceSheetRow, GlProfitAndLossRow, GlTrialBalanceRow } from '@/lib/types';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -18,17 +19,20 @@ const yearStart = () => `${new Date().getUTCFullYear()}-01-01`;
 
 export default function ReportsPage() {
   const [busy, setBusy] = useState(false);
-  const [reportCurrency, setReportCurrency] = useState('AED');
-  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>(['AED']);
+  const financeSettings = useFinanceSettings();
+  const [selectedCurrency, setSelectedCurrency] = useState('');
+  const reportCurrency = selectedCurrency || financeSettings.default_currency;
+  const [postedCurrencies, setPostedCurrencies] = useState<string[]>([]);
+  const availableCurrencies = useMemo(() =>
+    Array.from(new Set([...financeSettings.enabled_currencies, ...postedCurrencies])).sort(),
+    [financeSettings.enabled_currencies, postedCurrencies]
+  );
   const money = (value: number) => new Intl.NumberFormat('en-AE', { style: 'currency', currency: reportCurrency, maximumFractionDigits: 2 }).format(Number(value || 0));
 
   useEffect(() => {
     void supabase.from('gl_journals').select('currency').eq('status', 'posted').limit(1000)
-      .then(({ data }) => {
-        const currencies = Array.from(new Set(['AED', ...(data || []).map((row) => row.currency)]))
-          .filter((code): code is string => typeof code === 'string' && /^[A-Z]{3}$/.test(code));
-        setAvailableCurrencies(currencies.sort());
-      });
+      .then(({ data }) => setPostedCurrencies(Array.from(new Set((data || []).map((row) => row.currency)
+        .filter((code): code is string => typeof code === 'string' && /^[A-Z]{3}$/.test(code)))));
   }, []);
   const [asOf, setAsOf] = useState(today);
   const [pnlFrom, setPnlFrom] = useState(yearStart);
@@ -63,7 +67,7 @@ export default function ReportsPage() {
   }, [asOf]);
 
   const changeCurrency = (code: string) => {
-    setReportCurrency(code);
+    setSelectedCurrency(code);
     setTrial([]);
     setPnl([]);
     setBs([]);
