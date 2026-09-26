@@ -127,7 +127,7 @@ npm run cap:sync:android
 
 The current repository contains one Android application target, `com.anshatrading.app`. Its launcher icon is the ANSHA brand mark from `resources/ansha-launcher-icon.png`, applied to the generated density resources by `npm run android:prepare-firebase` / `npm run cap:sync:android`. Re-run that command after regenerating or deleting the ignored `android/` directory.
 
-If an Admin APK is maintained as a separate Android project, use the same source PNG and copy it into that project's `mipmap-*` launcher resources, or run the preparation script from the project that owns that APK. This repository does not currently contain a second admin `applicationId` or Android module, so changing this target does not create a separate admin APK.
+The separate staff APK uses `com.anshatrading.admin` and has its own `capacitor.admin.config.ts` and `scripts/prepare-admin-android-firebase.mjs`; that preparation workflow applies the same source icon without changing the customer APK.
 
 The Android 13+ notification permission is requested at runtime. Android devices and emulators must have Google Play services available. FCM delivery can be smoke-tested from Firebase Console → Messaging after installing an APK built from the configured project.
 

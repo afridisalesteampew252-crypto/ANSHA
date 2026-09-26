@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 const projectRoot = resolve(import.meta.dirname, '..');
 const source = resolve(projectRoot, 'firebase/google-services-admin.json');
 const destination = resolve(projectRoot, 'android/app/google-services.json');
+const launcherIconSource = resolve(projectRoot, 'resources/ansha-launcher-icon.png');
 const expectedPackage = 'com.anshatrading.admin';
 
 let config;
@@ -29,4 +30,13 @@ if (!hasMatchingClient) {
 
 await mkdir(dirname(destination), { recursive: true });
 await copyFile(source, destination);
+
+for (const density of ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']) {
+  const targetDir = resolve(projectRoot, `android/app/src/main/res/mipmap-${density}`);
+  await mkdir(targetDir, { recursive: true });
+  for (const filename of ['ic_launcher.png', 'ic_launcher_round.png', 'ic_launcher_foreground.png']) {
+    await copyFile(launcherIconSource, resolve(targetDir, filename));
+  }
+}
+console.log('Applied ANSHA launcher icon to the admin Android resources.');
 console.log(`Prepared Firebase config for ${expectedPackage} at ${destination}`);

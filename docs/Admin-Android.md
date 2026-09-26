@@ -9,6 +9,7 @@ The admin APK is a separate staff app. It keeps the customer/catalog APK unchang
 - Capacitor config: `capacitor.admin.config.ts`
 - Start URL: `https://www.anshatradingco.com/admin/dashboard`
 - Push provider: Firebase Cloud Messaging (FCM)
+- Launcher icon source: `resources/ansha-launcher-icon.png`
 - Android native project is generated locally or in GitHub Actions; it remains gitignored.
 
 Register a second Android app in the existing Firebase project with the exact package name `com.anshatrading.admin`. Download its `google-services.json` and add it to the repository as `firebase/google-services-admin.json`. This client configuration is required at build time; the prepare script validates its package name before copying it into the generated Android project.
@@ -24,6 +25,8 @@ npm run cap:sync:admin:android
 cd android
 ./gradlew assembleDebug
 ```
+
+`cap:sync:admin:android` applies the ANSHA launcher icon to the admin app's density resources. The customer APK keeps the same brand icon through its separate preparation script.
 
 The installable test APK is at `android/app/build/outputs/apk/debug/app-debug.apk`.
 
