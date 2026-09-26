@@ -37,7 +37,7 @@ export default function OnlinePresencePage() {
     const since = new Date(Date.now() - FRESH_MS).toISOString();
     const [team, portal] = await Promise.all([
       supabase.from('admin_profiles').select('id,full_name,email,role,last_seen_at').eq('is_active', true)
-        .gte('last_seen_at', since).order('last_seen_at', { ascending: false }).limit(500),
+        .order('last_seen_at', { ascending: false }).limit(500),
       supabase.from('customer_profiles').select('id,customer_id,full_name,email,last_seen_at,is_active').eq('is_active', true)
         .gte('last_seen_at', since).order('last_seen_at', { ascending: false }).limit(500),
     ]);
