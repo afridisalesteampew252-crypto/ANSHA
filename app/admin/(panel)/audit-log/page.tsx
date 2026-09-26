@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
+import Link from 'next/link';
 import { History, Loader2, Search } from 'lucide-react';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
@@ -113,6 +114,8 @@ export default function AuditLogPage() {
           Account-admin only. Catalog create/update/delete and stock status, invoice status, and remittance allocations.
         </p>
       </div>
+
+      <Link href="/admin/geographic-recommendations" className="inline-flex rounded-md border px-4 py-2 text-sm font-medium text-primary hover:bg-secondary">View geographic customer and seller evidence</Link>
 
       <Card>
         <CardContent className="p-4">
