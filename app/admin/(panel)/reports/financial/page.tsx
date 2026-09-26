@@ -31,8 +31,11 @@ export default function ReportsPage() {
 
   useEffect(() => {
     void supabase.from('gl_journals').select('currency').eq('status', 'posted').limit(1000)
-      .then(({ data }) => setPostedCurrencies(Array.from(new Set((data || []).map((row) => row.currency)
-        .filter((code): code is string => typeof code === 'string' && /^[A-Z]{3}$/.test(code)))));
+      .then(({ data }) => {
+        const codes = (data || []).map((row) => row.currency)
+          .filter((code): code is string => typeof code === 'string' && /^[A-Z]{3}$/.test(code));
+        setPostedCurrencies(Array.from(new Set(codes)));
+      });
   }, []);
   const [asOf, setAsOf] = useState(today);
   const [pnlFrom, setPnlFrom] = useState(yearStart);
