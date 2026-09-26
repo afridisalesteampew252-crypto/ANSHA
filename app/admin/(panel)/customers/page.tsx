@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   KeyRound,
   Pencil,
   Plus,
@@ -15,7 +17,6 @@ import {
   Users,
   WalletCards,
 } from 'lucide-react';
-import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
 import type { Customer } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -78,6 +79,8 @@ export default function CustomersPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalCustomers, setTotalCustomers] = useState(0);
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -88,12 +91,17 @@ export default function CustomersPage() {
   const [selfRole, setSelfRole] = useState<string>('staff');
 
   const load = useCallback(async () => {
-    const [{ data }, { data: portals }, { data: auth }, { data: ownerRows }] = await Promise.all([
-      supabase.from('customers').select('*').order('created_at', { ascending: false }),
-      supabase.from('customer_profiles').select('customer_id,email,is_active'),
+    const [{ data: pageData, error: pageError }, { data: auth }, { data: ownerRows }] = await Promise.all([
+      supabase.rpc('list_admin_customers', { p_query: query || null, p_page: page, p_page_size: 50 }),
       supabase.auth.getUser(),
       supabase.rpc('list_customer_assignees'),
     ]);
+    if (pageError) {
+      setMessage(pageError.message);
+      setCustomers([]);
+      setTotalCustomers(0);
+      return;
+    }
     setAssignees((ownerRows || []) as CustomerAssignee[]);
     const userId = auth.user?.id || '';
     setSelfId(userId);
@@ -101,8 +109,13 @@ export default function CustomersPage() {
       const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', userId).maybeSingle();
       setSelfRole(profile?.role || 'staff');
     }
-    const records = (data || []) as Customer[];
+    const response = (pageData || {}) as { rows?: Customer[]; total?: number };
+    const records = Array.isArray(response.rows) ? response.rows : [];
     setCustomers(records);
+    setTotalCustomers(Number(response.total || 0));
+    const { data: portals } = records.length
+      ? await supabase.from('customer_profiles').select('customer_id,email,is_active').in('customer_id', records.map((row) => row.id))
+      : { data: [] as Array<{ customer_id: string; email: string; is_active: boolean }> };
     const map: PortalMap = {};
     for (const row of portals || []) {
       if (row.customer_id) map[row.customer_id] = { email: row.email, is_active: row.is_active };
@@ -120,11 +133,15 @@ export default function CustomersPage() {
     } else {
       setAvatarUrls({});
     }
-  }, []);
+  }, [page, query]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   useEffect(() => {
     if (!avatarFile) {
@@ -248,31 +265,13 @@ export default function CustomersPage() {
     await load();
   };
 
-  const visible = customers.filter((item) => {
-    const portal = portalByCustomer[item.id];
-    return matchesQuery(query, [
-      item.customer_code,
-      item.full_name,
-      item.company_name,
-      item.email,
-      item.phone,
-      item.whatsapp,
-      item.country,
-      item.address,
-      item.notes,
-      item.tax_registration_number,
-      item.consignee_name,
-      item.consignee_company,
-      portal?.email,
-      assignees.find((owner) => owner.id === item.owner_id)?.full_name,
-      assignees.find((owner) => owner.id === item.owner_id)?.role,
-    ]);
-  });
+  const visible = customers;
 
   const existingAvatarSrc = editingId ? avatarUrls[editingId] : null;
   const fieldAgentScoped = isFieldAgentRole(selfRole);
   const canAssign = selfRole === 'admin' || selfRole === 'manager';
   const unassignedCount = customers.filter((customer) => !customer.owner_id).length;
+  const pageCount = Math.max(1, Math.ceil(totalCustomers / 50));
 
   return (
     <div className="space-y-6">
@@ -327,9 +326,7 @@ export default function CustomersPage() {
           />
         </div>
         <p className="text-sm text-muted-foreground">
-          {visible.length === customers.length
-            ? `${customers.length} customer${customers.length === 1 ? '' : 's'}`
-            : `${visible.length} of ${customers.length}`}
+          {totalCustomers} customer{totalCustomers === 1 ? '' : 's'} · page {page} of {pageCount}
         </p>
       </div>
 
@@ -536,6 +533,21 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
 
+      {pageCount > 1 ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-border/80 bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">Showing {Math.min((page - 1) * 50 + 1, totalCustomers)}–{Math.min(page * 50, totalCustomers)} of {totalCustomers}</p>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous customers page">
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+            <span className="min-w-16 text-center text-xs font-semibold text-muted-foreground">{page} / {pageCount}</span>
+            <Button type="button" variant="outline" size="sm" disabled={page >= pageCount} onClick={() => setPage((current) => Math.min(pageCount, current + 1))} aria-label="Next customers page">
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
@@ -630,4 +642,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
