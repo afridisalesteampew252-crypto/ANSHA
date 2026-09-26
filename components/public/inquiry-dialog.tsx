@@ -58,7 +58,7 @@ export function InquiryDialog({
       }
       const { data: profile } = await supabase
         .from('customer_profiles')
-        .select('customer_id,full_name,email')
+        .select('id,customer_id,full_name,email')
         .eq('id', session.user.id)
         .eq('is_active', true)
         .maybeSingle();
