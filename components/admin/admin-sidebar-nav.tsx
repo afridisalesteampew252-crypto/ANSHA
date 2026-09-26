@@ -12,6 +12,7 @@ import {
   BookmarkPlus,
   Building2,
   Calculator,
+  CircleAlert,
   CalendarCheck,
   Car,
   ChevronDown,
@@ -71,6 +72,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: LayoutDashboard,
     items: [
       { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/admin/presence', label: 'Online now', icon: Users },
+      { href: '/admin/system-health', label: 'System health', icon: CircleAlert },
       { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { href: '/admin/ai', label: 'AI assistant', icon: Sparkles },
       { href: '/admin/audit-log', label: 'Audit log', icon: ScrollText },

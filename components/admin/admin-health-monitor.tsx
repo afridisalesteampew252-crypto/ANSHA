@@ -18,7 +18,11 @@ export function AdminHealthMonitor({ role }: { role: string }) {
     let running = false;
 
     const check = async () => {
-      if (running || document.hidden || !navigator.onLine) return;
+      if (running || document.hidden) return;
+      if (!navigator.onLine) {
+        toast.error('This device is offline. Health checks will resume when the connection returns.', { id: 'admin-system-health' });
+        return;
+      }
       running = true;
       try {
         let response: Response | null = null;
@@ -59,6 +63,8 @@ export function AdminHealthMonitor({ role }: { role: string }) {
             p_details: healthy ? null : `${service} health check failed`,
           });
         }
+      } catch {
+        toast.error('System health check could not complete.', { id: 'admin-system-health' });
       } finally {
         running = false;
       }

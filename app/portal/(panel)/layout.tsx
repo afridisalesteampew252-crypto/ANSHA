@@ -39,6 +39,24 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     })();
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const touch = async () => {
+      if (!active || document.hidden) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await supabase.rpc('touch_customer_last_seen');
+    };
+    void touch();
+    const timer = window.setInterval(() => void touch(), 45_000);
+    const onVisible = () => { if (!document.hidden) void touch(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     router.replace('/portal');
