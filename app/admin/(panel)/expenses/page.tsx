@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 import type { Expense, ExpenseCategory, ExpensePaymentMethod, ExpenseStatus } from '@/lib/types';
 
 type BankOption = { id: string; label: string };
@@ -44,7 +45,9 @@ export default function ExpensesPage() {
 
   const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('AED');
+  const financeSettings = useFinanceSettings();
+  const [currency, setCurrency] = useState('');
+  const selectedCurrency = currency || financeSettings.default_currency;
   const [categoryId, setCategoryId] = useState('');
   const [payee, setPayee] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethod>('bank_transfer');
@@ -96,7 +99,7 @@ export default function ExpensesPage() {
     setEditing(false);
     setExpenseDate(new Date().toISOString().slice(0, 10));
     setAmount('');
-    setCurrency('AED');
+    setCurrency('');
     setCategoryId('');
     setPayee('');
     setPaymentMethod('bank_transfer');
@@ -134,7 +137,7 @@ export default function ExpensesPage() {
     const { data, error } = await supabase.rpc('create_expense', {
       p_expense_date: expenseDate,
       p_amount: value,
-      p_currency: currency,
+      p_currency: selectedCurrency,
       p_category_id: categoryId,
       p_payee: payee || null,
       p_payment_method: paymentMethod,
@@ -170,7 +173,7 @@ export default function ExpensesPage() {
       p_expense_id: selected.id,
       p_expense_date: expenseDate,
       p_amount: value,
-      p_currency: currency,
+      p_currency: selectedCurrency,
       p_category_id: categoryId,
       p_payee: payee,
       p_payment_method: paymentMethod,
@@ -252,20 +255,10 @@ export default function ExpensesPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Currency</Label>
-                <Input list="expense-currency-options" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
-                <datalist id="expense-currency-options">
-                  <option value="AED" />
-                  <option value="PKR" />
-                  <option value="USD" />
-                  <option value="EUR" />
-                  <option value="GBP" />
-                  <option value="JPY" />
-                  <option value="CNY" />
-                  <option value="SGD" />
-                  <option value="CHF" />
-                  <option value="CAD" />
-                  <option value="AUD" />
-                </datalist>
+                <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={selectedCurrency} onChange={(e) => setCurrency(e.target.value)}>
+                  {!financeSettings.enabled_currencies.includes(selectedCurrency) && <option value={selectedCurrency}>{selectedCurrency} (existing)</option>}
+                  {financeSettings.enabled_currencies.map((code) => <option key={code} value={code}>{code}</option>)}
+                </select>
               </div>
               <div className="space-y-1.5">
                 <Label>Category</Label>
