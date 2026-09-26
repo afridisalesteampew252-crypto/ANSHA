@@ -28,7 +28,7 @@ export default function OnlinePresencePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setReady(true); return; }
     const profile = await supabase.from('admin_profiles').select('role,is_active').eq('id', user.id).maybeSingle();
-    if (!profile.data?.is_active || !['admin', 'manager'].includes(profile.data.role)) {
+    if (!profile.data?.is_active || profile.data.role !== 'admin') {
       setReady(true);
       setAllowed(false);
       return;
@@ -71,7 +71,7 @@ export default function OnlinePresencePage() {
   const onlineCustomers = customers.filter((row) => isFresh(row.last_seen_at, now));
 
   if (!ready) return <div className="p-8 text-sm text-muted-foreground">Loading online activity…</div>;
-  if (!allowed) return <div className="p-8 text-sm">Online activity is available to admins and managers.</div>;
+  if (!allowed) return <div className="p-8 text-sm">Online activity is available to admins.</div>;
   return <div className="mx-auto max-w-6xl space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div><h1 className="flex items-center gap-2 text-2xl font-bold"><Activity className="h-6 w-6 text-accent" />Online now</h1>
