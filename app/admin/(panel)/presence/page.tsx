@@ -21,7 +21,7 @@ export default function OnlinePresencePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [error, setError] = useState('');
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
   const [checkedAt, setCheckedAt] = useState('');
 
   const load = useCallback(async () => {
