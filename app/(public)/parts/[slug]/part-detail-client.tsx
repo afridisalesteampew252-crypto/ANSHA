@@ -323,7 +323,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
             <div className="flex flex-col gap-3 sm:flex-row">
               <InquiryDialog
                 partId={part.id}
-                partName={part.name}
+                partName={[part.name, part.part_code].filter(Boolean).join(' · ')}
                 triggerLabel="Send Inquiry"
                 triggerSize="lg"
                 triggerVariant="accent"
