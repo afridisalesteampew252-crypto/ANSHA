@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Download, FileBarChart, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,14 +13,23 @@ import { downloadRowsAsXlsx } from '@/lib/export-excel';
 import { supabase } from '@/lib/supabase/client';
 import type { GlBalanceSheetRow, GlProfitAndLossRow, GlTrialBalanceRow } from '@/lib/types';
 
-const money = (value: number, currency = 'AED') =>
-  new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value || 0));
-
 const today = () => new Date().toISOString().slice(0, 10);
 const yearStart = () => `${new Date().getUTCFullYear()}-01-01`;
 
 export default function ReportsPage() {
   const [busy, setBusy] = useState(false);
+  const [reportCurrency, setReportCurrency] = useState('AED');
+  const [availableCurrencies, setAvailableCurrencies] = useState<string[]>(['AED']);
+  const money = (value: number) => new Intl.NumberFormat('en-AE', { style: 'currency', currency: reportCurrency, maximumFractionDigits: 2 }).format(Number(value || 0));
+
+  useEffect(() => {
+    void supabase.from('gl_journals').select('currency').eq('status', 'posted').limit(1000)
+      .then(({ data }) => {
+        const currencies = Array.from(new Set(['AED', ...(data || []).map((row) => row.currency)]))
+          .filter((code): code is string => typeof code === 'string' && /^[A-Z]{3}$/.test(code));
+        setAvailableCurrencies(currencies.sort());
+      });
+  }, []);
   const [asOf, setAsOf] = useState(today);
   const [pnlFrom, setPnlFrom] = useState(yearStart);
   const [pnlTo, setPnlTo] = useState(today);
@@ -31,27 +40,34 @@ export default function ReportsPage() {
 
   const loadTrial = useCallback(async () => {
     setBusy(true);
-    const { data, error } = await supabase.rpc('gl_trial_balance', { p_as_of: asOf });
+    const { data, error } = await supabase.rpc('gl_trial_balance_currency', { p_as_of: asOf, p_currency: reportCurrency });
     setBusy(false);
     if (error) return toast.error(error.message);
     setTrial((data || []) as GlTrialBalanceRow[]);
-  }, [asOf]);
+  }, [asOf, reportCurrency]);
 
   const loadPnl = useCallback(async () => {
     setBusy(true);
-    const { data, error } = await supabase.rpc('gl_profit_and_loss', { p_from: pnlFrom, p_to: pnlTo });
+    const { data, error } = await supabase.rpc('gl_profit_and_loss_currency', { p_from: pnlFrom, p_to: pnlTo, p_currency: reportCurrency });
     setBusy(false);
     if (error) return toast.error(error.message);
     setPnl((data || []) as GlProfitAndLossRow[]);
-  }, [pnlFrom, pnlTo]);
+  }, [pnlFrom, pnlTo, reportCurrency]);
 
   const loadBs = useCallback(async () => {
     setBusy(true);
-    const { data, error } = await supabase.rpc('gl_balance_sheet', { p_as_of: asOf });
+    const { data, error } = await supabase.rpc('gl_balance_sheet_currency', { p_as_of: asOf, p_currency: reportCurrency });
     setBusy(false);
     if (error) return toast.error(error.message);
     setBs((data || []) as GlBalanceSheetRow[]);
   }, [asOf]);
+
+  const changeCurrency = (code: string) => {
+    setReportCurrency(code);
+    setTrial([]);
+    setPnl([]);
+    setBs([]);
+  };
 
   const trialTotals = useMemo(
     () => ({
@@ -85,18 +101,20 @@ export default function ReportsPage() {
   const downloadPnl = async () => {
     if (!pnl.length) return;
     await downloadRowsAsXlsx({
-      filename: 'financial-pnl',
+      filename: `financial-pnl-${reportCurrency}`,
       sheetName: 'Profit and loss',
       columns: [
         { header: 'Code', key: 'account_code' },
         { header: 'Account', key: 'account_name' },
         { header: 'Type', key: 'account_type' },
+        { header: 'Currency', key: 'currency' },
         { header: 'Amount', key: 'amount' },
       ],
       rows: pnl.map((row) => ({
         account_code: row.account_code,
         account_name: row.account_name,
         account_type: row.account_type,
+        currency: reportCurrency,
         amount: Number(row.amount || 0),
       })),
     });
@@ -106,18 +124,20 @@ export default function ReportsPage() {
   const downloadBs = async () => {
     if (!bs.length) return;
     await downloadRowsAsXlsx({
-      filename: 'financial-balance-sheet',
+      filename: `financial-balance-sheet-${reportCurrency}`,
       sheetName: 'Balance sheet',
       columns: [
         { header: 'Section', key: 'section' },
         { header: 'Code', key: 'account_code' },
         { header: 'Account', key: 'account_name' },
+        { header: 'Currency', key: 'currency' },
         { header: 'Amount', key: 'amount' },
       ],
       rows: bs.map((row) => ({
         section: row.section,
         account_code: row.account_code,
         account_name: row.account_name,
+        currency: reportCurrency,
         amount: Number(row.amount || 0),
       })),
     });
@@ -127,12 +147,13 @@ export default function ReportsPage() {
   const downloadTrial = async () => {
     if (!trial.length) return;
     await downloadRowsAsXlsx({
-      filename: 'financial-trial-balance',
+      filename: `financial-trial-balance-${reportCurrency}`,
       sheetName: 'Trial balance',
       columns: [
         { header: 'Code', key: 'account_code' },
         { header: 'Account', key: 'account_name' },
         { header: 'Type', key: 'account_type' },
+        { header: 'Currency', key: 'currency' },
         { header: 'Debit', key: 'total_debit' },
         { header: 'Credit', key: 'total_credit' },
         { header: 'Balance', key: 'balance' },
@@ -141,6 +162,7 @@ export default function ReportsPage() {
         account_code: row.account_code,
         account_name: row.account_name,
         account_type: row.account_type,
+        currency: reportCurrency,
         total_debit: Number(row.total_debit || 0),
         total_credit: Number(row.total_credit || 0),
         balance: Number(row.balance || 0),
@@ -167,6 +189,16 @@ export default function ReportsPage() {
             </Link>
           </p>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="statement-currency">Statement currency</Label>
+          <select id="statement-currency" className="h-10 min-w-32 rounded-md border bg-background px-3 text-sm" value={reportCurrency} onChange={(event) => changeCurrency(event.target.value)}>
+            {availableCurrencies.map((code) => <option key={code} value={code}>{code}</option>)}
+          </select>
+        </div>
+        <p className="text-sm text-muted-foreground">Each report shows only {reportCurrency} journals. Amounts are never combined across currencies.</p>
       </div>
 
       <Tabs defaultValue="pnl">

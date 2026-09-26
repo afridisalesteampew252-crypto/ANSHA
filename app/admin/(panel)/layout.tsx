@@ -240,15 +240,12 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <header className="admin-topbar hidden min-h-[4.5rem] items-center gap-4 border-b border-border/80 px-6 py-3 backdrop-blur md:flex xl:px-8">
-          <div className="min-w-0 shrink-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">ANSHA operations</p>
-            <h1 className="text-xl font-bold tracking-tight">{pageTitle}</h1>
+        <header className="admin-topbar hidden min-h-[4.5rem] items-center gap-3 border-b border-border/80 px-4 py-3 backdrop-blur md:flex xl:px-6">
+          <div className="min-w-0 max-w-[12rem] shrink-0 xl:max-w-[16rem]">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">ANSHA operations</p>
+            <h1 className="truncate text-xl font-bold tracking-tight" title={pageTitle}>{pageTitle}</h1>
           </div>
-          <div className="mx-2 hidden min-w-0 flex-1 justify-center lg:flex xl:mx-6">
-            <AdminMarketChrome className="w-full max-w-3xl justify-center" />
-          </div>
-          <UnifiedRecordSearch className="hidden w-full max-w-md lg:block" />
+          <div className="hidden min-w-0 flex-1 lg:block"><UnifiedRecordSearch className="w-full" /></div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {!fieldAgent && !isManager && !accounts ? (
             <DropdownMenu>
@@ -285,8 +282,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <div className="admin-topbar hidden border-b border-border/60 px-6 py-2 lg:hidden md:block xl:px-8">
+        <div className="admin-topbar hidden border-b border-border/60 px-4 py-2 md:block xl:px-6">
           <AdminMarketChrome compact />
+          <div className="mt-2 lg:hidden"><UnifiedRecordSearch /></div>
         </div>
 
         <main className="min-w-0 flex-1 overflow-x-clip p-3 pb-8 sm:p-5 sm:pb-10 md:p-6 md:pb-12 xl:p-8">{children}</main>

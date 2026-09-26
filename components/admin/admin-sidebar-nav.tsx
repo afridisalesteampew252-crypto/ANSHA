@@ -275,7 +275,7 @@ function readStoredOpenIds(): string[] {
     const raw = window.localStorage.getItem(OPEN_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string').slice(0, 1) : [];
   } catch {
     return [];
   }
@@ -420,9 +420,7 @@ export function AdminSidebarNav({
 
   useEffect(() => {
     const stored = readStoredOpenIds();
-    const next = new Set(stored);
-    if (activeGroupId) next.add(activeGroupId);
-    setOpenIds(Array.from(next));
+    setOpenIds(activeGroupId ? [activeGroupId] : stored.filter((id) => groups.some((group) => group.id === id)));
     setHydrated(true);
     // Hydrate once from localStorage; pathname-driven open is handled below
   }, []);
@@ -430,8 +428,8 @@ export function AdminSidebarNav({
   useEffect(() => {
     if (!hydrated || !activeGroupId) return;
     setOpenIds((current) => {
-      if (current.includes(activeGroupId)) return current;
-      const next = [...current, activeGroupId];
+      if (current.length === 1 && current[0] === activeGroupId) return current;
+      const next = [activeGroupId];
       writeStoredOpenIds(next);
       return next;
     });
@@ -439,11 +437,7 @@ export function AdminSidebarNav({
 
   const setGroupOpen = (id: string, open: boolean) => {
     setOpenIds((current) => {
-      // Keep the route's parent open even if the user tries to collapse it
-      const forced = activeGroupId === id ? true : open;
-      const next = forced
-        ? Array.from(new Set(current.concat(id)))
-        : current.filter((value) => value !== id);
+      const next = open ? [id] : [];
       writeStoredOpenIds(next);
       return next;
     });
