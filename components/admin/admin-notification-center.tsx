@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import Link from 'next/link';
 import { Bell, CalendarClock, CheckCheck, CircleAlert, Inbox, Mail, MessageCircle, PackageSearch, ReceiptText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,51 +41,59 @@ const iconByType = {
 export function AdminNotificationCenter({ userId }: { userId: string }) {
   const [items, setItems] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const instanceId = useId().replace(/[^a-zA-Z0-9-]/g, '');
 
   const load = useCallback(async () => {
-    const { data } = await supabase
-      .from('admin_notifications')
-      .select('id,recipient_id,notification_type,title,body,href,read_at,created_at')
-      .eq('recipient_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(30);
-    setItems((data || []) as Notification[]);
+    const [list, count] = await Promise.all([
+      supabase.from('admin_notifications')
+        .select('id,recipient_id,notification_type,title,body,href,read_at,created_at')
+        .eq('recipient_id', userId).order('created_at', { ascending: false }).limit(30),
+      supabase.from('admin_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', userId).is('read_at', null),
+    ]);
+    if (list.error || count.error) {
+      toast.error('Notifications could not be loaded.');
+      return;
+    }
+    setItems((list.data || []) as Notification[]);
+    setUnread(count.count || 0);
   }, [userId]);
 
   useEffect(() => {
     void load();
-
-    const topic = `admin-notifications-${userId}`;
-    // Guard against a stale channel with the same topic still being registered
-    // (e.g. React Strict Mode double-invoke, or a fast remount) — supabase-js
-    // returns the existing instance for a topic it already knows about, and
-    // calling `.on()` on an already-subscribed channel throws.
-    const existing = supabase.getChannels().find((c) => c.topic === `realtime:${topic}`);
-    if (existing) {
-      void supabase.removeChannel(existing);
-    }
-
-    const channel = supabase.channel(topic)
+    // The header renders separate mobile and desktop bells. Each needs its own channel.
+    const channel = supabase.channel(`admin-notifications-${userId}-${instanceId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_notifications', filter: `recipient_id=eq.${userId}` }, () => void load())
       .subscribe();
-
-    return () => { void supabase.removeChannel(channel); };
-  }, [load, userId]);
-
-  const unread = useMemo(() => items.filter((item) => !item.read_at).length, [items]);
+    const refresh = () => { if (!document.hidden) void load(); };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      void supabase.removeChannel(channel);
+    };
+  }, [load, userId, instanceId]);
 
   const markRead = async (id: string) => {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, read_at: new Date().toISOString() } : item));
-    await supabase.from('admin_notifications').update({ read_at: new Date().toISOString() }).eq('id', id).eq('recipient_id', userId);
+    const { error } = await supabase.from('admin_notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('id', id).eq('recipient_id', userId).is('read_at', null);
+    if (error) { toast.error('Could not mark notification as read.'); return; }
+    await load();
   };
 
   const markAllRead = async () => {
-    const now = new Date().toISOString();
-    setItems((current) => current.map((item) => ({ ...item, read_at: item.read_at || now })));
-    await supabase.from('admin_notifications').update({ read_at: now }).eq('recipient_id', userId).is('read_at', null);
+    const { error } = await supabase.from('admin_notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('recipient_id', userId).is('read_at', null);
+    if (error) { toast.error('Could not mark notifications as read.'); return; }
+    await load();
   };
 
-  return <DropdownMenu open={open} onOpenChange={setOpen}>
+  return <DropdownMenu open={open} onOpenChange={(value) => { setOpen(value); if (value) void load(); }}>
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="icon" className="relative" aria-label={`${unread} unread notifications`}>
         <Bell className="h-5 w-5" />
@@ -104,7 +113,7 @@ export function AdminNotificationCenter({ userId }: { userId: string }) {
             <span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full', item.read_at ? 'bg-secondary text-muted-foreground' : 'bg-primary/10 text-primary')}><Icon className="h-4 w-4" /></span>
             <span className="min-w-0 flex-1"><span className="flex items-start justify-between gap-2"><span className="text-sm font-semibold leading-tight">{item.title}</span>{!item.read_at ? <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" /> : null}</span>{item.body ? <span className="mt-1 block line-clamp-2 text-xs text-muted-foreground">{item.body}</span> : null}<span className="mt-1.5 block text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span></span>
           </div>;
-          return item.href ? <Link key={item.id} href={item.href} onClick={() => { void markRead(item.id); setOpen(false); }}>{content}</Link> : <button key={item.id} className="w-full text-left" onClick={() => void markRead(item.id)}>{content}</button>;
+          return item.href?.startsWith('/admin/') ? <Link key={item.id} href={item.href} onClick={() => { void markRead(item.id); setOpen(false); }}>{content}</Link> : <button key={item.id} className="w-full text-left" onClick={() => void markRead(item.id)}>{content}</button>;
         })}
       </div>
     </DropdownMenuContent>
