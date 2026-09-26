@@ -77,6 +77,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
       { href: '/admin/ai', label: 'AI assistant', icon: Sparkles },
       { href: '/admin/audit-log', label: 'Audit log', icon: ScrollText },
+      { href: '/admin/geographic-recommendations', label: 'Geographic insights', icon: Globe2 },
     ],
   },
   {
