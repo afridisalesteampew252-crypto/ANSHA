@@ -144,7 +144,7 @@ export function AdminPresenceProvider({
       });
 
     const heartbeat = window.setInterval(() => {
-      void touchLastSeen();
+      if (!document.hidden) void touchLastSeen();
     }, HEARTBEAT_MS);
 
     const onVisibility = () => {
