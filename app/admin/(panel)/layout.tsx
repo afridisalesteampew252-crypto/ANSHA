@@ -27,6 +27,7 @@ import { AdminCommandCenter, AdminCommandTrigger } from '@/components/admin/admi
 import { AdminMarketChrome } from '@/components/admin/admin-market-chrome';
 import { UnifiedRecordSearch } from '@/components/admin/unified-record-search';
 import { AdminPresenceProvider } from '@/components/admin/admin-presence-provider';
+import { AdminHealthMonitor } from '@/components/admin/admin-health-monitor';
 import {
   ADMIN_NAV_GROUPS,
   AdminSidebarNav,
@@ -184,6 +185,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminPresenceProvider userId={profile.id}>
+      <AdminHealthMonitor role={profile.role} />
       <div className="admin-shell flex min-h-screen min-w-0">
       <AdminCommandCenter groups={visibleGroups} />
       <aside className={cn('admin-sidebar relative hidden shrink-0 flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
