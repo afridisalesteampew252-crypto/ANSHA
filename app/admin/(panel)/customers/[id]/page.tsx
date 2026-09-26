@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { addToCurrencyMap, formatMoney, normalizeCurrency } from '@/lib/money';
 import { MoneyBreakdown } from '@/components/money-breakdown';
+import { CustomerLifecycleTimeline } from '@/components/admin/customer-lifecycle-timeline';
 import { cn } from '@/lib/utils';
 import { downloadRowsAsXlsx } from '@/lib/export-excel';
 
@@ -805,6 +806,8 @@ export default function CustomerAccountPage() {
         )}
       </CardContent>
     </Card>
+
+    <CustomerLifecycleTimeline customerId={customerId} />
 
     <section id="soa" className="scroll-mt-24 space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
