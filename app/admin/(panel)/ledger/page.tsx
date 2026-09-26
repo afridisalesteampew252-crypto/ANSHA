@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 import type { GlAccount, GlAccountType, GlJournal, GlJournalLine, GlJournalStatus } from '@/lib/types';
 
 type LineDraft = { account_id: string; description: string; debit: string; credit: string };
@@ -48,7 +49,9 @@ export default function LedgerPage() {
 
   const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState('');
-  const [currency, setCurrency] = useState('AED');
+  const financeSettings = useFinanceSettings();
+  const [currency, setCurrency] = useState('');
+  const selectedCurrency = currency || financeSettings.default_currency;
   const [draftLines, setDraftLines] = useState<LineDraft[]>([emptyLine(), emptyLine()]);
 
   const [acctCode, setAcctCode] = useState('');
@@ -118,7 +121,7 @@ export default function LedgerPage() {
     setShowJournalForm(false);
     setEntryDate(new Date().toISOString().slice(0, 10));
     setDescription('');
-    setCurrency('AED');
+    setCurrency('');
     setDraftLines([emptyLine(), emptyLine()]);
   };
 
@@ -156,7 +159,7 @@ export default function LedgerPage() {
       p_entry_date: entryDate,
       p_description: description.trim() || null,
       p_lines: payload,
-      p_currency: currency.trim().toUpperCase() || 'AED',
+      p_currency: selectedCurrency,
       p_source_module: 'manual',
       p_source_id: null,
     });
@@ -301,7 +304,10 @@ export default function LedgerPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Currency</Label>
-                    <Input value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
+                    <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={selectedCurrency} onChange={(e) => setCurrency(e.target.value)}>
+                      {!financeSettings.enabled_currencies.includes(selectedCurrency) && <option value={selectedCurrency}>{selectedCurrency} (existing)</option>}
+                      {financeSettings.enabled_currencies.map((code) => <option key={code} value={code}>{code}</option>)}
+                    </select>
                   </div>
                   <div className="space-y-1.5 md:col-span-3">
                     <Label>Description</Label>
@@ -396,7 +402,7 @@ export default function LedgerPage() {
 
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={`text-sm ${draftTotals.balanced ? 'text-emerald-700' : 'text-muted-foreground'}`}>
-                    Debit {money(draftTotals.debit, currency || 'AED')} · Credit {money(draftTotals.credit, currency || 'AED')}
+                    Debit {money(draftTotals.debit, selectedCurrency)} · Credit {money(draftTotals.credit, selectedCurrency)}
                     {draftTotals.balanced ? ' · balanced' : ''}
                   </p>
                   <div className="flex gap-2">
