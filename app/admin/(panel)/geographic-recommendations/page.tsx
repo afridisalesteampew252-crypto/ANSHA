@@ -43,12 +43,12 @@ export default function GeographicRecommendationsPage() {
     if (rpcError) { setError(rpcError.message); setReport(null); return; }
     const next = data as Report;
     setReport(next);
-    setCurrency((current) => [ ...new Set(next.countries.map((row) => row.currency)) ].includes(current)
+    setCurrency((current) => Array.from(new Set(next.countries.map((row) => row.currency))).includes(current)
       ? current : (next.countries[0]?.currency || ''));
   }, [from, to]);
 
   useEffect(() => { void load(); }, [load]);
-  const currencies = useMemo(() => [...new Set(report?.countries.map((row) => row.currency) || [])], [report]);
+  const currencies = useMemo(() => Array.from(new Set(report?.countries.map((row) => row.currency) || [])), [report]);
   const countries = useMemo(() => report?.countries.filter((row) => row.currency === currency) || [], [report, currency]);
   const sellers = useMemo(() => report?.sellers.filter((row) => row.currency === currency) || [], [report, currency]);
   const reliable = countries.filter((row) => row.confidence === 'enough_history' && row.country !== 'Unknown');
