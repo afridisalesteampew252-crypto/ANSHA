@@ -208,6 +208,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Configuration',
     icon: Settings2,
     items: [
+      { href: '/admin/configuration/system', label: 'System settings', icon: Settings2 },
       { href: '/admin/configuration', label: 'Export masters', icon: Settings2 },
       { href: '/admin/freight-charges', label: 'Freight charges', icon: Truck },
       { href: '/admin/configuration/shipping-companies', label: 'Shipping Companies', icon: Ship },
