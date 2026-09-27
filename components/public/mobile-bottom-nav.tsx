@@ -9,7 +9,7 @@ const items = [
   { href: '/', label: 'Home', icon: Home, match: 'home' },
   { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock' },
   { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts' },
-  { href: '/portal/profile', label: 'Account', icon: UserRound, match: 'portal' },
+  { href: '/portal/home', label: 'Account', icon: UserRound, match: 'portal' },
   { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support' },
 ] as const;
 
@@ -20,7 +20,7 @@ export function MobileBottomNav() {
     if (match === 'stock') return pathname.startsWith('/vehicles') || pathname.startsWith('/machinery');
     if (match === 'parts') return pathname.startsWith('/parts') || pathname.startsWith('/categories');
     if (match === 'support') return pathname.startsWith('/portal/support');
-    return pathname.startsWith('/portal/account') || pathname.startsWith('/portal/profile') || pathname.startsWith('/portal/payments') || pathname.startsWith('/portal/settings');
+    return pathname.startsWith('/portal/home') || pathname.startsWith('/portal/inquiries') || pathname.startsWith('/portal/reservations') || pathname.startsWith('/portal/invoices') || pathname.startsWith('/portal/account') || pathname.startsWith('/portal/profile') || pathname.startsWith('/portal/payments') || pathname.startsWith('/portal/settings');
   };
 
   return (

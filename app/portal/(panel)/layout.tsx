@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Banknote, BookmarkCheck, FileText, LogOut, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
+import { ArrowLeft, Home, Send, Banknote, BookmarkCheck, FileText, LogOut, MessageCircle, PackageSearch, ReceiptText, Settings, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { cn } from '@/lib/utils';
@@ -12,12 +12,14 @@ import { supabase } from '@/lib/supabase/client';
 import { LanguageSwitcher } from '@/components/accessibility/language-switcher';
 
 const nav = [
+  { href: '/portal/home', label: 'Home', icon: Home },
   { href: '/portal/catalog', label: 'Stock', icon: PackageSearch },
   { href: '/portal/reservations', label: 'Reserved', icon: BookmarkCheck },
   { href: '/portal/invoices', label: 'Invoices', icon: ReceiptText },
   { href: '/portal/payments', label: 'TT copy', icon: Banknote },
   { href: '/portal/profile', label: 'Account', icon: UserRound },
   { href: '/portal/support', label: 'Support', icon: MessageCircle },
+  { href: '/portal/inquiries', label: 'Inquiries', icon: Send },
   { href: '/portal/settings', label: 'Settings', icon: Settings },
 ] as const;
 
@@ -65,7 +67,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   return (
     <div className="min-h-screen bg-secondary/25">
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-3 sm:h-20 sm:px-5">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:h-20 sm:px-5">
           <div className="flex min-w-0 items-center gap-2">
             <Button
               type="button"
@@ -90,7 +92,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             </Link>
           </div>
 
-          <nav className="hidden items-center gap-1 xl:flex" aria-label="Customer portal navigation">
+          <nav className="hidden min-w-0 items-center gap-1 overflow-x-auto xl:flex" aria-label="Customer portal navigation">
             {nav.map(({ href, label, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (

@@ -195,7 +195,7 @@ export async function proxy(request: NextRequest) {
 
     if (isLoginPage) {
       const invoicesUrl = request.nextUrl.clone();
-      invoicesUrl.pathname = '/portal/account';
+      invoicesUrl.pathname = '/portal/home';
       invoicesUrl.search = '';
       return redirectWithSession(invoicesUrl);
     }

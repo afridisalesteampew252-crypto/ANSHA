@@ -21,18 +21,18 @@ const statusColors: Record<string, string> = {
 };
 
 export default function AdminInquiriesPage() {
-  const [inquiries, setInquiries] = useState<(Inquiry & { parts?: { name: string; part_code: string } | null })[]>([]);
+  const [inquiries, setInquiries] = useState<(Inquiry & { parts?: { name: string; part_code: string } | null; vehicles?: { title: string; stock_number: string | null } | null })[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedInquiry, setSelectedInquiry] = useState<(Inquiry & { parts?: { name: string; part_code: string } | null }) | null>(null);
+  const [selectedInquiry, setSelectedInquiry] = useState<(Inquiry & { parts?: { name: string; part_code: string } | null; vehicles?: { title: string; stock_number: string | null } | null }) | null>(null);
   const [ticketByInquiry, setTicketByInquiry] = useState<Record<string, string>>({});
 
   const fetchInquiries = useCallback(async () => {
     setLoading(true);
     let q = supabase
       .from('inquiries')
-      .select('*, parts(name, part_code)')
+      .select('*, parts(name, part_code), vehicles(title, stock_number)')
       .order('created_at', { ascending: false });
 
     if (statusFilter !== 'all') {
@@ -44,7 +44,7 @@ export default function AdminInquiriesPage() {
     }
 
     const { data } = await q;
-    setInquiries((data || []) as unknown as (Inquiry & { parts?: { name: string; part_code: string } | null })[]);
+    setInquiries((data || []) as unknown as (Inquiry & { parts?: { name: string; part_code: string } | null; vehicles?: { title: string; stock_number: string | null } | null })[]);
     const { data: tickets } = await supabase.from('workspace_requests').select('id, inquiry_id').not('inquiry_id', 'is', null);
     const map: Record<string, string> = {};
     for (const ticket of tickets || []) {
@@ -178,6 +178,9 @@ export default function AdminInquiriesPage() {
                 )}
                 {selectedInquiry.customer_phone && (
                   <div><p className="text-xs text-muted-foreground">Phone</p><p className="text-sm">{selectedInquiry.customer_phone}</p></div>
+                )}
+                {selectedInquiry.vehicles && (
+                  <div><p className="text-xs text-muted-foreground">Vehicle</p><p className="text-sm">{selectedInquiry.vehicles.title}{selectedInquiry.vehicles.stock_number ? ` · #${selectedInquiry.vehicles.stock_number}` : ''}</p></div>
                 )}
                 {selectedInquiry.parts && (
                   <div>

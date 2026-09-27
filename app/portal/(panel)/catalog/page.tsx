@@ -29,9 +29,10 @@ export default function PortalCatalogPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Browse available stock</h1>
         <p className="text-sm text-muted-foreground">
-          Public stock opens in the ANSHA catalog. Your reserved items remain under Reservations.
+          Public stock opens in the ANSHA catalog. Your reserved items remain under Reservations. Inquiries sent while signed in appear in your account.
         </p>
       </div>
+      <Link href="/portal/inquiries" className="text-sm font-semibold text-primary hover:underline">View your stock inquiries →</Link>
       <div className="grid gap-4 md:grid-cols-3">
         {catalogs.map(({ href, title, description, icon: Icon }) => (
           <Link key={href} href={href} className="group">

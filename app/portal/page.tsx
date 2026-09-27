@@ -25,8 +25,8 @@ function GoogleMark() {
 
 function portalAuthCallback() {
   return isNativeCapacitorRuntime()
-    ? 'ansha://auth/callback?next=/portal/account'
-    : `${window.location.origin}/auth/callback?next=/portal/account`;
+    ? 'ansha://auth/callback?next=/portal/home'
+    : `${window.location.origin}/auth/callback?next=/portal/home`;
 }
 
 function PortalLoginInner() {
@@ -70,7 +70,7 @@ function PortalLoginInner() {
 
         if (profile) {
           // A full navigation ensures the SSR proxy receives the freshly written auth cookies.
-          window.location.replace('/portal/account');
+          window.location.replace('/portal/home');
         }
       } catch {
         if (active) toast.error('Session check failed. Please sign in again.');
@@ -129,7 +129,7 @@ function PortalLoginInner() {
         try {
           await ensureProfile(fullName);
           toast.success('Your customer portal is ready.');
-          window.location.assign('/portal/catalog');
+          window.location.assign('/portal/home');
         } catch (setupError) {
           toast.error(setupError instanceof Error ? setupError.message : 'Portal setup failed.');
         }
@@ -171,7 +171,7 @@ function PortalLoginInner() {
 
     toast.success('Welcome to your portal.');
     // Avoid Next.js prefetch racing ahead of Supabase cookie persistence.
-    window.location.assign('/portal/account');
+    window.location.assign('/portal/home');
   };
 
   const handleGoogleSignIn = async () => {
