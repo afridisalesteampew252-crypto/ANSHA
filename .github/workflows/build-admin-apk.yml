@@ -31,6 +31,20 @@ jobs:
         run: cp capacitor.admin.config.ts capacitor.config.ts
       - name: Generate the admin Android project
         run: npm run cap:add:admin:android
+      - name: Set admin APK version
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = 'android/app/build.gradle';
+          const original = readFileSync(path, 'utf8');
+          if (!/versionCode\s+\d+/.test(original) || !/versionName\s+['"][^'"]+['"]/.test(original)) {
+            throw new Error('Android version fields were not found');
+          }
+          const gradle = original
+            .replace(/versionCode\s+\d+/, 'versionCode 2')
+            .replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.1"');
+          writeFileSync(path, gradle);
+          NODE
       - name: Add Firebase config and sync Capacitor
         run: npm run cap:sync:admin:android
         env:

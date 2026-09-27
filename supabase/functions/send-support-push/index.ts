@@ -129,16 +129,19 @@ Deno.serve(async (request) => {
     });
 
     const webSubscriptions = (subscriptions || []).filter((row) => row.platform === 'web');
-    if (webSubscriptions.length && (!vapidPublic || !vapidPrivate)) return json(request, { error: 'VAPID keys are not configured.' }, 500);
-    const appServer = webSubscriptions.length
-      ? await (async () => {
-          const vapidKeys = await webpush.importVapidKeys(
-            vapidKeysToJwk(normalizeBase64Url(vapidPublic!), normalizeBase64Url(vapidPrivate!)),
-            { extractable: false },
-          );
-          return webpush.ApplicationServer.new({ contactInformation: vapidSubject, vapidKeys });
-        })()
-      : null;
+    const appServer = await (async () => {
+      if (!webSubscriptions.length || !vapidPublic || !vapidPrivate) return null;
+      try {
+        const vapidKeys = await webpush.importVapidKeys(
+          vapidKeysToJwk(normalizeBase64Url(vapidPublic), normalizeBase64Url(vapidPrivate)),
+          { extractable: false },
+        );
+        return webpush.ApplicationServer.new({ contactInformation: vapidSubject, vapidKeys });
+      } catch (error) {
+        console.error('Web Push setup failed', error instanceof Error ? error.message : error);
+        return null;
+      }
+    })();
 
     let sent = 0;
     let failed = 0;
@@ -168,6 +171,9 @@ Deno.serve(async (request) => {
             keys: { p256dh: normalizeBase64Url(row.p256dh), auth: normalizeBase64Url(row.auth) },
           });
           await subscriber.pushTextMessage(notification, { ttl: 60 * 60 * 24 });
+        } else {
+          failed += 1;
+          continue;
         }
         sent += 1;
       } catch (error) {
