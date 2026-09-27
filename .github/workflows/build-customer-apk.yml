@@ -32,23 +32,12 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - name: Generate the customer Android project
         run: npm run cap:add:android
-      - name: Set customer APK version
-        run: |
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const path = 'android/app/build.gradle';
-          let gradle = readFileSync(path, 'utf8');
-          if (!/versionCode\s+\d+/.test(gradle) || !/versionName\s+['"][^'"]+['"]/.test(gradle)) {
-            throw new Error('Android version fields were not found in app/build.gradle');
-          }
-          gradle = gradle.replace(/versionCode\s+\d+/, 'versionCode 2');
-          gradle = gradle.replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.1"');
-          writeFileSync(path, gradle);
-          NODE
       - name: Add customer Firebase config and sync Capacitor
         run: npm run cap:sync:android
         env:
           CAPACITOR_SERVER_URL: ${{ inputs.server_url }}
+          ANDROID_VERSION_CODE: '3'
+          ANDROID_VERSION_NAME: '1.2'
       - name: Build installable customer debug APK
         run: cd android && ./gradlew assembleDebug
       - name: Publish APK to the website download
@@ -62,11 +51,12 @@ jobs:
           git fetch origin main
           git worktree add "$publish_dir" origin/main
           install -D "$APK_PATH" "$publish_dir/$PUBLISH_PATH"
+          install -D "app/download/page.tsx" "$publish_dir/app/download/page.tsx"
           git -C "$publish_dir" config user.name "github-actions[bot]"
           git -C "$publish_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C "$publish_dir" add "$PUBLISH_PATH"
+          git -C "$publish_dir" add "$PUBLISH_PATH" app/download/page.tsx
           if ! git -C "$publish_dir" diff --cached --quiet; then
-            git -C "$publish_dir" commit -m "Publish customer APK v1.1"
+            git -C "$publish_dir" commit -m "Publish customer APK v1.2"
             git -C "$publish_dir" push origin HEAD:main
           fi
       - uses: actions/upload-artifact@v4
