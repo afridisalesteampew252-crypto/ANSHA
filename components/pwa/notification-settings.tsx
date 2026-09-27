@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Bell, BellOff, CheckCircle2, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,13 @@ export function NotificationSettings({ compact = false }: { compact?: boolean })
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      void import('@capacitor/push-notifications').then(async ({ PushNotifications }) => {
+        const permission = await PushNotifications.checkPermissions();
+        setState(permission.receive === 'granted' ? 'enabled' : permission.receive === 'denied' ? 'blocked' : 'available');
+      }).catch(() => setState('unsupported'));
+      return;
+    }
     if (!isWebPushConfigured() || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
       setState(isIos() && !isStandalone() ? 'install' : 'unsupported');
       return;
@@ -41,6 +49,20 @@ export function NotificationSettings({ compact = false }: { compact?: boolean })
   const enable = async () => {
     setBusy(true);
     try {
+      if (Capacitor.isNativePlatform()) {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const current = await PushNotifications.checkPermissions();
+        const permission = current.receive === 'prompt' || current.receive === 'prompt-with-rationale' ? await PushNotifications.requestPermissions() : current;
+        if (permission.receive !== 'granted') {
+          setState('blocked');
+          toast.error('Allow notifications in your device settings.');
+          return;
+        }
+        await PushNotifications.register();
+        setState('enabled');
+        toast.success('Support reply notifications are enabled on this device.');
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         setState('blocked');
@@ -81,12 +103,12 @@ export function NotificationSettings({ compact = false }: { compact?: boolean })
             {state === 'install'
               ? 'On iPhone or iPad, use Share → Add to Home Screen, open ANSHA from the new icon, then enable notifications.'
               : state === 'blocked'
-                ? 'Open this site in browser settings and allow notifications, then return here.'
+                ? Capacitor.isNativePlatform() ? 'Allow notifications for ANSHA in your device settings.' : 'Open this site in browser settings and allow notifications, then return here.'
                 : state === 'unsupported'
-                  ? 'Use a current mobile browser with Web Push support.'
+                  ? Capacitor.isNativePlatform() ? 'Notifications are unavailable on this app build.' : 'Use a current mobile browser with Web Push support.'
                   : state === 'enabled'
                     ? 'You can leave the portal and still receive new team replies.'
-                    : 'Enable once; the browser will ask for permission.'}
+                    : Capacitor.isNativePlatform() ? 'Enable once; your device will ask for permission.' : 'Enable once; the browser will ask for permission.'}
           </p>
           {state === 'available' ? (
             <Button type="button" size="sm" className="mt-2" disabled={busy} onClick={() => void enable()}>

@@ -60,7 +60,6 @@ Deno.serve(async (request) => {
     const authorization = request.headers.get('Authorization') || '';
 
     if (!url || !anonKey || !serviceKey) return json(request, { error: 'Support push is not configured.' }, 500);
-    if (!vapidPublic || !vapidPrivate) return json(request, { error: 'VAPID keys are not configured.' }, 500);
     if (!authorization.startsWith('Bearer ')) return json(request, { error: 'Authentication required.' }, 401);
 
     const callerClient = createClient(url, anonKey, {
@@ -130,10 +129,11 @@ Deno.serve(async (request) => {
     });
 
     const webSubscriptions = (subscriptions || []).filter((row) => row.platform === 'web');
+    if (webSubscriptions.length && (!vapidPublic || !vapidPrivate)) return json(request, { error: 'VAPID keys are not configured.' }, 500);
     const appServer = webSubscriptions.length
       ? await (async () => {
           const vapidKeys = await webpush.importVapidKeys(
-            vapidKeysToJwk(normalizeBase64Url(vapidPublic), normalizeBase64Url(vapidPrivate)),
+            vapidKeysToJwk(normalizeBase64Url(vapidPublic!), normalizeBase64Url(vapidPrivate!)),
             { extractable: false },
           );
           return webpush.ApplicationServer.new({ contactInformation: vapidSubject, vapidKeys });
@@ -148,7 +148,11 @@ Deno.serve(async (request) => {
     for (const row of subscriptions || []) {
       try {
         if (row.platform === 'android') {
-          if (!isFcmConfigured() || !row.device_token) continue;
+          if (!isFcmConfigured() || !row.device_token) {
+            failed += 1;
+            nativeFailed += 1;
+            continue;
+          }
           await sendFcmMessage({
             token: row.device_token,
             title: notificationTitle,

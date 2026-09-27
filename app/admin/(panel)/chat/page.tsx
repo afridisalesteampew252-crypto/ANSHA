@@ -12,6 +12,11 @@ import {
   FileText,
   Link2,
   Loader2,
+  MapPin,
+  Mic,
+  MicOff,
+  Phone,
+  Video,
   MessageCircle,
   MoreHorizontal,
   Paperclip,
@@ -109,6 +114,18 @@ type ConversationSummary = Conversation & {
 type EntityOption = { id: string; label: string; detail?: string };
 
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+
+function VoiceAttachment({ attachment }: { attachment: Attachment }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    let active = true;
+    void supabase.storage.from('internal-files').createSignedUrl(attachment.storage_path, 3600).then(({ data }) => {
+      if (active) setUrl(data?.signedUrl || '');
+    });
+    return () => { active = false; };
+  }, [attachment.storage_path]);
+  return url ? <audio controls preload="none" src={url} className="mt-2 w-full max-w-xs" aria-label={attachment.file_name} /> : <span className="mt-2 block text-xs">Loading voice message…</span>;
+}
 
 function personName(profile?: AdminProfile) {
   return profile?.full_name || profile?.email || 'ANSHA colleague';
@@ -291,6 +308,10 @@ function ChatPageInner() {
   const [linkSearching, setLinkSearching] = useState(false);
   const [linking, setLinking] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const initialConversationRef = useRef<string | null>(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('conversation'));
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const [recording, setRecording] = useState(false);
+  useEffect(() => () => { if (recorderRef.current?.state === 'recording') recorderRef.current.stop(); }, []);
 
   const loadConversations = useCallback(async (userId: string) => {
     const { data: membershipData, error: membershipError } = await supabase
@@ -347,7 +368,11 @@ function ChatPageInner() {
       return new Date(bTime).getTime() - new Date(aTime).getTime();
     });
     setConversations(summaries);
-    setActiveId((current) => (current && summaries.some((item) => item.id === current) ? current : summaries[0]?.id || ''));
+    const requested = initialConversationRef.current;
+    initialConversationRef.current = null;
+    setActiveId((current) => requested && summaries.some((item) => item.id === requested)
+      ? requested
+      : current && summaries.some((item) => item.id === current) ? current : summaries[0]?.id || '');
     const deliveryUpdates = summaries.flatMap((conversation) => {
       const membership = memberships.find((row) => row.conversation_id === conversation.id);
       const latestIncoming = recent.find((message) => message.conversation_id === conversation.id && message.sender_id !== userId);
@@ -499,6 +524,56 @@ function ChatPageInner() {
       setActiveId(filteredConversations[0].id);
     }
   }, [activeId, entityFilter, filteredConversations]);
+
+  async function shareLocation() {
+    if (!navigator.geolocation) return setNotice('Location is unavailable.');
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      const latitude = coords.latitude.toFixed(6);
+      const longitude = coords.longitude.toFixed(6);
+      const { error } = await supabase.from('chat_messages').insert({
+        conversation_id: activeId, sender_id: currentUserId,
+        body: `📍 Location: https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`,
+      });
+      if (error) setNotice(error.message);
+      else await loadMessages(activeId, currentUserId);
+    }, (error) => setNotice(error.message), { timeout: 15000, maximumAge: 60000 });
+  }
+
+  async function toggleRecording() {
+    if (recorderRef.current) { recorderRef.current.stop(); setRecording(false); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        recorderRef.current = null;
+        const type = recorder.mimeType || 'audio/webm';
+        const file = new File(chunks, `voice-${Date.now()}.${type.includes('mp4') ? 'm4a' : 'webm'}`, { type });
+        if (file.size > MAX_ATTACHMENT_BYTES) setNotice('Voice message exceeds 25 MB.');
+        else if (file.size) setFiles((current) => [...current, file]);
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+    } catch (error) { setNotice(error instanceof Error ? error.message : 'Microphone access failed.'); }
+  }
+
+  async function inviteToCall(kind: 'voice' | 'video') {
+    if (!activeOther) return;
+    const room = `ANSHA-${crypto.randomUUID().replaceAll('-', '')}`;
+    const base = process.env.NEXT_PUBLIC_TEAM_MEETING_BASE_URL || 'https://meet.jit.si';
+    const url = `${base.replace(/\/$/, '')}/${room}#config.startWithVideoMuted=${kind === 'voice'}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    const { error } = await supabase.from('chat_messages').insert({
+      conversation_id: activeId, sender_id: currentUserId,
+      body: `${kind === 'voice' ? '📞 Voice' : '🎥 Video'} call invitation: ${url}`,
+    });
+    if (error) return setNotice(error.message);
+    await loadMessages(activeId, currentUserId);
+  }
 
   async function sendMessage() {
     if (!activeId || !currentUserId || sending || (!body.trim() && !files.length)) return;
@@ -868,6 +943,10 @@ function ChatPageInner() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
+                  {activeOther ? <>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => void inviteToCall('voice')} aria-label="Start voice call"><Phone className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => void inviteToCall('video')} aria-label="Start video call"><Video className="h-4 w-4" /></Button>
+                  </> : null}
                   <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setLinkType(entityFilter?.type || 'vehicle'); setLinkOpen(true); }} aria-label="Link record">
                     <Link2 className="h-4 w-4" />
                   </Button>
@@ -958,11 +1037,15 @@ function ChatPageInner() {
                             ) : null}
                             {message.deleted_at ? (
                               <p className="text-sm italic opacity-70">Message removed</p>
+                            ) : message.body?.startsWith('📍 Location: https://www.openstreetmap.org/') ? (
+                              <a href={message.body.slice('📍 Location: '.length)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm underline"><MapPin className="h-4 w-4" /> View shared location</a>
+                            ) : /^(📞 Voice|🎥 Video) call invitation: https:\/\//.test(message.body || '') ? (
+                              <a href={(message.body || '').split('call invitation: ')[1]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm underline">{message.body?.startsWith('📞') ? <Phone className="h-4 w-4" /> : <Video className="h-4 w-4" />} Join call</a>
                             ) : (
                               <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{message.body}</p>
                             )}
                             {!message.deleted_at && message.attachments.map((attachment) => (
-                              <button
+                              attachment.mime_type?.startsWith('audio/') ? <VoiceAttachment key={attachment.id} attachment={attachment} /> : <button
                                 type="button"
                                 key={attachment.id}
                                 onClick={() => void openAttachment(attachment)}
@@ -1056,6 +1139,10 @@ function ChatPageInner() {
                       <Input type="file" multiple className="hidden" onChange={(event) => setFiles(Array.from(event.target.files || []))} />
                     </Label>
                   ) : null}
+                  {!editing ? <>
+                    <Button type="button" variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => void toggleRecording()} aria-label={recording ? 'Stop voice recording' : 'Record voice message'}>{recording ? <MicOff className="h-4 w-4 text-destructive" /> : <Mic className="h-4 w-4" />}</Button>
+                    <Button type="button" variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => void shareLocation()} aria-label="Share current location"><MapPin className="h-4 w-4" /></Button>
+                  </> : null}
                   <Textarea
                     value={body}
                     onChange={(event) => setBody(event.target.value)}

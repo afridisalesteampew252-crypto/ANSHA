@@ -36,6 +36,17 @@ export function NativePushNotifications() {
           }
         };
 
+        // Android requires a channel with the same ID used by FCM payloads.
+        if (/Android/i.test(navigator.userAgent)) {
+          await PushNotifications.createChannel({
+            id: 'ansha_default',
+            name: 'ANSHA notifications',
+            description: 'Support messages and team alerts',
+            importance: 5,
+            visibility: 1,
+          });
+        }
+
         handles.push(
           await PushNotifications.addListener('registration', async ({ value: token }) => {
             if (!token || cancelled) return;
