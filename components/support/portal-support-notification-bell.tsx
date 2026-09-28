@@ -71,7 +71,16 @@ export function PortalSupportNotificationBell() {
         <Button variant="outline" size="icon" className="relative h-9 w-9 shrink-0 rounded-lg p-0 sm:w-auto sm:gap-2 sm:px-3" aria-label={unread ? `${unread} unread support replies` : 'Support notifications'}>
           <Bell className="h-4 w-4" />
           <span className="hidden text-xs font-medium sm:inline">Alerts</span>
-          {unread > 0 ? <span className="absolute right-0.5 top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">{unread > 99 ? '99+' : unread}</span> : null}
+          {unread > 0 ? (
+            <>
+              <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-background bg-destructive px-1 text-[9px] font-bold text-destructive-foreground sm:hidden">
+                {unread > 99 ? '99+' : unread}
+              </span>
+              <span className="ml-1 hidden h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground sm:inline-flex">
+                {unread > 99 ? '99+' : unread}
+              </span>
+            </>
+          ) : null}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[min(92vw,22rem)] p-0">
