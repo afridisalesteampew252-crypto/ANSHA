@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Download the ANSHA Trading Android app for live vehicles, parts, offers, invoices, and export support.',
 };
 
-const apkUrl = '/downloads/ansha-trading-mobile.apk?v=1.2';
+const apkUrl = '/downloads/ansha-trading-mobile.apk?v=1.3';
 
 export default function DownloadPage() {
   return (
@@ -21,7 +21,7 @@ export default function DownloadPage() {
             <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">ANSHA Trading in your pocket.</h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-white/65">Browse live export vehicles and parts, view admin-published offers, send purchase requests, check customer invoices, and contact ANSHA support from one mobile-first app.</p>
             <a href={apkUrl} download className="mt-7 inline-flex items-center justify-center gap-2 rounded-xl bg-[#d21e1e] px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-red-950/25 transition hover:bg-red-600"><Download className="h-5 w-5" />Download APK</a>
-            <p className="mt-3 text-xs text-white/45">Android package: com.anshatrading.app · Version 1.2 · Updated 27 September 2026</p>
+            <p className="mt-3 text-xs text-white/45">Android package: com.anshatrading.app · Version 1.3 · Updated 29 September 2026</p>
           </div>
         </section>
 
@@ -32,6 +32,7 @@ export default function DownloadPage() {
         <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-black">Latest customer app update</h2>
           <ul className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+            <li>Branded ANSHA app icon and improved screen safe areas</li>
             <li>Customer portal home with account shortcuts</li>
             <li>Tracked inquiries for vehicles and parts</li>
             <li>Support reply alerts and direct inbox opening</li>
