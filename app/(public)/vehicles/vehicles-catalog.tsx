@@ -39,6 +39,7 @@ export default function VehiclesCatalog() {
   const { dealForVehicle } = useInventoryDeals();
   const [vehicles, setVehicles] = useState<PublicVehicleCard[]>([]);
   const [query, setQuery] = useState('');
+  const [submittedQuery, setSubmittedQuery] = useState('');
   const [brand, setBrand] = useState('all');
   const [stockOrigin, setStockOrigin] = useState<'all' | StockOrigin>('all');
   const [sort, setSort] = useState('newest');
@@ -61,20 +62,21 @@ export default function VehiclesCatalog() {
     }
     const requestedQuery = params.get('q');
     if (requestedQuery) setQuery(requestedQuery);
+    setSubmittedQuery(requestedQuery || '');
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    const next = syncVehiclesQuery({ query, brand, stockOrigin, sort });
+    const next = syncVehiclesQuery({ query: submittedQuery, brand, stockOrigin, sort });
     const current = `${window.location.pathname}${window.location.search}`;
     if (current !== next) router.replace(next, { scroll: false });
-  }, [brand, hydrated, query, router, sort, stockOrigin]);
+  }, [brand, hydrated, router, sort, stockOrigin, submittedQuery]);
 
   const loadVehicles = useCallback(async () => {
     setLoading(true);
     let request = supabase.from('vehicles').select(PUBLIC_VEHICLE_CARD_SELECT).eq('is_published', true).eq('stock_status', 'available');
-    const safeQuery = query.trim().replace(/[,%()]/g, ' ');
+    const safeQuery = submittedQuery.trim().replace(/[,%()]/g, ' ');
     if (safeQuery) request = request.or(`title.ilike.%${safeQuery}%,make.ilike.%${safeQuery}%,model.ilike.%${safeQuery}%,chassis_code.ilike.%${safeQuery}%,stock_number.ilike.%${safeQuery}%`);
     if (brand !== 'all') request = request.eq('make', brand);
     if (stockOrigin !== 'all') request = request.eq('stock_origin', stockOrigin);
@@ -85,7 +87,7 @@ export default function VehiclesCatalog() {
     const { data } = await request.limit(48);
     setVehicles((data || []) as unknown as PublicVehicleCard[]);
     setLoading(false);
-  }, [brand, query, sort, stockOrigin]);
+  }, [brand, sort, stockOrigin, submittedQuery]);
 
   useEffect(() => { void loadVehicles(); }, [loadVehicles]);
 
@@ -141,7 +143,11 @@ export default function VehiclesCatalog() {
           <form
             onSubmit={(event) => {
               event.preventDefault();
-              void loadVehicles();
+              if (query === submittedQuery) {
+                void loadVehicles();
+                return;
+              }
+              setSubmittedQuery(query);
             }}
             className="relative"
           >

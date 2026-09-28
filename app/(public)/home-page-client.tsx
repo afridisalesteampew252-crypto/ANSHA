@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -32,25 +32,9 @@ import { PartCard } from '@/components/public/part-card';
 import { VehicleCard } from '@/components/public/vehicle-card';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
-import {
-  HOME_FEATURED_MACHINERY_LIMIT,
-  HOME_FEATURED_MACHINERY_POOL,
-  HOME_FEATURED_PARTS_LIMIT,
-  HOME_FEATURED_PARTS_POOL,
-  HOME_FEATURED_VEHICLES_LIMIT,
-  HOME_FEATURED_VEHICLES_POOL,
-  msUntilNextFeaturedRotation,
-  selectRotatingFeatured,
-} from '@/lib/featured-rotation';
 import type { HomeFeaturedData } from '@/lib/home-featured';
-import { supabase } from '@/lib/supabase/client';
 import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
-import { isMachineryClass, MACHINERY_VEHICLE_CLASSES } from '@/lib/vehicle-class';
 import {
-  PUBLIC_BLOG_CARD_SELECT,
-  PUBLIC_CATEGORY_CARD_SELECT,
-  PUBLIC_PART_CARD_SELECT,
-  PUBLIC_VEHICLE_CARD_SELECT,
   type PublicBlogCard,
   type PublicCategoryCard,
   type PublicPartCard,
@@ -100,111 +84,13 @@ export default function HomePageClient({
   const [query, setQuery] = useState('');
   const [finderBrand, setFinderBrand] = useState('all');
   const [finderCategory, setFinderCategory] = useState('all');
-  const [categories, setCategories] = useState<PublicCategoryCard[]>(initialFeatured?.categories ?? []);
-  const [featuredParts, setFeaturedParts] = useState<PublicPartCard[]>(initialFeatured?.featuredParts ?? []);
-  const [latestParts, setLatestParts] = useState<PublicPartCard[]>(initialFeatured?.latestParts ?? []);
-  const [featuredVehicles, setFeaturedVehicles] = useState<PublicVehicleCard[]>(
-    initialFeatured?.featuredVehicles ?? []
-  );
-  const [featuredMachinery, setFeaturedMachinery] = useState<PublicVehicleCard[]>(
-    initialFeatured?.featuredMachinery ?? []
-  );
-  const [latestPosts, setLatestPosts] = useState<PublicBlogCard[]>(initialFeatured?.latestPosts ?? []);
-  const [loading, setLoading] = useState(!initialFeatured);
-
-  useEffect(() => {
-    let active = true;
-    let rotationTimer: ReturnType<typeof setTimeout> | undefined;
-
-    const fetchLatestPosts = () =>
-      supabase
-        .from('blog_posts')
-        .select(PUBLIC_BLOG_CARD_SELECT)
-        .eq('status', 'published')
-        .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(3);
-
-    const refreshLatestPosts = async () => {
-      const postsRes = await fetchLatestPosts();
-      if (active && !postsRes.error) {
-        setLatestPosts((postsRes.data || []) as unknown as PublicBlogCard[]);
-      }
-    };
-
-    const loadHome = async (isInitial: boolean) => {
-      if (isInitial && !initialFeatured) setLoading(true);
-
-      const [catRes, partsPoolRes, vehiclesPoolRes, machineryPoolRes, postsRes] = await Promise.all([
-        supabase.from('categories').select(PUBLIC_CATEGORY_CARD_SELECT).order('sort_order').limit(12),
-        supabase
-          .from('parts')
-          .select(PUBLIC_PART_CARD_SELECT)
-          .eq('is_published', true)
-          .eq('stock_status', 'available')
-          .order('is_featured', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(HOME_FEATURED_PARTS_POOL),
-        supabase
-          .from('vehicles')
-          .select(PUBLIC_VEHICLE_CARD_SELECT)
-          .eq('is_published', true)
-          .eq('stock_status', 'available')
-          .order('is_featured', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(HOME_FEATURED_VEHICLES_POOL),
-        supabase
-          .from('vehicles')
-          .select(PUBLIC_VEHICLE_CARD_SELECT)
-          .eq('is_published', true)
-          .eq('stock_status', 'available')
-          .in('vehicle_class', [...MACHINERY_VEHICLE_CLASSES])
-          .order('is_featured', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(HOME_FEATURED_MACHINERY_POOL),
-        fetchLatestPosts(),
-      ]);
-      if (!active) return;
-
-      const nowMs = Date.now();
-      const partsPool = (partsPoolRes.data || []) as unknown as PublicPartCard[];
-      const vehiclesPool = ((vehiclesPoolRes.data || []) as unknown as PublicVehicleCard[]).filter(
-        (vehicle) => !isMachineryClass(vehicle.vehicle_class || 'passenger')
-      );
-      const machineryPool = (machineryPoolRes.data || []) as unknown as PublicVehicleCard[];
-
-      setCategories((catRes.data || []) as unknown as PublicCategoryCard[]);
-      setFeaturedParts(selectRotatingFeatured(partsPool, HOME_FEATURED_PARTS_LIMIT, nowMs));
-      setLatestParts(partsPool.slice(0, HOME_FEATURED_PARTS_LIMIT));
-      setFeaturedVehicles(selectRotatingFeatured(vehiclesPool, HOME_FEATURED_VEHICLES_LIMIT, nowMs));
-      setFeaturedMachinery(selectRotatingFeatured(machineryPool, HOME_FEATURED_MACHINERY_LIMIT, nowMs));
-      setLatestPosts((postsRes.data || []) as unknown as PublicBlogCard[]);
-      setLoading(false);
-
-      // Refresh at the next 10-minute boundary so open tabs advance without a full reload.
-      if (rotationTimer) clearTimeout(rotationTimer);
-      const delay = msUntilNextFeaturedRotation(nowMs) + 250;
-      rotationTimer = setTimeout(() => {
-        void loadHome(false);
-      }, delay);
-    };
-
-    if (initialFeatured) {
-      // Refresh CMS-backed posts immediately without repeating every inventory query.
-      void refreshLatestPosts();
-
-      const delay = msUntilNextFeaturedRotation() + 250;
-      rotationTimer = setTimeout(() => {
-        void loadHome(false);
-      }, delay);
-    } else {
-      void loadHome(true);
-    }
-
-    return () => {
-      active = false;
-      if (rotationTimer) clearTimeout(rotationTimer);
-    };
-  }, []);
+  const categories = initialFeatured?.categories ?? [];
+  const featuredParts = initialFeatured?.featuredParts ?? [];
+  const latestParts = initialFeatured?.latestParts ?? [];
+  const featuredVehicles = initialFeatured?.featuredVehicles ?? [];
+  const featuredMachinery = initialFeatured?.featuredMachinery ?? [];
+  const latestPosts = initialFeatured?.latestPosts ?? [];
+  const loading = false;
 
   const displayMakes = useMemo<MakeStat[]>(() => SUPPORTED_MANUFACTURERS.slice(0, 12).map((make) => ({
     make,

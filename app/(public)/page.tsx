@@ -5,6 +5,8 @@ import { getHomeFeaturedData } from '@/lib/home-featured';
 import { getPublishedReviews } from '@/lib/reviews';
 import HomePageClient from './home-page-client';
 
+export const revalidate = 600;
+
 export const metadata: Metadata = buildPageMetadata({
   title: `${siteConfig.name} — ${siteConfig.tagline}`,
   description: siteConfig.description,
