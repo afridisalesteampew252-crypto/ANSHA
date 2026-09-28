@@ -1,6 +1,9 @@
 name: Build ANSHA Customer APK
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - codex/build-customer-apk-once
