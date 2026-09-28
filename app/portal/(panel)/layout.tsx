@@ -10,6 +10,7 @@ import { MobileBottomNav } from '@/components/public/mobile-bottom-nav';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase/client';
 import { LanguageSwitcher } from '@/components/accessibility/language-switcher';
+import { PortalSupportNotificationBell } from '@/components/support/portal-support-notification-bell';
 
 const nav = [
   { href: '/portal/home', label: 'Home', icon: Home },
@@ -122,6 +123,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           </nav>
 
           <div className="flex min-w-0 items-center gap-2">
+            <PortalSupportNotificationBell />
             <LanguageSwitcher compact className="h-9 w-[5.25rem] sm:w-auto" />
             <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full text-emerald-600 md:hidden" aria-label="Upload TT copy">
               <Link href="/portal/payments"><Banknote className="h-5 w-5" /></Link>

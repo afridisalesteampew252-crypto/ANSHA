@@ -93,15 +93,15 @@ Deno.serve(async (request) => {
     let recipientIds: string[] = [];
     if (message.sender_kind === 'agent') {
       recipientIds = [thread.customer_profile_id];
-    } else if (thread.assigned_to) {
-      recipientIds = [thread.assigned_to];
     } else {
-      const { data: agents } = await serviceClient
+      const { data: agents, error: agentsError } = await serviceClient
         .from('admin_profiles')
         .select('id')
         .eq('is_active', true)
         .in('role', ['admin', 'staff', 'manager']);
+      if (agentsError) return json(request, { error: agentsError.message }, 500);
       recipientIds = (agents || []).map((agent) => agent.id);
+      if (thread.assigned_to) recipientIds.push(thread.assigned_to);
     }
     recipientIds = [...new Set(recipientIds)].filter((id) => id !== user.id);
 

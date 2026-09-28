@@ -36,6 +36,7 @@ const iconByType = {
   remittance: ReceiptText,
   system: CircleAlert,
   request_due: CalendarClock,
+  support_message: MessageCircle,
 } as const;
 
 export function AdminNotificationCenter({ userId }: { userId: string }) {
@@ -107,7 +108,7 @@ export function AdminNotificationCenter({ userId }: { userId: string }) {
       </div>
       <DropdownMenuSeparator className="m-0" />
       <div className="max-h-[min(70vh,32rem)] overflow-y-auto">
-        {items.length === 0 ? <div className="px-4 py-10 text-center"><Bell className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" /><p className="text-sm font-medium">You are all caught up</p><p className="text-xs text-muted-foreground">New chats, mail, inquiries, and requests will appear here.</p></div> : items.map((item) => {
+        {items.length === 0 ? <div className="px-4 py-10 text-center"><Bell className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" /><p className="text-sm font-medium">You are all caught up</p><p className="text-xs text-muted-foreground">New chats, mail, inquiries, support messages, and requests will appear here.</p></div> : items.map((item) => {
           const Icon = iconByType[item.notification_type as keyof typeof iconByType] || CircleAlert;
           const content = <div className={cn('flex gap-3 px-4 py-3 transition-colors hover:bg-accent', !item.read_at && 'bg-primary/5')}>
             <span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full', item.read_at ? 'bg-secondary text-muted-foreground' : 'bg-primary/10 text-primary')}><Icon className="h-4 w-4" /></span>

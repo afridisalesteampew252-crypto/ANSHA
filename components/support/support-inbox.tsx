@@ -63,6 +63,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
   const [sending, setSending] = useState(false);
   const [teamOnline, setTeamOnline] = useState(false);
   const [teamLastSeen, setTeamLastSeen] = useState<string | null>(null);
+  const [unreadByThread, setUnreadByThread] = useState<Record<string, number>>({});
   const endRef = useRef<HTMLDivElement>(null);
 
   const loadThreads = useCallback(async (uid?: string) => {
@@ -78,14 +79,29 @@ export function SupportInbox({ mode }: { mode: Mode }) {
     const rows = (data || []) as Thread[];
     setThreads(rows);
     if (mode === 'customer') setSelectedId(rows[0]?.id || null);
-    else setSelectedId((current) => current && rows.some((row) => row.id === current) ? current : rows[0]?.id || null);
+    else {
+      const requestedId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('thread') : null;
+      setSelectedId((current) => requestedId && rows.some((row) => row.id === requestedId)
+        ? requestedId
+        : current && rows.some((row) => row.id === current) ? current : rows[0]?.id || null);
+    }
 
     if (mode === 'agent' && rows.length) {
+      const { data: unreadMessages } = await supabase.from('support_messages')
+        .select('thread_id')
+        .in('thread_id', rows.map((row) => row.id))
+        .eq('sender_kind', 'customer')
+        .is('read_at', null);
+      const unreadCounts: Record<string, number> = {};
+      for (const message of unreadMessages || []) unreadCounts[message.thread_id] = (unreadCounts[message.thread_id] || 0) + 1;
+      setUnreadByThread(unreadCounts);
       const ids = Array.from(new Set(rows.map((row) => row.customer_profile_id)));
       const { data: profiles } = await supabase.from('customer_profiles').select('id,full_name,email').in('id', ids);
       const labels: Record<string, CustomerLabel> = {};
       for (const profile of profiles || []) labels[profile.id] = { full_name: profile.full_name, email: profile.email };
       setCustomers(labels);
+    } else if (mode === 'agent') {
+      setUnreadByThread({});
     }
   }, [mode, userId]);
 
@@ -114,7 +130,14 @@ export function SupportInbox({ mode }: { mode: Mode }) {
       }
       setAttachments(grouped);
     }
-    await supabase.rpc('mark_support_thread_read', { p_thread_id: threadId });
+    const { error: readError } = await supabase.rpc('mark_support_thread_read', { p_thread_id: threadId });
+    if (!readError) {
+      const readAt = new Date().toISOString();
+      setMessages((current) => current.map((message) =>
+        message.sender_kind !== mode && !message.read_at ? { ...message, read_at: readAt } : message
+      ));
+      if (mode === 'agent') setUnreadByThread((current) => ({ ...current, [threadId]: 0 }));
+    }
     setTimeout(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   }, []);
 
@@ -161,6 +184,7 @@ export function SupportInbox({ mode }: { mode: Mode }) {
         if (incoming.thread_id === selectedId) void loadMessages(incoming.thread_id);
         void loadThreads();
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'support_messages' }, () => void loadThreads())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [loadMessages, loadThreads, mode, selectedId, userId]);
@@ -301,7 +325,14 @@ export function SupportInbox({ mode }: { mode: Mode }) {
       <div className={cn('grid min-h-[560px] overflow-hidden rounded-3xl border border-white/50 bg-background/75 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl dark:border-white/10', mode === 'agent' && 'lg:grid-cols-[300px_1fr]')}>
         {mode === 'agent' ? (
           <aside className="border-b lg:border-b-0 lg:border-r">
-            <div className="border-b border-white/40 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-violet-500/10 p-3 text-sm font-semibold dark:border-white/10">Customers ({threads.length})</div>
+            <div className="flex items-center justify-between border-b border-white/40 bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-violet-500/10 p-3 text-sm font-semibold dark:border-white/10">
+              <span>Customers ({threads.length})</span>
+              {Object.values(unreadByThread).reduce((sum, count) => sum + count, 0) > 0 ? (
+                <Badge variant="destructive" className="min-w-5 justify-center rounded-full px-1.5 py-0.5 text-[10px]">
+                  {Object.values(unreadByThread).reduce((sum, count) => sum + count, 0)}
+                </Badge>
+              ) : null}
+            </div>
             <div className="max-h-[240px] overflow-y-auto lg:max-h-[620px]">
               {threads.length === 0 ? <p className="p-5 text-sm text-muted-foreground">No support conversations yet.</p> : threads.map((thread) => {
                 const customer = customers[thread.customer_profile_id];
@@ -310,7 +341,10 @@ export function SupportInbox({ mode }: { mode: Mode }) {
                     className={cn('w-full border-b border-white/40 p-3 text-left transition hover:bg-white/60 dark:border-white/10 dark:hover:bg-white/5', selectedId === thread.id && 'bg-gradient-to-r from-cyan-500/15 to-blue-500/10')}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-medium">{customer?.full_name || customer?.email || 'Customer'}</span>
-                      <Badge variant={thread.status === 'open' ? 'default' : 'outline'} className="text-[10px] capitalize">{thread.status}</Badge>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {unreadByThread[thread.id] ? <Badge variant="destructive" className="min-w-5 justify-center rounded-full px-1.5 py-0.5 text-[10px]">{unreadByThread[thread.id]}</Badge> : null}
+                        <Badge variant={thread.status === 'open' ? 'default' : 'outline'} className="text-[10px] capitalize">{thread.status}</Badge>
+                      </span>
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {thread.last_message_at ? formatDistanceToNow(new Date(thread.last_message_at), { addSuffix: true }) : 'No messages'}
