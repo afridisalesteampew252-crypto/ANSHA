@@ -9,6 +9,19 @@
 - Product JSON-LD is assembled in server pages, not client components.
 - Admin vehicle and parts stock screens load 200 enriched rows at a time.
 
+## Supabase catalog query optimization — 2026-09-29
+
+The Supabase `pg_stat_statements` snapshot highlighted repeated published vehicle and parts listings ordered by featured status and creation time. The listing tables are currently small, so the purpose is to avoid repeated sort work and keep the query shape efficient as inventory grows.
+
+Migrations applied:
+
+- `20260928221630_optimize_public_inventory_listing_indexes.sql`
+- `20260928222037_make_public_listing_indexes_parameter_safe.sql`
+
+The final indexes are `vehicles_public_listing_order_idx` and `parts_public_listing_order_idx`, each on `(is_published, stock_status, is_featured DESC, created_at DESC)`. A forced generic-plan `EXPLAIN EXECUTE` confirmed both parameterized queries use the matching index and no longer have a `Sort` or `Incremental Sort` node.
+
+The earlier query statistics were cumulative from the 2026-09-09 reset, so they do not show a before/after result for the new indexes. Compare a fresh interval after normal traffic before claiming a measured latency reduction. Supabase's high-call `realtime.list_changes` statement is internal Realtime processing; do not change application subscriptions without evidence tying them to a specific app path.
+
 ## Bundle baseline
 
 Run before adding a new dynamic library:

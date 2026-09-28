@@ -1,8 +1,6 @@
 # ANSHA System Audit
 
-Audit date: **2026-09-22** (refresh post–Phase **78**: Make Available DEFINER, security advisor, SOA MoneyBreakdown, Product JSON-LD). Earlier snapshots are superseded.
-
-Scope: repository `ANSHA/` vs live product at `www.anshatradingco.com` + Supabase `ydrnilquojvalhgifest`. Documentation-only pass; no production secrets were read.
+Documentation and performance verification: **2026-09-29**. This refresh covers the current repository documentation plus live query-plan verification for vehicle and parts listings; the broader product audit below remains the 2026-09-22 snapshot. No production secrets were read.
 
 Legend: **Fact** | **Gap** | **Recommendation**
 
@@ -16,7 +14,7 @@ Legend: **Fact** | **Gap** | **Recommendation**
 - React 19, TypeScript strict, Tailwind 3, Radix/shadcn-style UI
 - Supabase Auth / Postgres / Storage / Edge Functions / Realtime
 - Vercel hosting + Analytics/Speed Insights
-- Optional Capacitor shell (`capacitor.config.ts`) loading the live public URL
+- Customer Capacitor Android shell (`capacitor.config.ts`) loads `/mobile`; separate staff Capacitor Android shell (`capacitor.admin.config.ts`) loads `/admin/dashboard` (`docs/Mobile.md`, `docs/Admin-Android.md`)
 - PWA: `app/manifest.ts`, `public/sw.js`, install + push components
 - AI: Vercel AI SDK route `POST /api/ai/chat`
 - FX proxy: `GET /api/fx` (cached open.er-api.com)
@@ -25,7 +23,8 @@ Legend: **Fact** | **Gap** | **Recommendation**
 - Product JSON-LD: `lib/product-schema.ts` (valid offers.price; real aggregateRating/review)
 - Home featured rotation: `lib/featured-rotation.ts` (10-minute buckets; no cron)
 - CI: lint, typecheck, `verify:brands`, build (Node 24)
-- **Gap:** no Vitest/Jest/Playwright suite in repo
+- Playwright is configured with partial E2E coverage; automated test breadth remains limited
+- Public vehicle/parts listings use parameter-safe composite indexes, applied in migrations `20260928221630` and `20260928222037`; generic prepared plans were verified to use the indexes
 
 ---
 
@@ -168,7 +167,7 @@ Keep VAPID private key only in Supabase secrets; rotate if ever pasted into chat
 
 See [CURRENT_STATE](./CURRENT_STATE.md) (~**96–98%** of Phase 1–78 chosen MVP) and [Roadmap](./Roadmap.md).
 
-Remaining: secrets hygiene, bank live integration, deeper marketing automation, automated tests, manager location-scoped HR approvals, native admin (out of scope).
+Remaining: secrets hygiene, bank live integration, deeper marketing automation, broader automated tests, manager location-scoped HR approvals, and a native admin UI rewrite (the current staff APK is a WebView shell).
 
 ---
 
@@ -176,15 +175,17 @@ Remaining: secrets hygiene, bank live integration, deeper marketing automation, 
 
 | Doc | Status after this audit |
 |---|---|
-| CURRENT_STATE.md | Checkpoint 2026-09-22 / post–Phase 78 ops+security+SEO |
+| CURRENT_STATE.md | Checkpoint 2026-09-29 / inventory query indexes verified; older SEO snapshot retained |
 | Modules.md | Updated (SOA `#soa`, MoneyBreakdown, Product schema, Make Available) |
 | Roadmap.md | Phases 72–78 Done + post-78 ship notes |
 | Roles.md | Field / accounts / manager + commissions / freight / reports |
 | User-Manual.md | Operator flows through post-78 SOA / Make Available |
 | Deployment.md | Phase 72–78 + post-78 migration tables |
-| Architecture.md | Surfaces through post-78 |
+| Architecture.md | Customer and admin Android WebView shells, shared Supabase project |
 | Database.md | Entities + DEFINER/security hardening |
 | API.md | Commission / bulk reserve / remittance Phase 73 RPCs |
 | Security.md | Advisor harden + Make Available DEFINER |
-| README.md | Status through post-78 |
-| PROJECT-AUDIT.md | This file |
+| README.md | Quick start, current Android shells, performance update |
+| Performance.md | Live query-plan optimization and measurement caveat |
+| Admin-Android.md | Separate staff APK and FCM setup |
+| PROJECT-AUDIT.md | Focused docs refresh 2026-09-29; broad snapshot 2026-09-22 |

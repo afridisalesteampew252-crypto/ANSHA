@@ -6,7 +6,7 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 
 - Public website: `app/(public)/` — catalog, content, contact, banking, invoice QR verify
 - Staff ERP: `app/admin/` — login plus operations workspace
-- Customer portal: `app/portal/` — login plus read-only invoices (Phase 23)
+- Customer portal: `app/portal/` — profile/settings, customer stock, invoices, remittances, per-currency SOA, reservations, and support (RLS-scoped)
 - Web Push: `push_subscriptions` + Edge Function `send-web-push` (Phase 24)
 - Outbound email: `outbound_email_log` + Edge Function `send-outbound-email` / Resend (Phase 39)
 - Marketing campaigns: `marketing_campaigns` + `/admin/campaigns` Send now → push/email/offer hooks (Phase 49)
@@ -29,18 +29,18 @@ ANSHA Trading is a single Next.js 16 App Router application backed by one Supaba
 - PWA subscribers admin: `/admin/subscribers` (ops) over `push_subscriptions`
 - WhatsApp Cloud API: `whatsapp_message_log` + Edge Function `send-whatsapp` (Phase 40)
 - AI ops assistant: `/admin/ai` + `POST /api/ai/chat` (Vercel AI SDK; server `AI_GATEWAY_API_KEY` / `OPENAI_API_KEY`) (Phase 42)
-- Capacitor shell (Phase 44): iOS/Android WebView loading the production public URL; see `docs/Mobile.md`
+- Customer Android APK: Capacitor shell loads `/mobile`; staff Admin APK: separate Capacitor shell loads `/admin/dashboard`; both use the same Next.js deployment and Supabase project. Native FCM setup is documented separately in `docs/Mobile.md` and `docs/Admin-Android.md`
 - Shared backend: Supabase Auth, PostgreSQL, Storage, Realtime, Edge Functions
 
 Live status and completion %: [CURRENT_STATE.md](./CURRENT_STATE.md). Module matrix: [Modules.md](./Modules.md).
 
-The public site is an installable PWA (Phase 22) on this same database. Capacitor is an additive native wrapper around that URL, not a second frontend. Portal and native shells must keep using this same database.
+The public site is an installable PWA (Phase 22) on this same database. The customer and staff APKs are separate Capacitor shells that load their respective web routes; they do not create a second frontend or database. Portal and mobile data remain protected by the same Supabase Auth, RLS, and role checks.
 
 ## Request path
 
 ```
-Browser or Capacitor WebView
-  → Next.js (Vercel)  [Capacitor: server.url → https://www.anshatradingco.com]
+Browser or customer/admin Capacitor WebView
+  → Next.js (Vercel)  [customer: /mobile; staff: /admin/dashboard]
     → proxy.ts for /admin/:path*
     → RSC / Client Components / GET /api/health / GET /api/fx / POST /api/ai/chat
     → Supabase JS (publishable/anon key) or Edge Function (service role, admin-only)
@@ -74,4 +74,5 @@ GitHub `main` deploys to Vercel. Preview deployments follow the GitHub integrati
 
 - Not a microservices split
 - Not a separate admin SPA repo
+- Not a fully native admin UI or offline-first native database
 - Not Netlify-hosted

@@ -1,10 +1,17 @@
 # Current State
 
-Verified checkpoint: **2026-09-22** (Complete SEO Repair **SEO-01…SEO-10** validated locally; production may lag until deploy). Prior: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `ydrnilquojvalhgifest`.
+Verified checkpoint: **2026-09-29**. The public inventory listing indexes are applied to Supabase and verified with generic prepared-query plans. The prior SEO-01…SEO-10 validation is dated 2026-09-22; refer to the current Vercel production deployment before treating later site changes as live. Baseline: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `ydrnilquojvalhgifest`.
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
 Hosting: Vercel project `anshanew`
+
+## Recent database performance fix (2026-09-29)
+
+- Added `vehicles_public_listing_order_idx` and `parts_public_listing_order_idx` over `(is_published, stock_status, is_featured DESC, created_at DESC)`.
+- Verified with forced generic prepared plans: both listing queries use their matching index and no longer sort by featured/date.
+- Applied migrations `20260928221630_optimize_public_inventory_listing_indexes` and `20260928222037_make_public_listing_indexes_parameter_safe`.
+- Query statistics viewed before the change were cumulative (reset 2026-09-09); collect new traffic before reporting a measured latency reduction.
 
 ## Completion snapshot
 
@@ -17,7 +24,7 @@ Hosting: Vercel project `anshanew`
 | Customer portal | **~98%** | Verified-email self-registration; safe exact-email CRM linking; stock catalog shortcuts; invoices + SOA, reservations, remittances; Tawk support; admin-approved account deletion |
 | PWA / Capacitor | **~88%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; Capacitor shell docs |
 | Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Audit refresh 2026-09-22 (Complete SEO Repair SEO-10 + Deployment SEO checklist) |
+| Docs (this set) | **~99%** | Refreshed 2026-09-29; current state, architecture, performance, and APK docs aligned |
 
 **Overall product maturity (shipping ERP + public exporter):** roughly **96–98%** of the Phase 1–78 roadmap that was chosen and built. Core MVP is **shipped**. Remaining: Auth leaked-password toggle, bank live feeds, full ESP automation, HR location-scoped approvals, automated tests — not a greenfield rewrite.
 
@@ -81,6 +88,8 @@ Through **Phase 78** plus post-78 Make Available + security advisor migrations. 
 
 | Migration | Scope |
 |---|---|
+| `20260928221630_optimize_public_inventory_listing_indexes.sql` | Initial partial indexes for featured-first public vehicle/parts listing queries; superseded by the parameter-safe follow-up below |
+| `20260928222037_make_public_listing_indexes_parameter_safe.sql` | Replaces the partial indexes with composite indexes that work with parameterized generic plans |
 | `20260922020000_security_advisor_hardening.sql` | `purchase_order_sequences` RLS + deny; `tawk_webhook_receipts` explicit deny; revoke anon on `touch_admin_last_seen`; drop duplicate vehicles reserved_customer index |
 | `20260922010000_fix_sync_catalog_sold_state_security_definer.sql` | `private.sync_catalog_sold_state` + `clear_reservation_buying_documents` SECURITY DEFINER (Make Available permission fix) |
 | `20260921130000_phase_78_customer_auto_id.sql` | `customer_code_seq` (~48001+); consignee columns; prepare trigger |
@@ -108,7 +117,7 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 6. **Bank feeds** — CSV/manual only; no live Open Banking OAuth.
 7. **Email newsletter list** — Marketing subscribers = `push_subscriptions` only.
 8. **Automated E2E/unit tests** — still thin.
-9. **Native admin app** — not built; Capacitor wraps public URL only.
+9. **Native admin rewrite** — not built. The separate Admin APK is a Capacitor WebView for `/admin/dashboard`, not a standalone native ERP; see [Admin-Android](./Admin-Android.md).
 10. **Manager HR location scope** — inventory scoped by `allowed_stock_origins`; HR shift locations remain global viewer.
 11. **Edge functions** — keep `admin-create-user` / `admin-update-user` redeployed for `allowed_stock_origins` + remittance `office_id` / `shift_id`.
 
@@ -136,7 +145,8 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 | [User-Manual](./User-Manual.md) | Operator how-to |
 | [Roles](./Roles.md) | RBAC matrix |
 | [Tawk](./Tawk.md) | Public widget + Live chat webhook |
-| [PWA](./PWA.md) / [Mobile](./Mobile.md) | Installable app + Capacitor |
+| [PWA](./PWA.md) / [Mobile](./Mobile.md) | Customer PWA and Android shell |
+| [Admin-Android](./Admin-Android.md) | Staff APK setup and FCM |
 | [Deployment](./Deployment.md) | Vercel + Edge secrets |
 | [Database](./Database.md) / [Security](./Security.md) | Data & authz |
 | [API](./API.md) | Health/FX/AI + RPCs + Edge |

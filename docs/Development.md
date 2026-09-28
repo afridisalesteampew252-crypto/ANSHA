@@ -41,11 +41,14 @@ AI ops assistant (Phase 42) — server-only on Vercel / `.env.local` (never `NEX
 | `npm run verify:brands` | Manufacturer SVG coverage |
 | `npm run verify:release` | lint + typecheck + brands + build |
 | `npm run verify:deployment -- https://…` | HTTP checks against a deployed URL |
-| `npm run cap:sync` | Sync Capacitor config into local `android`/`ios` |
-| `npm run cap:add:android` / `cap:add:ios` | Generate native projects (once; gitignored) |
-| `npm run cap:android` / `cap:ios` | Open Android Studio / Xcode |
+| `npm run cap:sync` | Sync customer Capacitor config into local `android`/`ios` |
+| `npm run cap:sync:android` | Prepare customer Firebase config and sync Android |
+| `npm run cap:sync:admin:android` | Prepare staff Firebase config and sync the admin Android app |
+| `npm run cap:add:android` / `cap:add:ios` | Generate customer native projects (once; gitignored) |
+| `npm run cap:android` / `cap:ios` | Open customer Android Studio project / Xcode |
+| `npm run cap:open:admin:android` | Open the staff Android Studio project |
 
-There is no `test` script. Native mobile steps: `docs/Mobile.md`. Live product checkpoint: `docs/CURRENT_STATE.md` (through Phase **78**).
+Use `npm run test:e2e:public` for the current public/security Playwright subset; the complete end-to-end suite is still limited. Customer mobile steps: `docs/Mobile.md`; staff APK steps: `docs/Admin-Android.md`. Live product checkpoint: `docs/CURRENT_STATE.md`.
 
 ## Conventions
 
