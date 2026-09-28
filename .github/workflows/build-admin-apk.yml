@@ -42,7 +42,7 @@ jobs:
           }
           const gradle = original
             .replace(/versionCode\s+\d+/, 'versionCode 3')
-            .replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.1"');
+            .replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.2"');
           writeFileSync(path, gradle);
           NODE
       - name: Add Firebase config and sync Capacitor
