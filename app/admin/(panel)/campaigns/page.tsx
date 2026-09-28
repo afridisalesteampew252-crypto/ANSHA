@@ -332,10 +332,6 @@ export default function MarketingCampaignsPage() {
   };
 
   const sendNow = async (row: MarketingCampaign, mode: 'full' | 'segment' = 'full') => {
-    if (row.channel === 'email') {
-      toast.error('Marketing email is paused until subscriber consent and unsubscribe controls are in place.');
-      return;
-    }
     if (row.status === 'sent' && mode === 'full') {
       toast.error('Campaign already marked sent.');
       return;
@@ -354,41 +350,7 @@ export default function MarketingCampaignsPage() {
         await markSent(row.id, result.sent || 0);
         toast.success(`Push sent to ${result.sent} devices.`);
       } else if (row.channel === 'email') {
-        const recipients =
-          mode === 'segment' || (p.audience_countries && p.audience_countries.length)
-            ? await resolveRecipients(p)
-            : p.to_email
-              ? [String(p.to_email).toLowerCase()]
-              : [];
-        if (!recipients.length) {
-          throw new Error('No recipients. Add To email or audience countries with matching customers.');
-        }
-        if (recipients.length > 50 && !window.confirm(`Send to ${recipients.length} customers?`)) {
-          return;
-        }
-        let ok = 0;
-        const failures: string[] = [];
-        for (const to of recipients) {
-          try {
-            await sendOutboundEmail({
-              to_email: to,
-              subject: String(p.subject || row.name),
-              body: String(p.body || ''),
-            });
-            ok += 1;
-          } catch (err) {
-            failures.push(`${to}: ${err instanceof Error ? err.message : 'failed'}`);
-          }
-        }
-        if (ok === 0) {
-          throw new Error(failures[0] || 'All email sends failed. Is RESEND_API_KEY set on the Edge Function?');
-        }
-        await markSent(row.id, ok);
-        toast.success(
-          failures.length
-            ? `Email sent to ${ok}/${recipients.length} (some failed).`
-            : `Email sent to ${ok} recipient${ok === 1 ? '' : 's'}.`
-        );
+        toast.error('Marketing email is paused until subscriber consent and unsubscribe controls are in place.');
       } else {
         let title = String(p.offer_title || '');
         let summary = p.summary ? String(p.summary) : '';
