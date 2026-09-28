@@ -21,7 +21,7 @@ export function useInventoryDeals() {
     void (async () => {
       const { data } = await supabase
         .from('site_offers')
-        .select('*')
+        .select('vehicle_id,part_id,sale_price,discount_percent')
         .eq('is_published', true)
         .or('vehicle_id.not.is.null,part_id.not.is.null')
         .order('published_at', { ascending: false, nullsFirst: false });
