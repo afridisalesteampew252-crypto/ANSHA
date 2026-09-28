@@ -388,7 +388,7 @@ export default function PortalProfilePage() {
         </Card>
       </form>
 
-      <div className="hidden gap-3 lg:grid lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="hidden gap-3 lg:grid lg:grid-cols-3">
         {ACCOUNT_LINKS.map(({ href, title, description, icon: Icon }) => (
           <Button
             key={href}
