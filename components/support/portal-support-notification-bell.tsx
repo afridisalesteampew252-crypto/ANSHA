@@ -68,8 +68,9 @@ export function PortalSupportNotificationBell() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full" aria-label={unread ? `${unread} unread support replies` : 'Support notifications'}>
-          <Bell className="h-5 w-5" />
+        <Button variant="outline" size="icon" className="relative h-9 w-9 shrink-0 rounded-lg p-0 sm:w-auto sm:gap-2 sm:px-3" aria-label={unread ? `${unread} unread support replies` : 'Support notifications'}>
+          <Bell className="h-4 w-4" />
+          <span className="hidden text-xs font-medium sm:inline">Alerts</span>
           {unread > 0 ? <span className="absolute right-0.5 top-0.5 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">{unread > 99 ? '99+' : unread}</span> : null}
         </Button>
       </DropdownMenuTrigger>
