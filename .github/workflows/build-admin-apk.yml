@@ -1,6 +1,9 @@
 name: Build ANSHA Admin APK
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - codex/run-admin-apk-once
@@ -41,14 +44,18 @@ jobs:
             throw new Error('Android version fields were not found');
           }
           const gradle = original
-            .replace(/versionCode\s+\d+/, 'versionCode 2')
-            .replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.1"');
+            .replace(/versionCode\s+\d+/, 'versionCode 3')
+            .replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.2"');
           writeFileSync(path, gradle);
           NODE
       - name: Add Firebase config and sync Capacitor
         run: npm run cap:sync:admin:android
         env:
           CAPACITOR_ADMIN_SERVER_URL: ${{ inputs.server_url }}
+      - name: Apply ANSHA launcher icons and display cutout handling
+        run: |
+          python -m pip install Pillow==11.3.0
+          python scripts/prepare-android-ui.py
       - name: Build installable debug APK
         run: cd android && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
