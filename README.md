@@ -1,6 +1,6 @@
 # ANSHA
 
-ANSHA is a global automotive parts and vehicle catalog with a public website and a protected internal management dashboard.
+ANSHA is an automotive export platform with a public website, customer portal, and staff ERP. Its customer and admin Android APKs are Capacitor WebView shells connected to the same Next.js deployment and Supabase project.
 
 ## Technology
 
@@ -8,11 +8,12 @@ ANSHA is a global automotive parts and vehicle catalog with a public website and
 - Supabase Database, Auth, and Storage
 - Vercel hosting
 - GitHub source control and CI
-- Optional Capacitor iOS/Android shell for the public catalog (see `docs/Mobile.md`)
+- Customer Android app: Capacitor shell for `/mobile` (see `docs/Mobile.md`)
+- Separate staff Android app: Capacitor shell for `/admin/dashboard` (see `docs/Admin-Android.md`)
 
 ## Project status
 
-Live checkpoint and completion %: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)** (~**96–98%** of the chosen Phase 1–78 ERP + public + platform MVP; post-78 Make Available / security / SOA / Product schema shipped).
+Live checkpoint and completion details: **[docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md)**. The Phase 1–78 ERP and public MVP is shipped; the remaining work is listed as operator actions and roadmap gaps. Current test and release limits are documented there.
 
 | Phase | Scope | Status |
 |---|---|---|
@@ -77,6 +78,22 @@ The Vercel project is connected, and Production and Preview deployments are heal
 Copy `.env.example` to `.env.local`. Never commit real credentials.
 
 Only public/publishable Supabase keys belong in browser variables. Never expose a Supabase secret or service-role key through a `NEXT_PUBLIC_` variable.
+
+## Local development
+
+Requirements: Node.js `>=20.9.0` and npm.
+
+```bash
+npm ci --legacy-peer-deps
+cp .env.example .env.local
+npm run dev
+```
+
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` before opening data-backed pages. See [docs/Development.md](./docs/Development.md) for optional secrets, scripts, and conventions; see [docs/Deployment.md](./docs/Deployment.md) for CI, previews, and releases.
+
+## Recent database performance update — 2026-09-29
+
+Added and applied parameter-safe composite indexes for the public vehicle and parts listing queries. PostgreSQL generic prepared-query plans now use the indexes and avoid the previous featured-first sort. The database changes do not require an APK reinstall. See [docs/Performance.md](./docs/Performance.md) and [docs/CURRENT_STATE.md](./docs/CURRENT_STATE.md) for migration IDs and verification details. Query statistics are cumulative, so measure fresh traffic before claiming a runtime percentage improvement.
 
 ## Database migrations
 
