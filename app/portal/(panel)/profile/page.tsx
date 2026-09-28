@@ -388,9 +388,22 @@ export default function PortalProfilePage() {
         </Card>
       </form>
 
-      <div className="hidden gap-3 lg:grid lg:grid-cols-3 xl:grid-cols-6">
+      <div className="hidden gap-3 lg:grid lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
         {ACCOUNT_LINKS.map(({ href, title, description, icon: Icon }) => (
-          <Button key={href} asChild variant="outline" className="h-auto justify-start gap-3 p-4"><Link href={href}><Icon className="h-5 w-5 text-accent" /><span className="text-left"><strong className="block">{title}</strong><small className="text-muted-foreground">{description}</small></span></Link></Button>
+          <Button
+            key={href}
+            asChild
+            variant="outline"
+            className="h-full min-h-[5.5rem] w-full justify-start gap-3 whitespace-normal p-3 text-left"
+          >
+            <Link href={href} className="min-w-0">
+              <Icon className="h-5 w-5 shrink-0 text-accent" />
+              <span className="min-w-0 whitespace-normal text-left leading-tight">
+                <strong className="block whitespace-normal break-words text-sm leading-snug">{title}</strong>
+                <small className="mt-1 block whitespace-normal break-words text-xs leading-snug text-muted-foreground">{description}</small>
+              </span>
+            </Link>
+          </Button>
         ))}
       </div>
 
