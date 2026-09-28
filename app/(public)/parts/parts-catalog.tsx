@@ -38,6 +38,7 @@ function PartsCatalog() {
   const { dealForPart } = useInventoryDeals();
   const [parts, setParts] = useState<PublicPartCard[]>([]);
   const [categories, setCategories] = useState<PublicCategoryCard[]>([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState(searchParams.get('q') || '');
@@ -48,9 +49,15 @@ function PartsCatalog() {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const pageSize = 12;
+  const appliedQuery = searchParams.get('q') || '';
+  const selectedCategoryId = categories.find((item) => item.slug === selectedCategory)?.id;
+  const canFetchParts = selectedCategory === 'all' || categoriesLoaded;
 
   useEffect(() => {
-    supabase.from('categories').select(PUBLIC_CATEGORY_CARD_SELECT).order('sort_order').then(({ data }) => setCategories((data || []) as unknown as PublicCategoryCard[]));
+    supabase.from('categories').select(PUBLIC_CATEGORY_CARD_SELECT).order('sort_order').then(({ data }) => {
+      setCategories((data || []) as unknown as PublicCategoryCard[]);
+      setCategoriesLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -78,12 +85,9 @@ function PartsCatalog() {
       .eq('is_published', true)
       .eq('stock_status', 'available');
 
-    const safeQuery = query.trim().replace(/[,%()]/g, ' ');
+    const safeQuery = appliedQuery.trim().replace(/[,%()]/g, ' ');
     if (safeQuery) request = request.or(`name.ilike.%${safeQuery}%,part_code.ilike.%${safeQuery}%,oem_number.ilike.%${safeQuery}%,part_number.ilike.%${safeQuery}%`);
-    if (selectedCategory !== 'all') {
-      const category = categories.find((item) => item.slug === selectedCategory);
-      if (category) request = request.eq('category_id', category.id);
-    }
+    if (selectedCategoryId) request = request.eq('category_id', selectedCategoryId);
     if (selectedCondition !== 'all') request = request.eq('condition', selectedCondition);
     if (selectedBrand !== 'all') request = request.eq('brand', selectedBrand);
     if (selectedStock !== 'all') request = request.eq('stock_origin', selectedStock);
@@ -99,11 +103,11 @@ function PartsCatalog() {
     setParts((data || []) as unknown as PublicPartCard[]);
     setTotalCount(count || 0);
     setLoading(false);
-  }, [categories, page, query, selectedBrand, selectedCategory, selectedCondition, selectedStock, sortBy]);
+  }, [appliedQuery, page, selectedBrand, selectedCategory, selectedCategoryId, selectedCondition, selectedStock, sortBy]);
 
   useEffect(() => {
-    if (selectedCategory === 'all' || categories.length > 0) fetchParts();
-  }, [categories.length, fetchParts, selectedCategory]);
+    if (canFetchParts) fetchParts();
+  }, [canFetchParts, fetchParts]);
 
   const setParam = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
