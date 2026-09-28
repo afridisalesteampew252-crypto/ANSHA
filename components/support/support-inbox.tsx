@@ -241,10 +241,16 @@ export function SupportInbox({ mode }: { mode: Mode }) {
       setFiles([]);
       await loadMessages(threadId);
       await loadThreads();
-      const { error: pushError } = await supabase.functions.invoke('send-support-push', {
+      const { data: pushResult, error: pushError } = await supabase.functions.invoke('send-support-push', {
         body: { message_id: message.id },
       });
-      if (pushError) toast.message('Message sent. Push delivery is unavailable on some devices.');
+      if (pushError) {
+        toast.message('Message sent, but push notification delivery failed. The recipient can still read it in the portal.');
+      } else if (!pushResult?.sent) {
+        toast.message('Message sent, but no support notification reached a device. Check notification settings.');
+      } else if (pushResult.failed > 0) {
+        toast.message(`Message sent. Notification reached ${pushResult.sent} device(s); ${pushResult.failed} failed.`);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Message could not be sent.');
     } finally {

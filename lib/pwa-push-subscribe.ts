@@ -8,7 +8,7 @@ export type PushTopics = {
   support: boolean;
 };
 
-const DEFAULT_TOPICS: PushTopics = { insights: true, deals: true, support: false };
+const DEFAULT_TOPICS: PushTopics = { insights: true, deals: true, support: true };
 
 export function isWebPushConfigured() {
   return Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim());

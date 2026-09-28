@@ -60,7 +60,7 @@ export function PushOptIn() {
       }
       const result = await ensurePushSubscription();
       if (!result.subscribed) throw new Error(result.reason === 'unsupported' ? 'This browser does not support Web Push.' : 'Push alerts are unavailable.');
-      toast.success('Alerts enabled for insights and deals.');
+      toast.success('Notifications enabled for support replies, insights, and deals.');
       dismiss();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not enable notifications.');
@@ -82,7 +82,7 @@ export function PushOptIn() {
         <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent"><Bell className="h-4 w-4" /></span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-snug">Optional alerts</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Get new insight and export-deal notifications on this device.</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Get support replies, new insights, and export-deal notifications on this device.</p>
           <div className="mt-2.5 flex gap-2">
             <Button size="sm" type="button" disabled={busy} onClick={() => void enable()}>{busy ? 'Enabling…' : 'Enable'}</Button>
             <Button size="sm" type="button" variant="ghost" onClick={dismiss}><BellOff className="h-4 w-4" />Not now</Button>
