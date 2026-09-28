@@ -62,7 +62,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Markets / FX | header clock+FX, `/markets/[code]` (70 markets) | trade-config | `/api/fx` + `lib/export-markets.ts` + market policies |
 | Health | `/api/health` | — | REST ping |
 | PWA | **Anshatradingco APP** install + Web Push | offers / blog / campaigns notify | `push_subscriptions`, `site_offers`, `/sw.js`, `send-web-push` |
-| Capacitor shell | store-ready WebView wrapper (public URL) | generate `android`/`ios` locally | `capacitor.config.ts`, `native/www`, `docs/Mobile.md` |
+| Capacitor shells | Customer app loads `/mobile`; separate staff app loads `/admin/dashboard` | Android projects are generated for APK builds; customer iOS shell is optional | `capacitor.config.ts`, `capacitor.admin.config.ts`, `docs/Mobile.md`, `docs/Admin-Android.md` |
 | Offers / deals | `/offers` (+ nav Deals) | `/admin/offers` | `site_offers` (+ inventory link, discount/sale) |
 
 ## Not implemented
