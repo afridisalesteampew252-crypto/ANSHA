@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 import { siteConfig } from '@/lib/site-config';
 import { InstallAppButton } from '@/components/pwa/install-prompt';
+import { CookieSettingsButton } from '@/components/privacy/cookie-consent';
 
 export function SiteFooter() {
   return (
@@ -102,7 +103,10 @@ export function SiteFooter() {
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-5 text-center text-sm text-white/45 sm:mt-10 sm:flex-row sm:text-left">
           <p>&copy; {new Date().getFullYear()} {siteConfig.name}. All rights reserved.</p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            <Link href="/cookie-policy" className="hover:text-accent">Cookie Policy</Link>
+            <Link href="/privacy" className="hover:text-accent">Privacy</Link>
+            <Link href="/terms" className="hover:text-accent">Terms</Link>
+            <Link href="/cookie-policy" className="hover:text-accent">Cookies</Link>
+            <CookieSettingsButton className="hover:text-accent" />
             <p>TRN {siteConfig.taxRegistrationNumber}</p>
           </div>
         </div>

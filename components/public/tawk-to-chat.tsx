@@ -1,15 +1,15 @@
-import Script from 'next/script';
+'use client';
 
-/**
- * Tawk.to live chat for public pages.
- * No-ops when NEXT_PUBLIC_TAWK_PROPERTY_ID or NEXT_PUBLIC_TAWK_WIDGET_ID is unset.
- * IDs: https://dashboard.tawk.to → Administration → Chat Widget → Direct Chat Link / Widget Code
- */
+import Script from 'next/script';
+import { useCookieConsent } from '@/components/privacy/cookie-consent';
+
+/** Tawk.to live chat. It is loaded only after the visitor accepts functional technologies. */
 export function TawkToChat() {
+  const { choices } = useCookieConsent();
   const propertyId = process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID?.trim();
   const widgetId = process.env.NEXT_PUBLIC_TAWK_WIDGET_ID?.trim();
 
-  if (!propertyId || !widgetId) return null;
+  if (!choices?.functional || !propertyId || !widgetId) return null;
 
   return (
     <Script id="tawk-to" strategy="lazyOnload">{`

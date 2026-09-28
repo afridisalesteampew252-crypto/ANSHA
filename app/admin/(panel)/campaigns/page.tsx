@@ -297,16 +297,6 @@ export default function MarketingCampaignsPage() {
     if (error) throw error;
   };
 
-  const bumpSentCount = async (id: string, delta: number) => {
-    const row = rows.find((r) => r.id === id);
-    const next = Math.max(0, (row?.sent_count || 0) + delta);
-    const { error } = await supabase
-      .from('marketing_campaigns')
-      .update({ sent_count: next, updated_at: new Date().toISOString() })
-      .eq('id', id);
-    if (error) throw error;
-  };
-
   const resolveRecipients = async (p: MarketingCampaignPayload): Promise<string[]> => {
     const countries = (p.audience_countries || []).map((c) => c.trim().toLowerCase()).filter(Boolean);
     if (!countries.length) {
@@ -337,28 +327,15 @@ export default function MarketingCampaignsPage() {
     return emails;
   };
 
-  const sendTestEmail = async (row: MarketingCampaign) => {
-    const p = row.payload || {};
-    const testTo = window.prompt('Send test email to:', String(p.to_email || ''));
-    if (!testTo?.trim()) return;
-    setSendingId(row.id);
-    try {
-      await sendOutboundEmail({
-        to_email: testTo.trim().toLowerCase(),
-        subject: `[TEST] ${String(p.subject || row.name)}`,
-        body: String(p.body || ''),
-      });
-      await bumpSentCount(row.id, 1);
-      toast.success(`Test email sent to ${testTo.trim().toLowerCase()}. Campaign stays ${row.status}.`);
-      await load();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Test send failed (check RESEND_API_KEY Edge secret).');
-    } finally {
-      setSendingId(null);
-    }
+  const sendTestEmail = async (_row: MarketingCampaign) => {
+    toast.error('Campaign email is paused until subscriber consent and unsubscribe controls are in place.');
   };
 
   const sendNow = async (row: MarketingCampaign, mode: 'full' | 'segment' = 'full') => {
+    if (row.channel === 'email') {
+      toast.error('Marketing email is paused until subscriber consent and unsubscribe controls are in place.');
+      return;
+    }
     if (row.status === 'sent' && mode === 'full') {
       toast.error('Campaign already marked sent.');
       return;
@@ -461,8 +438,7 @@ export default function MarketingCampaignsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Marketing campaigns</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ops campaigns with audience targeting, blog/inventory links, Resend email (test + segment), and honest sent counts.
-          Not a full ESP — no open tracking, no cron scheduler.
+          Ops campaigns for push and offers. Marketing email sends are paused until opt-in records and working unsubscribe controls are available.
         </p>
       </div>
 
@@ -648,8 +624,7 @@ export default function MarketingCampaignsPage() {
             {channel === 'email' ? (
               <div className="grid gap-4 rounded-lg border border-border p-3">
                 <p className="text-xs text-muted-foreground">
-                  Uses Resend via <code className="text-foreground">send-outbound-email</code>.
-                  Requires Edge secret <code className="text-foreground">RESEND_API_KEY</code> — otherwise send returns a clear error (no fake success).
+                  Campaign email is paused. Save a draft or send a test to an address you control; do not send to customers until subscriber consent and unsubscribe/suppression are configured.
                 </p>
                 <div className="space-y-1.5">
                   <Label htmlFor="email-to">To (single / test default)</Label>
@@ -756,7 +731,7 @@ export default function MarketingCampaignsPage() {
                         <Button
                           type="button"
                           size="sm"
-                          disabled={sendingId === row.id}
+                          disabled={sendingId === row.id || row.channel === 'email'}
                           onClick={() => void sendNow(row, 'full')}
                         >
                           {sendingId === row.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -768,7 +743,7 @@ export default function MarketingCampaignsPage() {
                               type="button"
                               size="sm"
                               variant="secondary"
-                              disabled={sendingId === row.id}
+                              disabled={sendingId === row.id || row.channel === 'email'}
                               onClick={() => void sendTestEmail(row)}
                             >
                               Send test
@@ -778,7 +753,7 @@ export default function MarketingCampaignsPage() {
                                 type="button"
                                 size="sm"
                                 variant="secondary"
-                                disabled={sendingId === row.id}
+                                disabled={sendingId === row.id || row.channel === 'email'}
                                 onClick={() => void sendNow(row, 'segment')}
                               >
                                 Send to segment

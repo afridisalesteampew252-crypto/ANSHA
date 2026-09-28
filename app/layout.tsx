@@ -6,8 +6,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { siteConfig } from '@/lib/site-config';
 import { defaultOgImage, favicon48Path } from '@/lib/seo';
 import { buildOrganizationJsonLd, buildWebSiteJsonLd } from '@/lib/seo-schema';
-import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { JsonLd } from '@/components/seo/json-ld';
 import { ThemeProvider } from '@/components/theme-provider';
 import { RegisterServiceWorker } from '@/components/pwa/register-service-worker';
@@ -104,7 +102,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NativeBackHandler />
           <NativePushNotifications />
           <NativeAppUrlHandler />
-          <Analytics /><SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
