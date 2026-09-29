@@ -252,6 +252,18 @@ export default function VehiclesCatalog() {
             </div>
           </div>
         )}
+        {!loading && vehicles.length > 0 && vehicles.length < vehicleCount ? (
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="outline"
+              className="h-12 rounded-full px-6"
+              disabled={loadingMore}
+              onClick={() => void loadVehicles(vehicles.length, true)}
+            >
+              {loadingMore ? 'Loading vehicles…' : `Show more vehicles (${Math.min(VEHICLE_PAGE_SIZE, vehicleCount - vehicles.length)} more)`}
+            </Button>
+          </div>
+        ) : null}
       </div>
       </div>
     </>
