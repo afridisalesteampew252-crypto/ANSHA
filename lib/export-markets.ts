@@ -1,3 +1,5 @@
+import { ADDITIONAL_EXPORT_MARKETS } from './export-market-shipping';
+
 export type ExportMarket = {
   code: string;
   name: string;
@@ -505,7 +507,6 @@ const BASE_EXPORT_MARKETS: ExportMarket[] = [
   },
 ];
 
-import { ADDITIONAL_EXPORT_MARKETS } from './export-market-shipping';
 
 export const EXPORT_MARKETS: ExportMarket[] = [
   ...BASE_EXPORT_MARKETS,
