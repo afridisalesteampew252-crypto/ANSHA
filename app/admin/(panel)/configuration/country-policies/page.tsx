@@ -41,7 +41,6 @@ type FormState = {
   shipping_line: string;
   inspection: string;
   route_note: string;
-  is_active: boolean;
 };
 
 const blankForm = (): FormState => ({
@@ -55,7 +54,6 @@ const blankForm = (): FormState => ({
   shipping_line: '',
   inspection: '',
   route_note: '',
-  is_active: true,
 });
 
 const detailFields: Array<{ key: keyof Pick<FormState, 'year_restriction' | 'destination_port' | 'transit_time' | 'vessel_schedule' | 'shipping_line' | 'inspection' | 'route_note'>; label: string; placeholder: string }> = [
@@ -117,7 +115,6 @@ export default function CountryPoliciesPage() {
       shipping_line: row?.shipping_line || guide?.shippingLine || '',
       inspection: row?.inspection || guide?.inspection || '',
       route_note: row?.route_note || guide?.routeNote || '',
-      is_active: row?.is_active ?? true,
     });
   }, [market, rows]);
 
@@ -132,6 +129,7 @@ export default function CountryPoliciesPage() {
         country_code: market.code,
         country_name: market.name,
         ...form,
+        is_active: true,
         updated_by: user?.id || null,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'country_code' });
@@ -168,11 +166,11 @@ export default function CountryPoliciesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Country policy</CardTitle>
-          <CardDescription>These entries are public on the country page when “Show on site” is enabled. Keep uncertain laws and sailing details marked as “Confirm”.</CardDescription>
+          <CardDescription>Saved policy details appear on the public country page. Keep uncertain laws and sailing details marked as “Confirm”.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={save} className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="policy-country">Country</Label>
                 <select
@@ -184,14 +182,6 @@ export default function CountryPoliciesPage() {
                   {EXPORT_MARKETS.map((item) => <option key={item.code} value={item.code}>{item.name} ({item.code})</option>)}
                 </select>
               </div>
-              <label className="flex items-center gap-2 self-end rounded-lg border p-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.checked }))}
-                />
-                Show policy notes on the public site
-              </label>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
