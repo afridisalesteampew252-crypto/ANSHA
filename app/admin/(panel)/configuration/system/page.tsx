@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
 import { FALLBACK_FINANCE_SETTINGS, type FinanceSettings } from '@/lib/use-finance-settings';
+import { DEFAULT_BRAND_ACCENT, normalizeHexColor, persistBrandAccentColor } from '@/lib/brand-theme';
 
 const sections = [
   { href: '/admin/system-health', title: 'System health', description: 'Website, database and notifications with alert history' },
@@ -28,18 +29,23 @@ export default function SystemConfigurationPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [brandAccentColor, setBrandAccentColor] = useState(DEFAULT_BRAND_ACCENT);
+  const [savingBrandAccent, setSavingBrandAccent] = useState(false);
 
   useEffect(() => {
     void (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
-      const [profile, row] = await Promise.all([
+      const [profile, row, brandSettings] = await Promise.all([
         supabase.from('admin_profiles').select('role,is_active').eq('id', user.id).maybeSingle(),
         supabase.from('system_finance_settings').select('default_currency,enabled_currencies').eq('id', 1).maybeSingle(),
+        supabase.from('site_trade_settings').select('brand_accent_color').eq('id', 1).maybeSingle(),
       ]);
       setIsAdmin(profile.data?.role === 'admin' && profile.data?.is_active !== false);
       if (row.error) toast.error('Currency settings could not be loaded.');
       else if (row.data) setSettings(row.data as FinanceSettings);
+      if (brandSettings.data?.brand_accent_color) setBrandAccentColor(normalizeHexColor(brandSettings.data.brand_accent_color) || DEFAULT_BRAND_ACCENT);
+      if (brandSettings.error) toast.error('Brand color could not be loaded.');
       setLoading(false);
     })();
   }, []);
@@ -51,6 +57,19 @@ export default function SystemConfigurationPage() {
     if (settings.enabled_currencies.length >= 30) { toast.error('Maximum 30 currencies.'); return; }
     setSettings((current) => ({ ...current, enabled_currencies: [...current.enabled_currencies, code].sort() }));
     setCurrencyInput('');
+  };
+
+  const saveBrandAccent = async () => {
+    if (!isAdmin || !normalizeHexColor(brandAccentColor)) return;
+    setSavingBrandAccent(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('site_trade_settings')
+      .update({ brand_accent_color: brandAccentColor, updated_at: new Date().toISOString(), updated_by: user?.id })
+      .eq('id', 1).select('id').single();
+    setSavingBrandAccent(false);
+    if (error || !data) { toast.error(error?.message || 'Brand color was not saved.'); return; }
+    persistBrandAccentColor(brandAccentColor);
+    toast.success('Shared brand color saved.');
   };
 
   const save = async () => {
@@ -71,6 +90,33 @@ export default function SystemConfigurationPage() {
       <h1 className="flex items-center gap-2 text-2xl font-bold"><Settings2 className="h-6 w-6 text-accent" />System configuration</h1>
       <p className="mt-1 text-sm text-muted-foreground">Manage operational lists and finance defaults from the admin workspace.</p>
     </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Shared brand color</CardTitle>
+        <CardDescription>Choose the accent color used across the public website and admin workspace. The site keeps one light appearance.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-3 rounded-lg border p-3">
+            <span className="h-10 w-10 rounded-full border shadow-sm" style={{ backgroundColor: brandAccentColor }} />
+            <span className="text-sm font-semibold">{brandAccentColor}</span>
+            <Input aria-label="Custom brand color" type="color" value={brandAccentColor} disabled={!isAdmin} onChange={(event) => setBrandAccentColor(event.target.value.toUpperCase())} className="h-10 w-12 cursor-pointer p-1" />
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { name: 'ANSHA red', color: '#D21E1E' },
+              { name: 'Ocean blue', color: '#1565C0' },
+              { name: 'Emerald', color: '#008A5B' },
+              { name: 'Purple', color: '#6B42C1' },
+              { name: 'Amber', color: '#D97706' },
+            ].map((preset) => (
+              <button key={preset.color} type="button" disabled={!isAdmin} onClick={() => setBrandAccentColor(preset.color)} aria-label={preset.name} aria-pressed={brandAccentColor === preset.color} className="h-9 w-9 rounded-full border-2 shadow-sm ring-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed" style={{ backgroundColor: preset.color, borderColor: brandAccentColor === preset.color ? 'var(--foreground)' : 'white' }} />
+            ))}
+          </div>
+        </div>
+        {isAdmin ? <Button type="button" disabled={savingBrandAccent} onClick={() => void saveBrandAccent()}>{savingBrandAccent ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}Save brand color</Button> : <p className="text-sm text-muted-foreground">Only admins can change this setting.</p>}
+      </CardContent>
+    </Card>
     <Card>
       <CardHeader>
         <CardTitle>Finance currencies</CardTitle>
