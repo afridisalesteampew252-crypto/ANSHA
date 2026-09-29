@@ -64,3 +64,16 @@ PLAYWRIGHT_BASE_URL=https://your-preview.vercel.app npm run test:e2e:public
 Run `npm run test:e2e` for the complete suite. Configure role accounts and fixture IDs from `.env.example`; missing optional fixtures produce explicit skips.
 
 Stateful stock, remittance, and unknown-TTS tests require `E2E_ALLOW_MUTATIONS=1` and a disposable Supabase branch/project. The suite refuses the production project `ydrnilquojvalhgifest` and production domain, and restores or reverses fixture changes where possible.
+
+
+## Catalog price and freight checks
+
+For changes to vehicle pricing or freight configuration, verify on a Vercel preview:
+
+- A positive FOB price is displayed as the public listing price; configured C&F and CIF values remain visible as separate terms.
+- Bulk FOB writes update the listing price, while C&F/CIF writes remain independent; selected filters and selection counts are accurate.
+- A saved model uses its configured M³; manual dimensions calculate L × W × H in metres.
+- Destination country suggestions come from active freight rows, and choosing a country narrows port suggestions to its active configured ports.
+- RoRo total equals vehicle M³ multiplied by the rate; a 40-ft option equals the configured total container price.
+
+These are manual preview checks; the repository currently has no automated browser test suite for these flows.
