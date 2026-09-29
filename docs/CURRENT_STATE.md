@@ -5,7 +5,7 @@
 - Vehicle make/model M³ configuration provides search and filters and stores dimensions in metres for future matching listings/imports.
 - Freight charges distinguish RoRo rates per M³ from the total price of one 40-ft container.
 - Freight calculator supports saved vehicle dimensions or manual L × W × H, plus type-to-search suggestions for configured countries and their ports.
-- Operational steps: [Catalog Prices and Freight](./Catalog-Freight-Pricing.md). Public production status should be checked after the current pull request deploys.
+- Operational steps: [Catalog Prices and Freight](./Catalog-Freight-Pricing.md). Production status will be confirmed after PR #99 completes and deploys.
 
 # Current State
 
