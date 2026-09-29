@@ -18,7 +18,7 @@ export type ExportMarketShippingGuide = {
  *
  * Fields: code~name~region~year~ports or inland destination~transit time~schedule~line~inspection~route note
  */
-const SOURCE = String.raw\`
+const SOURCE = String.raw`
 AO~Angola~Africa~Max. 5 years old~Luanda; Durban is a South African transit port~24–36 days (RoRo)~Monthly (RoRo)~Waitara~PSI~
 BW~Botswana~Africa~No age limit~Durban (South Africa), transit port~24–34 days (RoRo)~Monthly (RoRo)~Mediterranean Shipping Company~No inspection required~Inland delivery from Durban; confirm transit and border costs.
 BJ~Benin~Africa~No age limit~Cotonou~34–44 days (RoRo)~Monthly (RoRo)~Not supplied~Required~
@@ -162,7 +162,7 @@ OM~Oman~Middle East~Max. 10 years old (verify)~Muscat (port to confirm)~29–34 
 QA~Qatar~Middle East~Max. 5 years old (verify)~Doha (port to confirm)~20–29 days (container)~Weekly (container)~Not supplied~Fahes (verify)~
 SA~Saudi Arabia~Middle East~Max. 5 years old (verify)~Dammam~34–46 days (container)~Twice monthly (verify)~Not supplied~No inspection (verify)~
 TR~Turkey~Middle East~Not supplied~Port/route to confirm~Not supplied~Not supplied~Not supplied~Not supplied~
-\`.trim();
+`.trim();
 
 export const EXPORT_MARKET_SHIPPING_GUIDES: ExportMarketShippingGuide[] = SOURCE.split('\n').map((line) => {
   const [code, name, region, yearRestriction, destinationPort, transitTime, vesselSchedule, shippingLine, inspection, routeNote] =
