@@ -42,7 +42,7 @@ For each rate, enter:
 - Currency and configured freight charge
 - Optional shipping company and contact details
 
-Enter a **RoRo** charge as the price per cubic metre. Enter a **40-ft container** charge as the total price for one container. These units matter: the calculator multiplies RoRo rate × vehicle M³, while the 40-ft amount is shown as the full container total.
+Enter a **RoRo** charge as the price per cubic metre. Enter a **40-ft container** charge as the total price for one container. These units matter: the calculator multiplies RoRo rate × vehicle M³, while a 40-ft total is divided by the selected vehicle share: 6 small vehicles, 4 large vehicles, or 3 XL vehicles.
 
 Only active rate rows appear in the calculator suggestions. If multiple active rates match a country and port, the calculator shows each matching RoRo or 40-ft option.
 
@@ -54,7 +54,7 @@ Open **Admin → Freight calculator** (`/admin/freight-calculator`).
 2. If the vehicle is not configured, enter length, width, and height in metres instead.
 3. Type a destination country and choose a suggestion. The port suggestions narrow to ports configured for that country.
 4. Type or choose a destination port, then calculate.
-5. Compare the displayed RoRo estimate with the full 40-ft container price.
+5. Compare the per-vehicle RoRo estimate with the 40-ft per-vehicle share. The calculator shows both the shared amount and the full container total.
 
 The country, port, and saved make/model fields support typing to search and dropdown suggestions. A custom typed destination is accepted, but the calculator returns a rate only when an active freight row matches that country and port.
 
