@@ -180,7 +180,7 @@ export function SiteHeader() {
               <ShoppingBag className="h-5 w-5" />
               <CountBadge count={cartCount} />
             </Link>
-            <ThemeToggle className="hidden h-10 w-10 rounded-xl border border-border/60 bg-card/70 sm:grid sm:h-11 sm:w-11" />
+            
             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl border border-accent/15 bg-accent/10 text-accent shadow-sm md:hidden sm:h-11 sm:w-11" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
