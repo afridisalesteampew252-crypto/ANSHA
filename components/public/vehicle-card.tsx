@@ -48,7 +48,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
     priceCf: vehicle.price_cf,
     priceCif: vehicle.price_cif,
   });
-  const savedPriceLabel = catalogPriceLines.length > 0
+  const savedPriceLabel = dealPrice != null ? priceLabel : catalogPriceLines.length > 0
     ? catalogPriceLines.map((line) => `${line.label} ${vehicle.currency} ${line.amount.toLocaleString()}`).join(' · ')
     : priceLabel;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`)}`;

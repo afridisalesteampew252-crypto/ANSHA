@@ -47,7 +47,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
     priceCf: part.price_cf,
     priceCif: part.price_cif,
   });
-  const savedPriceLabel = catalogPriceLines.length > 0
+  const savedPriceLabel = dealPrice != null ? priceLabel : catalogPriceLines.length > 0
     ? catalogPriceLines.map((line) => `${line.label} ${part.currency} ${line.amount.toLocaleString()}`).join(' · ')
     : priceLabel;
   const oemOrCode = part.oem_number || part.part_code;
