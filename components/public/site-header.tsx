@@ -117,8 +117,8 @@ export function SiteHeader() {
             <Image
               src="/images/ansha-logo.svg"
               alt="Ansha Trading Co. LLC-FZ"
-              width={280}
-              height={128}
+              width={218}
+              height={112}
               priority
               sizes="(max-width: 640px) 190px, (max-width: 1024px) 240px, 300px"
               className="h-11 w-auto max-w-[min(50vw,190px)] object-contain object-left sm:h-[58px] sm:max-w-[240px] lg:h-[70px] lg:max-w-[300px]"

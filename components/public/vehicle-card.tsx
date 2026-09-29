@@ -51,9 +51,9 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
   });
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border/85 border-t-2 border-t-accent bg-card text-card-foreground shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-accent/55 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border/85 bg-card text-card-foreground shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition duration-300 before:absolute before:inset-x-0 before:top-0 before:z-20 before:h-1 before:bg-gradient-to-r before:from-[#f47a1f] before:via-[#f2a900] before:to-[#d21e1e] hover:-translate-y-1 hover:border-[#f47a1f]/55 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12),0_0_0_1px_rgba(244,122,31,0.12)]">
       <div className="relative min-w-0">
-        <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#101114]/[0.04]">
+        <Link href={`/vehicles/${vehicle.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-gradient-to-br from-orange-500/[0.07] via-background to-red-500/[0.04]">
           {photoUrl ? (
             <CatalogImage
               src={photoUrl}
@@ -111,17 +111,17 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
             </Badge>
           ) : null}
           {vehicle.is_featured && vehicle.stock_status !== 'sold' ? (
-            <Badge className="h-5 w-fit border-0 bg-accent px-1.5 text-[9px] text-accent-foreground sm:text-[10px]">
+            <Badge className="h-5 w-fit border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white shadow-sm sm:text-[10px]">
               Featured
             </Badge>
           ) : null}
           {discountLabel && vehicle.stock_status !== 'sold' ? (
-            <Badge className="h-5 w-fit border-0 bg-[#101114] px-1.5 text-[9px] text-white sm:text-[10px]">
+            <Badge className="h-5 w-fit border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white sm:text-[10px]">
               {discountLabel}
             </Badge>
           ) : null}
           {deal && !discountLabel && dealPrice != null && vehicle.stock_status !== 'sold' ? (
-            <Badge className="h-5 w-fit border-0 bg-[#101114] px-1.5 text-[9px] text-white sm:text-[10px]">
+            <Badge className="h-5 w-fit border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white sm:text-[10px]">
               Deal
             </Badge>
           ) : null}
@@ -147,7 +147,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
             <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-accent" />{vehicle.mileage.toLocaleString()} km</span>
           ) : null}
         </div>
-        <div className="mt-auto space-y-2 border-t border-foreground/10 pt-2.5 sm:pt-4">
+        <div className="mt-auto space-y-2 border-t border-orange-500/20 pt-2.5 sm:pt-4">
           <div className="min-w-0">
             <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
               {dealPrice != null ? 'Deal price' : listPrice != null ? 'Export price' : 'Price'}
@@ -171,7 +171,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
             </a>
             <Link
               href={`/vehicles/${vehicle.slug}`}
-              className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-accent px-2.5 text-[11px] font-bold text-accent-foreground transition hover:bg-accent/90 sm:flex-none sm:gap-1.5 sm:px-3.5 sm:text-xs"
+              className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-2.5 text-[11px] font-bold text-white shadow-sm transition hover:from-[#e76812] hover:to-[#b91c1c] sm:flex-none sm:gap-1.5 sm:px-3.5 sm:text-xs"
             >
               View <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
             </Link>

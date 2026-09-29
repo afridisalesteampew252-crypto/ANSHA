@@ -52,9 +52,9 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
   });
 
   return (
-    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border/85 border-t-2 border-t-accent bg-card text-card-foreground shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-accent/55 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border/85 bg-card text-card-foreground shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition duration-300 before:absolute before:inset-x-0 before:top-0 before:z-20 before:h-1 before:bg-gradient-to-r before:from-[#f47a1f] before:via-[#f2a900] before:to-[#d21e1e] hover:-translate-y-1 hover:border-[#f47a1f]/55 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12),0_0_0_1px_rgba(244,122,31,0.12)]">
       <div className="relative min-w-0">
-        <Link href={`/parts/${part.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-[#101114]/[0.04]">
+        <Link href={`/parts/${part.slug}`} className="relative block aspect-[4/3] overflow-hidden bg-gradient-to-br from-orange-500/[0.07] via-background to-red-500/[0.04]">
           {photoUrl ? (
             <CatalogImage
               src={photoUrl}
@@ -98,21 +98,21 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
       <div className="flex min-w-0 flex-1 flex-col p-2.5 sm:p-4">
         <div className="mb-1 flex min-w-0 flex-wrap items-center gap-1">
           {part.is_featured ? (
-            <Badge className="h-5 border-0 bg-accent px-1.5 text-[9px] text-accent-foreground sm:text-[10px]">Featured</Badge>
+            <Badge className="h-5 border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white shadow-sm sm:text-[10px]">Featured</Badge>
           ) : (
             <Badge className="h-5 border border-foreground/10 bg-secondary/80 px-1.5 text-[9px] capitalize text-foreground sm:text-[10px]">
               {conditionLabels[part.condition] || part.condition}
             </Badge>
           )}
           {part.stock_status !== 'sold' && part.quantity > 0 && (
-            <Badge className="h-5 gap-0.5 border-0 bg-[#101114] px-1.5 text-[9px] text-white sm:text-[10px]">
+            <Badge className="h-5 gap-0.5 border border-orange-500/30 bg-orange-500/10 px-1.5 text-[9px] text-orange-800 dark:text-orange-200 sm:text-[10px]">
               <PackageCheck className="h-2.5 w-2.5 text-accent" />
               Stock
             </Badge>
           )}
         </div>
 
-        <span className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-accent sm:text-[10px] sm:tracking-[0.14em]">
+        <span className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-orange-700 dark:text-orange-300 sm:text-[10px] sm:tracking-[0.14em]">
           {part.categories?.name || 'Automotive part'}
         </span>
         <span className="mt-0.5 block truncate font-mono text-[10px] font-semibold text-foreground/75 sm:text-[11px]" title={oemOrCode}>
@@ -138,14 +138,14 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
           </p>
         )}
 
-        <div className="mt-auto space-y-2 border-t border-foreground/10 pt-2.5 sm:pt-3">
+        <div className="mt-auto space-y-2 border-t border-orange-500/20 pt-2.5 sm:pt-3">
           <div className="min-w-0">
             <div className="mb-0.5 flex flex-wrap items-center gap-1">
               {discountLabel && part.stock_status !== 'sold' ? (
-                <Badge className="h-5 border-0 bg-[#101114] px-1.5 text-[9px] text-white">{discountLabel}</Badge>
+                <Badge className="h-5 border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white">{discountLabel}</Badge>
               ) : null}
               {deal && !discountLabel && dealPrice != null && part.stock_status !== 'sold' ? (
-                <Badge className="h-5 border-0 bg-[#101114] px-1.5 text-[9px] text-white">Deal</Badge>
+                <Badge className="h-5 border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white">Deal</Badge>
               ) : null}
             </div>
             <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
@@ -172,7 +172,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
             </a>
             <Link
               href={`/parts/${part.slug}`}
-              className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-accent px-2.5 text-[11px] font-bold text-accent-foreground transition hover:bg-accent/90 sm:flex-none sm:px-3.5 sm:text-xs"
+              className="inline-flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-2.5 text-[11px] font-bold text-white shadow-sm transition hover:from-[#e76812] hover:to-[#b91c1c] sm:flex-none sm:px-3.5 sm:text-xs"
             >
               View <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
             </Link>
