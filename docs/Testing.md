@@ -74,6 +74,6 @@ For changes to vehicle pricing or freight configuration, verify on a Vercel prev
 - Bulk FOB writes update the listing price, while C&F/CIF writes remain independent; selected filters and selection counts are accurate.
 - A saved model uses its configured M³; manual dimensions calculate L × W × H in metres.
 - Destination country suggestions come from active freight rows, and choosing a country narrows port suggestions to its active configured ports.
-- RoRo total equals vehicle M³ multiplied by the rate; a 40-ft option equals the configured total container price.
+- RoRo total equals vehicle M³ multiplied by the rate; a 40-ft result shows the configured total and per-vehicle price after dividing by 6/4/3 according to the selected class. Auto class is small through 9 m³, large through 14 m³, then XL.
 
 These are manual preview checks; the repository currently has no automated browser test suite for these flows.
