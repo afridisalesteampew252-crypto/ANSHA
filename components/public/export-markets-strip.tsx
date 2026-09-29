@@ -1,10 +1,43 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { EXPORT_MARKETS, flagImageUrl } from '@/lib/export-markets';
+import { EXPORT_MARKETS, flagImageUrl, type ExportMarket } from '@/lib/export-markets';
+
+const CONTINENTS = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania'] as const;
+type Continent = (typeof CONTINENTS)[number];
+
+const SOUTH_AMERICA_CODES = new Set(['AR', 'BO', 'BR', 'CL', 'CO', 'EC', 'FK', 'GF', 'GY', 'PE', 'PY', 'SR', 'UY', 'VE']);
+
+function continentForMarket(market: ExportMarket): Continent {
+  if (market.region === 'Africa') return 'Africa';
+  if (market.region === 'Asia' || market.region === 'Middle East') return 'Asia';
+  if (market.region === 'Europe') return 'Europe';
+  if (market.region === 'Oceania') return 'Oceania';
+  if (market.region === 'Caribbean') return 'North America';
+  if (market.region === 'Americas') {
+    return SOUTH_AMERICA_CODES.has(market.code) ? 'South America' : 'North America';
+  }
+  return 'North America';
+}
 
 export function ExportMarketsStrip() {
+  const [selectedContinent, setSelectedContinent] = useState<Continent | null>(null);
+  const continentCounts = useMemo(
+    () => Object.fromEntries(CONTINENTS.map((continent) => [
+      continent,
+      EXPORT_MARKETS.filter((market) => continentForMarket(market) === continent).length,
+    ])) as Record<Continent, number>,
+    []
+  );
+  const visibleMarkets = useMemo(
+    () => EXPORT_MARKETS
+      .filter((market) => selectedContinent && continentForMarket(market) === selectedContinent)
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [selectedContinent]
+  );
+
   return (
     <section
       id="export-markets"
@@ -12,48 +45,68 @@ export function ExportMarketsStrip() {
       aria-labelledby="export-markets-heading"
     >
       <div className="container-page min-w-0 max-w-full">
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+        <div className="flex min-w-0 flex-col gap-3">
           <div className="min-w-0">
             <span className="eyebrow">Export markets</span>
             <h2 id="export-markets-heading" className="mt-1 text-lg font-extrabold tracking-tight sm:text-xl">
               We ship worldwide from Dubai
             </h2>
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-              Tap a flag for import notes and popular vehicles for that destination.
+              Choose a continent to browse import notes and vehicles for each destination.
             </p>
           </div>
         </div>
 
-        {/* Isolation wrapper: prevents flex chip row from expanding document width */}
-        <div className="mt-4 min-w-0 max-w-full overflow-x-hidden sm:mt-5 sm:overflow-visible">
-          <ul
-            className="flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:touch-auto [&::-webkit-scrollbar]:hidden"
-            role="list"
-          >
-            {EXPORT_MARKETS.map((market) => (
-              <li key={market.code} className="shrink-0">
-                <Link
-                  href={`/markets/${market.code.toLowerCase()}`}
-                  className="chip-market"
-                  title={`${market.name} — import policy & hot vehicles`}
-                >
-                  <Image
-                    src={flagImageUrl(market.code)}
-                    alt=""
-                    width={24}
-                    height={18}
-                    className="h-[18px] w-6 shrink-0 rounded-[2px] object-cover shadow-sm ring-1 ring-black/10"
-                    unoptimized
-                  />
-                  <span className="sr-only">{market.name}</span>
-                  <span aria-hidden="true" className="whitespace-nowrap text-[12px] sm:text-[13px]">
-                    {market.name}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <nav className="mt-4 flex flex-wrap gap-2" aria-label="Browse export markets by continent">
+          {CONTINENTS.map((continent) => {
+            const selected = selectedContinent === continent;
+            return (
+              <button
+                key={continent}
+                type="button"
+                onClick={() => setSelectedContinent(selected ? null : continent)}
+                aria-pressed={selected}
+                className={selected
+                  ? 'min-h-10 rounded-full border border-accent bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm'
+                  : 'min-h-10 rounded-full border border-border/80 bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:border-accent/40 hover:bg-accent/5'}
+              >
+                {continent}
+                <span className="ml-2 text-xs opacity-75">{continentCounts[continent]}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {selectedContinent ? (
+          <div className="mt-4 rounded-2xl border border-accent/10 bg-card/70 p-3 sm:p-4">
+            <h3 className="mb-3 text-sm font-bold">{selectedContinent} destinations</h3>
+            <ul className="flex min-w-0 max-w-full flex-wrap gap-2" role="list">
+              {visibleMarkets.map((market) => (
+                <li key={market.code} className="shrink-0">
+                  <Link
+                    href={`/markets/${market.code.toLowerCase()}`}
+                    className="chip-market"
+                    title={`${market.name} — import policy & destination picks`}
+                  >
+                    <Image
+                      src={flagImageUrl(market.code)}
+                      alt=""
+                      width={24}
+                      height={18}
+                      className="h-[18px] w-6 shrink-0 rounded-[2px] object-cover shadow-sm ring-1 ring-black/10"
+                      unoptimized
+                    />
+                    <span className="whitespace-nowrap text-[12px] sm:text-[13px]">{market.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl border border-dashed border-accent/20 px-4 py-5 text-sm text-muted-foreground">
+            Select a continent to see its destination countries.
+          </p>
+        )}
       </div>
     </section>
   );
