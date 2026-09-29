@@ -78,14 +78,14 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-secondary/30 px-4">
-      <Card className="w-full max-w-md">
+    <div className="admin-login-shell flex min-h-screen items-center justify-center px-4 py-10">
+      <Card className="admin-login-card w-full max-w-md rounded-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-            <Wrench className="h-6 w-6 text-primary-foreground" />
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent via-orange-500 to-amber-400 shadow-lg shadow-accent/25">
+            <Wrench className="h-6 w-6 text-white" />
           </div>
-          <CardTitle className="text-2xl">ANSHA<span className="text-primary">TRADING</span></CardTitle>
-          <CardDescription>Staff sign in to manage the parts catalog</CardDescription>
+          <CardTitle className="text-2xl font-black tracking-tight">ANSHA<span className="text-accent">TRADING</span></CardTitle>
+          <CardDescription>Staff sign in to manage ANSHA operations</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,7 +111,7 @@ export default function AdminLoginPage() {
                 placeholder="Your password"
               />
             </div>
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button type="submit" variant="accent" className="w-full shadow-md shadow-accent/20" size="lg" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
