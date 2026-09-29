@@ -17,7 +17,7 @@ type Entity = 'parts' | 'vehicles';
 type PreviewRow = Record<string, string | number | boolean | null>;
 
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 const toBoolean = (value: unknown) => value === true || String(value ?? '').trim().toLowerCase() === 'true' || String(value ?? '').trim() === '1';
 
 const templateLinks = {

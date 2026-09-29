@@ -116,7 +116,7 @@ function AddVehiclePageInner() {
     });
   };
 
-  const normalizeModelSpec = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalizeModelSpec = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 
   const generateSlug = (text: string) => {
     return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
