@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Wrench, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -81,10 +82,14 @@ export default function AdminLoginPage() {
     <div className="admin-login-shell flex min-h-screen items-center justify-center px-4 py-10">
       <Card className="admin-login-card w-full max-w-md rounded-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-accent via-orange-500 to-amber-400 shadow-lg shadow-accent/25">
-            <Wrench className="h-6 w-6 text-white" />
-          </div>
-          <CardTitle className="text-2xl font-black tracking-tight">ANSHA<span className="text-accent">TRADING</span></CardTitle>
+          <Image
+            src="/images/ansha-logo-transparent.webp"
+            alt="Ansha Trading Co. LLC-FZ"
+            width={337}
+            height={135}
+            priority
+            className="mx-auto mb-3 h-auto w-full max-w-[250px] object-contain"
+          />
           <CardDescription>Staff sign in to manage ANSHA operations</CardDescription>
         </CardHeader>
         <CardContent>
