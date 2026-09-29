@@ -1,4 +1,13 @@
-import type { VehiclePhoto } from '@/lib/types';
+import type { VehiclePhoto, VehiclePhotoView } from '@/lib/types';
+
+export const VEHICLE_PHOTO_VIEWS: VehiclePhotoView[] = [
+  'front', 'rear', 'left_side', 'right_side', 'interior', 'engine', 'detail', 'other',
+];
+
+export const VEHICLE_PHOTO_VIEW_LABELS: Record<VehiclePhotoView, string> = {
+  front: 'Front', rear: 'Rear', left_side: 'Left side', right_side: 'Right side',
+  interior: 'Interior', engine: 'Engine bay', detail: 'Detail', other: 'Other',
+};
 
 /** Minimal photo fields needed for cover / auction-sheet helpers (partial selects OK). */
 export type VehiclePhotoLike = Pick<VehiclePhoto, 'storage_path' | 'is_cover' | 'sort_order'> &

@@ -8,6 +8,8 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  ArrowUp,
+  ArrowDown,
   FileText,
   Gavel,
   Image as ImageIcon,
@@ -35,7 +37,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { compressCatalogImage } from '@/lib/catalog-image';
-import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
+import { isAuctionSheetFilename, VEHICLE_PHOTO_VIEWS, VEHICLE_PHOTO_VIEW_LABELS, type VehiclePhotoView } from '@/lib/vehicle-photos';
 import { supabase } from '@/lib/supabase/client';
 import { STOCK_ORIGINS, isAuctionStockPool, stockOriginLabel, stockPoolLabel, type StockPool } from '@/lib/stock';
 import {
@@ -178,7 +180,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       supabase.from('vehicles').select('*').eq('id', id).maybeSingle(),
       supabase
         .from('vehicle_photos')
-        .select('id, vehicle_id, storage_path, is_cover, is_auction_sheet, sort_order, created_at')
+        .select('id, vehicle_id, storage_path, is_cover, is_auction_sheet, view_type, sort_order, created_at')
         .eq('vehicle_id', id)
         .order('sort_order', { ascending: true }),
       supabase
@@ -561,6 +563,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           storage_path: fileName,
           is_cover: !auctionSheet && startingCount === 0 && i === 0,
           is_auction_sheet: auctionSheet,
+          view_type: 'other',
           sort_order: startingCount + i,
         })
         .select('id, vehicle_id, storage_path, is_cover, is_auction_sheet, sort_order, created_at')
@@ -608,6 +611,15 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     toast.success('Cover photo updated.');
   };
 
+  const setPhotoView = async (photoId: string, viewType: VehiclePhotoView) => {
+    setPhotoActionId(photoId);
+    const { error } = await supabase.from('vehicle_photos').update({ view_type: viewType }).eq('id', photoId);
+    setPhotoActionId(null);
+    if (error) return toast.error('Could not update the photo angle.');
+    setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, view_type: viewType } : photo));
+    toast.success('Photo angle updated.');
+  };
+
   const deletePhoto = async (photoId: string, storagePath: string) => {
     if (!vehicle) return;
     if (!window.confirm('Delete this photo permanently?')) return;
@@ -639,6 +651,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   };
 
   const movePhoto = async (photoId: string, direction: -1 | 1) => {
+    if (!vehicle) return;
     const index = photos.findIndex((photo) => photo.id === photoId);
     const swapIndex = index + direction;
     if (index < 0 || swapIndex < 0 || swapIndex >= photos.length) return;
@@ -647,14 +660,18 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     const neighbor = photos[swapIndex];
     setPhotoActionId(photoId);
 
-    const { error: firstError } = await supabase
+    const ordered = [...photos];
+    ordered.splice(index, 1);
+    ordered.splice(swapIndex, 0, current);
+    const { error: reorderError } = await supabase
       .from('vehicle_photos')
-      .update({ sort_order: neighbor.sort_order })
-      .eq('id', current.id);
-    const { error: secondError } = await supabase
-      .from('vehicle_photos')
-      .update({ sort_order: current.sort_order })
-      .eq('id', neighbor.id);
+      .upsert(ordered.map((photo, sort_order) => ({
+        id: photo.id, vehicle_id: vehicle.id, storage_path: photo.storage_path,
+        is_cover: photo.is_cover, is_auction_sheet: photo.is_auction_sheet,
+        view_type: photo.view_type || 'other', sort_order, created_at: photo.created_at,
+      })));
+    const firstError = reorderError;
+    const secondError = null;
 
     setPhotoActionId(null);
     if (firstError || secondError) {
@@ -662,10 +679,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       return;
     }
 
-    const next = [...photos];
-    next[index] = { ...neighbor, sort_order: current.sort_order };
-    next[swapIndex] = { ...current, sort_order: neighbor.sort_order };
-    setPhotos(next.sort((a, b) => a.sort_order - b.sort_order));
+    setPhotos(ordered.map((photo, sort_order) => ({ ...photo, sort_order })));
   };
 
   const replacePhoto = async (photoId: string, file: File | undefined) => {
@@ -883,19 +897,22 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         Auction sheet
                       </div>
                     )}
+                    {!photo.is_auction_sheet && (
+                      <div className="absolute right-2 top-2 rounded-full bg-background/90 px-2 py-1 text-[11px] font-semibold shadow-sm">
+                        {VEHICLE_PHOTO_VIEW_LABELS[photo.view_type || 'other']}
+                      </div>
+                    )}
                   </div>
-                  <div className="space-y-1 border-t border-border p-2">
+                  <div className="space-y-2 border-t border-border p-2">
+                    <label className="block text-xs font-medium text-muted-foreground">
+                      Photo angle
+                      <select aria-label="Photo angle" value={photo.view_type || 'other'} disabled={photo.is_auction_sheet || photoActionId === photo.id} onChange={(event) => void setPhotoView(photo.id, event.target.value as VehiclePhotoView)} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">
+                        {VEHICLE_PHOTO_VIEWS.map((view) => <option key={view} value={view}>{VEHICLE_PHOTO_VIEW_LABELS[view]}</option>)}
+                      </select>
+                    </label>
                     <div className="flex items-center justify-between gap-1">
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        disabled={index === 0 || photoActionId === photo.id}
-                        onClick={() => void movePhoto(photo.id, -1)}
-                        aria-label={`Move photo ${index + 1} earlier`}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
+                      <Button type="button" size="sm" variant="outline" className="h-8 flex-1 px-2" disabled={index === 0 || photoActionId === photo.id} onClick={() => void movePhoto(photo.id, -1)} aria-label={`Move photo ${index + 1} earlier`}>
+                        <ArrowUp className="h-4 w-4" />Move up
                       </Button>
                       <Button
                         type="button"
@@ -912,16 +929,8 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         )}
                         {photo.is_cover ? 'Cover' : 'Make cover'}
                       </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        disabled={index === photos.length - 1 || photoActionId === photo.id}
-                        onClick={() => void movePhoto(photo.id, 1)}
-                        aria-label={`Move photo ${index + 1} later`}
-                      >
-                        <ChevronRight className="h-4 w-4" />
+                      <Button type="button" size="sm" variant="outline" className="h-8 flex-1 px-2" disabled={index === photos.length - 1 || photoActionId === photo.id} onClick={() => void movePhoto(photo.id, 1)} aria-label={`Move photo ${index + 1} later`}>
+                        <ArrowDown className="h-4 w-4" />Move down
                       </Button>
                     </div>
                     <div className="flex items-center gap-1">

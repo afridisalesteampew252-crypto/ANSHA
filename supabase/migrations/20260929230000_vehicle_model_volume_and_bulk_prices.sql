@@ -91,3 +91,11 @@ $$;
 
 REVOKE ALL ON FUNCTION public.bulk_update_vehicle_prices(uuid[], text, text, numeric) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.bulk_update_vehicle_prices(uuid[], text, text, numeric) TO authenticated;
+
+-- Let staff identify useful exterior and interior photos in the catalog.
+ALTER TABLE public.vehicle_photos
+  ADD COLUMN IF NOT EXISTS view_type text NOT NULL DEFAULT 'other'
+  CHECK (view_type IN ('front', 'rear', 'left_side', 'right_side', 'interior', 'engine', 'detail', 'other'));
+
+COMMENT ON COLUMN public.vehicle_photos.view_type IS
+  'Vehicle photo angle/category used by admins to identify front, rear, side, interior, engine bay, and detail photos.';
