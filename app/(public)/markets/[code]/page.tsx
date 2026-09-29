@@ -24,6 +24,7 @@ const loadMarketInventory = cache(async (code: string) => {
       .select('*, vehicle_photos(*)')
       .eq('is_published', true)
       .eq('stock_status', 'available')
+      .contains('destination_markets', [code])
       .order('is_featured', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(8),
@@ -36,7 +37,8 @@ const loadMarketInventory = cache(async (code: string) => {
       .from('vehicles')
       .select('id', { count: 'exact', head: true })
       .eq('is_published', true)
-      .eq('stock_status', 'available'),
+      .eq('stock_status', 'available')
+      .contains('destination_markets', [code]),
   ]);
 
   return {
