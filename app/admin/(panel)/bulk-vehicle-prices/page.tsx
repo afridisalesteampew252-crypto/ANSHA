@@ -12,7 +12,7 @@ import { STOCK_ORIGINS } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminRole } from '@/lib/types';
 
-type PriceField = 'price' | 'price_fob' | 'price_cf' | 'price_cif';
+type PriceField = 'price_fob' | 'price_cf' | 'price_cif';
 type Vehicle = {
   id: string;
   title: string;
@@ -22,7 +22,6 @@ type Vehicle = {
   chassis_number: string | null;
   stock_origin: string | null;
   currency: string;
-  price: number | null;
   price_fob: number | null;
   price_cf: number | null;
   price_cif: number | null;
@@ -38,7 +37,6 @@ type Filters = {
 
 const PAGE_SIZE = 1000;
 const fields: Array<{ value: PriceField; label: string }> = [
-  { value: 'price', label: 'Main price' },
   { value: 'price_fob', label: 'FOB' },
   { value: 'price_cf', label: 'C&F' },
   { value: 'price_cif', label: 'CIF' },
@@ -85,7 +83,7 @@ export default function BulkVehiclePricesPage() {
     setRole((profile?.role as AdminRole) || null);
     const { data, error } = await supabase
       .from('vehicles')
-      .select('id,title,make,model,year,chassis_number,stock_origin,currency,price,price_fob,price_cf,price_cif')
+      .select('id,title,make,model,year,chassis_number,stock_origin,currency,price_fob,price_cf,price_cif')
       .order('created_at', { ascending: false })
       .range(0, PAGE_SIZE - 1);
     if (error) toast.error(error.message);
@@ -175,7 +173,7 @@ export default function BulkVehiclePricesPage() {
   return <div className="mx-auto max-w-7xl space-y-6">
     <div>
       <h1 className="text-2xl font-bold">Bulk vehicle prices</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Filter or search vehicles, select the matching records, then update their main, FOB, C&F, or CIF price.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Filter or search vehicles, select the matching records, then update FOB (the public listing price), C&F, or CIF.</p>
     </div>
 
     <Card>
