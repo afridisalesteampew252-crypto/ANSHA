@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Car, Loader2, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { Car, Filter, Loader2, Pencil, Plus, RotateCcw, Save, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,7 @@ type ModelSpec = {
   width_m: number | null; height_m: number | null; volume_m3: number;
 };
 
-const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\\s+/g, ' ');
 const empty = () => ({ make: '', model: '', length: '', width: '', height: '', volume: '' });
 
 export default function VehicleModelConfigPage() {
@@ -25,6 +25,8 @@ export default function VehicleModelConfigPage() {
   const [form, setForm] = useState(empty());
   const [editing, setEditing] = useState<ModelSpec | null>(null);
   const [query, setQuery] = useState('');
+  const [makeFilter, setMakeFilter] = useState('');
+  const [dimensionFilter, setDimensionFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const canWrite = canManageReceivables(role);
@@ -43,9 +45,21 @@ export default function VehicleModelConfigPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const visibleRows = useMemo(() => rows.filter((row) =>
-    (row.make + ' ' + row.model).toLowerCase().includes(query.trim().toLowerCase())
-  ), [rows, query]);
+  const makes = useMemo(
+    () => Array.from(new Set(rows.map((row) => row.make).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [rows]
+  );
+  const visibleRows = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      const matchesSearch = !term || (row.make + ' ' + row.model).toLowerCase().includes(term);
+      const hasDimensions = row.length_m != null && row.width_m != null && row.height_m != null;
+      return matchesSearch
+        && (!makeFilter || row.make === makeFilter)
+        && (dimensionFilter === 'all' || (dimensionFilter === 'complete' ? hasDimensions : !hasDimensions));
+    });
+  }, [rows, query, makeFilter, dimensionFilter]);
+  const resetFilters = () => { setQuery(''); setMakeFilter(''); setDimensionFilter('all'); };
 
   const reset = () => { setEditing(null); setForm(empty()); };
 
@@ -110,8 +124,71 @@ export default function VehicleModelConfigPage() {
         <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-3"><Button type="submit" disabled={busy || !canWrite}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{busy ? 'Saving…' : editing ? 'Update saved size' : 'Save make/model size'}</Button>{editing && <Button type="button" variant="outline" onClick={reset}><X className="h-4 w-4" />Cancel edit</Button>}</div>
       </form>{!canWrite && <p className="mt-3 text-sm text-muted-foreground">You can view these defaults, but your role cannot change them.</p>}</CardContent>
     </Card>
-    <Card><CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle>Saved vehicle sizes ({visibleRows.length})</CardTitle><CardDescription>Make/model matches ignore spaces, punctuation, and letter case.</CardDescription></div><Input className="sm:max-w-xs" placeholder="Search make or model" value={query} onChange={(event) => setQuery(event.target.value)} /></CardHeader>
-      <CardContent className="overflow-x-auto">{loading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> : visibleRows.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No saved sizes yet.</p> : <table className="w-full min-w-[650px] text-sm"><thead><tr className="border-b text-left text-muted-foreground"><th className="p-3">Make</th><th className="p-3">Model</th><th className="p-3">Dimensions (m)</th><th className="p-3">M³</th><th className="p-3 text-right">Actions</th></tr></thead><tbody>{visibleRows.map((row) => <tr className="border-b last:border-0" key={row.id}><td className="p-3 font-medium">{row.make}</td><td className="p-3">{row.model}</td><td className="p-3">{row.length_m && row.width_m && row.height_m ? [row.length_m, row.width_m, row.height_m].join(' × ') : '—'}</td><td className="p-3 font-semibold tabular-nums">{Number(row.volume_m3).toFixed(3)}</td><td className="p-3 text-right"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" disabled={!canWrite} onClick={() => startEdit(row)}><Pencil className="h-4 w-4" />Edit</Button><Button size="sm" variant="destructive" disabled={!canWrite} onClick={() => void remove(row)}><Trash2 className="h-4 w-4" />Delete</Button></div></td></tr>)}</tbody></table>}</CardContent>
+    <Card>
+      <CardHeader className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <CardTitle>Saved vehicle sizes ({visibleRows.length} of {rows.length})</CardTitle>
+            <CardDescription>Matches ignore case and punctuation while keeping meaningful spaces in model names.</CardDescription>
+          </div>
+          <div className="relative sm:max-w-xs">
+            <Label htmlFor="model-spec-search" className="sr-only">Search make or model</Label>
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input id="model-spec-search" className="pl-9" placeholder="Search make or model" value={query} onChange={(event) => setQuery(event.target.value)} />
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <Label className="sr-only" htmlFor="model-spec-make-filter">Filter by make</Label>
+            <select id="model-spec-make-filter" aria-label="Filter by make" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={makeFilter} onChange={(event) => setMakeFilter(event.target.value)}>
+              <option value="">All makes</option>{makes.map((make) => <option key={make} value={make}>{make}</option>)}
+            </select>
+          </div>
+          <div>
+            <Label className="sr-only" htmlFor="model-spec-dimensions-filter">Filter by dimension status</Label>
+            <select id="model-spec-dimensions-filter" aria-label="Filter by dimension status" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={dimensionFilter} onChange={(event) => setDimensionFilter(event.target.value)}>
+              <option value="all">All dimension statuses</option>
+              <option value="complete">Dimensions entered</option>
+              <option value="missing">M³ only, no dimensions</option>
+            </select>
+          </div>
+          <p className="flex items-center gap-2 text-xs text-muted-foreground"><Filter className="h-4 w-4" />Showing {visibleRows.length} of {rows.length} saved sizes.</p>
+          <div className="flex justify-start sm:justify-end"><Button type="button" size="sm" variant="ghost" onClick={resetFilters}><RotateCcw className="h-4 w-4" />Reset filters</Button></div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : visibleRows.length === 0 ? (
+          <div className="rounded-lg border border-dashed py-12 text-center">
+            <p className="font-medium">No matching saved sizes</p>
+            <p className="mt-1 text-sm text-muted-foreground">Change or reset the search and filters.</p>
+          </div>
+        ) : (
+          <div className="max-h-[65vh] overflow-auto rounded-lg border">
+            <table className="w-full min-w-[800px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="sticky left-0 top-0 z-20 bg-card p-3">Make</th>
+                  <th className="sticky top-0 z-10 bg-card p-3">Model</th>
+                  <th className="sticky top-0 z-10 bg-card p-3">Dimensions (m)</th>
+                  <th className="sticky top-0 z-10 bg-card p-3">M³</th>
+                  <th className="sticky top-0 z-10 bg-card p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>{visibleRows.map((row) => (
+                <tr className="border-b last:border-0 hover:bg-secondary/30" key={row.id}>
+                  <td className="sticky left-0 bg-card p-3 font-medium">{row.make}</td>
+                  <td className="p-3">{row.model}</td>
+                  <td className="p-3">{row.length_m != null && row.width_m != null && row.height_m != null ? [row.length_m, row.width_m, row.height_m].join(' × ') : '—'}</td>
+                  <td className="p-3 font-semibold tabular-nums">{Number(row.volume_m3).toFixed(3)}</td>
+                  <td className="p-3 text-right"><div className="flex justify-end gap-2"><Button size="sm" variant="outline" disabled={!canWrite} onClick={() => startEdit(row)}><Pencil className="h-4 w-4" />Edit</Button><Button size="sm" variant="destructive" disabled={!canWrite} onClick={() => void remove(row)}><Trash2 className="h-4 w-4" />Delete</Button></div></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
     </Card>
   </div>;
 }
