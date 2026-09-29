@@ -115,10 +115,10 @@ export function SiteHeader() {
         <div className="container-page flex h-[68px] min-w-0 items-center gap-2 sm:h-[78px] sm:gap-4 lg:h-[84px]">
           <Link href="/" className="flex min-w-0 shrink-0 items-center rounded-2xl transition active:scale-[0.98]" aria-label="Ansha Trading home">
             <Image
-              src="/images/ansha-logo.svg"
+              src="/images/ansha-logo-transparent.webp"
               alt="Ansha Trading Co. LLC-FZ"
-              width={218}
-              height={112}
+              width={337}
+              height={135}
               priority
               sizes="(max-width: 640px) 190px, (max-width: 1024px) 240px, 300px"
               className="h-11 w-auto max-w-[min(50vw,190px)] object-contain object-left sm:h-[58px] sm:max-w-[240px] lg:h-[70px] lg:max-w-[300px]"

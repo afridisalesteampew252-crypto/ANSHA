@@ -8,7 +8,7 @@ import { CatalogImage, publicPartImageUrl } from '@/components/public/catalog-im
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-actions';
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
-import { publicPriceLabel } from '@/lib/product-schema';
+import { publicPriceLabel, publicPriceLines } from '@/lib/product-schema';
 import { partImageAlt } from '@/lib/seo';
 import { conditionLabels, siteConfig } from '@/lib/site-config';
 import type { PublicPartCard } from '@/lib/public-card-data';
@@ -39,6 +39,17 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
     priceCf: part.price_cf,
     priceCif: part.price_cif,
   });
+  const catalogPriceLines = publicPriceLines({
+    showPrice: Boolean(part.show_price),
+    stockStatus: part.stock_status,
+    price: part.price,
+    priceFob: part.price_fob,
+    priceCf: part.price_cf,
+    priceCif: part.price_cif,
+  });
+  const savedPriceLabel = catalogPriceLines.length > 0
+    ? catalogPriceLines.map((line) => `${line.label} ${part.currency} ${line.amount.toLocaleString()}`).join(' · ')
+    : priceLabel;
   const oemOrCode = part.oem_number || part.part_code;
   const waMessage = `Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
@@ -47,7 +58,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
     slug: part.slug,
     name: part.name,
     part_code: part.part_code,
-    priceLabel,
+    priceLabel: savedPriceLabel,
     imageUrl: photoUrl,
   });
 
@@ -148,12 +159,26 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
                 <Badge className="h-5 border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white">Deal</Badge>
               ) : null}
             </div>
-            <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
-              {dealPrice != null ? 'Deal price' : listPrice != null ? 'Export price' : 'Price'}
-            </span>
-            <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">
-              {priceLabel}
-            </strong>
+            {dealPrice != null ? (
+              <>
+                <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">Deal price</span>
+                <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
+              </>
+            ) : catalogPriceLines.length > 0 ? (
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-3">
+                {catalogPriceLines.map((line) => (
+                  <div key={line.label} className="min-w-0">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300 sm:text-[10px]">{line.label}</span>
+                    <strong className="block truncate text-xs font-extrabold tracking-tight text-foreground sm:text-base">{part.currency} {line.amount.toLocaleString()}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">Price</span>
+                <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
+              </>
+            )}
             {dealPrice != null && listPrice != null && dealPrice < listPrice ? (
               <span className="mt-0.5 block text-[11px] text-muted-foreground line-through sm:text-xs">
                 {part.currency} {listPrice.toLocaleString()}
