@@ -109,7 +109,7 @@
     min-width: 0;
     overflow-x: clip;
     background:
-      radial-gradient(ellipse 60% 35% at 100% 0%, hsl(0 75% 47% / 0.08), transparent 55%),
+      radial-gradient(ellipse 60% 35% at 100% 0%, hsl(var(--accent) / 0.08), transparent 55%),
       linear-gradient(180deg, hsl(210 16% 96%) 0%, hsl(210 14% 94.5%) 100%);
   }
 
@@ -159,26 +159,26 @@
 
   .surface-warm {
     background:
-      radial-gradient(ellipse 60% 80% at 100% 0%, hsl(0 75% 47% / 0.08), transparent 55%),
+      radial-gradient(ellipse 60% 80% at 100% 0%, hsl(var(--accent) / 0.08), transparent 55%),
       linear-gradient(180deg, hsl(var(--surface-warm)) 0%, hsl(210 20% 95%) 100%);
   }
 
   .surface-mist {
     background:
-      radial-gradient(ellipse 50% 60% at 0% 100%, hsl(0 75% 47% / 0.06), transparent 45%),
+      radial-gradient(ellipse 50% 60% at 0% 100%, hsl(var(--accent) / 0.06), transparent 45%),
       linear-gradient(180deg, hsl(var(--surface-mist)) 0%, hsl(var(--surface-cool)) 100%);
   }
 
   .surface-featured {
     background:
-      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(0 75% 47% / 0.18), transparent 50%),
+      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(var(--accent) / 0.18), transparent 50%),
       radial-gradient(ellipse 55% 60% at 100% 100%, hsl(220 25% 18% / 0.06), transparent 48%),
       linear-gradient(165deg, hsl(var(--surface-featured)) 0%, hsl(var(--surface-cool)) 100%);
   }
 
   .surface-ink {
     background:
-      radial-gradient(ellipse 55% 70% at 90% 10%, rgba(210, 30, 30, 0.28), transparent 50%),
+      radial-gradient(ellipse 55% 70% at 90% 10%, hsl(var(--accent) / 0.28), transparent 50%),
       linear-gradient(165deg, #0b0c0f 0%, #14161b 55%, #101114 100%);
     color: #fff;
   }
@@ -187,7 +187,7 @@
     @apply border-b bg-[#101114] text-white;
     border-color: rgba(255, 255, 255, 0.1);
     background:
-      radial-gradient(ellipse 60% 80% at 85% 0%, rgba(210, 30, 30, 0.32), transparent 48%),
+      radial-gradient(ellipse 60% 80% at 85% 0%, hsl(var(--accent) / 0.32), transparent 48%),
       #101114;
   }
 
@@ -200,8 +200,8 @@
   .chip-market {
     @apply inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98];
     min-height: 2.75rem;
-    border-color: hsl(0 55% 80% / 0.55);
-    background: linear-gradient(180deg, hsl(0 60% 99%) 0%, hsl(0 40% 96%) 100%);
+    border-color: hsl(var(--accent) / 0.3);
+    background: linear-gradient(180deg, color-mix(in srgb, hsl(var(--accent)) 2%, white) 0%, color-mix(in srgb, hsl(var(--accent)) 4%, white) 100%);
   }
 
   .chip-market:hover {
@@ -218,7 +218,7 @@
   .header-market-chip {
     @apply inline-flex shrink-0 items-baseline gap-1 rounded-full px-2 py-0.5;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(210, 30, 30, 0.18);
+    background: hsl(var(--accent) / 0.18);
   }
 
   .mobile-nav-glass {
@@ -361,7 +361,7 @@
   min-height: 100vh;
   min-height: 100dvh;
   background:
-    radial-gradient(ellipse 55% 40% at 100% 0%, hsl(0 75% 47% / 0.06), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 100% 0%, hsl(var(--accent) / 0.06), transparent 55%),
     radial-gradient(ellipse 45% 35% at 0% 100%, hsl(220 20% 12% / 0.04), transparent 50%),
     hsl(var(--secondary) / 0.55);
 }
@@ -387,13 +387,13 @@
 
 .admin-dash-hero {
   background:
-    radial-gradient(ellipse 70% 90% at 100% 0%, hsl(0 75% 47% / 0.12), transparent 55%),
+    radial-gradient(ellipse 70% 90% at 100% 0%, hsl(var(--accent) / 0.12), transparent 55%),
     linear-gradient(135deg, hsl(var(--card)) 0%, hsl(210 20% 97%) 55%, hsl(0 30% 97%) 100%);
 }
 
 .dark .admin-dash-hero {
   background:
-    radial-gradient(ellipse 70% 90% at 100% 0%, hsl(0 75% 47% / 0.18), transparent 55%),
+    radial-gradient(ellipse 70% 90% at 100% 0%, hsl(var(--accent) / 0.18), transparent 55%),
     linear-gradient(135deg, hsl(var(--card)) 0%, hsl(220 14% 12%) 100%);
 }
 

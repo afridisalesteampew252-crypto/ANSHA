@@ -24,7 +24,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { siteConfig } from '@/lib/site-config';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import { useCustomerLists } from '@/hooks/use-customer-lists';
 import { HeaderMarketStrip } from '@/components/public/header-market-strip';
@@ -163,7 +162,6 @@ export function SiteHeader() {
               <span><span className="block text-[10px] uppercase tracking-wider text-muted-foreground">WhatsApp support</span><strong className="font-semibold">{siteConfig.whatsappDisplay}</strong></span>
             </a>
             <LanguageSwitcher />
-            <ThemeToggle />
             <Button asChild variant="accent" size="sm" className="h-10 rounded-full px-4 shadow-[0_8px_22px_rgba(210,30,30,0.22)]">
               <Link href="/portal"><User className="h-4 w-4" />Customer Account</Link>
             </Button>
