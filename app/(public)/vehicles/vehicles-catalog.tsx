@@ -19,6 +19,8 @@ import {
 } from '@/lib/public-card-data';
 import type { StockOrigin } from '@/lib/types';
 
+const VEHICLE_PAGE_SIZE = 48;
+
 function syncVehiclesQuery(input: {
   query: string;
   brand: string;
@@ -38,6 +40,8 @@ export default function VehiclesCatalog() {
   const router = useRouter();
   const { dealForVehicle } = useInventoryDeals();
   const [vehicles, setVehicles] = useState<PublicVehicleCard[]>([]);
+  const [vehicleCount, setVehicleCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [query, setQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [brand, setBrand] = useState('all');
@@ -73,9 +77,13 @@ export default function VehiclesCatalog() {
     if (current !== next) router.replace(next, { scroll: false });
   }, [brand, hydrated, router, sort, stockOrigin, submittedQuery]);
 
-  const loadVehicles = useCallback(async () => {
-    setLoading(true);
-    let request = supabase.from('vehicles').select(PUBLIC_VEHICLE_CARD_SELECT).eq('is_published', true).eq('stock_status', 'available');
+  const loadVehicles = useCallback(async (offset = 0, append = false) => {
+    if (append) setLoadingMore(true);
+    else {
+      setLoading(true);
+      setVehicles([]);
+    }
+    let request = supabase.from('vehicles').select(PUBLIC_VEHICLE_CARD_SELECT, { count: 'exact' }).eq('is_published', true).eq('stock_status', 'available');
     const safeQuery = submittedQuery.trim().replace(/[,%()]/g, ' ');
     if (safeQuery) request = request.or(`title.ilike.%${safeQuery}%,make.ilike.%${safeQuery}%,model.ilike.%${safeQuery}%,chassis_code.ilike.%${safeQuery}%,stock_number.ilike.%${safeQuery}%`);
     if (brand !== 'all') request = request.eq('make', brand);
@@ -84,9 +92,12 @@ export default function VehiclesCatalog() {
     else if (sort === 'price-low') request = request.order('price', { ascending: true, nullsFirst: false });
     else if (sort === 'price-high') request = request.order('price', { ascending: false, nullsFirst: true });
     else request = request.order('created_at', { ascending: false });
-    const { data } = await request.limit(48);
-    setVehicles((data || []) as unknown as PublicVehicleCard[]);
+    const { data, count } = await request.order('id', { ascending: true }).range(offset, offset + VEHICLE_PAGE_SIZE - 1);
+    const nextVehicles = (data || []) as unknown as PublicVehicleCard[];
+    setVehicles((current) => append ? [...current, ...nextVehicles] : nextVehicles);
+    setVehicleCount(count ?? 0);
     setLoading(false);
+    setLoadingMore(false);
   }, [brand, sort, stockOrigin, submittedQuery]);
 
   useEffect(() => { void loadVehicles(); }, [loadVehicles]);
@@ -186,8 +197,13 @@ export default function VehiclesCatalog() {
           <div>
             <span className="eyebrow">{stockOrigin === 'all' ? 'Published stock' : stockOriginLabel(stockOrigin)}</span>
             <h2 className="mt-2 font-display text-2xl font-extrabold tracking-tight">
-              {loading ? 'Checking inventory' : `${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'} listed`}
+              {loading ? 'Checking inventory' : `${vehicleCount} vehicle${vehicleCount === 1 ? '' : 's'} available`}
             </h2>
+            {!loading ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Showing {vehicles.length} of {vehicleCount} available vehicles
+              </p>
+            ) : null}
           </div>
           <Button asChild variant="outline" className="h-11 w-full rounded-full sm:w-auto">
             <Link href="/contact"><Send className="h-4 w-4" />Request sourcing</Link>
@@ -236,6 +252,18 @@ export default function VehiclesCatalog() {
             </div>
           </div>
         )}
+        {!loading && vehicles.length > 0 && vehicles.length < vehicleCount ? (
+          <div className="mt-8 flex justify-center">
+            <Button
+              variant="outline"
+              className="h-12 rounded-full px-6"
+              disabled={loadingMore}
+              onClick={() => void loadVehicles(vehicles.length, true)}
+            >
+              {loadingMore ? 'Loading vehicles…' : `Show more vehicles (${Math.min(VEHICLE_PAGE_SIZE, vehicleCount - vehicles.length)} more)`}
+            </Button>
+          </div>
+        ) : null}
       </div>
       </div>
     </>
