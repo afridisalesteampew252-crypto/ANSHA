@@ -51,3 +51,8 @@ Internal chat and mail already exist. Do not rebuild them. Entity linking is add
 ## Documentation
 
 `docs/` must describe the running system. Label vision separately. Keep `docs/phase-13-public-redesign.md`. Live completion checkpoint: `docs/CURRENT_STATE.md`.
+
+
+## Documentation upkeep
+
+When changing a user-facing workflow, update the README, user manual/module guide, and matching technical references (database/API/deployment/testing). Keep dated audits as historical snapshots; point readers to `docs/CURRENT_STATE.md` for current status. Maintain [Catalog Prices and Freight](./Catalog-Freight-Pricing.md) when pricing or freight behavior changes.
