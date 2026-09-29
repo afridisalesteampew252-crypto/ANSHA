@@ -20,7 +20,7 @@ export function VehicleDestinationMarketsField({ value, onChange }: Props) {
   }, [search]);
 
   const toggleMarket = (code: string, checked: boolean) => {
-    onChange(checked ? [...new Set([...value, code])] : value.filter((item) => item !== code));
+    onChange(checked ? Array.from(new Set([...value, code])) : value.filter((item) => item !== code));
   };
 
   return (
