@@ -165,11 +165,11 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
                 <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
               </>
             ) : catalogPriceLines.length > 0 ? (
-              <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-3">
+              <div className="flex flex-col gap-y-1.5">
                 {catalogPriceLines.map((line) => (
                   <div key={line.label} className="min-w-0">
                     <span className="block text-[9px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300 sm:text-[10px]">{line.label}</span>
-                    <strong className="block truncate text-xs font-extrabold tracking-tight text-foreground sm:text-base">{part.currency} {line.amount.toLocaleString()}</strong>
+                    <strong className="block whitespace-nowrap text-xs font-extrabold tracking-tight text-foreground sm:text-base">{part.currency} {line.amount.toLocaleString()}</strong>
                   </div>
                 ))}
               </div>
