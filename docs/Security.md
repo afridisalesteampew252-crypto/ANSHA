@@ -65,3 +65,8 @@ JSON-LD uses `dangerouslySetInnerHTML` from server-built structured data. Public
 ## Logging
 
 `/api/health` must not echo keys. Do not log Authorization headers or service-role values.
+
+
+## Catalog price and freight authorization
+
+The bulk vehicle pricing RPC verifies `private.can_manage_receivables()` before changing catalog prices. Client-side role-gated UI is not the authorization boundary; preserve database authorization and RLS for pricing or freight writes. Destination suggestions expose configured country/port strings only; do not add customer or staff personal data to those options.
