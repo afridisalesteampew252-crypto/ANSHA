@@ -34,7 +34,7 @@ Live checkpoint and completion details: **[docs/CURRENT_STATE.md](./docs/CURRENT
 | Post-78 | Make Available DEFINER; security advisor RLS; SOA `#soa` + MoneyBreakdown; Product JSON-LD | Complete |
 | Product UX | PWA **Anshatradingco APP**, reports hub + Excel, multi-currency breakdowns, stock invoice badges, Tawk, subscribers | Complete |
 
-Module matrix: [docs/Modules.md](./docs/Modules.md). Full audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md). **Catalog pricing and freight operations:** [docs/Catalog-Freight-Pricing.md](./docs/Catalog-Freight-Pricing.md).
+Documentation index: [docs/README.md](./docs/README.md). Module matrix: [docs/Modules.md](./docs/Modules.md). Full audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md). **Catalog pricing and freight operations:** [docs/Catalog-Freight-Pricing.md](./docs/Catalog-Freight-Pricing.md).
 
 ## Phase 1 completion
 
