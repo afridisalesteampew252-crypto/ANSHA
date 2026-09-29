@@ -55,6 +55,11 @@ export default function ImportsPage() {
     if (!user) { setBusy(false); return setMessage('Session expired.'); }
     const { data: job, error: jobError } = await supabase.from('import_jobs').insert({ import_type: `${entity}_excel`, file_name: file.name, total_rows: rows.length, created_by: user.id }).select('id').single();
     if (jobError || !job) { setBusy(false); return setMessage(jobError?.message || 'Could not create import job.'); }
+    const vehicleVolumes = new Map<string, number>();
+    if (entity === 'vehicles') {
+      const { data: specs } = await supabase.from('vehicle_model_specs').select('normalized_make,normalized_model,volume_m3');
+      (specs || []).forEach((spec) => vehicleVolumes.set(String(spec.normalized_make) + '|' + String(spec.normalized_model), Number(spec.volume_m3)));
+    }
     let success = 0; const results: Array<Record<string, unknown>> = [];
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index];
@@ -69,7 +74,9 @@ export default function ImportsPage() {
           const chassis = String(row.chassis_number || '').trim(); const make = String(row.make || '').trim(); const model = String(row.model || '').trim();
           if (!chassis || !make || !model) throw new Error('chassis_number, make and model are required');
           const title = String(row.title || `${row.year || ''} ${make} ${model}`.trim());
-          const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, stock_origin: vehicleStockOrigin, stock_pool: defaultStockPoolForOrigin(vehicleStockOrigin), show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
+          const importedVolume = Number(row.volume_m3);
+           const volumeM3 = Number.isFinite(importedVolume) && importedVolume > 0 ? importedVolume : (vehicleVolumes.get(normalize(make) + '|' + normalize(model)) || null);
+           const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, volume_m3: volumeM3, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, stock_origin: vehicleStockOrigin, stock_pool: defaultStockPoolForOrigin(vehicleStockOrigin), show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
           const { data: existing } = await supabase.from('vehicles').select('id').eq('chassis_number', chassis).maybeSingle();
           const mutation = existing ? supabase.from('vehicles').update(payload).eq('id', existing.id) : supabase.from('vehicles').insert(payload);
           const { error } = await mutation; if (error) throw error;
