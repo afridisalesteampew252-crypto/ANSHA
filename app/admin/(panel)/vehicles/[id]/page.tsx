@@ -26,6 +26,7 @@ import { SearchableSelect, customerSelectOption } from '@/components/admin/searc
 import { StockLinkedInvoices } from '@/components/admin/stock-linked-invoices';
 import { VehicleFreightEstimator } from '@/components/admin/vehicle-freight-estimator';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
+import { VehicleDestinationMarketsField } from '@/components/admin/vehicle-destination-markets-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -129,6 +130,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [stockNumber, setStockNumber] = useState('');
   const [chassisNumber, setChassisNumber] = useState('');
   const [location, setLocation] = useState('');
+  const [destinationMarkets, setDestinationMarkets] = useState<string[]>([]);
   const [stockOrigin, setStockOrigin] = useState('dubai');
   const [stockPool, setStockPool] = useState<StockPool>('owned');
   const [stockStatus, setStockStatus] = useState<StockStatus>('available');
@@ -212,6 +214,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setStockNumber(row.stock_number || '');
     setChassisNumber(row.chassis_number || '');
     setLocation(row.location || '');
+    setDestinationMarkets(row.destination_markets || []);
     setStockOrigin(row.stock_origin || 'dubai');
     setStockPool((row.stock_pool as StockPool) || 'owned');
     setStockStatus(row.stock_status || 'available');
@@ -304,6 +307,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         stock_number: stockNumber.trim() || null,
         chassis_number: chassisNumber.trim() || null,
         location: location.trim() || null,
+        destination_markets: destinationMarkets,
         stock_origin: stockOrigin,
         stock_pool: stockPool,
         stock_status: stockStatus,
@@ -1515,6 +1519,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                 <Label htmlFor="location">Location note</Label>
                 <Input id="location" value={location} onChange={(event) => setLocation(event.target.value)} />
               </div>
+              <VehicleDestinationMarketsField value={destinationMarkets} onChange={setDestinationMarkets} />
               <div className="space-y-1.5">
                 <Label htmlFor="stock-origin">Stock location</Label>
                 <select
