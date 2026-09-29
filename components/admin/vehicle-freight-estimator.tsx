@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Calculator, Loader2, Ship } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
+
+type ModelVolumeOption = { id: string; make: string; model: string; volume_m3: number };
 
 type FreightOption = {
   id: string;
@@ -31,10 +33,19 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
   const [length, setLength] = useState('');
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
+  const [modelVolumes, setModelVolumes] = useState<ModelVolumeOption[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState('');
   const [options, setOptions] = useState<FreightOption[]>([]);
   const [volumeM3, setVolumeM3] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void supabase.from('vehicle_model_specs').select('id,make,model,volume_m3').order('make').order('model')
+      .then(({ data }) => { if (active) setModelVolumes((data || []) as ModelVolumeOption[]); });
+    return () => { active = false; };
+  }, []);
 
   async function calculate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,12 +54,13 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
     const l = Number(length);
     const w = Number(width);
     const h = Number(height);
-    if (![l, w, h].every((n) => Number.isFinite(n) && n > 0)) {
-      setError('Enter a positive length, width, and height in metres.');
+    const savedVolume = Number(modelVolumes.find((item) => item.id === selectedModelId)?.volume_m3);
+    if (!selectedModelId && ![l, w, h].every((n) => Number.isFinite(n) && n > 0)) {
+      setError('Choose a saved make/model or enter positive length, width, and height in metres.');
       return;
     }
     setBusy(true);
-    const volume = l * w * h;
+    const volume = selectedModelId ? savedVolume : l * w * h;
     const { data, error: queryError } = await supabase
       .from('freight_charges')
       .select('id, source_country, source_port, shipment_type, freight_charge, currency, shipping_company')
@@ -82,6 +94,13 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
         Enter vehicle dimensions in metres. RoRo = L × W × H × rate per m³. A 40-ft option is the full price for one container.
       </p>
       <form onSubmit={calculate} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+          <Label htmlFor="est-model">Saved vehicle make/model (optional)</Label>
+          <select id="est-model" value={selectedModelId} onChange={(e) => setSelectedModelId(e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+            <option value="">Enter dimensions below</option>
+            {modelVolumes.map((item) => <option key={item.id} value={item.id}>{item.make} {item.model} · {Number(item.volume_m3).toFixed(3)} m³</option>)}
+          </select>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="est-country">Destination country</Label>
           <Input id="est-country" value={country} onChange={(e) => setCountry(e.target.value)} required />
@@ -90,7 +109,7 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
           <Label htmlFor="est-port">Destination port</Label>
           <Input id="est-port" value={port} onChange={(e) => setPort(e.target.value)} required />
         </div>
-        {[
+        {!selectedModelId && [
           ['est-length', 'Length (m)', length, setLength],
           ['est-width', 'Width (m)', width, setWidth],
           ['est-height', 'Height (m)', height, setHeight],

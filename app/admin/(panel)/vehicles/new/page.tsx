@@ -104,6 +104,8 @@ function AddVehiclePageInner() {
     });
   };
 
+  const normalizeModelSpec = (text: string) => text.toLowerCase().replace(/[^a-z0-9]/g, '');
+
   const generateSlug = (text: string) => {
     return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
   };
@@ -119,6 +121,12 @@ function AddVehiclePageInner() {
     setLoading(true);
 
     const slug = generateSlug(title + '-' + Date.now().toString().slice(-6));
+    const { data: modelSpec } = await supabase
+      .from('vehicle_model_specs')
+      .select('volume_m3')
+      .eq('normalized_make', normalizeModelSpec(make))
+      .eq('normalized_model', normalizeModelSpec(model))
+      .maybeSingle();
 
     const { data: newVehicle, error } = await supabase
       .from('vehicles')
@@ -127,6 +135,7 @@ function AddVehiclePageInner() {
         slug,
         make: make.trim(),
         model: model.trim(),
+        volume_m3: modelSpec?.volume_m3 ?? null,
         variant: variant.trim() || null,
         year: year ? parseInt(year, 10) : null,
         stock_number: stockNumber.trim() || null,

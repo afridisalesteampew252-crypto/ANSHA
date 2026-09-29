@@ -91,6 +91,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/admin/vehicles?class=machinery', label: 'Machinery & trucks', icon: Truck },
       { href: '/admin/categories', label: 'Categories', icon: Tag },
       { href: '/admin/imports', label: 'Bulk Import', icon: Upload },
+      { href: '/admin/bulk-vehicle-prices', label: 'Bulk vehicle prices', icon: Banknote },
+      { href: '/admin/vehicle-model-config', label: 'Vehicle M³', icon: Car },
     ],
   },
   {
@@ -214,6 +216,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     items: [
       { href: '/admin/configuration/system', label: 'System settings', icon: Settings2 },
       { href: '/admin/configuration', label: 'Export masters', icon: Settings2 },
+      { href: '/admin/freight-calculator', label: 'Freight calculator', icon: Calculator },
       { href: '/admin/freight-charges', label: 'Freight charges', icon: Truck },
       { href: '/admin/configuration/shipping-companies', label: 'Shipping Companies', icon: Ship },
       { href: '/admin/configuration/yards', label: 'Yards', icon: MapPin },
