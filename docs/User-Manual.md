@@ -341,7 +341,7 @@ Administrators and staff with the required catalog configuration permissions can
 
 - Use **Admin → Bulk vehicle prices** to search and filter inventory, select records, and set/increase/decrease FOB, C&F, or CIF prices in bulk. FOB is also the public listing price.
 - Use **Admin → Vehicle make/model M³** to save vehicle dimensions in metres and their M³ volume. Saved values can be reused by the freight calculator and matching imports.
-- Use **Admin → Freight charges** to configure active origin-to-destination rates. Enter RoRo as a charge per M³ and a 40-ft container as its full container price.
+- Use **Admin → Freight charges** to configure active origin-to-destination rates. Enter RoRo as a charge per M³ and a 40-ft container as its full container price. The estimator divides that total per vehicle: small (6), large (4), or XL (3). It defaults to small through 9 m³, large over 9 through 14 m³, and XL above 14 m³; staff can override the class.
 - Use **Admin → Freight calculator** to type-search a saved make/model and destination country/port, or enter dimensions manually. Selecting a country filters the port suggestions to configured ports for that country.
 
 The estimate includes only the configured freight charge; it may not include handling, insurance, duties, taxes, or surcharges. Read [Catalog Prices and Freight](./Catalog-Freight-Pricing.md) for the full procedure and troubleshooting.
