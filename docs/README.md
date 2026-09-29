@@ -17,6 +17,7 @@ Use this page to find current ANSHA documentation. Update the operating guide an
 - [Deployment](./Deployment.md) — Vercel, migrations, and release checks.
 - [Mobile](./Mobile.md) — customer Android/iOS shell.
 - [Admin Android](./Admin-Android.md) — staff APK, push setup, and shared admin web app.
+- [Customer SOA export](./SOA-EXPORT.md) — account statement date range and document export.
 - [PWA](./PWA.md) — installable public site.
 - [Tawk](./Tawk.md) — live chat and webhook configuration.
 - [Banking Integrations](./Banking-Integrations.md) — current bank-feed support and future provider path.
