@@ -50,3 +50,8 @@ The Edge Function is configured without Supabase JWT verification because Postgr
 ## Important scope
 
 The app opens the existing ANSHA website inside Capacitor. Admin permissions remain enforced by the existing Supabase Auth session and admin-role checks. The APK does not add a separate database or bypass website authorization.
+
+
+## Freight and bulk catalog tools
+
+The admin APK is a Capacitor shell around the shared `/admin` web app. After deploying the shared web app, authorized APK users can reach the same bulk pricing, model M³ configuration, freight charge setup, and freight calculator. The APK does not keep a separate local price or freight database. See [Catalog Prices and Freight](./Catalog-Freight-Pricing.md) for details.
