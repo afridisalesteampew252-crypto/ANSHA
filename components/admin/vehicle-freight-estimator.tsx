@@ -34,6 +34,8 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
   const [modelVolumes, setModelVolumes] = useState<ModelVolumeOption[]>([]);
+  const [destinations, setDestinations] = useState<Array<{ destination_country: string; destination_port: string | null }>>([]);
+  const [modelSearch, setModelSearch] = useState('');
   const [selectedModelId, setSelectedModelId] = useState('');
   const [options, setOptions] = useState<FreightOption[]>([]);
   const [volumeM3, setVolumeM3] = useState<number | null>(null);
@@ -44,8 +46,21 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
     let active = true;
     void supabase.from('vehicle_model_specs').select('id,make,model,volume_m3').order('make').order('model')
       .then(({ data }) => { if (active) setModelVolumes((data || []) as ModelVolumeOption[]); });
+    void supabase.from('freight_charges').select('destination_country,destination_port').eq('is_active', true).limit(2000)
+      .then(({ data }) => { if (active) setDestinations((data || []) as Array<{ destination_country: string; destination_port: string | null }>); });
     return () => { active = false; };
   }, []);
+
+  const modelOptions = modelVolumes.map((item) => ({
+    id: item.id,
+    label: item.make + ' ' + item.model + ' · ' + Number(item.volume_m3).toFixed(3) + ' m³',
+  }));
+  const countryOptions = Array.from(new Set(destinations.map((item) => item.destination_country).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b));
+  const portOptions = Array.from(new Set(destinations
+    .filter((item) => item.destination_country.toLowerCase() === country.trim().toLowerCase())
+    .map((item) => item.destination_port).filter((item): item is string => Boolean(item))))
+    .sort((a, b) => a.localeCompare(b));
 
   async function calculate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -96,18 +111,55 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
       <form onSubmit={calculate} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
           <Label htmlFor="est-model">Saved vehicle make/model (optional)</Label>
-          <select id="est-model" value={selectedModelId} onChange={(e) => setSelectedModelId(e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-            <option value="">Enter dimensions below</option>
-            {modelVolumes.map((item) => <option key={item.id} value={item.id}>{item.make} {item.model} · {Number(item.volume_m3).toFixed(3)} m³</option>)}
-          </select>
+          <Input
+            id="est-model"
+            list="est-model-options"
+            value={modelSearch}
+            placeholder="Type to search make or model, or enter dimensions below"
+            autoComplete="off"
+            onChange={(e) => {
+              const value = e.target.value;
+              setModelSearch(value);
+              const match = modelOptions.find((option) => option.label.toLowerCase() === value.trim().toLowerCase());
+              setSelectedModelId(match?.id || '');
+            }}
+          />
+          <datalist id="est-model-options">
+            {modelOptions.map((option) => <option key={option.id} value={option.label} />)}
+          </datalist>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="est-country">Destination country</Label>
-          <Input id="est-country" value={country} onChange={(e) => setCountry(e.target.value)} required />
+          <Input
+            id="est-country"
+            list="est-country-options"
+            value={country}
+            onChange={(e) => {
+              setCountry(e.target.value);
+              setPort('');
+            }}
+            placeholder="Type to search countries"
+            autoComplete="off"
+            required
+          />
+          <datalist id="est-country-options">
+            {countryOptions.map((option) => <option key={option} value={option} />)}
+          </datalist>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="est-port">Destination port</Label>
-          <Input id="est-port" value={port} onChange={(e) => setPort(e.target.value)} required />
+          <Input
+            id="est-port"
+            list="est-port-options"
+            value={port}
+            onChange={(e) => setPort(e.target.value)}
+            placeholder={country ? 'Type to search ports' : 'Choose a country first'}
+            autoComplete="off"
+            required
+          />
+          <datalist id="est-port-options">
+            {portOptions.map((option) => <option key={option} value={option} />)}
+          </datalist>
         </div>
         {!selectedModelId && [
           ['est-length', 'Length (m)', length, setLength],
@@ -135,6 +187,7 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
         </div>
       </form>
       {error ? <p role="alert" className="mt-3 text-sm text-destructive">{error}</p> : null}
+      <p className="mt-2 text-xs text-muted-foreground">Start typing in each field to search configured options. Ports update after you choose or type a destination country.</p>
       {options.length ? (
         <div className="mt-4 space-y-2" aria-live="polite">
           <p className="text-sm font-semibold">Vehicle volume: {volumeM3?.toFixed(3)} m³</p>
