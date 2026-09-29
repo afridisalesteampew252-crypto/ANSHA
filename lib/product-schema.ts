@@ -9,7 +9,7 @@ export function positiveCatalogPrice(value: number | null | undefined): number |
 
 /**
  * Resolve a public offer price for JSON-LD.
- * Prefer deal → list → FOB → C&F → CIF. Only uses term prices when showPrice is on
+ * Prefer deal → FOB → legacy list price → C&F → CIF. Only uses term prices when showPrice is on
  * (same visibility as the public UI). Returns null when nothing valid is publishable.
  */
 export function resolveProductOfferPrice(input: {
@@ -24,8 +24,8 @@ export function resolveProductOfferPrice(input: {
   if (deal != null) return deal;
   if (!input.showPrice) return null;
   return (
-    positiveCatalogPrice(input.price) ??
     positiveCatalogPrice(input.priceFob) ??
+    positiveCatalogPrice(input.price) ??
     positiveCatalogPrice(input.priceCf) ??
     positiveCatalogPrice(input.priceCif)
   );
@@ -33,7 +33,7 @@ export function resolveProductOfferPrice(input: {
 
 /**
  * Public catalog card / hero price label.
- * Mirrors resolveProductOfferPrice (deal → list → FOB → C&F → CIF); never invents amounts.
+ * Mirrors resolveProductOfferPrice (deal → FOB → legacy list price → C&F → CIF); never invents amounts.
  */
 /**
  * Public card prices for the explicitly configured export terms.
