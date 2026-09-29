@@ -219,3 +219,8 @@ Service-role keys exist only as Edge Function secrets (`SUPABASE_URL`, `SUPABASE
 ## Storage API
 
 Uploads go through `supabase.storage.from(bucket)` in admin Client Components. Public buckets are read by URL. Private buckets use signed URLs (profile ~1h, remittance 5m, internal files ~60s in current UI).
+
+
+## Bulk vehicle price RPC
+
+`public.bulk_update_vehicle_prices(vehicle_ids uuid[], price_field text, adjustment_mode text, adjustment_value numeric)` updates 1–5,000 selected vehicle rows. Accepted price fields are `price_fob`, `price_cf`, and `price_cif`; accepted modes are `set`, `increase_percent`, and `decrease_percent`. The SECURITY DEFINER function checks `private.can_manage_receivables()`; execution is granted to authenticated users, with authorization enforced inside the function. FOB updates synchronize `vehicles.price` and positive export prices enable `show_price`. See [Catalog Prices and Freight](./Catalog-Freight-Pricing.md).
