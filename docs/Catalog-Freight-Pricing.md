@@ -42,7 +42,7 @@ For each rate, enter:
 - Currency and configured freight charge
 - Optional shipping company and contact details
 
-Enter a **RoRo** charge as the price per cubic metre. Enter a **40-ft container** charge as the total price for one container. These units matter: the calculator multiplies RoRo rate × vehicle M³, while a 40-ft total is divided by the selected vehicle share: 6 small vehicles, 4 large vehicles, or 3 XL vehicles.
+Enter a **RoRo** charge as the price per cubic metre. Enter a **40-ft container** charge as the total price for one container. These units matter: the calculator multiplies RoRo rate × vehicle M³, while a 40-ft total is divided across 6 small vehicles, 4 large vehicles, or 3 XL vehicles. Auto classification uses M³: up to 9 m³ = small, over 9 through 14 m³ = large, and over 14 m³ = XL. You can override the class.
 
 Only active rate rows appear in the calculator suggestions. If multiple active rates match a country and port, the calculator shows each matching RoRo or 40-ft option.
 
@@ -54,11 +54,13 @@ Open **Admin → Freight calculator** (`/admin/freight-calculator`).
 2. If the vehicle is not configured, enter length, width, and height in metres instead.
 3. Type a destination country and choose a suggestion. The port suggestions narrow to ports configured for that country.
 4. Type or choose a destination port, then calculate.
-5. Compare the per-vehicle RoRo estimate with the 40-ft per-vehicle share. The calculator shows both the shared amount and the full container total.
+5. Compare the per-vehicle RoRo estimate with the 40-ft per-vehicle share. The calculator shows the per-vehicle amount and the full container total.
 
 The country, port, and saved make/model fields support typing to search and dropdown suggestions. A custom typed destination is accepted, but the calculator returns a rate only when an active freight row matches that country and port.
 
-**Estimate only:** the displayed freight amount does not include handling, insurance, duties, taxes, or additional surcharges unless those costs are part of the configured rate.
+**Estimate only:** the displayed freight amount does not include handling, insurance, duties, taxes, or additional surcharges unless those costs are part of the configured rate. The 40-ft split evenly divides the container total by the selected vehicle count; it does not model physical loading combinations.
+
+**M³ reference:** [JapaneseCarTrade Auto Wiki, “What is M3 (Cubic Meter) Size of a Vehicle?”](https://blog.japanesecartrade.com/297-what-is-m3-cubic-meter-size-of-a-vehicle/) describes exterior length × width × height and example size bands (small 8.5–9 m³, sedans around 9.5–11 m³, wagons 12 m³, large cars about 13 m³, short-wheelbase 4WDs/vans 13–14 m³). The calculator’s auto grouping of up to 9 / over 9 through 14 / over 14 m³ is an estimate based on those bands; override it when a carrier specifies a different class. The 6/4/3 loading counts are ANSHA configuration assumptions supplied by the business.
 
 ## Troubleshooting
 
