@@ -74,3 +74,13 @@ Live Open Banking OAuth (CSV bank import stub only).
 Separate email newsletter list (Marketing subscribers = PWA push rows only).
 
 Vehicle lifecycle events remain the operational log. Request tickets add assignment and due dates without replacing that log or intake tables. Public catalog lists only `is_published` stock with `stock_status = available`. Auction-sheet photos are admin-only. Purchase orders support 3-way match vs GRN, supplier invoice files, and supplier payments.
+
+
+## Catalog price and freight configuration
+
+- **Bulk vehicle prices** — `/admin/bulk-vehicle-prices`: search/filter and update selected vehicle FOB, C&F, or CIF prices. FOB is synchronized to the legacy listing price.
+- **Vehicle make/model M³** — `/admin/vehicle-model-config`: configure searchable make/model dimensions and M³ values.
+- **Freight calculator** — `/admin/freight-calculator`: estimate RoRo per M³ or allocate the configured 40-ft total across small (6), large (4), or XL (3) vehicles. Destination fields suggest active configured country/port pairs.
+- **Freight charges** — `/admin/freight-charges`: create and maintain route and shipment-type rates.
+
+Detailed workflow: [Catalog Prices and Freight](./Catalog-Freight-Pricing.md).

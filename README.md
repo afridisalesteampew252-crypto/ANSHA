@@ -34,7 +34,7 @@ Live checkpoint and completion details: **[docs/CURRENT_STATE.md](./docs/CURRENT
 | Post-78 | Make Available DEFINER; security advisor RLS; SOA `#soa` + MoneyBreakdown; Product JSON-LD | Complete |
 | Product UX | PWA **Anshatradingco APP**, reports hub + Excel, multi-currency breakdowns, stock invoice badges, Tawk, subscribers | Complete |
 
-Module matrix: [docs/Modules.md](./docs/Modules.md). Full audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md).
+Documentation index: [docs/README.md](./docs/README.md). Module matrix: [docs/Modules.md](./docs/Modules.md). Full audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md). **Catalog pricing and freight operations:** [docs/Catalog-Freight-Pricing.md](./docs/Catalog-Freight-Pricing.md).
 
 ## Phase 1 completion
 
@@ -362,3 +362,8 @@ Completed on 2026-09-18.
 - Private event attachments (`vehicle_lifecycle_event_attachments`) on `internal-files` under `vehicles/{vehicle_id}/lifecycle/{event_id}/`.
 - Admin vehicle detail UI: soft-block staff skips, admin force override, upload/list/remove per event.
 - Applied migration `20260918350000_phase_47_lifecycle_hardening`.
+
+
+## Catalog pricing and freight
+
+The public vehicle catalog uses FOB as the listing price when configured and shows available FOB, C&F, and CIF quotes. Staff can update vehicle prices in bulk, maintain make/model M³ values, configure route rates, and estimate RoRo per-M³ or full 40-ft container charges. See the [Catalog Prices and Freight guide](./docs/Catalog-Freight-Pricing.md) for setup and daily-use instructions.

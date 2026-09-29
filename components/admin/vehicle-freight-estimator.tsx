@@ -19,6 +19,15 @@ type FreightOption = {
   shipping_company: string | null;
 };
 
+const CONTAINER_SHARE_COUNTS = { small: 6, large: 4, xl: 3 } as const;
+type ContainerSize = 'auto' | keyof typeof CONTAINER_SHARE_COUNTS;
+
+function vehicleSizeForVolume(volumeM3: number): keyof typeof CONTAINER_SHARE_COUNTS {
+  if (volumeM3 <= 9) return 'small';
+  if (volumeM3 <= 14) return 'large';
+  return 'xl';
+}
+
 function amount(value: number, currency: string) {
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -30,6 +39,7 @@ function amount(value: number, currency: string) {
 export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string }) {
   const [country, setCountry] = useState('');
   const [port, setPort] = useState('');
+  const [containerSize, setContainerSize] = useState<ContainerSize>('auto');
   const [length, setLength] = useState('');
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
@@ -106,7 +116,7 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
         <h2 className="font-semibold">Freight estimate · {vehicleTitle}</h2>
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        Enter vehicle dimensions in metres. RoRo = L × W × H × rate per m³. A 40-ft option is the full price for one container.
+        Enter vehicle dimensions in metres. RoRo = L × W × H × rate per m³. A 40-ft container total is split across 6 small, 4 large, or 3 XL vehicles.
       </p>
       <form onSubmit={calculate} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
@@ -161,6 +171,16 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
             {portOptions.map((option) => <option key={option} value={option} />)}
           </datalist>
         </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="est-container-size">40-ft sharing size</Label>
+          <select id="est-container-size" value={containerSize} onChange={(e) => setContainerSize(e.target.value as ContainerSize)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+            <option value="auto">Auto by M³</option>
+            <option value="small">Small · 6 vehicles per container</option>
+            <option value="large">Large · 4 vehicles per container</option>
+            <option value="xl">XL · 3 vehicles per container</option>
+          </select>
+          <p className="text-xs text-muted-foreground">Auto: up to 9 m³ = small; over 9 to 14 m³ = large; over 14 m³ = XL. Override if your carrier assigns another class.</p>
+        </div>
         {!selectedModelId && [
           ['est-length', 'Length (m)', length, setLength],
           ['est-width', 'Width (m)', width, setWidth],
@@ -195,16 +215,19 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
             const isRoro = option.shipment_type === 'roro';
             const rate = Number(option.freight_charge);
             const total = isRoro ? (volumeM3 || 0) * rate : rate;
+            const resolvedSize = containerSize === 'auto' ? vehicleSizeForVolume(volumeM3 || 0) : containerSize;
+            const shareCount = CONTAINER_SHARE_COUNTS[resolvedSize];
+            const perVehicle = isRoro ? total : rate / shareCount;
             return (
               <div key={option.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
                 <div>
-                  <p className="font-medium">{isRoro ? 'RoRo' : '40-ft container'} · {option.shipping_company || 'configured rate'}</p>
+                  <p className="font-medium">{isRoro ? 'RoRo' : `40-ft container · ${resolvedSize.toUpperCase()} share`} · {option.shipping_company || 'configured rate'}</p>
                   <p className="text-xs text-muted-foreground">
                     {option.source_country}{option.source_port ? ` / ${option.source_port}` : ''}
-                    {' → '}{country} / {port} · {isRoro ? `${amount(rate, option.currency)} per m³` : 'full container total'}
+                    {' → '}{country} / {port} · {isRoro ? `${amount(rate, option.currency)} per m³` : `${amount(rate, option.currency)} container total ÷ ${shareCount} vehicles`}
                   </p>
                 </div>
-                <p className="text-lg font-bold tabular-nums">{amount(total, option.currency)}</p>
+                <div className="text-right"><p className="text-lg font-bold tabular-nums">{amount(perVehicle, option.currency)}{isRoro ? '' : ' / vehicle'}</p>{!isRoro ? <p className="text-xs text-muted-foreground">Container total: {amount(rate, option.currency)}</p> : null}</div>
               </div>
             );
           })}

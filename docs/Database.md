@@ -150,3 +150,8 @@ Covering indexes exist for published catalog, FKs, search trigrams, finance look
 ## Type generation
 
 Hand-written `lib/types.ts` / `lib/ops-analytics.ts` cover public tables through Phase **78**, including Phase 72 `CommissionClaim`, Phase 74–76 `AuctionYard` / `ShippingCompany` / `FreightCharge`, Phase 69–70 remittance offices/shifts + profile office, Phase 65 `stock_pool`, Phase 57 `vehicle_class`. `AdminRole` includes `freelancer` | `manager` | `accounts`. Helpers: `lib/vehicle-class.ts`, `lib/trade-terms.ts`, `lib/stock-ops.ts`, `lib/export-masters.ts`, `lib/vehicle-sales-status.ts`, `lib/stock.ts` (`STOCK_POOLS`), `lib/invoice-delete.ts`, `lib/money.ts`, `lib/product-schema.ts`, `components/money-breakdown.tsx`, `lib/export-excel.ts`, `lib/reports/*`, `lib/stock-linked-invoice.ts`, `lib/freight-charges.ts`.
+
+
+## Vehicle model specifications and public price synchronization
+
+Migration `20260929211103_public_fob_listing_price_and_model_specs_filters.sql` normalizes saved make/model matching, keeps positive FOB values synchronized with the legacy `vehicles.price` listing field, and enables public price visibility when a positive export term is saved. `vehicle_model_specs` stores make/model keys, optional `length_m`, `width_m`, and `height_m`, plus `volume_m3`; vehicle weight is not used by the freight calculation. `bulk_update_vehicle_prices` accepts `price_fob`, `price_cf`, and `price_cif`; FOB writes also update `price`. See [Catalog Prices and Freight](./Catalog-Freight-Pricing.md) for operator workflows.

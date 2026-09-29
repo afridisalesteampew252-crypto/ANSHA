@@ -69,3 +69,8 @@ Admin gating lives in `proxy.ts` (`export async function proxy`), not `middlewar
 ## Linked project
 
 Local `.env.local` must point at an environment that is safe to query. The production Supabase project is `ydrnilquojvalhgifest`. Do not reset it.
+
+
+## Catalog and freight development notes
+
+Vehicle public pricing is derived from FOB when present, with the legacy `price` field as compatibility fallback; do not treat C&F or CIF as the base listing price. Bulk price writes use `bulk_update_vehicle_prices`. Freight calculation uses saved `vehicle_model_specs.volume_m3` or manual dimensions in metres. RoRo rates are per M³; 40-ft rates are total container prices. Keep `docs/Catalog-Freight-Pricing.md`, the user manual, database/API references, and README aligned when these workflows change.

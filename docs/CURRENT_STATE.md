@@ -1,3 +1,12 @@
+## Catalog prices and freight (2026-09-29)
+
+- Vehicle listings prioritize a positive FOB value and keep FOB synchronized with the legacy listing-price field; public cards/details show available FOB, C&F, and CIF terms.
+- Admin bulk vehicle pricing supports FOB, C&F, and CIF, with inventory search and make/model/year/origin/currency/price-status filters.
+- Vehicle make/model M³ configuration provides search and filters and stores dimensions in metres for future matching listings/imports.
+- Freight charges distinguish RoRo rates per M³ from the total price of one 40-ft container.
+- Freight calculator supports saved vehicle dimensions or manual L × W × H, plus type-to-search suggestions for configured countries and their ports.
+- Operational steps: [Catalog Prices and Freight](./Catalog-Freight-Pricing.md). Production status will be confirmed after PR #99 completes and deploys.
+
 # Current State
 
 Verified checkpoint: **2026-09-29**. The public inventory listing indexes are applied to Supabase and verified with generic prepared-query plans. The prior SEO-01…SEO-10 validation is dated 2026-09-22; refer to the current Vercel production deployment before treating later site changes as live. Baseline: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `ydrnilquojvalhgifest`.

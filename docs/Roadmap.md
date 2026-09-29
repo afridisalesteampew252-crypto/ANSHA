@@ -201,3 +201,8 @@ Stop after the current module until the next one is approved.
 Done (home featured rotation): display-only 10-minute rotation of home featured parts (8) and vehicles (4) via `lib/featured-rotation.ts` + home client pool query. Admin `is_featured` unchanged for badges / pool boost. No cron, no migration. Tip around `e76df97`.
 
 Checkpoint: [CURRENT_STATE](./CURRENT_STATE.md).
+
+
+## Catalog pricing and freight estimator (completed 2026-09-29)
+
+Completed: bulk FOB/C&F/CIF editing, public FOB listing-price synchronization, make/model dimension configuration, searchable calculator fields, RoRo per-M³ calculation, and 40-ft per-vehicle sharing. Auto size classes are small through 9 m³ (6 vehicles), large over 9 through 14 m³ (4), and XL above 14 m³ (3), with manual override. These are estimates, not a carrier loading guarantee. See [Catalog Prices and Freight](./Catalog-Freight-Pricing.md).

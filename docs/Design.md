@@ -35,3 +35,8 @@ Phase 13 called for reduced-motion and keyboard-focus support on the public cata
 ## Future
 
 Public site and ERP may diverge in density while sharing tokens. PWA chrome (install prompt + push opt-in + standalone display) is live for the public catalog (Phases 22–24). Customer portal chrome is a light `/portal` shell (Phase 23). Capacitor shell MVP loads the public URL in a native WebView (Phase 44); see `docs/Mobile.md`.
+
+
+## Searchable catalog administration
+
+Bulk vehicle pricing and model M³ configuration use searchable, filterable bounded result lists. The freight calculator provides type-to-search fields for saved make/model, active destination countries, and country-scoped ports. Preserve keyboard-friendly suggestions and clear empty-result feedback. For 40-ft sharing, show both the full container total and per-vehicle allocation; the M³-derived default class can be overridden.
