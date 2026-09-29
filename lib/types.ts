@@ -294,12 +294,15 @@ export interface WorkspaceRequestAttachment {
   created_at: string;
 }
 
+export type VehiclePhotoView = 'front' | 'rear' | 'left_side' | 'right_side' | 'interior' | 'engine' | 'detail' | 'other';
+
 export interface VehiclePhoto {
   id: string;
   vehicle_id: string;
   storage_path: string;
   is_cover: boolean;
   is_auction_sheet: boolean;
+  view_type: VehiclePhotoView;
   sort_order: number;
   created_at: string;
 }

@@ -125,6 +125,7 @@ export default function ImportsPage() {
             storage_path: storagePath,
             is_cover: false,
             is_auction_sheet: isAuctionSheetFilename(filename),
+            view_type: 'other',
             sort_order: 99,
           });
           if (photoError) throw photoError;

@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Save, Loader2, ArrowLeft, Plus, X, Upload, Star, Image as ImageIcon } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ArrowUp, ArrowDown, Plus, X, Upload, Star, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
 import { compressCatalogImage } from '@/lib/catalog-image';
-import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
+import { isAuctionSheetFilename, VEHICLE_PHOTO_VIEWS, VEHICLE_PHOTO_VIEW_LABELS, type VehiclePhotoView } from '@/lib/vehicle-photos';
 import { toast } from 'sonner';
 import { STOCK_ORIGINS, defaultStockPoolForOrigin, type StockPool } from '@/lib/stock';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
@@ -27,6 +27,7 @@ import {
 interface PendingPhoto {
   file: File;
   previewUrl: string;
+  viewType: VehiclePhotoView;
 }
 
 export default function AddVehiclePage() {
@@ -88,10 +89,21 @@ function AddVehiclePageInner() {
     if (!files) return;
     const newPhotos: PendingPhoto[] = [];
     for (let i = 0; i < files.length; i++) {
-      newPhotos.push({ file: files[i], previewUrl: URL.createObjectURL(files[i]) });
+      newPhotos.push({ file: files[i], previewUrl: URL.createObjectURL(files[i]), viewType: 'other' });
     }
     setPendingPhotos((prev) => [...prev, ...newPhotos]);
     e.target.value = '';
+  };
+
+  const movePendingPhoto = (idx: number, direction: -1 | 1) => {
+    const target = idx + direction;
+    if (target < 0 || target >= pendingPhotos.length) return;
+    setPendingPhotos((prev) => {
+      const next = [...prev];
+      [next[idx], next[target]] = [next[target], next[idx]];
+      return next;
+    });
+    setCoverIndex((current) => current === idx ? target : current === target ? idx : current);
   };
 
   const removePhoto = (idx: number) => {
@@ -202,6 +214,7 @@ function AddVehiclePageInner() {
             vehicle_id: vehicleId,
             storage_path: fileName,
             is_cover: !auctionSheet && i === coverIndex,
+            view_type: photo.viewType,
             is_auction_sheet: auctionSheet,
             sort_order: i,
           });
@@ -275,34 +288,35 @@ function AddVehiclePageInner() {
                 <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WEBP — multiple files allowed</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {pendingPhotos.map((photo, idx) => (
-                  <div key={idx} className="group relative overflow-hidden rounded-md border border-border">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photo.previewUrl} alt={`Preview ${idx + 1}`} className="aspect-square w-full object-cover" />
-                    {idx === coverIndex && (
-                      <div className="absolute top-1 left-1 rounded bg-foreground px-1.5 py-0.5 text-xs font-medium text-background">
-                        Cover
+                  <div key={idx} className="overflow-hidden rounded-md border border-border bg-card">
+                    <div className="relative">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo.previewUrl} alt={`Preview ${idx + 1}`} className="aspect-square w-full object-cover" />
+                      {idx === coverIndex && <div className="absolute left-2 top-2 rounded-full bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">Cover</div>}
+                      <div className="absolute right-2 top-2 rounded-full bg-background/90 px-2 py-1 text-xs font-medium">{VEHICLE_PHOTO_VIEW_LABELS[photo.viewType]}</div>
+                    </div>
+                    <div className="space-y-2 p-2">
+                      <label className="block text-xs font-medium text-muted-foreground">
+                        Photo angle
+                        <select value={photo.viewType} onChange={(event) => setPendingPhotos((current) => current.map((item, index) => index === idx ? { ...item, viewType: event.target.value as VehiclePhotoView } : item))} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">
+                          {VEHICLE_PHOTO_VIEWS.map((view) => <option key={view} value={view}>{VEHICLE_PHOTO_VIEW_LABELS[view]}</option>)}
+                        </select>
+                      </label>
+                      <div className="flex flex-wrap gap-1">
+                        <Button type="button" size="sm" variant="outline" className="h-8 flex-1 px-2" disabled={idx === 0} onClick={() => movePendingPhoto(idx, -1)} aria-label={`Move photo ${idx + 1} earlier`}><ArrowUp className="h-4 w-4" />Up</Button>
+                        <Button type="button" size="sm" variant="outline" className="h-8 flex-1 px-2" disabled={idx === pendingPhotos.length - 1} onClick={() => movePendingPhoto(idx, 1)} aria-label={`Move photo ${idx + 1} later`}><ArrowDown className="h-4 w-4" />Down</Button>
                       </div>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                      {idx !== coverIndex && (
-                        <Button type="button" size="icon" variant="secondary" className="h-8 w-8" onClick={() => setCoverIndex(idx)} title="Set as cover">
-                          <Star className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button type="button" size="icon" variant="destructive" className="h-8 w-8" onClick={() => removePhoto(idx)} title="Remove">
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button type="button" size="sm" variant={idx === coverIndex ? 'secondary' : 'outline'} className="h-8 flex-1 px-2" disabled={idx === coverIndex} onClick={() => setCoverIndex(idx)}><Star className="h-4 w-4" />{idx === coverIndex ? 'Cover' : 'Set cover'}</Button>
+                        <Button type="button" size="icon" variant="destructive" className="h-8 w-8" onClick={() => removePhoto(idx)} aria-label="Remove photo"><X className="h-4 w-4" /></Button>
+                      </div>
                     </div>
                   </div>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex aspect-square items-center justify-center rounded-md border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
-                >
-                  <Plus className="h-6 w-6" />
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-56 items-center justify-center rounded-md border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground">
+                  <Plus className="h-6 w-6" /><span className="ml-2 text-sm">Add photos</span>
                 </button>
               </div>
             )}
