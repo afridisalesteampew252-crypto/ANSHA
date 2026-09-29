@@ -35,6 +35,32 @@ export function resolveProductOfferPrice(input: {
  * Public catalog card / hero price label.
  * Mirrors resolveProductOfferPrice (deal → list → FOB → C&F → CIF); never invents amounts.
  */
+/**
+ * Public card prices for the explicitly configured export terms.
+ * Older records with only the legacy price keep the neutral "Export price" label.
+ */
+export function publicPriceLines(input: {
+  showPrice: boolean;
+  stockStatus?: string | null;
+  price?: number | null;
+  priceFob?: number | null;
+  priceCf?: number | null;
+  priceCif?: number | null;
+}): Array<{ label: string; amount: number }> {
+  if (!input.showPrice || input.stockStatus === 'sold') return [];
+
+  const termPrices = [
+    { label: 'FOB', amount: positiveCatalogPrice(input.priceFob) },
+    { label: 'C&F', amount: positiveCatalogPrice(input.priceCf) },
+    { label: 'CIF', amount: positiveCatalogPrice(input.priceCif) },
+  ].filter((line): line is { label: string; amount: number } => line.amount != null);
+
+  if (termPrices.length > 0) return termPrices;
+
+  const legacyPrice = positiveCatalogPrice(input.price);
+  return legacyPrice == null ? [] : [{ label: 'Export price', amount: legacyPrice }];
+}
+
 export function publicPriceLabel(input: {
   currency?: string | null;
   stockStatus?: string | null;
