@@ -142,10 +142,10 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
           <div className="min-w-0">
             <div className="mb-0.5 flex flex-wrap items-center gap-1">
               {discountLabel && part.stock_status !== 'sold' ? (
-                <Badge className="h-5 border-0 bg-[#101114] px-1.5 text-[9px] text-white">{discountLabel}</Badge>
+                <Badge className="h-5 border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white">{discountLabel}</Badge>
               ) : null}
               {deal && !discountLabel && dealPrice != null && part.stock_status !== 'sold' ? (
-                <Badge className="h-5 border-0 bg-[#101114] px-1.5 text-[9px] text-white">Deal</Badge>
+                <Badge className="h-5 border-0 bg-gradient-to-r from-[#f47a1f] to-[#d21e1e] px-1.5 text-[9px] text-white">Deal</Badge>
               ) : null}
             </div>
             <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
