@@ -20,7 +20,6 @@ import {
   isFieldAgentRole,
   MANAGER_NAV_HREFS,
 } from '@/lib/admin-rbac';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
 import { AdminCommandCenter, AdminCommandTrigger } from '@/components/admin/admin-command-center';
@@ -195,9 +194,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
         <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
-        <div className="space-y-2 border-t border-border/80 p-3">
-          {!collapsed && <div className="flex items-center justify-between px-2"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Appearance</span><ThemeToggle /></div>}
-          {collapsed && <div className="flex justify-center"><ThemeToggle /></div>}
+        <div className="border-t border-border/80 p-3">
           <AdminProfileMenu compact={collapsed} profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
         </div>
         <Button variant="outline" size="icon" onClick={toggleCollapsed} className="absolute -right-4 top-28 z-10 h-8 w-8 rounded-full bg-background shadow-sm" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
