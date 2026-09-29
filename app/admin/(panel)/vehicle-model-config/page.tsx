@@ -16,7 +16,7 @@ type ModelSpec = {
   width_m: number | null; height_m: number | null; volume_m3: number;
 };
 
-const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\\s+/g, ' ');
+const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
 const empty = () => ({ make: '', model: '', length: '', width: '', height: '', volume: '' });
 
 export default function VehicleModelConfigPage() {
