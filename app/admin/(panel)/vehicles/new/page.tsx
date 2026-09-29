@@ -15,6 +15,7 @@ import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import { toast } from 'sonner';
 import { STOCK_ORIGINS, defaultStockPoolForOrigin, type StockPool } from '@/lib/stock';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
+import { VehicleDestinationMarketsField } from '@/components/admin/vehicle-destination-markets-field';
 import {
   EQUIPMENT_CATEGORIES,
   isMachineryClass,
@@ -74,6 +75,7 @@ function AddVehiclePageInner() {
   const [showPrice, setShowPrice] = useState(false);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [destinationMarkets, setDestinationMarkets] = useState<string[]>([]);
   const [isPublished, setIsPublished] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
 
@@ -150,6 +152,7 @@ function AddVehiclePageInner() {
         show_price: showPrice,
         description: description.trim() || null,
         location: location.trim() || null,
+        destination_markets: destinationMarkets,
         is_published: publish,
         is_featured: isFeatured,
       })
@@ -404,6 +407,7 @@ function AddVehiclePageInner() {
               <Label htmlFor="vehicle-location">Location</Label>
               <Input id="vehicle-location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Showroom / Warehouse" />
             </div>
+            <VehicleDestinationMarketsField value={destinationMarkets} onChange={setDestinationMarkets} />
             <div className="space-y-2">
               <Label htmlFor="vehicle-stock-number">Stock / reference number</Label>
               <Input id="vehicle-stock-number" value={stockNumber} onChange={(e) => setStockNumber(e.target.value.toUpperCase())} placeholder="ANS-V-000001" />
