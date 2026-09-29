@@ -109,8 +109,10 @@
     min-width: 0;
     overflow-x: clip;
     background:
-      radial-gradient(ellipse 60% 35% at 100% 0%, hsl(var(--accent) / 0.08), transparent 55%),
-      linear-gradient(180deg, hsl(210 16% 96%) 0%, hsl(210 14% 94.5%) 100%);
+      radial-gradient(ellipse 70% 34% at 4% 0%, hsl(199 89% 58% / 0.08), transparent 62%),
+      radial-gradient(ellipse 62% 38% at 100% 0%, hsl(var(--accent) / 0.12), transparent 58%),
+      radial-gradient(ellipse 58% 24% at 88% 82%, hsl(38 92% 55% / 0.07), transparent 62%),
+      linear-gradient(180deg, hsl(210 18% 97%) 0%, hsl(210 14% 94.5%) 100%);
   }
 
   .public-marketing header nav a,
@@ -154,32 +156,38 @@
 
   .surface-cool {
     background:
+      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(199 89% 58% / 0.08), transparent 56%),
       linear-gradient(180deg, hsl(var(--surface-cool)) 0%, hsl(210 24% 95%) 100%);
   }
 
   .surface-warm {
     background:
-      radial-gradient(ellipse 60% 80% at 100% 0%, hsl(var(--accent) / 0.08), transparent 55%),
+      radial-gradient(ellipse 60% 80% at 100% 0%, hsl(var(--accent) / 0.12), transparent 55%),
+      radial-gradient(ellipse 60% 70% at 0% 100%, hsl(38 92% 55% / 0.07), transparent 58%),
       linear-gradient(180deg, hsl(var(--surface-warm)) 0%, hsl(210 20% 95%) 100%);
   }
 
   .surface-mist {
     background:
-      radial-gradient(ellipse 50% 60% at 0% 100%, hsl(var(--accent) / 0.06), transparent 45%),
+      radial-gradient(ellipse 58% 68% at 0% 100%, hsl(199 89% 58% / 0.10), transparent 52%),
+      radial-gradient(ellipse 52% 60% at 100% 0%, hsl(var(--accent) / 0.08), transparent 50%),
       linear-gradient(180deg, hsl(var(--surface-mist)) 0%, hsl(var(--surface-cool)) 100%);
   }
 
   .surface-featured {
     background:
-      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(var(--accent) / 0.18), transparent 50%),
-      radial-gradient(ellipse 55% 60% at 100% 100%, hsl(220 25% 18% / 0.06), transparent 48%),
+      radial-gradient(ellipse 70% 80% at 0% 0%, hsl(var(--accent) / 0.22), transparent 54%),
+      radial-gradient(ellipse 55% 60% at 100% 5%, hsl(199 89% 52% / 0.10), transparent 52%),
+      radial-gradient(ellipse 55% 60% at 100% 100%, hsl(38 92% 55% / 0.10), transparent 50%),
       linear-gradient(165deg, hsl(var(--surface-featured)) 0%, hsl(var(--surface-cool)) 100%);
   }
 
   .surface-ink {
     background:
-      radial-gradient(ellipse 55% 70% at 90% 10%, hsl(var(--accent) / 0.28), transparent 50%),
-      linear-gradient(165deg, #0b0c0f 0%, #14161b 55%, #101114 100%);
+      radial-gradient(ellipse 64% 86% at 88% 10%, hsl(var(--accent) / 0.36), transparent 54%),
+      radial-gradient(ellipse 54% 78% at 4% 100%, hsl(199 89% 52% / 0.16), transparent 54%),
+      radial-gradient(ellipse 54% 70% at 58% 115%, hsl(38 92% 55% / 0.10), transparent 52%),
+      linear-gradient(145deg, #0b0c0f 0%, #151820 54%, #101114 100%);
     color: #fff;
   }
 
@@ -211,7 +219,9 @@
 
   .header-market-strip {
     background:
-      linear-gradient(90deg, #101114 0%, #1a1012 42%, #14161b 100%);
+      radial-gradient(ellipse 34% 110% at 16% 50%, hsl(199 89% 52% / 0.12), transparent 75%),
+      radial-gradient(ellipse 42% 130% at 88% 50%, hsl(var(--accent) / 0.22), transparent 74%),
+      linear-gradient(90deg, #101114 0%, #17151a 48%, #14161b 100%);
     color: #fff;
   }
 
@@ -356,14 +366,70 @@
   }
 }
 
-/* Admin ERP shell — ink + accent red, professional (not marketing-loud). */
+/* Admin workspace — restrained color washes keep data panels easy to scan. */
 .admin-shell {
   min-height: 100vh;
   min-height: 100dvh;
   background:
-    radial-gradient(ellipse 55% 40% at 100% 0%, hsl(var(--accent) / 0.06), transparent 55%),
-    radial-gradient(ellipse 45% 35% at 0% 100%, hsl(220 20% 12% / 0.04), transparent 50%),
-    hsl(var(--secondary) / 0.55);
+    radial-gradient(ellipse 54% 46% at 100% 0%, hsl(var(--accent) / 0.12), transparent 62%),
+    radial-gradient(ellipse 42% 38% at 0% 92%, hsl(199 89% 52% / 0.09), transparent 60%),
+    radial-gradient(ellipse 44% 34% at 75% 100%, hsl(38 92% 55% / 0.055), transparent 62%),
+    hsl(var(--secondary) / 0.68);
+}
+
+.admin-login-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 58% 52% at 8% 8%, hsl(199 89% 52% / 0.13), transparent 72%),
+    radial-gradient(ellipse 54% 58% at 94% 8%, hsl(var(--accent) / 0.15), transparent 72%),
+    radial-gradient(ellipse 52% 48% at 72% 100%, hsl(38 92% 55% / 0.10), transparent 74%),
+    linear-gradient(135deg, hsl(210 24% 98%), hsl(215 26% 94%));
+}
+
+.admin-login-shell::before,
+.admin-login-shell::after {
+  position: absolute;
+  z-index: -1;
+  width: min(54vw, 34rem);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  filter: blur(34px);
+  opacity: 0.54;
+  content: "";
+  pointer-events: none;
+}
+
+.admin-login-shell::before {
+  top: -34%;
+  left: -15%;
+  background: radial-gradient(circle, hsl(199 89% 52% / 0.28), transparent 68%);
+}
+
+.admin-login-shell::after {
+  right: -16%;
+  bottom: -42%;
+  background: radial-gradient(circle, hsl(var(--accent) / 0.28), transparent 68%);
+}
+
+.admin-login-card {
+  position: relative;
+  overflow: hidden;
+  border-color: hsl(var(--accent) / 0.18);
+  background:
+    radial-gradient(ellipse 70% 52% at 50% 0%, hsl(var(--accent) / 0.07), transparent 72%),
+    hsl(var(--card));
+  box-shadow: 0 28px 90px hsl(var(--accent) / 0.12), 0 8px 26px rgba(15, 23, 42, 0.07);
+}
+
+.admin-login-card::before {
+  position: absolute;
+  inset: 0 22% auto;
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, hsl(199 89% 52%), hsl(var(--accent)), hsl(38 92% 55%));
+  content: "";
 }
 
 .mobile-app-shell {
@@ -373,7 +439,10 @@
 
 .admin-sidebar {
   background:
+    radial-gradient(ellipse 100% 36% at 0% 0%, hsl(var(--accent) / 0.08), transparent 76%),
+    radial-gradient(ellipse 90% 40% at 100% 100%, hsl(199 89% 52% / 0.07), transparent 74%),
     linear-gradient(180deg, hsl(var(--card)) 0%, hsl(210 18% 98%) 100%);
+  box-shadow: inset -1px 0 hsl(var(--accent) / 0.14);
 }
 
 .dark .admin-sidebar {
@@ -381,14 +450,21 @@
 }
 
 .admin-topbar {
-  background: hsl(var(--card) / 0.92);
-  box-shadow: inset 0 -1px 0 hsl(var(--border) / 0.7);
+  background:
+    radial-gradient(ellipse 42% 180% at 100% 0%, hsl(var(--accent) / 0.08), transparent 78%),
+    radial-gradient(ellipse 28% 160% at 0% 0%, hsl(199 89% 52% / 0.055), transparent 75%),
+    hsl(var(--card) / 0.94);
+  box-shadow: inset 0 -1px 0 hsl(var(--accent) / 0.12);
 }
 
 .admin-dash-hero {
   background:
-    radial-gradient(ellipse 70% 90% at 100% 0%, hsl(var(--accent) / 0.12), transparent 55%),
-    linear-gradient(135deg, hsl(var(--card)) 0%, hsl(210 20% 97%) 55%, hsl(0 30% 97%) 100%);
+    radial-gradient(ellipse 64% 100% at 100% 0%, hsl(var(--accent) / 0.18), transparent 58%),
+    radial-gradient(ellipse 48% 78% at 0% 100%, hsl(199 89% 52% / 0.11), transparent 58%),
+    radial-gradient(ellipse 40% 72% at 72% 100%, hsl(38 92% 55% / 0.08), transparent 62%),
+    linear-gradient(135deg, hsl(var(--card)) 0%, hsl(210 24% 97%) 55%, hsl(0 30% 97%) 100%);
+  border-color: hsl(var(--accent) / 0.18);
+  box-shadow: 0 16px 46px hsl(var(--accent) / 0.07);
 }
 
 .dark .admin-dash-hero {
