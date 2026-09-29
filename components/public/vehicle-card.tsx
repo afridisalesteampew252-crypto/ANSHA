@@ -25,8 +25,11 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
   const coverPhoto = pickVehicleCoverPhoto(vehicle.vehicle_photos);
   const photoUrl = coverPhoto ? publicVehicleImageUrl(coverPhoto.storage_path) : null;
   const imageAlt = vehicleImageAlt(vehicle);
-  const listPrice =
-    vehicle.show_price && vehicle.price && vehicle.price > 0 ? Number(vehicle.price) : null;
+  const listPrice = vehicle.show_price
+    ? (vehicle.price_fob && vehicle.price_fob > 0
+        ? Number(vehicle.price_fob)
+        : (vehicle.price && vehicle.price > 0 ? Number(vehicle.price) : null))
+    : null;
   const dealPrice =
     vehicle.stock_status !== 'sold' && deal ? effectiveDealPrice(listPrice, deal) : null;
   const discountLabel = deal ? formatDealDiscount(deal.discount_percent) : null;
@@ -48,6 +51,16 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
     priceCf: vehicle.price_cf,
     priceCif: vehicle.price_cif,
   });
+  const catalogPriceDisplay = catalogPriceLines.length > 0 ? (
+    <div className="flex flex-col gap-y-1.5">
+      {catalogPriceLines.map((line) => (
+        <div key={line.label} className="min-w-0">
+          <span className="block text-[9px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300 sm:text-[10px]">{line.label}</span>
+          <strong className="block whitespace-nowrap text-xs font-extrabold tracking-tight text-foreground sm:text-base">{vehicle.currency} {line.amount.toLocaleString()}</strong>
+        </div>
+      ))}
+    </div>
+  ) : null;
   const savedPriceLabel = dealPrice != null ? priceLabel : catalogPriceLines.length > 0
     ? catalogPriceLines.map((line) => `${line.label} ${vehicle.currency} ${line.amount.toLocaleString()}`).join(' · ')
     : priceLabel;
@@ -164,16 +177,10 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               <>
                 <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">Deal price</span>
                 <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
+                {catalogPriceDisplay}
               </>
-            ) : catalogPriceLines.length > 0 ? (
-              <div className="flex flex-col gap-y-1.5">
-                {catalogPriceLines.map((line) => (
-                  <div key={line.label} className="min-w-0">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300 sm:text-[10px]">{line.label}</span>
-                    <strong className="block whitespace-nowrap text-xs font-extrabold tracking-tight text-foreground sm:text-base">{vehicle.currency} {line.amount.toLocaleString()}</strong>
-                  </div>
-                ))}
-              </div>
+            ) : catalogPriceDisplay ? (
+              catalogPriceDisplay
             ) : (
               <>
                 <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">Price</span>
