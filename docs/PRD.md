@@ -52,3 +52,13 @@ CRM `customers` are not logins until portal access is enabled by an admin.
 - RLS is the API; no Server Actions
 - Forward-only migrations; never reset production
 - Secrets never in `NEXT_PUBLIC_*` or docs
+
+
+## Catalog pricing and freight estimator (current capability)
+
+- Public vehicle pages display FOB as the listing price and any available C&F/CIF terms.
+- Staff can edit vehicle term prices in bulk and maintain reusable make/model M³ specifications.
+- Staff can configure freight routes and estimate RoRo by M³ or divide a 40-ft total among 6 small, 4 large, or 3 XL vehicles.
+- The calculator suggests configured destination countries and country-specific ports; M³ class is automatic by default and manually overridable.
+
+See [Catalog Prices and Freight](./Catalog-Freight-Pricing.md).
