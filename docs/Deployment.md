@@ -298,3 +298,8 @@ Supabase project backups are an infrastructure concern, not an in-repo script. D
 ## Edge Functions
 
 `admin-create-user`, `admin-update-user`, `send-outbound-email`, `send-whatsapp`, `tawk-webhook`, and related functions deploy with the Supabase project, not with the Next.js Vercel build. Shared CORS lives in `supabase/functions/_shared/cors.ts`. Deploy JWT-protected functions together so they keep the same origin allowlist and anon-key caller verification. Deploy `tawk-webhook` with `--no-verify-jwt` (Tawk cannot send a Supabase JWT; HMAC is verified in-function).
+
+
+## Catalog pricing and freight release verification
+
+After shipping changes to pricing or freight routes, verify the production build and public catalog before announcing the release. Spot-check a vehicle with FOB/C&F/CIF values and visit `/admin/bulk-vehicle-prices`, `/admin/vehicle-model-config`, `/admin/freight-charges`, and `/admin/freight-calculator` with an authorized account. For 40-ft rates, verify the configured total, small/large/XL allocation (6/4/3), automatic M³ class, and manual override. See [Catalog Prices and Freight](./Catalog-Freight-Pricing.md).
