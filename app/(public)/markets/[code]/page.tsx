@@ -7,6 +7,7 @@ import { siteConfig } from '@/lib/site-config';
 import { createPublicSupabaseClient } from '@/lib/supabase/public';
 import type { VehicleWithPhotos } from '@/lib/types';
 import MarketPageClient from './market-page-client';
+import { EXPORT_MARKET_SHIPPING_GUIDE_BY_CODE } from '@/lib/export-market-shipping';
 
 type Props = {
   params: Promise<{ code: string }>;
@@ -82,5 +83,12 @@ export default async function MarketDestinationPage({ params }: Props) {
 
   const { vehicles, config } = await loadMarketInventory(market.code);
 
-  return <MarketPageClient market={market} vehicles={vehicles} config={config} />;
+  return (
+    <MarketPageClient
+      market={market}
+      vehicles={vehicles}
+      config={config}
+      shippingGuide={EXPORT_MARKET_SHIPPING_GUIDE_BY_CODE[market.code] ?? null}
+    />
+  );
 }
