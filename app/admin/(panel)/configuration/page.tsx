@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Ban, CheckCircle2, Loader2, Pencil, Plus, Search, Settings2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -149,6 +150,18 @@ export default function ConfigurationPage() {
           lists when booking — not free-text only.
         </p>
       </div>
+
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-base">Country import policies</CardTitle>
+          <CardDescription>Edit the age limits, destination ports, transit times, vessel schedules, shipping lines, and inspection notes shown to customers.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline">
+            <Link href="/admin/configuration/country-policies">Manage country policies</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <nav
         className="flex flex-wrap gap-2"
