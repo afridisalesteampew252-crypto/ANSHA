@@ -190,7 +190,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       <aside className={cn('admin-sidebar relative hidden shrink-0 flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
         <div className={cn('flex h-24 items-center border-b border-border/80', collapsed ? 'justify-center px-2' : 'px-4')}>
           <Link href="/admin/dashboard" className="flex min-w-0 items-center" aria-label="ANSHA operations dashboard">
-            <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
+            <Image src="/images/ansha-logo.svg" alt="ANSHA Trading" width={280} height={128} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
           </Link>
         </div>
         <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
@@ -206,7 +206,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <button className="fixed inset-0 z-[60] bg-[#0b0c0f]/50 md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close admin menu overlay" />
         <aside className="admin-sidebar fixed inset-y-0 left-0 z-[70] flex w-[min(86vw,20rem)] flex-col border-r border-border/80 shadow-2xl md:hidden">
           <div className="flex h-20 items-center justify-between border-b border-border/80 px-3">
-            <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={1000} height={497} priority className="h-16 w-auto max-w-[220px] object-contain" />
+            <Image src="/images/ansha-logo.svg" alt="ANSHA Trading" width={280} height={128} priority className="h-16 w-auto max-w-[220px] object-contain" />
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close admin menu"><X className="h-5 w-5" /></Button>
           </div>
           <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
