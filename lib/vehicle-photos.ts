@@ -1,4 +1,5 @@
 import type { VehiclePhoto, VehiclePhotoView } from '@/lib/types';
+export type { VehiclePhotoView } from '@/lib/types';
 
 export const VEHICLE_PHOTO_VIEWS: VehiclePhotoView[] = [
   'front', 'rear', 'left_side', 'right_side', 'interior', 'engine', 'detail', 'other',
