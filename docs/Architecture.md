@@ -76,3 +76,8 @@ GitHub `main` deploys to Vercel. Preview deployments follow the GitHub integrati
 - Not a separate admin SPA repo
 - Not a fully native admin UI or offline-first native database
 - Not Netlify-hosted
+
+
+## Catalog freight calculation path
+
+Vehicle public pricing uses FOB when present, with the legacy `price` field as compatibility fallback. Staff bulk pricing uses the authorized pricing RPC. Freight rates live in `freight_charges`, saved dimensions live in `vehicle_model_specs`, and the admin calculator combines saved M³ or manual L × W × H with an active matching route. RoRo rates are multiplied by M³. A 40-ft total is divided per vehicle using the 6/4/3 class share, selected automatically from M³ and overridable in the UI. See [Catalog Prices and Freight](./Catalog-Freight-Pricing.md).
