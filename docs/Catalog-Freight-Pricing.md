@@ -26,7 +26,7 @@ FOB updates also update the listing price. C&F and CIF remain separate export qu
 
 ## Vehicle model dimensions and M³
 
-Open **Admin → Vehicle make/model M³** (`/admin/vehicle-model-config`). Add or edit a make/model with length, width, and height in **metres**. ANSHA calculates M³ from the dimensions when dimensions are supplied. You can also save an M³ value directly when dimensions are unavailable. Weight is optional and is not used by the freight calculator.
+Open **Admin → Vehicle make/model M³** (`/admin/vehicle-model-config`). Add or edit a make/model with length, width, and height in **metres**. ANSHA calculates M³ from the dimensions when dimensions are supplied. You can also save an M³ value directly when dimensions are unavailable. Weight is not currently captured in this make/model configuration or used by the freight calculator.
 
 The page supports make and dimension filters, text search, a result count, and a bounded scrolling results area. Saved make/model specifications are reused for freight estimates and matching vehicle imports. Keep the make/model spelling consistent with the vehicle listing; punctuation is normalized for matching.
 
