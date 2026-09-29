@@ -9,6 +9,9 @@ import type { VehicleWithPhotos } from '@/lib/types';
 import MarketPageClient from './market-page-client';
 import { EXPORT_MARKET_SHIPPING_GUIDE_BY_CODE } from '@/lib/export-market-shipping';
 
+// Country policies are admin-editable; refresh the public page at most once per minute.
+export const revalidate = 60;
+
 type Props = {
   params: Promise<{ code: string }>;
 };
