@@ -116,8 +116,13 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
   }
 
   const photos = vehicle.vehicle_photos || [];
-  const hasPrice = Boolean(vehicle.show_price && vehicle.price && vehicle.price > 0);
-  const dealPrice = deal ? effectiveDealPrice(hasPrice ? vehicle.price : null, deal) : null;
+  const listingPrice = vehicle.show_price
+    ? (vehicle.price_fob && vehicle.price_fob > 0
+        ? Number(vehicle.price_fob)
+        : (vehicle.price && vehicle.price > 0 ? Number(vehicle.price) : null))
+    : null;
+  const hasPrice = listingPrice != null;
+  const dealPrice = deal ? effectiveDealPrice(listingPrice, deal) : null;
   const displayPrice = resolveProductOfferPrice({
     dealPrice,
     showPrice: Boolean(vehicle.show_price),
@@ -220,7 +225,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
             <InventoryDealBanner
               offer={deal}
               currency={vehicle.currency}
-              listPrice={hasPrice ? vehicle.price : null}
+              listPrice={listingPrice}
             />
           ) : null}
 
@@ -236,7 +241,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
                   </p>
                   {hasPrice ? (
                     <span className="text-sm text-white/40 line-through">
-                      {vehicle.currency} {vehicle.price!.toLocaleString()}
+                      {vehicle.currency} {listingPrice!.toLocaleString()}
                     </span>
                   ) : null}
                 </div>
