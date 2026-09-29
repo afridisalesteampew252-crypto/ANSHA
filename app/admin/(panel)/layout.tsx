@@ -210,7 +210,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close admin menu"><X className="h-5 w-5" /></Button>
           </div>
           <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
-          <div className="space-y-2 border-t border-border/80 p-3"><div className="flex items-center justify-between px-2"><span className="text-xs text-muted-foreground">Appearance</span><ThemeToggle /></div><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
+          <div className="border-t border-border/80 p-3"><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
         </aside>
       </>}
 
@@ -227,7 +227,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="flex shrink-0 items-center gap-1">
               <AdminCommandTrigger compact />
               <AdminNotificationCenter userId={profile.id} />
-              <ThemeToggle />
+              
               <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
             </div>
           </div>
@@ -276,7 +276,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
             <AdminCommandTrigger />
             <AdminNotificationCenter userId={profile.id} />
-            <ThemeToggle />
+            
             <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
           </div>
         </header>
