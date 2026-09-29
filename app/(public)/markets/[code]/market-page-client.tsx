@@ -52,7 +52,7 @@ export default function MarketPageClient({ market, vehicles, config, shippingGui
                 Export to {market.name}
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-white/70">
-                Published vehicles buyers often review for {market.name}, plus destination notes from ANSHA.
+                Vehicles selected for {market.name}, plus destination notes from ANSHA.
                 Confirm import rules with your local broker before purchase.
               </p>
             </div>
@@ -144,10 +144,10 @@ export default function MarketPageClient({ market, vehicles, config, shippingGui
           <div>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
-                <p className="eyebrow">Featured stock</p>
-                <h2 className="text-xl font-extrabold tracking-tight">Vehicles to explore</h2>
+                <p className="eyebrow">Destination picks</p>
+                <h2 className="text-xl font-extrabold tracking-tight">Vehicles selected for {market.name}</h2>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Showing featured available inventory. This is not yet a country-specific best-seller ranking.
+                  Curated by ANSHA for this destination. Popularity and customer favorites are not tracked yet.
                 </p>
               </div>
               <Link href="/vehicles" className="text-sm font-semibold text-accent hover:underline">
@@ -162,7 +162,7 @@ export default function MarketPageClient({ market, vehicles, config, shippingGui
               </div>
             ) : (
               <p className="rounded-2xl border border-dashed border-accent/20 bg-card p-6 text-sm text-muted-foreground">
-                No published available vehicles right now. Browse the{' '}
+                No vehicles have been selected for {market.name} yet. Browse the{' '}
                 <Link href="/vehicles" className="font-semibold text-accent hover:underline">
                   vehicle catalog
                 </Link>{' '}
