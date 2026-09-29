@@ -37,7 +37,7 @@ type Filters = {
 
 const PAGE_SIZE = 1000;
 const fields: Array<{ value: PriceField; label: string }> = [
-  { value: 'price_fob', label: 'FOB' },
+  { value: 'price_fob', label: 'FOB (listing price)' },
   { value: 'price_cf', label: 'C&F' },
   { value: 'price_cif', label: 'CIF' },
 ];
