@@ -7,7 +7,7 @@ import { CatalogImage, publicVehicleImageUrl } from '@/components/public/catalog
 import { StockOriginBadge } from '@/components/public/stock-origin-badge';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
 import { effectiveDealPrice, formatDealDiscount } from '@/lib/site-offers';
-import { publicPriceLabel } from '@/lib/product-schema';
+import { publicPriceLabel, publicPriceLines } from '@/lib/product-schema';
 import { siteConfig } from '@/lib/site-config';
 import { equipmentCategoryLabel, isMachineryClass, vehicleClassBadgeLabel } from '@/lib/vehicle-class';
 import { vehicleImageAlt } from '@/lib/seo';
@@ -40,13 +40,24 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
     priceCf: vehicle.price_cf,
     priceCif: vehicle.price_cif,
   });
+  const catalogPriceLines = publicPriceLines({
+    showPrice: Boolean(vehicle.show_price),
+    stockStatus: vehicle.stock_status,
+    price: vehicle.price,
+    priceFob: vehicle.price_fob,
+    priceCf: vehicle.price_cf,
+    priceCif: vehicle.price_cif,
+  });
+  const savedPriceLabel = catalogPriceLines.length > 0
+    ? catalogPriceLines.map((line) => `${line.label} ${vehicle.currency} ${line.amount.toLocaleString()}`).join(' · ')
+    : priceLabel;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`)}`;
   const saveItem = toVehicleSaveItem({
     id: vehicle.id,
     slug: vehicle.slug,
     title: vehicle.title,
     subtitle: [vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(' '),
-    priceLabel,
+    priceLabel: savedPriceLabel,
     imageUrl: photoUrl,
   });
 
@@ -149,10 +160,26 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
         </div>
         <div className="mt-auto space-y-2 border-t border-orange-500/20 pt-2.5 sm:pt-4">
           <div className="min-w-0">
-            <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">
-              {dealPrice != null ? 'Deal price' : listPrice != null ? 'Export price' : 'Price'}
-            </span>
-            <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
+            {dealPrice != null ? (
+              <>
+                <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">Deal price</span>
+                <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
+              </>
+            ) : catalogPriceLines.length > 0 ? (
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-3">
+                {catalogPriceLines.map((line) => (
+                  <div key={line.label} className="min-w-0">
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300 sm:text-[10px]">{line.label}</span>
+                    <strong className="block truncate text-xs font-extrabold tracking-tight text-foreground sm:text-base">{vehicle.currency} {line.amount.toLocaleString()}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <>
+                <span className="block text-[9px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-[10px]">Price</span>
+                <strong className="block truncate text-sm font-extrabold tracking-tight text-foreground sm:text-lg">{priceLabel}</strong>
+              </>
+            )}
             {dealPrice != null && listPrice != null && dealPrice < listPrice ? (
               <span className="mt-0.5 block text-[11px] text-muted-foreground line-through sm:text-xs">
                 {vehicle.currency} {listPrice.toLocaleString()}
