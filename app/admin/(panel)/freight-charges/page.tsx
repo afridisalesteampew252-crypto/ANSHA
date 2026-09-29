@@ -330,8 +330,7 @@ export default function FreightChargesPage() {
             Freight Charges — List
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Route rates by source / destination, shipment type, and shipping company. Countries and ports
-            reuse Export masters where available.
+            Route rates by source / destination, shipment type, and shipping company. RoRo is priced per m³; 40-ft rates are the full container total. Countries and ports reuse Export masters where available.
           </p>
         </div>
         {canWrite ? (
@@ -412,7 +411,9 @@ export default function FreightChargesPage() {
                   </select>
                 </div>
                 <div className="space-y-1.5 sm:col-span-3">
-                  <Label htmlFor="fc-amount">Freight charge *</Label>
+                  <Label htmlFor="fc-amount">
+                    {form.shipment_type === 'roro' ? 'RoRo rate per m³ *' : form.shipment_type === 'container_40ft' ? '40-ft container total price *' : 'Freight charge *'}
+                  </Label>
                   <Input
                     id="fc-amount"
                     type="number"
@@ -685,7 +686,7 @@ export default function FreightChargesPage() {
                   </td>
                   <td className="px-4 py-3">{SHIPMENT_MODE_LABELS[row.shipment_type]}</td>
                   <td className="px-4 py-3 tabular-nums">
-                    {formatFreightAmount(Number(row.freight_charge), row.currency)}
+                    {formatFreightAmount(Number(row.freight_charge), row.currency)}{row.shipment_type === 'roro' ? ' / m³' : row.shipment_type === 'container_40ft' ? ' / 40-ft container' : ''}
                   </td>
                   <td className="px-4 py-3">{row.shipping_company || '—'}</td>
                   <td className="px-4 py-3">{row.contact_person || '—'}</td>

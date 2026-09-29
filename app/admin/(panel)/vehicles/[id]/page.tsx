@@ -24,6 +24,7 @@ import {
 import { toast } from 'sonner';
 import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
 import { StockLinkedInvoices } from '@/components/admin/stock-linked-invoices';
+import { VehicleFreightEstimator } from '@/components/admin/vehicle-freight-estimator';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -791,6 +792,8 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       </div>
 
       <StockLinkedInvoices vehicleId={vehicle.id} />
+
+      <VehicleFreightEstimator vehicleTitle={vehicle.title} />
 
       <Card id="photos" className="scroll-mt-24 overflow-hidden">
         <CardHeader>

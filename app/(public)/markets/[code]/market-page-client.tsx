@@ -6,6 +6,7 @@ import { ArrowLeft, Ship } from 'lucide-react';
 import { VehicleCard } from '@/components/public/vehicle-card';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { flagImageUrl, type ExportMarket } from '@/lib/export-markets';
+import type { ExportMarketShippingGuide } from '@/lib/export-market-shipping';
 import type { VehicleWithPhotos } from '@/lib/types';
 
 type MarketConfig = {
@@ -18,9 +19,10 @@ type Props = {
   market: ExportMarket;
   vehicles: VehicleWithPhotos[];
   config: MarketConfig | null;
+  shippingGuide: ExportMarketShippingGuide | null;
 };
 
-export default function MarketPageClient({ market, vehicles, config }: Props) {
+export default function MarketPageClient({ market, vehicles, config, shippingGuide }: Props) {
   const { dealForVehicle } = useInventoryDeals();
 
   /** Prefer admin-configured notes; fall back to catalog guidance — never invent duty/tax rates. */
@@ -72,6 +74,39 @@ export default function MarketPageClient({ market, vehicles, config }: Props) {
                 destination customs broker.
               </p>
             </div>
+            {shippingGuide ? (
+              <div className="catalog-panel p-5 sm:p-6">
+                <div className="flex items-center gap-2 text-accent">
+                  <Ship className="h-4 w-4" />
+                  <h2 className="text-sm font-bold uppercase tracking-wide">Import &amp; shipping guide</h2>
+                </div>
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {[
+                    ['Vehicle age guidance', shippingGuide.yearRestriction],
+                    ['Port / inland route', shippingGuide.destinationPort],
+                    ['Estimated transit time', shippingGuide.transitTime],
+                    ['Typical sailing schedule', shippingGuide.vesselSchedule],
+                    ['Shipping line', shippingGuide.shippingLine],
+                    ['Inspection / customs note', shippingGuide.inspection],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border border-accent/10 bg-background/70 p-3">
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
+                      <dd className="mt-1 text-sm leading-relaxed text-foreground/90">{value || 'Not supplied — confirm before booking.'}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {shippingGuide.routeNote ? (
+                  <p className="mt-3 rounded-xl bg-accent/5 p-3 text-sm leading-relaxed text-foreground/80">
+                    {shippingGuide.routeNote}
+                  </p>
+                ) : null}
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                  Indicative ANSHA guide based on supplied information, not an official customs ruling or carrier
+                  schedule. Verify vehicle eligibility with destination customs and confirm ports, sailing dates,
+                  transit time, inspection, and inland charges with your broker and shipping line before purchase.
+                </p>
+              </div>
+            ) : null}
             {(freight || fx) && (
               <div className="grid gap-4 sm:grid-cols-2">
                 {freight ? (
@@ -109,8 +144,11 @@ export default function MarketPageClient({ market, vehicles, config }: Props) {
           <div>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
-                <p className="eyebrow">Published stock</p>
-                <h2 className="text-xl font-extrabold tracking-tight">Vehicles for {market.name}</h2>
+                <p className="eyebrow">Featured stock</p>
+                <h2 className="text-xl font-extrabold tracking-tight">Vehicles to explore</h2>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Showing featured available inventory. This is not yet a country-specific best-seller ranking.
+                </p>
               </div>
               <Link href="/vehicles" className="text-sm font-semibold text-accent hover:underline">
                 View all

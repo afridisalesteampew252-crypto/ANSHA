@@ -1,3 +1,5 @@
+import { ADDITIONAL_EXPORT_MARKETS } from './export-market-shipping';
+
 export type ExportMarket = {
   code: string;
   name: string;
@@ -5,7 +7,7 @@ export type ExportMarket = {
   defaultImportNotes: string;
 };
 
-export const EXPORT_MARKETS: ExportMarket[] = [
+const BASE_EXPORT_MARKETS: ExportMarket[] = [
   // —— Middle East ——
   {
     code: 'AE',
@@ -503,6 +505,14 @@ export const EXPORT_MARKETS: ExportMarket[] = [
     defaultImportNotes:
       'Suva / Lautoka gateways. Island logistics — confirm vessel schedules and duty. Share chassis and preferred Incoterms early.',
   },
+];
+
+
+export const EXPORT_MARKETS: ExportMarket[] = [
+  ...BASE_EXPORT_MARKETS,
+  ...ADDITIONAL_EXPORT_MARKETS.filter(
+    (additional) => !BASE_EXPORT_MARKETS.some((market) => market.code === additional.code)
+  ),
 ];
 
 export function getExportMarket(code: string) {
