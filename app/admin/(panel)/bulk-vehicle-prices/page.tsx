@@ -181,7 +181,7 @@ export default function BulkVehiclePricesPage() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Banknote className="h-5 w-5" />Price update</CardTitle>
-        <CardDescription>Changes apply only to selected vehicles. Percentage reductions stop at zero; blank prices stay blank for percentage changes.</CardDescription>
+        <CardDescription>Changes apply only to selected vehicles. Any positive price you set or calculate is automatically made visible on the public site. Percentage reductions stop at zero; blank prices stay blank for percentage changes.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="space-y-1.5">
