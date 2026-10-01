@@ -81,10 +81,12 @@ function readState(key: string): FailureState {
 
 export function useLoginLockout(scope: 'admin' | 'customer', email: string) {
   const key = `${STORAGE_PREFIX}.${hashIdentifier(scope, email)}`;
-  const [state, setState] = useState<FailureState>(() => readState(key));
+  const [state, setState] = useState<FailureState>(emptyState);
+  const [now, setNow] = useState(0);
 
   const refresh = useCallback(() => {
     const next = readState(key);
+    setNow(Date.now());
     setState((current) => (
       current.attempts === next.attempts
       && current.windowStartedAt === next.windowStartedAt
@@ -113,6 +115,7 @@ export function useLoginLockout(scope: 'admin' | 'customer', email: string) {
     const previous = readState(key);
     const now = Date.now();
     if (previous.lockedUntil > now) {
+      setNow(now);
       setState(previous);
       return previous;
     }
@@ -127,19 +130,21 @@ export function useLoginLockout(scope: 'admin' | 'customer', email: string) {
     };
 
     writeStoredValue(key, JSON.stringify(next));
+    setNow(now);
     setState(next);
     return next;
   }, [key]);
 
   const clearFailures = useCallback(() => {
     removeStoredValue(key);
+    setNow(Date.now());
     setState(emptyState);
   }, [key]);
 
   return {
     attempts: state.attempts,
     lockedUntil: state.lockedUntil,
-    secondsRemaining: Math.max(0, Math.ceil((state.lockedUntil - Date.now()) / 1000)),
+    secondsRemaining: Math.max(0, Math.ceil((state.lockedUntil - now) / 1000)),
     refresh,
     recordFailure,
     clearFailures,
