@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
 import { isNativeCapacitorRuntime } from '@/lib/capacitor/runtime';
+import { useLoginLockout } from '@/components/auth/use-login-lockout';
 
 function GoogleMark() {
   return (
@@ -36,6 +37,8 @@ function PortalLoginInner() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const loginLockout = useLoginLockout('customer', email);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -95,6 +98,7 @@ function PortalLoginInner() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (mode === 'signin' && loginLockout.refresh().lockedUntil > Date.now()) return;
     setLoading(true);
 
     if (mode === 'signup') {
@@ -146,11 +150,15 @@ function PortalLoginInner() {
       password,
     });
     if (error) {
+      const attempt = loginLockout.recordFailure();
       setLoading(false);
-      toast.error('Invalid email or password.');
+      toast.error(attempt.lockedUntil > Date.now()
+        ? 'Too many failed attempts. Sign-in is locked for 5 minutes.'
+        : `Invalid email or password. ${3 - attempt.attempts} attempts remain before a temporary sign-in lock.`);
       return;
     }
 
+    loginLockout.clearFailures();
     const { data: profile } = await supabase
       .from('customer_profiles')
       .select('id')
@@ -283,9 +291,25 @@ function PortalLoginInner() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="portal-password">Password</Label>
-                  <Input id="portal-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} required />
+                  <div className="relative">
+                    <Input id="portal-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} minLength={8} required className="pr-11" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((visible) => !visible)}
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    </button>
+                  </div>
+                  {mode === 'signin' && loginLockout.secondsRemaining > 0 ? (
+                    <p role="alert" className="text-sm text-destructive">
+                      Too many failed attempts. Try again in {Math.floor(loginLockout.secondsRemaining / 60)}:{String(loginLockout.secondsRemaining % 60).padStart(2, '0')}.
+                    </p>
+                  ) : null}
                 </div>
-                <Button type="submit" className="h-11 w-full rounded-xl" disabled={loading || oauthLoading}>
+                <Button type="submit" className="h-11 w-full rounded-xl" disabled={loading || oauthLoading || (mode === 'signin' && loginLockout.secondsRemaining > 0)}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {mode === 'signup' ? 'Create customer account' : 'Sign in'}
                 </Button>
