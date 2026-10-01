@@ -3,18 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { useLoginLockout } from '@/components/auth/use-login-lockout';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const loginLockout = useLoginLockout('admin', email);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
 
@@ -38,6 +41,7 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loginLockout.refresh().lockedUntil > Date.now()) return;
     setLoading(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -46,10 +50,15 @@ export default function AdminLoginPage() {
     });
 
     if (error) {
+      const attempt = loginLockout.recordFailure();
       setLoading(false);
-      toast.error('Invalid email or password.');
+      toast.error(attempt.lockedUntil > Date.now()
+        ? 'Too many failed attempts. Sign-in is locked for 5 minutes.'
+        : `Invalid email or password. ${3 - attempt.attempts} attempts remain before a temporary sign-in lock.`);
       return;
     }
+
+    loginLockout.clearFailures();
 
     const { data: profile } = await supabase
       .from('admin_profiles')
@@ -107,16 +116,33 @@ export default function AdminLoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="admin-password">Password</Label>
-              <Input
-                id="admin-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Your password"
-              />
+              <div className="relative">
+                <Input
+                  id="admin-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Your password"
+                  className="pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                </button>
+              </div>
             </div>
-            <Button type="submit" variant="accent" className="w-full shadow-md shadow-accent/20" size="lg" disabled={loading}>
+            {loginLockout.secondsRemaining > 0 ? (
+              <p role="alert" className="text-sm text-destructive">
+                Too many failed attempts. Try again in {Math.floor(loginLockout.secondsRemaining / 60)}:{String(loginLockout.secondsRemaining % 60).padStart(2, '0')}.
+              </p>
+            ) : null}
+            <Button type="submit" variant="accent" className="w-full shadow-md shadow-accent/20" size="lg" disabled={loading || loginLockout.secondsRemaining > 0}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
