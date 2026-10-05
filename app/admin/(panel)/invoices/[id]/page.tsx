@@ -67,6 +67,7 @@ export default function InvoiceDetailPage() {
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [fieldAgent, setFieldAgent] = useState(false);
   const [canFinance, setCanFinance] = useState(false);
+  const [manager, setManager] = useState(false);
   const [payment, setPayment] = useState({
     amount: '',
     payment_date: new Date().toISOString().slice(0, 10),
@@ -83,6 +84,7 @@ export default function InvoiceDetailPage() {
       const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle();
       setFieldAgent(isFieldAgentRole(profile?.role));
       setCanFinance(canManageReceivables(profile?.role));
+      setManager(profile?.role === 'manager');
     }
     const [invoiceResult, itemResult, paymentResult, allocationResult] = await Promise.all([
       supabase.from('invoices').select('*').eq('id', params.id).maybeSingle(),
@@ -150,7 +152,7 @@ export default function InvoiceDetailPage() {
   }, [invoice]);
 
   const updateStatus = async (status: string) => {
-    if (!invoice || fieldAgent) return;
+    if (!invoice || fieldAgent || manager) return;
     setBusy(true);
     const { error } = await supabase.from('invoices').update({ status }).eq('id', invoice.id);
     setBusy(false);
@@ -296,7 +298,7 @@ export default function InvoiceDetailPage() {
   }
 
   const verificationUrl = `${siteConfig.url}/verify/invoice/${invoice.verification_code}`;
-  const canEditDraft = !fieldAgent || (invoice.document_type === 'proforma_invoice' && invoice.status === 'draft');
+  const canEditDraft = !manager && (!fieldAgent || (invoice.document_type === 'proforma_invoice' && invoice.status === 'draft'));
 
   return (
     <div className="invoice-detail-page mx-auto max-w-7xl space-y-6">
@@ -356,7 +358,7 @@ export default function InvoiceDetailPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Invoice status</CardTitle></CardHeader>
             <CardContent>
-              {fieldAgent ? (
+              {fieldAgent || manager ? (
                 <>
                   <p className="rounded-md border bg-secondary/40 px-3 py-2 text-sm capitalize">{effectiveStatus.replace('_', ' ')}</p>
                   <p className="mt-2 text-xs text-muted-foreground">Only accounts (or ops) can mark drafts as sent.</p>
