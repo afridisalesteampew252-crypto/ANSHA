@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   Contact,
   FileSpreadsheet,
+  Eye,
+  EyeOff,
   KeyRound,
   Loader2,
   MapPin,
@@ -145,6 +147,8 @@ export default function CustomerAccountPage() {
   const [portalEmail, setPortalEmail] = useState('');
   const [portalPassword, setPortalPassword] = useState('');
   const [portalBusy, setPortalBusy] = useState(false);
+  const [portalResetPassword, setPortalResetPassword] = useState('');
+  const [portalResetVisible, setPortalResetVisible] = useState(false);
   const [isAccountAdmin, setIsAccountAdmin] = useState(false);
   const [remittanceId, setRemittanceId] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
@@ -478,6 +482,27 @@ export default function CustomerAccountPage() {
     await load();
   };
 
+  const resetPortalPassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!customer || !portalLink || !isAccountAdmin) return;
+    if (portalResetPassword.length < 8) {
+      setNotice('Portal password must be at least 8 characters.');
+      return;
+    }
+    setPortalBusy(true);
+    setNotice('Changing portal password…');
+    const { data, error } = await supabase.functions.invoke('portal-reset-password', {
+      body: { customer_id: customer.id, password: portalResetPassword },
+    });
+    setPortalBusy(false);
+    if (error || data?.error) {
+      setNotice(data?.error || error?.message || 'Could not change the portal password.');
+      return;
+    }
+    setPortalResetPassword('');
+    setNotice(`Portal password changed for ${data.email}.`);
+  };
+
   if (loading) return <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   if (!customer) return <Card><CardContent className="p-10 text-center">Customer account not found.</CardContent></Card>;
 
@@ -777,10 +802,41 @@ export default function CustomerAccountPage() {
           This creates a separate login for the customer at <Link href="/portal" className="font-semibold text-accent underline">/portal</Link> so they can view their own invoices. It never adds them as staff.
         </p>
         {portalLink ? (
-          <p className="rounded-lg border bg-background p-3 text-sm">
-            Portal login active for <strong>{portalLink.email}</strong>
-            {portalLink.is_active ? '' : ' (inactive)'}.
-          </p>
+          <div className="space-y-3 rounded-lg border bg-background p-3">
+            <p className="text-sm">
+              Portal login active for <strong>{portalLink.email}</strong>
+              {portalLink.is_active ? '' : ' (inactive)'}.
+            </p>
+            {isAccountAdmin && portalLink.is_active ? (
+              <form className="grid gap-3 sm:grid-cols-[1fr_auto]" onSubmit={(event) => void resetPortalPassword(event)}>
+                <div className="relative">
+                  <Label htmlFor="portal-reset-password" className="sr-only">New portal password</Label>
+                  <Input
+                    id="portal-reset-password"
+                    type={portalResetVisible ? 'text' : 'password'}
+                    minLength={8}
+                    required
+                    value={portalResetPassword}
+                    onChange={(event) => setPortalResetPassword(event.target.value)}
+                    placeholder="New portal password (8+ characters)"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    aria-label={portalResetVisible ? 'Hide password' : 'Show password'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    onClick={() => setPortalResetVisible((value) => !value)}
+                  >
+                    {portalResetVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <Button type="submit" variant="outline" disabled={portalBusy}>
+                  {portalBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                  Change password
+                </Button>
+              </form>
+            ) : null}
+          </div>
         ) : isAccountAdmin ? (
           <form className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]" onSubmit={(event) => void enablePortal(event)}>
             <div className="space-y-1.5">
