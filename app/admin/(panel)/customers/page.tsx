@@ -308,7 +308,7 @@ export default function CustomersPage() {
           </Button>
           <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-muted-foreground sm:max-w-xs">
             <strong className="text-foreground">Portal tip:</strong> open a customer →{' '}
-            <span className="font-semibold text-accent">Account &amp; portal</span> → Enable portal.
+            <span className="font-semibold text-accent">Customer &amp; Portal</span> → Enable portal.
           </div>
         </div>
       </div>
