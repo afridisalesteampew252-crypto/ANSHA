@@ -543,13 +543,13 @@ export default function CustomersPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-60">
                                 <DropdownMenuItem asChild className="py-2.5">
-                                  <Link href={`/admin/customers/${item.id}#profile`}>
+                                  <Link href={`/admin/customers/${item.id}?section=customer`}>
                                     <UserRoundCheck className="h-4 w-4" />
                                     Customer &amp; Portal
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild className="py-2.5">
-                                  <Link href={`/admin/customers/${item.id}#soa`}>
+                                  <Link href={`/admin/customers/${item.id}?section=accounts`}>
                                     <WalletCards className="h-4 w-4" />
                                     Accounts &amp; Invoices
                                   </Link>
