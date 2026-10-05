@@ -139,7 +139,6 @@ function PortalAccountInner() {
     const available: Record<string, number> = {};
 
     for (const row of invoices) {
-      if (!receivableDocument(row.document_type)) continue;
       addToCurrencyMap(invoiced, row.currency, Number(row.total_amount || 0));
       addToCurrencyMap(outstanding, row.currency, Number(row.balance_due || 0));
     }
