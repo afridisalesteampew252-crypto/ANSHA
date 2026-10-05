@@ -423,11 +423,20 @@ export default function CustomersPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <Link
-                                href={`/admin/customers/${item.id}`}
-                                className="font-semibold text-primary hover:underline"
-                              >
-                                {item.customer_code}
-                              </Link>
+                                  href={`/admin/customers/${item.id}`}
+                                  className="font-semibold text-primary hover:underline"
+                                >
+                                  {item.customer_code}
+                                </Link>
+                                <Badge
+                                  variant="outline"
+                                  className={item.is_active
+                                    ? 'border-emerald-600/30 text-emerald-700 dark:text-emerald-300'
+                                    : 'border-destructive/30 text-destructive'}
+                                >
+                                  {item.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </div>
                               <p className="truncate">
                                 <Link
                                   href={`/admin/customers/${item.id}`}
@@ -452,22 +461,37 @@ export default function CustomersPage() {
                             const owner = assignees.find((person) => person.id === item.owner_id);
                             if (canAssign) {
                               return (
-                                <label className="block min-w-[12rem]">
-                                  <span className="sr-only">Account owner for {item.full_name}</span>
-                                  <select
-                                    value={owner?.id || ''}
-                                    disabled={assigningId === item.id}
-                                    onChange={(event) => void assignCustomer(item.id, event.target.value)}
-                                    className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none transition focus:ring-2 focus:ring-ring disabled:opacity-60"
-                                  >
-                                    <option value="">Unassigned</option>
-                                    {assignees.map((person) => (
-                                      <option key={person.id} value={person.id}>
-                                        {person.full_name} · {person.role}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
+                                <div className="flex min-w-[12rem] flex-col gap-2">
+                                  <label>
+                                    <span className="sr-only">Account owner for {item.full_name}</span>
+                                    <select
+                                      value={owner?.id || ''}
+                                      disabled={assigningId === item.id}
+                                      onChange={(event) => void assignCustomer(item.id, event.target.value)}
+                                      className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none transition focus:ring-2 focus:ring-ring disabled:opacity-60"
+                                    >
+                                      <option value="">Unassigned</option>
+                                      {selfRole === 'admin' && selfId ? <option value={selfId}>Me · Admin</option> : null}
+                                      {assignees.map((person) => (
+                                        <option key={person.id} value={person.id}>
+                                          {person.full_name} · {person.role}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
+                                  {!owner && selfId ? (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 justify-start px-2 text-xs"
+                                      disabled={assigningId === item.id}
+                                      onClick={() => void assignCustomer(item.id, selfId)}
+                                    >
+                                      Assign to me
+                                    </Button>
+                                  ) : null}
+                                </div>
                               );
                             }
                             return owner ? (
