@@ -323,23 +323,7 @@ export function AdminPartCard({
                       Credit note
                     </Link>
                   </DropdownMenuItem>
-                  {!fieldAgent ? (
-                    <DropdownMenuItem asChild>
-                      <Link href={`/admin/parts/${part.id}`}>
-                        <Pencil className="h-3.5 w-3.5" />
-                        Fix profit data
-                      </Link>
-                    </DropdownMenuItem>
-                  ) : null}
                 </>
-              ) : null}
-              {!fieldAgent ? (
-                <DropdownMenuItem asChild>
-                  <Link href={`/admin/parts/${part.id}`}>
-                    <Eye className="h-3.5 w-3.5" />
-                    View stock details
-                  </Link>
-                </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem asChild>
                 <Link href={`/parts/${part.slug}`} target="_blank">
