@@ -31,7 +31,7 @@ type InventoryRow = { stock_status: string | null; stock_origin: string | null }
 
 const ACCENT = 'hsl(0 75% 47%)';
 const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
-const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice'].includes(invoice.document_type) && invoice.status !== 'cancelled';
+const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice', 'proforma_invoice'].includes(invoice.document_type) && invoice.status !== 'cancelled' && invoice.status !== 'draft';
 const rangeFrom = () => format(subMonths(new Date(), 5), 'yyyy-MM-01');
 const rangeTo = () => format(new Date(), 'yyyy-MM-dd');
 
