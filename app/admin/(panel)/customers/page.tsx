@@ -541,57 +541,32 @@ export default function CustomersPage() {
                                   <ChevronDown className="h-3.5 w-3.5 opacity-70" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}`}>View Customer</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}#soa`}>
-                                    <WalletCards className="h-3.5 w-3.5" />
-                                    Statement of Account
+                              <DropdownMenuContent align="end" className="w-60">
+                                <DropdownMenuItem asChild className="py-2.5">
+                                  <Link href={`/admin/customers/${item.id}#profile`}>
+                                    <UserRoundCheck className="h-4 w-4" />
+                                    Customer &amp; Portal
                                   </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}#profile`}>Edit Profile</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}#company`}>Edit Company Info</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}#contact`}>Edit Contact Info</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}#details`}>Edit Customer Details</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}#consignee`}>
-                                    Add/Edit Consignee Details
+                                <DropdownMenuItem asChild className="py-2.5">
+                                  <Link href={`/admin/customers/${item.id}#soa`}>
+                                    <WalletCards className="h-4 w-4" />
+                                    Accounts &amp; Invoices
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => openEdit(item)}>
-                                  <Pencil className="h-3.5 w-3.5" />
-                                  Quick edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                  <Link href={`/admin/customers/${item.id}#portal`}>
-                                    <KeyRound className="h-3.5 w-3.5" />
-                                    {portal ? 'Portal' : 'Enable portal'}
-                                  </Link>
-                                </DropdownMenuItem>
                                 {selfRole === 'admin' ? (
                                   <DropdownMenuItem onSelect={() => void setCustomerActive(item.id, !item.is_active)}>
                                     {item.is_active ? <CircleOff className="h-3.5 w-3.5" /> : <CircleCheck className="h-3.5 w-3.5" />}
                                     {item.is_active ? 'Deactivate customer' : 'Activate customer'}
                                   </DropdownMenuItem>
                                 ) : null}
-                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-destructive focus:text-destructive"
                                   onSelect={() => void remove(item.id)}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
-                                  Delete
+                                  Delete customer
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
