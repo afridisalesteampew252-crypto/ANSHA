@@ -441,23 +441,7 @@ export function AdminVehicleCard({
                       Credit note
                     </Link>
                   </DropdownMenuItem>
-                  {!fieldAgent ? (
-                    <DropdownMenuItem asChild>
-                      <Link href={`/admin/vehicles/${vehicle.id}`}>
-                        <Pencil className="h-3.5 w-3.5" />
-                        Fix profit data
-                      </Link>
-                    </DropdownMenuItem>
-                  ) : null}
                 </>
-              ) : null}
-              {!fieldAgent ? (
-                <DropdownMenuItem asChild>
-                  <Link href={`/admin/vehicles/${vehicle.id}`}>
-                    <Eye className="h-3.5 w-3.5" />
-                    View stock details
-                  </Link>
-                </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem asChild>
                 <Link href={`/vehicles/${vehicle.slug}`} target="_blank">
