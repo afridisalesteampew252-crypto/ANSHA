@@ -45,7 +45,7 @@ export default function PortalHomePage() {
     if (!profile.data) { setError('Your customer account is unavailable. Please contact support.'); setLoading(false); return; }
     setName(profile.data.full_name || profile.data.email || 'Customer');
     const books = (soa.data || {}) as Soa;
-    setInvoices((books.invoices || []).filter((row) => row.document_type === 'tax_invoice' || row.document_type === 'commercial_invoice'));
+    setInvoices((books.invoices || []).filter((row) => row.status !== 'cancelled'));
     const stock = (reserved.data || { vehicles: [], parts: [] }) as Reservations;
     setReservations([...(stock.vehicles || []), ...(stock.parts || [])].filter((row) => row.stock_status === 'reserved'));
     setInquiries((inquiry.data || []) as Inquiry[]);
@@ -58,11 +58,11 @@ export default function PortalHomePage() {
 
   const balances = useMemo(() => {
     const totals: Record<string, number> = {};
-    invoices.filter((row) => row.status !== 'cancelled' && Number(row.balance_due) > 0)
+    invoices.filter((row) => row.status !== 'cancelled' && row.status !== 'draft' && Number(row.balance_due) > 0)
       .forEach((row) => addToCurrencyMap(totals, row.currency, Number(row.balance_due)));
     return totals;
   }, [invoices]);
-  const openInvoices = invoices.filter((row) => row.status !== 'cancelled' && Number(row.balance_due) > 0)
+  const openInvoices = invoices.filter((row) => row.status !== 'cancelled' && row.status !== 'draft' && Number(row.balance_due) > 0)
     .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
   const pendingProofs = proofs.filter((row) => row.status === 'submitted').length;
 
