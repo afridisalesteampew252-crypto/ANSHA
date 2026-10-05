@@ -471,7 +471,6 @@ export default function CustomersPage() {
                                       className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-medium outline-none transition focus:ring-2 focus:ring-ring disabled:opacity-60"
                                     >
                                       <option value="">Unassigned</option>
-                                      {selfRole === 'admin' && selfId ? <option value={selfId}>Me · Admin</option> : null}
                                       {assignees.map((person) => (
                                         <option key={person.id} value={person.id}>
                                           {person.full_name} · {person.role}
@@ -489,6 +488,18 @@ export default function CustomersPage() {
                                       onClick={() => void assignCustomer(item.id, selfId)}
                                     >
                                       Assign to me
+                                    </Button>
+                                  ) : null}
+                                  {owner ? (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 justify-start px-2 text-xs text-destructive"
+                                      disabled={assigningId === item.id}
+                                      onClick={() => void assignCustomer(item.id, '')}
+                                    >
+                                      Remove assignment
                                     </Button>
                                   ) : null}
                                 </div>
