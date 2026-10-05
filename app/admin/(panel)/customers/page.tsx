@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ChevronDown,
+  CircleCheck,
+  CircleOff,
   KeyRound,
   Pencil,
   Plus,
@@ -78,6 +80,7 @@ export default function CustomersPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [message, setMessage] = useState('');
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -233,6 +236,19 @@ export default function CustomersPage() {
     await load();
   };
 
+  const setCustomerActive = async (customerId: string, isActive: boolean) => {
+    if (selfRole !== 'admin') return;
+    const label = isActive ? 'activate' : 'deactivate';
+    if (!window.confirm(`Are you sure you want to ${label} this customer account?`)) return;
+    const { error } = await supabase.from('customers').update({ is_active: isActive }).eq('id', customerId);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setMessage(isActive ? 'Customer account activated.' : 'Customer account deactivated.');
+    await load();
+  };
+
   const assignCustomer = async (customerId: string, ownerId: string) => {
     setAssigningId(customerId);
     const { error } = await supabase.rpc('assign_customer_owner', {
@@ -250,6 +266,7 @@ export default function CustomersPage() {
 
   const visible = customers.filter((item) => {
     const portal = portalByCustomer[item.id];
+    if (statusFilter !== 'all' && (statusFilter === 'active') !== item.is_active) return false;
     return matchesQuery(query, [
       item.customer_code,
       item.full_name,
@@ -326,11 +343,23 @@ export default function CustomersPage() {
             aria-label="Search customers"
           />
         </div>
-        <p className="text-sm text-muted-foreground">
-          {visible.length === customers.length
-            ? `${customers.length} customer${customers.length === 1 ? '' : 's'}`
-            : `${visible.length} of ${customers.length}`}
-        </p>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}
+            className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Filter customers by status"
+          >
+            <option value="all">All customers</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+          <span>
+            {visible.length === customers.length && statusFilter === 'all'
+              ? `${customers.length} customer${customers.length === 1 ? '' : 's'}`
+              : `${visible.length} of ${customers.length}`}
+          </span>
+        </div>
       </div>
 
       <Card>
@@ -392,7 +421,8 @@ export default function CustomersPage() {
                               </div>
                             )}
                             <div className="min-w-0">
-                              <Link
+                              <div className="flex items-center gap-2">
+                                <Link
                                 href={`/admin/customers/${item.id}`}
                                 className="font-semibold text-primary hover:underline"
                               >
@@ -514,6 +544,12 @@ export default function CustomersPage() {
                                     {portal ? 'Portal' : 'Enable portal'}
                                   </Link>
                                 </DropdownMenuItem>
+                                {selfRole === 'admin' ? (
+                                  <DropdownMenuItem onSelect={() => void setCustomerActive(item.id, !item.is_active)}>
+                                    {item.is_active ? <CircleOff className="h-3.5 w-3.5" /> : <CircleCheck className="h-3.5 w-3.5" />}
+                                    {item.is_active ? 'Deactivate customer' : 'Activate customer'}
+                                  </DropdownMenuItem>
+                                ) : null}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-destructive focus:text-destructive"
