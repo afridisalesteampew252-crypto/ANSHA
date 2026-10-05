@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Banknote,
@@ -131,6 +131,10 @@ function ReadField({ label, value }: { label: string; value: string | null | und
 export default function CustomerAccountPage() {
   const params = useParams<{ id: string }>();
   const customerId = params.id;
+  const searchParams = useSearchParams();
+  const [activeSection, setActiveSection] = useState<'customer' | 'accounts'>(() =>
+    searchParams.get('section') === 'accounts' ? 'accounts' : 'customer'
+  );
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -153,6 +157,11 @@ export default function CustomerAccountPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  useEffect(() => {
+    const section = searchParams.get('section');
+    if (section === 'accounts' || section === 'customer') setActiveSection(section);
+  }, [searchParams]);
+
 
   const applyCustomerToForm = (row: Customer) => {
     setProfileForm({
@@ -514,17 +523,39 @@ export default function CustomerAccountPage() {
             : ''}
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline">
-          <Link href="#profile"><UserRound className="h-4 w-4" />Customer &amp; Portal</Link>
+      <div
+        role="tablist"
+        aria-label="Customer account sections"
+        className="grid w-full grid-cols-2 gap-1 rounded-xl border bg-secondary/50 p-1 sm:w-auto sm:min-w-[28rem]"
+      >
+        <Button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === 'customer'}
+          aria-controls="customer-section"
+          variant={activeSection === 'customer' ? 'default' : 'ghost'}
+          className="justify-center"
+          onClick={() => setActiveSection('customer')}
+        >
+          <UserRound className="h-4 w-4" />
+          Customer &amp; Portal
         </Button>
-        <Button asChild variant="outline">
-          <Link href="#soa"><WalletCards className="h-4 w-4" />Accounts &amp; Invoices</Link>
+        <Button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === 'accounts'}
+          aria-controls="accounts-section"
+          variant={activeSection === 'accounts' ? 'default' : 'ghost'}
+          className="justify-center"
+          onClick={() => setActiveSection('accounts')}
+        >
+          <WalletCards className="h-4 w-4" />
+          Accounts &amp; Invoices
         </Button>
       </div>
     </div>
 
-    <div className="grid gap-6 xl:grid-cols-2">
+    <div id="customer-section" role="tabpanel" aria-label="Customer and portal" hidden={activeSection !== 'customer'} className="grid gap-6 xl:grid-cols-2">
       <Card id="profile" className={cn('scroll-mt-24', editingSection === 'profile' && 'ring-2 ring-accent/35')}>
         <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2 space-y-0">
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -710,7 +741,7 @@ export default function CustomerAccountPage() {
       </Card>
     </div>
 
-    <Card id="consignee" className={cn('scroll-mt-24', editingSection === 'consignee' && 'ring-2 ring-accent/35')}>
+    <Card id="consignee" className={cn('scroll-mt-24', editingSection === 'consignee' && 'ring-2 ring-accent/35')} hidden={activeSection !== 'customer'}>
       <CardHeader className="flex flex-row items-start justify-between gap-3 pb-2 space-y-0">
         <CardTitle className="flex items-center gap-2 text-lg">
           <ShoppingBag className="h-5 w-5 text-accent" />
@@ -783,7 +814,7 @@ export default function CustomerAccountPage() {
       </CardContent>
     </Card>
 
-    <Card id="portal" className="scroll-mt-24 border-accent/25 bg-accent/[0.04]">
+    <Card id="portal" className="scroll-mt-24 border-accent/25 bg-accent/[0.04]" hidden={activeSection !== 'customer'}>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <KeyRound className="h-5 w-5 text-accent" />
@@ -835,7 +866,7 @@ export default function CustomerAccountPage() {
       </CardContent>
     </Card>
 
-    <section id="soa" className="scroll-mt-24 space-y-6">
+    <section id="accounts-section" role="tabpanel" aria-label="Accounts and invoices" hidden={activeSection !== 'accounts'} className="scroll-mt-24 space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
         <div>
           <h2 className="text-lg font-bold tracking-tight">Statement of Account</h2>
