@@ -10,8 +10,6 @@ import {
   CheckCircle2,
   Contact,
   FileSpreadsheet,
-  Eye,
-  EyeOff,
   KeyRound,
   Loader2,
   MapPin,
@@ -147,8 +145,6 @@ export default function CustomerAccountPage() {
   const [portalEmail, setPortalEmail] = useState('');
   const [portalPassword, setPortalPassword] = useState('');
   const [portalBusy, setPortalBusy] = useState(false);
-  const [portalResetPassword, setPortalResetPassword] = useState('');
-  const [portalResetVisible, setPortalResetVisible] = useState(false);
   const [isAccountAdmin, setIsAccountAdmin] = useState(false);
   const [remittanceId, setRemittanceId] = useState('');
   const [invoiceId, setInvoiceId] = useState('');
