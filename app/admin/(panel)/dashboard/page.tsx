@@ -203,12 +203,13 @@ export default function AdminDashboardPage() {
         draftProformas: 0,
         reservations: 0,
       });
-      const configuredCurrencies = Array.isArray(financeSettingsRes.data?.enabled_currencies)
-        ? financeSettingsRes.data.enabled_currencies
+      const financeSettings = financeSettingsRes.data;
+      const configuredCurrencies = Array.isArray(financeSettings?.enabled_currencies)
+        ? financeSettings.enabled_currencies
         : [];
       setEnabledMoneyCurrencies(listCurrencies([
         ...(configuredCurrencies as string[]),
-        String(financeSettingsRes.data?.default_currency || 'AED'),
+        String(financeSettings?.default_currency || 'AED'),
       ]));
       setInvoices((invoiceRes.data || []) as Invoice[]);
       setRemittances((remittanceRes.data || []) as Remittance[]);
