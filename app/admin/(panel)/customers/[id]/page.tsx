@@ -515,9 +515,12 @@ export default function CustomerAccountPage() {
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline"><Link href="#soa">Statement of Account</Link></Button>
-        <Button asChild variant="outline"><Link href={`/admin/chat?customer=${customer.id}`}>Open linked chat</Link></Button>
-        <Button asChild><Link href={`/admin/invoices/new?customer=${customer.id}`}><ReceiptText className="h-4 w-4" />Create invoice</Link></Button>
+        <Button asChild variant="outline">
+          <Link href="#profile"><UserRound className="h-4 w-4" />Customer &amp; Portal</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="#soa"><WalletCards className="h-4 w-4" />Accounts &amp; Invoices</Link>
+        </Button>
       </div>
     </div>
 
