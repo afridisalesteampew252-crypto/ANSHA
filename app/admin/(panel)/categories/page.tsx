@@ -137,11 +137,13 @@ export default function AdminCategoriesPage() {
                   <p className="text-xs text-muted-foreground mt-1">Sort order: {cat.sort_order}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(cat)}>
-                    <Pencil className="h-4 w-4" />
+                  <Button variant="outline" size="sm" onClick={() => openEdit(cat)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(cat)}>
-                    <Trash2 className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(cat)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete
                   </Button>
                 </div>
               </CardContent>
