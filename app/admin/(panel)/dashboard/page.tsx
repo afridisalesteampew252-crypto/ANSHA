@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import {
   activeCurrencies,
   addToCurrencyMap,
+  listCurrencies,
   formatMoneyCompact,
   normalizeCurrency,
 } from '@/lib/money';
@@ -114,6 +115,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [moneyCurrency, setMoneyCurrency] = useState('all');
+  const [enabledMoneyCurrencies, setEnabledMoneyCurrencies] = useState<string[]>([]);
 
   useEffect(() => {
     setLoadError('');
@@ -164,7 +166,7 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      const [partsRes, vehiclesRes, customersRes, inquiryRes, recentRes, invoiceRes, remittanceRes, partStockRes, vehicleStockRes, membershipRes, portalRes, analyticsRes, pushRes] = await Promise.all([
+      const [partsRes, vehiclesRes, customersRes, inquiryRes, recentRes, invoiceRes, remittanceRes, partStockRes, vehicleStockRes, membershipRes, portalRes, analyticsRes, pushRes, financeSettingsRes] = await Promise.all([
         supabase.from('parts').select('id', { count: 'exact', head: true }),
         supabase.from('vehicles').select('id', { count: 'exact', head: true }),
         supabase.from('customers').select('id', { count: 'exact', head: true }),
@@ -178,6 +180,7 @@ export default function AdminDashboardPage() {
         supabase.from('customer_profiles').select('id', { count: 'exact', head: true }),
         supabase.rpc('get_ops_analytics_summary', { p_from: from, p_to: to }),
         supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }),
+        supabase.from('system_finance_settings').select('default_currency,enabled_currencies').limit(1).maybeSingle(),
       ]);
       let unreadChats = 0;
       const memberships = membershipRes.data || [];
@@ -200,6 +203,13 @@ export default function AdminDashboardPage() {
         draftProformas: 0,
         reservations: 0,
       });
+      const configuredCurrencies = Array.isArray(financeSettingsRes.data?.enabled_currencies)
+        ? financeSettingsRes.data.enabled_currencies
+        : [];
+      setEnabledMoneyCurrencies(listCurrencies([
+        ...(configuredCurrencies as string[]),
+        String(financeSettingsRes.data?.default_currency || 'AED'),
+      ]));
       setInvoices((invoiceRes.data || []) as Invoice[]);
       setRemittances((remittanceRes.data || []) as Remittance[]);
       setInventory([...(partStockRes.data || []), ...(vehicleStockRes.data || [])] as InventoryRow[]);
@@ -262,8 +272,11 @@ export default function AdminDashboardPage() {
   }, [analytics, receivables, remittances]);
 
   const moneyCurrencies = useMemo(
-    () => activeCurrencies(moneyByCurrency.invoiced, moneyByCurrency.received, moneyByCurrency.outstanding),
-    [moneyByCurrency]
+    () => listCurrencies([
+      ...enabledMoneyCurrencies,
+      ...activeCurrencies(moneyByCurrency.invoiced, moneyByCurrency.received, moneyByCurrency.outstanding),
+    ]),
+    [enabledMoneyCurrencies, moneyByCurrency]
   );
 
   const chartCurrency = moneyCurrency === 'all'
