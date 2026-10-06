@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import {
   Car,
   Gauge,
@@ -14,7 +12,6 @@ import {
   Hash,
   Palette,
 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { VehicleCard } from '@/components/public/vehicle-card';
@@ -22,125 +19,36 @@ import { VehiclePhotoGallery } from '@/components/public/vehicle-photo-gallery';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
-import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
-import { effectiveDealPrice } from '@/lib/site-offers';
-import { publicPriceLabel, resolveProductOfferPrice } from '@/lib/product-schema';
+import { resolveListingPricing } from '@/lib/listing-pricing';
 import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
-import { publicVehiclePhotos } from '@/lib/vehicle-photos';
+import type { PublicVehicleCard } from '@/lib/public-card-data';
 import {
   equipmentCategoryLabel,
   isMachineryClass,
   vehicleClassLabel,
 } from '@/lib/vehicle-class';
 
-export function VehicleDetailClient({ slug }: { slug: string }) {
-  const [vehicle, setVehicle] = useState<VehicleWithPhotos | null>(null);
-  const [relatedVehicles, setRelatedVehicles] = useState<VehicleWithPhotos[]>([]);
-  const [deal, setDeal] = useState<SiteOffer | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFoundFlag, setNotFoundFlag] = useState(false);
-  const [coverIndex, setCoverIndex] = useState(0);
+export type VehicleDetailClientProps = {
+  vehicle: VehicleWithPhotos;
+  deal: SiteOffer | null;
+  relatedVehicles: PublicVehicleCard[];
+};
 
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from('vehicles')
-        .select('*, vehicle_photos(*)')
-        .eq('slug', slug)
-        .eq('is_published', true)
-        .eq('stock_status', 'available')
-        .maybeSingle();
-
-      if (error || !data) {
-        setNotFoundFlag(true);
-        setLoading(false);
-        return;
-      }
-
-      const typedData = data as unknown as VehicleWithPhotos;
-      const sortedPhotos = publicVehiclePhotos(typedData.vehicle_photos).sort(
-        (a, b) => a.sort_order - b.sort_order
-      );
-      const nextCover = sortedPhotos.findIndex((p) => p.is_cover);
-      setVehicle({ ...typedData, vehicle_photos: sortedPhotos });
-      setCoverIndex(nextCover >= 0 ? nextCover : 0);
-
-      const [{ data: offerRows }, relatedRes] = await Promise.all([
-        supabase
-          .from('site_offers')
-          .select('*')
-          .eq('is_published', true)
-          .eq('vehicle_id', typedData.id)
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(1),
-        typedData.make
-          ? supabase
-              .from('vehicles')
-              .select('*, vehicle_photos(*)')
-              .eq('is_published', true)
-              .eq('stock_status', 'available')
-              .eq('make', typedData.make)
-              .neq('id', typedData.id)
-              .order('is_featured', { ascending: false })
-              .order('created_at', { ascending: false })
-              .limit(4)
-          : Promise.resolve({ data: [] as unknown[] }),
-      ]);
-      setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
-      setRelatedVehicles((relatedRes.data || []) as unknown as VehicleWithPhotos[]);
-      setLoading(false);
-    })();
-  }, [slug]);
-
-  if (notFoundFlag) {
-    notFound();
-  }
-
-  if (loading || !vehicle) {
-    return (
-      <div className="container-page overflow-x-clip py-8">
-        <div className="grid min-w-0 gap-8 lg:grid-cols-2">
-          <Skeleton className="aspect-[4/3] w-full rounded-xl" />
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-40" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+/**
+ * Vehicle detail view. Data is loaded on the server (ISR) and passed in as props so the
+ * full listing, including the price, is in the initial HTML.
+ */
+export function VehicleDetailClient({ vehicle, deal, relatedVehicles }: VehicleDetailClientProps) {
   const photos = vehicle.vehicle_photos || [];
-  const listingPrice = vehicle.show_price
-    ? (vehicle.price_fob && vehicle.price_fob > 0
-        ? Number(vehicle.price_fob)
-        : (vehicle.price && vehicle.price > 0 ? Number(vehicle.price) : null))
-    : null;
+  const coverIdx = photos.findIndex((p) => p.is_cover);
+  const coverIndex = coverIdx >= 0 ? coverIdx : 0;
+  const { listingPrice, dealPrice, displayPrice, priceLabel } = resolveListingPricing(vehicle, deal, {
+    basis: 'fob',
+  });
   const hasPrice = listingPrice != null;
-  const dealPrice = deal ? effectiveDealPrice(listingPrice, deal) : null;
-  const displayPrice = resolveProductOfferPrice({
-    dealPrice,
-    showPrice: Boolean(vehicle.show_price),
-    price: vehicle.price,
-    priceFob: vehicle.price_fob,
-    priceCf: vehicle.price_cf,
-    priceCif: vehicle.price_cif,
-  });
-  const priceLabel = publicPriceLabel({
-    currency: vehicle.currency,
-    stockStatus: vehicle.stock_status,
-    dealPrice,
-    showPrice: Boolean(vehicle.show_price),
-    price: vehicle.price,
-    priceFob: vehicle.price_fob,
-    priceCf: vehicle.price_cf,
-    priceCif: vehicle.price_cif,
-  });
 
   const machineryUnit = isMachineryClass(vehicle.vehicle_class);
   const specs = [
@@ -152,9 +60,9 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
       label: machineryUnit && vehicle.operating_hours != null ? 'Operating hours' : 'Mileage',
       value:
         vehicle.operating_hours != null
-          ? `${vehicle.operating_hours.toLocaleString()} hrs`
+          ? `${vehicle.operating_hours.toLocaleString('en-US')} hrs`
           : vehicle.mileage != null
-            ? `${vehicle.mileage.toLocaleString()} km`
+            ? `${vehicle.mileage.toLocaleString('en-US')} km`
             : null,
     },
     { icon: Palette, label: 'Color', value: vehicle.color },
@@ -237,11 +145,11 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
               {dealPrice != null ? (
                 <div className="mt-1 flex flex-wrap items-baseline gap-2">
                   <p className="text-2xl font-black tracking-tight sm:text-3xl">
-                    {vehicle.currency} {dealPrice.toLocaleString()}
+                    {vehicle.currency} {dealPrice.toLocaleString('en-US')}
                   </p>
                   {hasPrice ? (
                     <span className="text-sm text-white/40 line-through">
-                      {vehicle.currency} {listingPrice!.toLocaleString()}
+                      {vehicle.currency} {listingPrice!.toLocaleString('en-US')}
                     </span>
                   ) : null}
                 </div>

@@ -48,7 +48,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
     priceCif: part.price_cif,
   });
   const savedPriceLabel = dealPrice != null ? priceLabel : catalogPriceLines.length > 0
-    ? catalogPriceLines.map((line) => `${line.label} ${part.currency} ${line.amount.toLocaleString()}`).join(' · ')
+    ? catalogPriceLines.map((line) => `${line.label} ${part.currency} ${line.amount.toLocaleString('en-US')}`).join(' · ')
     : priceLabel;
   const oemOrCode = part.oem_number || part.part_code;
   const waMessage = `Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`;
@@ -169,7 +169,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
                 {catalogPriceLines.map((line) => (
                   <div key={line.label} className="min-w-0">
                     <span className="block text-[9px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300 sm:text-[10px]">{line.label}</span>
-                    <strong className="block whitespace-nowrap text-xs font-extrabold tracking-tight text-foreground sm:text-base">{part.currency} {line.amount.toLocaleString()}</strong>
+                    <strong className="block whitespace-nowrap text-xs font-extrabold tracking-tight text-foreground sm:text-base">{part.currency} {line.amount.toLocaleString('en-US')}</strong>
                   </div>
                 ))}
               </div>
@@ -181,7 +181,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
             )}
             {dealPrice != null && listPrice != null && dealPrice < listPrice ? (
               <span className="mt-0.5 block text-[11px] text-muted-foreground line-through sm:text-xs">
-                {part.currency} {listPrice.toLocaleString()}
+                {part.currency} {listPrice.toLocaleString('en-US')}
               </span>
             ) : null}
           </div>

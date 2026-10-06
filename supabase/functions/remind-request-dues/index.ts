@@ -1,11 +1,31 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.116.0';
 import { corsHeaders, json } from '../_shared/cors.ts';
 
+// Deployed with verify_jwt = false (see supabase/config.toml): the Supabase gateway does not
+// check a JWT here, so this shared-secret check is the only gate. The caller
+// (app/api/cron/request-dues/route.ts) sends the secret in `x-cron-secret` and, for
+// backwards compatibility, as `Authorization: Bearer <CRON_SECRET>`.
+
+function timingSafeEqual(a: string, b: string) {
+  const encoder = new TextEncoder();
+  const left = encoder.encode(a);
+  const right = encoder.encode(b);
+  if (left.length !== right.length) return false;
+  let diff = 0;
+  for (let index = 0; index < left.length; index += 1) diff |= left[index] ^ right[index];
+  return diff === 0;
+}
+
 function authorized(request: Request) {
-  const cronSecret = Deno.env.get('CRON_SECRET');
+  const cronSecret = Deno.env.get('CRON_SECRET') || '';
+  if (cronSecret.length < 16) return false;
+  const headerSecret = request.headers.get('x-cron-secret') || '';
   const authorization = request.headers.get('Authorization') || '';
-  if (!cronSecret) return false;
-  return authorization === `Bearer ${cronSecret}`;
+  const bearer = authorization.startsWith('Bearer ') ? authorization.slice('Bearer '.length) : '';
+  return (
+    (headerSecret !== '' && timingSafeEqual(headerSecret, cronSecret)) ||
+    (bearer !== '' && timingSafeEqual(bearer, cronSecret))
+  );
 }
 
 Deno.serve(async (request) => {

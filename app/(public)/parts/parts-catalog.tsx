@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Filter, PackageSearch, Search, SlidersHorizontal, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -14,14 +14,19 @@ import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { conditionLabels } from '@/lib/site-config';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
+import type { PublicCategoryCard, PublicPartCard } from '@/lib/public-card-data';
 import {
-  PUBLIC_CATEGORY_CARD_SELECT,
-  PUBLIC_PART_CARD_SELECT,
-  type PublicCategoryCard,
-  type PublicPartCard,
-} from '@/lib/public-card-data';
+  PARTS_PAGE_SIZE,
+  fetchPartsCatalogPage,
+  fetchPublicCategories,
+  parsePartsCatalogFilters,
+  type PartsCatalogFilters,
+} from '@/lib/catalog-queries';
 import type { PartCondition } from '@/lib/types';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 const conditions: PartCondition[] = ['new', 'used', 'refurbished', 'for-parts'];
 const sortOptions = [
@@ -32,42 +37,54 @@ const sortOptions = [
   { value: 'price-high', label: 'Price: high to low' },
 ];
 
-function PartsCatalog() {
+export type PartsCatalogInitial = {
+  filters: PartsCatalogFilters;
+  categories: PublicCategoryCard[];
+  items: PublicPartCard[];
+  count: number;
+};
+
+function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { dealForPart } = useInventoryDeals();
-  const [parts, setParts] = useState<PublicPartCard[]>([]);
-  const [categories, setCategories] = useState<PublicCategoryCard[]>([]);
-  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
-  const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
-  const [selectedCondition, setSelectedCondition] = useState(searchParams.get('condition') || 'all');
-  const [selectedBrand, setSelectedBrand] = useState(searchParams.get('brand') || 'all');
-  const [selectedStock, setSelectedStock] = useState(searchParams.get('stock') || 'all');
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
-  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
-  const pageSize = 12;
+  const initialFilters = initial?.filters ?? parsePartsCatalogFilters(searchParams);
+  const [parts, setParts] = useState<PublicPartCard[]>(initial?.items ?? []);
+  const [categories, setCategories] = useState<PublicCategoryCard[]>(initial?.categories ?? []);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(initial));
+  const [loading, setLoading] = useState(!initial);
+  const [totalCount, setTotalCount] = useState(initial?.count ?? 0);
+  const [query, setQuery] = useState(initialFilters.q);
+  const [selectedCategory, setSelectedCategory] = useState(initialFilters.category);
+  const [selectedCondition, setSelectedCondition] = useState(initialFilters.condition);
+  const [selectedBrand, setSelectedBrand] = useState(initialFilters.brand);
+  const [selectedStock, setSelectedStock] = useState(initialFilters.stock);
+  const [sortBy, setSortBy] = useState(initialFilters.sort);
+  const [page, setPage] = useState(initialFilters.page);
+  const pageSize = PARTS_PAGE_SIZE;
   const appliedQuery = searchParams.get('q') || '';
   const selectedCategoryId = categories.find((item) => item.slug === selectedCategory)?.id;
   const canFetchParts = selectedCategory === 'all' || categoriesLoaded;
+  // The server already rendered this page for the URL filters; skip that fetch once.
+  const skipInitialFetchRef = useRef(Boolean(initial));
 
   useEffect(() => {
-    supabase.from('categories').select(PUBLIC_CATEGORY_CARD_SELECT).order('sort_order').then(({ data }) => {
-      setCategories((data || []) as unknown as PublicCategoryCard[]);
+    if (initial) return;
+    void fetchPublicCategories(supabase).then((rows) => {
+      setCategories(rows);
       setCategoriesLoaded(true);
     });
-  }, []);
+  }, [initial]);
 
   useEffect(() => {
-    setQuery(searchParams.get('q') || '');
-    setSelectedCategory(searchParams.get('category') || 'all');
-    setSelectedCondition(searchParams.get('condition') || 'all');
-    setSelectedBrand(searchParams.get('brand') || 'all');
-    setSelectedStock(searchParams.get('stock') || 'all');
-    setSortBy(searchParams.get('sort') || 'newest');
-    setPage(Math.max(1, Number(searchParams.get('page')) || 1));
+    const filters = parsePartsCatalogFilters(searchParams);
+    setQuery(filters.q);
+    setSelectedCategory(filters.category);
+    setSelectedCondition(filters.condition);
+    setSelectedBrand(filters.brand);
+    setSelectedStock(filters.stock);
+    setSortBy(filters.sort);
+    setPage(filters.page);
   }, [searchParams]);
 
   useEffect(() => {
@@ -79,34 +96,31 @@ function PartsCatalog() {
 
   const fetchParts = useCallback(async () => {
     setLoading(true);
-    let request = supabase
-      .from('parts')
-      .select(PUBLIC_PART_CARD_SELECT, { count: 'exact' })
-      .eq('is_published', true)
-      .eq('stock_status', 'available');
-
-    const safeQuery = appliedQuery.trim().replace(/[,%()]/g, ' ');
-    if (safeQuery) request = request.or(`name.ilike.%${safeQuery}%,part_code.ilike.%${safeQuery}%,oem_number.ilike.%${safeQuery}%,part_number.ilike.%${safeQuery}%`);
-    if (selectedCategoryId) request = request.eq('category_id', selectedCategoryId);
-    if (selectedCondition !== 'all') request = request.eq('condition', selectedCondition);
-    if (selectedBrand !== 'all') request = request.eq('brand', selectedBrand);
-    if (selectedStock !== 'all') request = request.eq('stock_origin', selectedStock);
-
-    if (sortBy === 'oldest') request = request.order('created_at', { ascending: true });
-    else if (sortBy === 'name') request = request.order('name', { ascending: true });
-    else if (sortBy === 'price-low') request = request.order('price', { ascending: true, nullsFirst: false });
-    else if (sortBy === 'price-high') request = request.order('price', { ascending: false, nullsFirst: true });
-    else request = request.order('created_at', { ascending: false });
-
-    const from = (page - 1) * pageSize;
-    const { data, count } = await request.range(from, from + pageSize - 1);
-    setParts((data || []) as unknown as PublicPartCard[]);
-    setTotalCount(count || 0);
+    const { items, count } = await fetchPartsCatalogPage(
+      supabase,
+      {
+        q: appliedQuery,
+        category: selectedCategory,
+        condition: selectedCondition,
+        brand: selectedBrand,
+        stock: selectedStock,
+        sort: sortBy,
+        page,
+      },
+      selectedCategoryId
+    );
+    setParts(items);
+    setTotalCount(count);
     setLoading(false);
   }, [appliedQuery, page, selectedBrand, selectedCategory, selectedCategoryId, selectedCondition, selectedStock, sortBy]);
 
   useEffect(() => {
-    if (canFetchParts) fetchParts();
+    if (!canFetchParts) return;
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
+    void fetchParts();
   }, [canFetchParts, fetchParts]);
 
   const setParam = (key: string, value: string) => {
@@ -247,6 +261,6 @@ function PartsCatalog() {
   );
 }
 
-export default function PartsCatalogPage() {
-  return <Suspense fallback={<div className="container-page py-20"><Skeleton className="h-[520px] w-full rounded-3xl" /></div>}><PartsCatalog /></Suspense>;
+export default function PartsCatalogPage({ initial }: { initial?: PartsCatalogInitial }) {
+  return <Suspense fallback={<div className="container-page py-20"><Skeleton className="h-[520px] w-full rounded-3xl" /></div>}><PartsCatalog initial={initial} /></Suspense>;
 }

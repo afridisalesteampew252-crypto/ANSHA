@@ -4,9 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowDown, CarFront, Loader2, PackageSearch, RefreshCw, Search } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import { PUBLIC_PART_CARD_SELECT, PUBLIC_VEHICLE_CARD_SELECT, type PublicPartCard, type PublicVehicleCard } from '@/lib/public-card-data';
 import { publicPartImageUrl, publicVehicleImageUrl } from '@/lib/public-media';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 type CatalogKind = 'vehicles' | 'parts';
 const PAGE_SIZE = 24;

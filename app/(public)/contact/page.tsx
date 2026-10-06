@@ -11,6 +11,8 @@ import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import { toast } from 'sonner';
+import { HoneypotField } from '@/components/public/honeypot-field';
+import { FORM_LIMITS, isValidOptionalEmail, publicFormErrorMessage, screenSubmission, useFormStartTime } from '@/lib/public-form-guard';
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
@@ -18,11 +20,22 @@ export default function ContactPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  const startedAtRef = useFormStartTime();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !message.trim()) {
       toast.error('Please fill in your name and message.');
+      return;
+    }
+    if (!isValidOptionalEmail(email)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    if (screenSubmission({ honeypot, startedAt: startedAtRef.current, text: message }) === 'bot') {
+      // Pretend success so automated submitters get no signal.
+      toast.success('Your message has been sent. We will contact you soon.');
       return;
     }
     setLoading(true);
@@ -34,7 +47,7 @@ export default function ContactPage() {
     });
     setLoading(false);
     if (error) {
-      toast.error('Failed to send message. Please try again.');
+      toast.error(publicFormErrorMessage(error, 'Failed to send message. Please try again.'));
       return;
     }
     toast.success('Your message has been sent. We will contact you soon.');
@@ -42,6 +55,7 @@ export default function ContactPage() {
     setEmail('');
     setPhone('');
     setMessage('');
+    startedAtRef.current = Date.now();
   };
 
   return (
@@ -72,7 +86,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium">Phone</p>
-                        <p className="text-sm text-muted-foreground">{siteConfig.phone}</p>
+                        <a href={siteConfig.telHref} className="text-sm text-muted-foreground hover:text-accent">{siteConfig.phone}</a>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -112,12 +126,14 @@ export default function ContactPage() {
                   <CardTitle className="text-lg">Send a Message</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="relative space-y-4">
+                    <HoneypotField value={honeypot} onChange={setHoneypot} />
                     <div className="space-y-2">
                       <Label htmlFor="contact-name">Name *</Label>
                       <Input
                         id="contact-name"
                         value={name}
+                        maxLength={FORM_LIMITS.name}
                         onChange={(e) => setName(e.target.value)}
                         required
                         placeholder="Your full name"
@@ -130,6 +146,7 @@ export default function ContactPage() {
                           id="contact-email"
                           type="email"
                           value={email}
+                          maxLength={FORM_LIMITS.email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="you@example.com"
                         />
@@ -139,6 +156,7 @@ export default function ContactPage() {
                         <Input
                           id="contact-phone"
                           value={phone}
+                          maxLength={FORM_LIMITS.phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder="+00 000 000 0000"
                         />
@@ -149,6 +167,7 @@ export default function ContactPage() {
                       <Textarea
                         id="contact-message"
                         value={message}
+                        maxLength={FORM_LIMITS.message}
                         onChange={(e) => setMessage(e.target.value)}
                         required
                         rows={5}

@@ -74,7 +74,7 @@ export function SiteFooter() {
             <ul className="space-y-2.5 text-sm">
               <li className="flex items-start gap-2.5 text-white/70">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <a href={`tel:${siteConfig.phone}`} className="hover:text-accent">{siteConfig.phone}</a>
+                <a href={siteConfig.telHref} className="hover:text-accent">{siteConfig.phone}</a>
               </li>
               <li className="flex items-start gap-2.5 text-white/70">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-accent" />

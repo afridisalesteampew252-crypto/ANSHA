@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, Send, Truck } from 'lucide-react';
@@ -18,12 +18,17 @@ import {
   isVehicleClass,
   type VehicleClass,
 } from '@/lib/vehicle-class';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
+import type { PublicVehicleCard } from '@/lib/public-card-data';
 import {
-  PUBLIC_VEHICLE_CARD_SELECT,
-  type PublicVehicleCard,
-} from '@/lib/public-card-data';
+  fetchMachineryCatalog,
+  parseMachineryCatalogFilters,
+  type MachineryCatalogFilters,
+} from '@/lib/catalog-queries';
 import type { StockOrigin } from '@/lib/types';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 function syncMachineryQuery(input: {
   query: string;
@@ -42,41 +47,32 @@ function syncMachineryQuery(input: {
   return qs ? `/machinery?${qs}` : '/machinery';
 }
 
-export default function MachineryCatalog() {
+export type MachineryCatalogInitial = {
+  filters: MachineryCatalogFilters;
+  items: PublicVehicleCard[];
+};
+
+export default function MachineryCatalog({ initial }: { initial?: MachineryCatalogInitial }) {
   const router = useRouter();
   const { dealForVehicle } = useInventoryDeals();
-  const [vehicles, setVehicles] = useState<PublicVehicleCard[]>([]);
-  const [query, setQuery] = useState('');
-  const [equipmentType, setEquipmentType] = useState('all');
-  const [classFilter, setClassFilter] = useState<'all' | VehicleClass>('all');
-  const [stockOrigin, setStockOrigin] = useState<'all' | StockOrigin>('all');
-  const [sort, setSort] = useState('newest');
-  const [loading, setLoading] = useState(true);
+  const [vehicles, setVehicles] = useState<PublicVehicleCard[]>(initial?.items ?? []);
+  const [query, setQuery] = useState(initial?.filters.q ?? '');
+  const [equipmentType, setEquipmentType] = useState(initial?.filters.equipmentType ?? 'all');
+  const [classFilter, setClassFilter] = useState<'all' | VehicleClass>(initial?.filters.classFilter ?? 'all');
+  const [stockOrigin, setStockOrigin] = useState<'all' | StockOrigin>(initial?.filters.stockOrigin ?? 'all');
+  const [sort, setSort] = useState(initial?.filters.sort ?? 'newest');
+  const [loading, setLoading] = useState(!initial);
   const [hydrated, setHydrated] = useState(false);
+  // The server already rendered the list for the URL filters; skip that fetch once.
+  const skipInitialLoadRef = useRef(Boolean(initial));
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedStock = params.get('stock');
-    if (STOCK_ORIGINS.some((origin) => origin.value === requestedStock)) {
-      setStockOrigin(requestedStock as StockOrigin);
-    }
-    const requestedClass = params.get('class');
-    if (requestedClass && isVehicleClass(requestedClass) && MACHINERY_VEHICLE_CLASSES.includes(requestedClass)) {
-      setClassFilter(requestedClass);
-    }
-    const requestedType = params.get('type');
-    if (requestedType && EQUIPMENT_CATEGORIES.some((item) => item.value === requestedType)) {
-      setEquipmentType(requestedType);
-    }
-    const requestedSort = params.get('sort');
-    if (
-      requestedSort &&
-      ['newest', 'year-new', 'hours-low', 'price-low', 'price-high'].includes(requestedSort)
-    ) {
-      setSort(requestedSort);
-    }
-    const requestedQuery = params.get('q');
-    if (requestedQuery) setQuery(requestedQuery);
+    const filters = parseMachineryCatalogFilters(new URLSearchParams(window.location.search));
+    setStockOrigin(filters.stockOrigin);
+    setClassFilter(filters.classFilter);
+    setEquipmentType(filters.equipmentType);
+    setSort(filters.sort);
+    if (filters.q) setQuery(filters.q);
     setHydrated(true);
   }, []);
 
@@ -89,34 +85,22 @@ export default function MachineryCatalog() {
 
   const loadVehicles = useCallback(async () => {
     setLoading(true);
-    let request = supabase
-      .from('vehicles')
-      .select(PUBLIC_VEHICLE_CARD_SELECT)
-      .eq('is_published', true)
-      .eq('stock_status', 'available')
-      .in('vehicle_class', [...MACHINERY_VEHICLE_CLASSES]);
-
-    const safeQuery = query.trim().replace(/[,%()]/g, ' ');
-    if (safeQuery) {
-      request = request.or(
-        `title.ilike.%${safeQuery}%,make.ilike.%${safeQuery}%,model.ilike.%${safeQuery}%,chassis_code.ilike.%${safeQuery}%,stock_number.ilike.%${safeQuery}%,equipment_category.ilike.%${safeQuery}%`
-      );
-    }
-    if (classFilter !== 'all') request = request.eq('vehicle_class', classFilter);
-    if (equipmentType !== 'all') request = request.eq('equipment_category', equipmentType);
-    if (stockOrigin !== 'all') request = request.eq('stock_origin', stockOrigin);
-    if (sort === 'year-new') request = request.order('year', { ascending: false, nullsFirst: false });
-    else if (sort === 'hours-low') request = request.order('operating_hours', { ascending: true, nullsFirst: false });
-    else if (sort === 'price-low') request = request.order('price', { ascending: true, nullsFirst: false });
-    else if (sort === 'price-high') request = request.order('price', { ascending: false, nullsFirst: true });
-    else request = request.order('created_at', { ascending: false });
-
-    const { data } = await request.limit(48);
-    setVehicles((data || []) as unknown as PublicVehicleCard[]);
+    const { items } = await fetchMachineryCatalog(supabase, {
+      q: query,
+      classFilter,
+      equipmentType,
+      stockOrigin,
+      sort,
+    });
+    setVehicles(items);
     setLoading(false);
   }, [classFilter, equipmentType, query, sort, stockOrigin]);
 
   useEffect(() => {
+    if (skipInitialLoadRef.current) {
+      skipInitialLoadRef.current = false;
+      return;
+    }
     void loadVehicles();
   }, [loadVehicles]);
 

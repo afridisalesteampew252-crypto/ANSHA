@@ -14,12 +14,15 @@ export const siteConfig = {
   pwaName: 'Anshatradingco APP',
   pwaShortName: 'Anshatradingco APP',
   tagline: 'Global Vehicles, Parts & Machinery Exporter',
+  /** Keep ≤155 characters (meta description / snippets). */
   description:
-    'Dubai-based global exporter of vehicles, automotive parts, and heavy machinery. Browse published stock by make, model, year, OEM number, chassis code, and stock origin.',
+    'Dubai-based exporter of vehicles, auto parts and heavy machinery. Browse live stock by make, model, OEM number or chassis code and inquire for export.',
   whatsappNumber: '971501677980',
   whatsappDisplay: '+971 50 167 7980',
   email: 'info@anshatrading.com',
   phone: '+971 50 167 7980',
+  /** Dialable form for tel: links (no spaces); display `phone` as-is. */
+  telHref: 'tel:+971501677980',
   address: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba, Dubai, U.A.E.',
   taxRegistrationNumber: '105335274400003',
   url: resolveSiteUrl(),

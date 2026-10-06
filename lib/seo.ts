@@ -105,11 +105,29 @@ export type BuildPageMetadataInput = {
 };
 
 /**
+ * Remove a trailing brand suffix (e.g. "… | ANSHA Trading", "… - ANSHA TRADING CO") from a
+ * page title. The root layout template already appends "| ANSHA TRADING", so stored SEO
+ * titles that include the brand would otherwise render it twice.
+ */
+export function stripTrailingBrand(title: string) {
+  const suffix = /\s*[|\-–—:]\s*ansha(?:\s+trading)?(?:\s+(?:co\.?|company|llc|fze))?\.?\s*$/i;
+  let current = title.trim();
+  while (suffix.test(current)) {
+    const next = current.replace(suffix, '').trim();
+    if (!next) break;
+    current = next;
+  }
+  return current || title;
+}
+
+/**
  * Shared Metadata for public pages: title, description, canonical, Open Graph, Twitter.
  * Callers pass real copy only — do not invent specs, prices, or claims here.
  */
 export function buildPageMetadata(input: BuildPageMetadataInput): Metadata {
-  const title = sanitizeTitle(input.title);
+  const title = input.absoluteTitle
+    ? sanitizeTitle(input.title)
+    : stripTrailingBrand(sanitizeTitle(input.title));
   const description = sanitizeDescription(input.description);
   const canonicalPath = input.path.startsWith('/') ? input.path : `/${input.path}`;
   const pageUrl = absoluteUrl(canonicalPath);

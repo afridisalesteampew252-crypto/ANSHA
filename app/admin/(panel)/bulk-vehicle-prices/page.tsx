@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Banknote, CheckSquare, Filter, Loader2, RotateCcw, Search, X } from 'lucide-react';
+import { AlertTriangle, Banknote, CheckSquare, Filter, Loader2, RotateCcw, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { canManageReceivables } from '@/lib/admin-rbac';
+import { buildPeerStats, peerKey, priceSanityWarning } from '@/lib/price-sanity';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminRole } from '@/lib/types';
@@ -131,6 +132,40 @@ export default function BulkVehiclePricesPage() {
     });
   }, [rows, query, filters, field]);
 
+  // Non-blocking price sanity checks: compare against the median of the same make/model/year
+  // (and currency) for the selected price type, plus a 1,000-200,000 USD plausibility band.
+  const peerStats = useMemo(
+    () => buildPeerStats(rows, (row) => ({ make: row.make, model: row.model, year: row.year, currency: row.currency, price: row[field] })),
+    [rows, field]
+  );
+  const rowWarning = useCallback(
+    (row: Vehicle, price: number | null) => priceSanityWarning({
+      price,
+      currency: row.currency,
+      peers: peerStats.get(peerKey(row.make, row.model, row.year, row.currency)),
+      peerLabel: [row.year, row.make, row.model].filter(Boolean).join(' ') + ' vehicles',
+    }),
+    [peerStats]
+  );
+  const projectedWarnings = useMemo(() => {
+    const amount = Number(value);
+    if (!value || !Number.isFinite(amount) || amount < 0 || !selected.length) return [];
+    const selectedIds = new Set(selected);
+    return rows.flatMap((row) => {
+      if (!selectedIds.has(row.id)) return [];
+      const current = row[field] == null ? null : Number(row[field]);
+      const next = mode === 'set'
+        ? amount
+        : current == null
+          ? null
+          : mode === 'increase_percent'
+            ? current * (1 + amount / 100)
+            : Math.max(0, current * (1 - amount / 100));
+      const warning = rowWarning(row, next);
+      return warning ? [{ id: row.id, title: row.title, warning }] : [];
+    });
+  }, [rows, selected, value, mode, field, rowWarning]);
+
   const allFilteredSelected = filteredRows.length > 0 && filteredRows.every((row) => selected.includes(row.id));
   const changeFilter = <K extends keyof Filters>(key: K, nextValue: Filters[K]) => {
     setFilters((current) => ({ ...current, [key]: nextValue, ...(key === 'make' ? { model: '' } : {}) }));
@@ -155,7 +190,10 @@ export default function BulkVehiclePricesPage() {
     if (!Number.isFinite(amount) || amount < 0) return toast.error('Enter a valid amount or percentage.');
     const fieldLabel = fields.find((item) => item.value === field)?.label || field;
     const actionLabel = mode === 'set' ? 'set to ' + amount : (mode === 'increase_percent' ? 'increased by ' : 'decreased by ') + amount + '%';
-    if (!window.confirm('Apply ' + fieldLabel + ' ' + actionLabel + ' to ' + selected.length + ' selected vehicles?')) return;
+    const warningNote = projectedWarnings.length
+      ? '\n\nPrice check: ' + projectedWarnings.length + ' of the selected vehicles would get an unusual price (see the warnings on the page). Continue anyway?'
+      : '';
+    if (!window.confirm('Apply ' + fieldLabel + ' ' + actionLabel + ' to ' + selected.length + ' selected vehicles?' + warningNote)) return;
     setBusy(true);
     const { data, error } = await supabase.rpc('bulk_update_vehicle_prices', {
       vehicle_ids: selected,
@@ -207,6 +245,15 @@ export default function BulkVehiclePricesPage() {
           </Button>
         </div>
       </CardContent>
+      {projectedWarnings.length > 0 && (
+        <div role="status" className="mx-6 mb-5 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
+          <p className="flex items-center gap-2 font-medium"><AlertTriangle className="h-4 w-4" />Price check: {projectedWarnings.length} selected vehicle{projectedWarnings.length === 1 ? '' : 's'} would get an unusual price. This does not block the update.</p>
+          <ul className="mt-2 space-y-1 text-xs">
+            {projectedWarnings.slice(0, 8).map((item) => <li key={item.id}><span className="font-medium">{item.title}:</span> {item.warning}</li>)}
+            {projectedWarnings.length > 8 && <li>…and {projectedWarnings.length - 8} more.</li>}
+          </ul>
+        </div>
+      )}
       {!canWrite && <p className="px-6 pb-5 text-sm text-muted-foreground">Your role can view prices, but cannot change them.</p>}
     </Card>
 
@@ -303,7 +350,13 @@ export default function BulkVehiclePricesPage() {
                   <td className="p-3">{row.stock_origin ? originLabel(row.stock_origin) : '—'}</td>
                   <td className="p-3">{row.chassis_number || '—'}</td>
                   <td className="p-3">{row.currency || 'USD'}</td>
-                  {fields.map((item) => <td key={item.value} className="p-3 text-right tabular-nums">{money(row[item.value], row.currency || 'USD')}</td>)}
+                  {fields.map((item) => {
+                    const warning = item.value === field ? rowWarning(row, row[item.value]) : null;
+                    return <td key={item.value} className={'p-3 text-right tabular-nums' + (warning ? ' text-amber-700 dark:text-amber-300' : '')} title={warning || undefined}>
+                      {warning ? <AlertTriangle className="mr-1 inline h-3.5 w-3.5" aria-label={'Price check: ' + warning} /> : null}
+                      {money(row[item.value], row.currency || 'USD')}
+                    </td>;
+                  })}
                 </tr>
               ))}</tbody>
             </table>

@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import {
   Wrench,
   Tag,
@@ -20,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import { PartCard } from '@/components/public/part-card';
 import { InquiryDialog } from '@/components/public/inquiry-dialog';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
@@ -31,90 +28,25 @@ import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-a
 import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { PublicImageGallery } from '@/components/public/public-image-gallery';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
-import { supabase } from '@/lib/supabase/client';
 import { partImageAlt } from '@/lib/seo';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
-import { effectiveDealPrice } from '@/lib/site-offers';
-import { publicPriceLabel, resolveProductOfferPrice } from '@/lib/product-schema';
+import { resolveListingPricing } from '@/lib/listing-pricing';
 import type { PartWithRelations, SiteOffer } from '@/lib/types';
+import type { PublicPartCard } from '@/lib/public-card-data';
 import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 
-export function PartDetailClient({ slug }: { slug: string }) {
+export type PartDetailClientProps = {
+  part: PartWithRelations;
+  deal: SiteOffer | null;
+  relatedParts: PublicPartCard[];
+};
+
+/**
+ * Part detail view. Data is loaded on the server (ISR) and passed in as props so the
+ * full listing, including the price, is in the initial HTML.
+ */
+export function PartDetailClient({ part, deal, relatedParts }: PartDetailClientProps) {
   const { dealForPart } = useInventoryDeals();
-  const [part, setPart] = useState<PartWithRelations | null>(null);
-  const [relatedParts, setRelatedParts] = useState<PartWithRelations[]>([]);
-  const [deal, setDeal] = useState<SiteOffer | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFoundFlag, setNotFoundFlag] = useState(false);
-  const [coverIndex, setCoverIndex] = useState(0);
-
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from('parts')
-        .select('*, categories(*), part_photos(*), part_compatibility(*)')
-        .eq('slug', slug)
-        .eq('is_published', true)
-        .eq('stock_status', 'available')
-        .maybeSingle();
-
-      if (error || !data) {
-        setNotFoundFlag(true);
-        setLoading(false);
-        return;
-      }
-
-      const typedData = data as unknown as PartWithRelations;
-      const sortedPhotos = (typedData.part_photos || []).sort((a, b) => a.sort_order - b.sort_order);
-      const coverIndex = sortedPhotos.findIndex((p) => p.is_cover);
-      setPart({ ...typedData, part_photos: sortedPhotos });
-      setCoverIndex(coverIndex >= 0 ? coverIndex : 0);
-
-      const { data: offerRows } = await supabase
-        .from('site_offers')
-        .select('*')
-        .eq('is_published', true)
-        .eq('part_id', typedData.id)
-        .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(1);
-      setDeal(((offerRows || [])[0] as SiteOffer | undefined) || null);
-      setLoading(false);
-
-      // Fetch related parts (same category, excluding this one)
-      if (typedData.category_id) {
-        const { data: related } = await supabase
-          .from('parts')
-          .select('*, categories(*), part_photos(*), part_compatibility(*)')
-          .eq('is_published', true)
-          .eq('stock_status', 'available')
-          .eq('category_id', typedData.category_id)
-          .neq('id', typedData.id)
-          .limit(4);
-        setRelatedParts((related || []) as unknown as PartWithRelations[]);
-      }
-    })();
-  }, [slug]);
-
-  if (notFoundFlag) {
-    notFound();
-  }
-
-  if (loading || !part) {
-    return (
-      <div className="container-page py-8">
-        <div className="grid gap-8 lg:grid-cols-2">
-          <Skeleton className="aspect-square w-full rounded-lg" />
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-40" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const photos = part.part_photos || [];
   const compatibilities = part.part_compatibility || [];
   const galleryImages = photos.map((photo, index) => ({
@@ -122,27 +54,13 @@ export function PartDetailClient({ slug }: { slug: string }) {
     src: publicPartImageUrl(photo.storage_path),
     alt: partImageAlt(part, { photoIndex: index + 1 }),
   }));
-  const hasListPrice = Boolean(part.show_price && part.price && part.price > 0);
-  const dealPrice = deal ? effectiveDealPrice(hasListPrice ? part.price : null, deal) : null;
-  const displayPrice = resolveProductOfferPrice({
-    dealPrice,
-    showPrice: Boolean(part.show_price),
-    price: part.price,
-    priceFob: part.price_fob,
-    priceCf: part.price_cf,
-    priceCif: part.price_cif,
-  });
-  const priceLabel = publicPriceLabel({
-    currency: part.currency,
-    stockStatus: part.stock_status,
-    dealPrice,
-    showPrice: Boolean(part.show_price),
-    price: part.price,
-    priceFob: part.price_fob,
-    priceCf: part.price_cf,
-    priceCif: part.price_cif,
+  const coverIdx = photos.findIndex((p) => p.is_cover);
+  const coverIndex = coverIdx >= 0 ? coverIdx : 0;
+  const { listingPrice, dealPrice, displayPrice, priceLabel } = resolveListingPricing(part, deal, {
+    basis: 'price',
     askLabel: 'Ask Price',
   });
+  const hasListPrice = listingPrice != null;
 
   return (
     <div className="overflow-x-clip">
@@ -198,7 +116,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
             <InventoryDealBanner
               offer={deal}
               currency={part.currency}
-              listPrice={hasListPrice ? part.price : null}
+              listPrice={listingPrice}
             />
           ) : null}
 
@@ -250,11 +168,11 @@ export function PartDetailClient({ slug }: { slug: string }) {
                   <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Deal price</p>
                   <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
                     <p className="text-2xl font-black">
-                      {part.currency} {dealPrice.toLocaleString()}
+                      {part.currency} {dealPrice.toLocaleString('en-US')}
                     </p>
                     {hasListPrice ? (
                       <span className="text-sm text-white/40 line-through">
-                        {part.currency} {part.price!.toLocaleString()}
+                        {part.currency} {listingPrice!.toLocaleString('en-US')}
                       </span>
                     ) : null}
                   </div>

@@ -16,6 +16,7 @@ import { formatDealDiscount, formatDealSalePrice, type InventoryPick } from '@/l
 import { supabase } from '@/lib/supabase/client';
 import { sendWebPush } from '@/lib/web-push';
 import type { AdminProfile, SiteOffer } from '@/lib/types';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 type LinkTarget = 'general' | 'vehicle' | 'part';
 
@@ -182,6 +183,8 @@ export default function AdminOffersPage() {
       return;
     }
 
+    if (publishNow) requestPublicRevalidation('offer');
+
     if (notify && publishNow) {
       try {
         const result = await sendWebPush({
@@ -222,6 +225,7 @@ export default function AdminOffersPage() {
     const { error } = await supabase.from('site_offers').delete().eq('id', id);
     if (error) return toast.error(error.message);
     toast.success('Offer deleted.');
+    requestPublicRevalidation('offer');
     await load();
   };
 

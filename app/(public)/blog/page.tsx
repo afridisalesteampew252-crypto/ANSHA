@@ -12,6 +12,9 @@ import { createPublicSupabaseClient } from '@/lib/supabase/public';
 
 const INITIAL_POSTS = 9;
 
+/** ISR: refresh the static blog index every 10 minutes (was only rebuilt on deploy). */
+export const revalidate = 600;
+
 export default async function BlogPage() {
   const supabase = createPublicSupabaseClient();
   const [postsResult, categoriesResult, featuredResult] = await Promise.all([

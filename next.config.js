@@ -1,5 +1,49 @@
+/**
+ * Content-Security-Policy in REPORT-ONLY mode: browsers log violations to the console but
+ * block nothing. Review violations (DevTools console on key pages, with GTM/Tawk active)
+ * before switching the header name to `Content-Security-Policy`.
+ */
+function supabaseOrigins() {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ydrnilquojvalhgifest.supabase.co');
+    return [`https://${url.host}`, `wss://${url.host}`];
+  } catch {
+    return ['https://ydrnilquojvalhgifest.supabase.co', 'wss://ydrnilquojvalhgifest.supabase.co'];
+  }
+}
+
+const cspReportOnly = [
+  "default-src 'self'",
+  // Next.js inline bootstrap scripts + GTM custom tags need 'unsafe-inline' until nonces are added.
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://embed.tawk.to https://*.tawk.to https://va.vercel-scripts.com",
+  "style-src 'self' 'unsafe-inline' https://*.tawk.to https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https://*.tawk.to https://fonts.gstatic.com",
+  [
+    "connect-src 'self'",
+    ...supabaseOrigins(),
+    'https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://gtm-tfszd9wt.fps.goog',
+    'https://*.tawk.to wss://*.tawk.to',
+    'https://va.vercel-scripts.com https://vitals.vercel-insights.com',
+  ].join(' '),
+  "frame-src 'self' https://*.tawk.to https://www.googletagmanager.com https://www.openstreetmap.org https://meet.jit.si",
+  `media-src 'self' blob: https://*.tawk.to ${supabaseOrigins()[0]}`,
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Don't advertise the framework in an X-Powered-By header.
+  poweredByHeader: false,
+  // The admin assistant reads its editable business knowledge file at runtime.
+  outputFileTracingIncludes: {
+    '/api/admin-assistant': ['./lib/admin-assistant/knowledge.md'],
+  },
   // Allow phone/LAN preview of Turbopack HMR during local development.
   allowedDevOrigins: ['192.168.18.18', '10.244.163.42', 'localhost'],
   async redirects() {
@@ -52,6 +96,7 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(self), microphone=(self), geolocation=(self), payment=()',
           },
+          { key: 'Content-Security-Policy-Report-Only', value: cspReportOnly },
         ],
       },
       {

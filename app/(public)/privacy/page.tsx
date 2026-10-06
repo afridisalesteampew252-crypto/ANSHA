@@ -80,7 +80,7 @@ export default function PrivacyPage() {
 
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-foreground">8. Contact</h2>
-            <p>{siteConfig.name}<br />{siteConfig.address}<br />Email: <a className="text-accent underline" href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a><br />Phone: {siteConfig.phone}</p>
+            <p>{siteConfig.name}<br />{siteConfig.address}<br />Email: <a className="text-accent underline" href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a><br />Phone: <a className="text-accent underline" href={siteConfig.telHref}>{siteConfig.phone}</a></p>
             <p>See also: <Link href="/terms" className="text-accent underline">Terms of Use</Link> and <Link href="/cookie-policy" className="text-accent underline">Cookie Policy</Link>.</p>
           </section>
         </article>

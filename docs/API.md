@@ -27,6 +27,14 @@ The product is not a standalone REST/GraphQL backend. Clients talk to Supabase P
 - Requires server env `AI_GATEWAY_API_KEY` (preferred) or `OPENAI_API_KEY`; never exposed to the browser
 - Optional `AI_MODEL` (default `openai/gpt-5-mini` via gateway)
 
+`POST /api/admin-assistant`
+
+- **Admin role only** (`admin_profiles.role = 'admin'`, active): 401 without a session, 403 otherwise; cross-site `Origin` → 403
+- Streams a UI message stream for `useChat`; read tools run immediately, write tools need a signed per-call approval (`toolApproval` + `ADMIN_ASSISTANT_APPROVAL_SECRET`)
+- All tools use the caller's cookie session (RLS applies); writes are logged to `audit_logs` as `ai_assistant.<tool>`
+- 429 with `Retry-After` when the per-admin rate limit (20 / 10 min, 200 / day) is hit; 503 when the AI Gateway is not configured
+- Details: [Admin assistant](./Admin-Assistant.md)
+
 There are no Server Actions.
 
 ## Supabase Data API
@@ -203,8 +211,10 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 
 ### `remind-request-dues`
 
-- GET or POST, no end-user JWT (`verify_jwt` off)
-- Auth: `Authorization: Bearer <CRON_SECRET>` (Edge Function secret `CRON_SECRET`)
+- GET or POST, no end-user JWT (`verify_jwt = false` in `supabase/config.toml`, so a plain
+  `supabase functions deploy remind-request-dues` keeps the gateway JWT check off)
+- Auth: `x-cron-secret: <CRON_SECRET>` or `Authorization: Bearer <CRON_SECRET>` (Edge Function
+  secret `CRON_SECRET`, min. 16 chars, constant-time compare). Missing secret → 401.
 - Calls `process_workspace_request_due_reminders()` with the service role
 - Writes idempotent `workspace_request_due_reminders` rows and `admin_notifications` (`request_due`)
 
@@ -212,7 +222,9 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 
 - Vercel Cron daily at 04:00 UTC (`0 4 * * *` in `vercel.json`; Hobby plan rejects hourly schedules)
 - Auth: same `CRON_SECRET` (Vercel env); platform sends `Authorization: Bearer <CRON_SECRET>`
-- Proxies to `remind-request-dues` using only the publishable key + cron secret (no service role on Next.js)
+- Proxies to `remind-request-dues` using only the publishable key + cron secret (no service role on Next.js);
+  sends the secret as both `x-cron-secret` and `Authorization: Bearer`
+- `CRON_SECRET` unset on Vercel → 503 (logged); wrong/missing bearer → 401
 
 Service-role keys exist only as Edge Function secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). They must not be added as `NEXT_PUBLIC_*` variables.
 

@@ -1,2 +1,8 @@
 [functions.send-admin-push]
 verify_jwt = false
+
+# Called once a day by the Vercel cron route /api/cron/request-dues.
+# The gateway JWT check is disabled because the caller authenticates with the shared
+# CRON_SECRET (not a Supabase JWT); the function itself rejects requests without it.
+[functions.remind-request-dues]
+verify_jwt = false

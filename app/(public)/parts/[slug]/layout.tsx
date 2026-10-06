@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createPublicSupabaseClient } from '@/lib/supabase/public';
+import { getPublicPartBySlug } from '@/lib/public-listing-data';
 import { publicPartImageUrl } from '@/lib/public-media';
 import {
   absoluteMediaUrl,
@@ -17,16 +17,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = createPublicSupabaseClient();
-  const { data } = await supabase
-    .from('parts')
-    .select(
-      'name, description, part_code, brand, meta_title, meta_description, part_photos(storage_path, is_cover, sort_order)'
-    )
-    .eq('slug', slug)
-    .eq('is_published', true)
-    .eq('stock_status', 'available')
-    .maybeSingle();
+  const data = await getPublicPartBySlug(slug);
 
   if (!data) {
     return {
@@ -35,9 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const photos = [...(data.part_photos || [])].sort(
-    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  );
+  const photos = data.part_photos || [];
   const cover = photos.find((p) => p.is_cover) || photos[0];
   const imageUrl = cover?.storage_path
     ? publicPartImageUrl(cover.storage_path)

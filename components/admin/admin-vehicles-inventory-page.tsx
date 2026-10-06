@@ -40,6 +40,7 @@ import {
 } from '@/lib/stock-linked-invoice';
 import type { AdminRole, StockOrigin, VehicleWithPhotos } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 type ClassFilter = 'all' | 'machinery' | VehicleClass;
 type AgentOption = { id: string; label: string };
@@ -452,6 +453,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     const { error } = await supabase.from('vehicles').update(changes).eq('id', id);
     if (error) { toast.error(error.message); return; }
     toast.success(success);
+    requestPublicRevalidation('vehicle', [vehicles.find((v) => v.id === id)?.slug]);
     await fetchVehicles();
   }
 
@@ -474,6 +476,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     const { error } = await supabase.from('vehicles').update(changes).eq('id', vehicle.id);
     if (error) { toast.error(error.message); return; }
     toast.success(`Moved to ${label}.`);
+    requestPublicRevalidation('vehicle', [vehicle.slug]);
     await fetchVehicles();
   }
 
@@ -484,6 +487,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     });
     if (error) { toast.error(error.message); return; }
     toast.success(publish ? 'Published (available stock only).' : 'Unpublished from website.');
+    requestPublicRevalidation('vehicle', [vehicle.slug]);
     await fetchVehicles();
   }
 
@@ -492,6 +496,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
     const { error } = await supabase.from('vehicles').delete().eq('id', vehicle.id);
     if (error) { toast.error(error.message); return; }
     toast.success('Vehicle deleted.');
+    requestPublicRevalidation('vehicle', [vehicle.slug]);
     await fetchVehicles();
   }
 

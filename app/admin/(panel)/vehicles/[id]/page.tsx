@@ -28,6 +28,7 @@ import { SearchableSelect, customerSelectOption } from '@/components/admin/searc
 import { StockLinkedInvoices } from '@/components/admin/stock-linked-invoices';
 import { VehicleFreightEstimator } from '@/components/admin/vehicle-freight-estimator';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
+import { PriceSanityHint } from '@/components/admin/price-sanity-hint';
 import { VehicleDestinationMarketsField } from '@/components/admin/vehicle-destination-markets-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,7 @@ import type {
   VehicleLifecycleEventAttachment,
   VehiclePhoto,
 } from '@/lib/types';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 const statusClass: Record<StockStatus, string> = {
   available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -336,6 +338,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success('Vehicle details saved.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
     await load();
   };
 
@@ -495,6 +498,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setReserveBusy(false);
     if (error) return toast.error(error.message);
     toast.success('Vehicle reserved and unpublished from the website.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
     await load();
   };
 
@@ -507,6 +511,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setReserveBusy(false);
     if (error) return toast.error(error.message);
     toast.success(republish ? 'Reservation released and published.' : 'Reservation released.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
     await load();
   };
 
@@ -519,6 +524,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setReserveBusy(false);
     if (error) return toast.error(error.message);
     toast.success(publish ? 'Published to website.' : 'Unpublished from website.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
     await load();
   };
 
@@ -582,6 +588,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     setUploadingPhotos(false);
     if (successCount > 0) {
       toast.success(`${successCount} photo(s) uploaded.`);
+      requestPublicRevalidation('vehicle', [vehicle?.slug]);
     }
     e.target.value = '';
   };
@@ -609,6 +616,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     }
     setPhotos((prev) => prev.map((photo) => ({ ...photo, is_cover: photo.id === photoId })));
     toast.success('Cover photo updated.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
   };
 
   const setPhotoView = async (photoId: string, viewType: VehiclePhotoView) => {
@@ -618,6 +626,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     if (error) return toast.error('Could not update the photo angle.');
     setPhotos((current) => current.map((photo) => photo.id === photoId ? { ...photo, view_type: viewType } : photo));
     toast.success('Photo angle updated.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
   };
 
   const deletePhoto = async (photoId: string, storagePath: string) => {
@@ -648,6 +657,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     }
     setPhotoActionId(null);
     toast.success('Photo deleted.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
   };
 
   const movePhoto = async (photoId: string, direction: -1 | 1) => {
@@ -723,6 +733,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     );
     setPhotoActionId(null);
     toast.success('Photo replaced.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
   };
 
   if (fetching || !vehicle) {
@@ -754,6 +765,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     const { error } = await supabase.from('vehicles').update(changes).eq('id', id);
     if (error) return toast.error(error.message);
     toast.success(toOwned ? 'Transferred to owned inventory.' : 'Moved to auction stock.');
+    requestPublicRevalidation('vehicle', [vehicle?.slug]);
     await load();
   };
 
@@ -1593,6 +1605,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                     if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
                   }}
                 />
+                <PriceSanityHint price={priceFob} currency={currency} make={make} model={model} year={year} excludeVehicleId={id} />
               </div>
             </div>
             <Button type="submit" disabled={saving}>

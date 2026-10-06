@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CarFront, Search, Send } from 'lucide-react';
@@ -11,15 +11,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { VehicleCard } from '@/components/public/vehicle-card';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
-import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
-import { supabase } from '@/lib/supabase/client';
 import {
-  PUBLIC_VEHICLE_CARD_SELECT,
-  type PublicVehicleCard,
-} from '@/lib/public-card-data';
+  VEHICLE_PAGE_SIZE,
+  fetchVehicleCatalogPage,
+  parseVehicleCatalogFilters,
+  type VehicleCatalogFilters,
+} from '@/lib/catalog-queries';
+import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
+import type { PublicVehicleCard } from '@/lib/public-card-data';
 import type { StockOrigin } from '@/lib/types';
 
-const VEHICLE_PAGE_SIZE = 48;
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 function syncVehiclesQuery(input: {
   query: string;
@@ -36,37 +40,35 @@ function syncVehiclesQuery(input: {
   return qs ? `/vehicles?${qs}` : '/vehicles';
 }
 
-export default function VehiclesCatalog() {
+export type VehiclesCatalogInitial = {
+  filters: VehicleCatalogFilters;
+  items: PublicVehicleCard[];
+  count: number;
+};
+
+export default function VehiclesCatalog({ initial }: { initial?: VehiclesCatalogInitial }) {
   const router = useRouter();
   const { dealForVehicle } = useInventoryDeals();
-  const [vehicles, setVehicles] = useState<PublicVehicleCard[]>([]);
-  const [vehicleCount, setVehicleCount] = useState(0);
+  const [vehicles, setVehicles] = useState<PublicVehicleCard[]>(initial?.items ?? []);
+  const [vehicleCount, setVehicleCount] = useState(initial?.count ?? 0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [query, setQuery] = useState('');
-  const [submittedQuery, setSubmittedQuery] = useState('');
-  const [brand, setBrand] = useState('all');
-  const [stockOrigin, setStockOrigin] = useState<'all' | StockOrigin>('all');
-  const [sort, setSort] = useState('newest');
-  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState(initial?.filters.q ?? '');
+  const [submittedQuery, setSubmittedQuery] = useState(initial?.filters.q ?? '');
+  const [brand, setBrand] = useState(initial?.filters.brand ?? 'all');
+  const [stockOrigin, setStockOrigin] = useState<'all' | StockOrigin>(initial?.filters.stockOrigin ?? 'all');
+  const [sort, setSort] = useState(initial?.filters.sort ?? 'newest');
+  const [loading, setLoading] = useState(!initial);
   const [hydrated, setHydrated] = useState(false);
+  // The server already rendered the first page for the URL filters; skip that fetch once.
+  const skipInitialLoadRef = useRef(Boolean(initial));
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedStock = params.get('stock');
-    if (STOCK_ORIGINS.some((origin) => origin.value === requestedStock)) {
-      setStockOrigin(requestedStock as StockOrigin);
-    }
-    const requestedBrand = params.get('brand');
-    if (requestedBrand && (SUPPORTED_MANUFACTURERS as readonly string[]).includes(requestedBrand)) {
-      setBrand(requestedBrand);
-    }
-    const requestedSort = params.get('sort');
-    if (requestedSort && ['newest', 'year-new', 'price-low', 'price-high'].includes(requestedSort)) {
-      setSort(requestedSort);
-    }
-    const requestedQuery = params.get('q');
-    if (requestedQuery) setQuery(requestedQuery);
-    setSubmittedQuery(requestedQuery || '');
+    const filters = parseVehicleCatalogFilters(new URLSearchParams(window.location.search));
+    setStockOrigin(filters.stockOrigin);
+    setBrand(filters.brand);
+    setSort(filters.sort);
+    setQuery(filters.q);
+    setSubmittedQuery(filters.q);
     setHydrated(true);
   }, []);
 
@@ -83,24 +85,24 @@ export default function VehiclesCatalog() {
       setLoading(true);
       setVehicles([]);
     }
-    let request = supabase.from('vehicles').select(PUBLIC_VEHICLE_CARD_SELECT, { count: 'exact' }).eq('is_published', true).eq('stock_status', 'available');
-    const safeQuery = submittedQuery.trim().replace(/[,%()]/g, ' ');
-    if (safeQuery) request = request.or(`title.ilike.%${safeQuery}%,make.ilike.%${safeQuery}%,model.ilike.%${safeQuery}%,chassis_code.ilike.%${safeQuery}%,stock_number.ilike.%${safeQuery}%`);
-    if (brand !== 'all') request = request.eq('make', brand);
-    if (stockOrigin !== 'all') request = request.eq('stock_origin', stockOrigin);
-    if (sort === 'year-new') request = request.order('year', { ascending: false, nullsFirst: false });
-    else if (sort === 'price-low') request = request.order('price', { ascending: true, nullsFirst: false });
-    else if (sort === 'price-high') request = request.order('price', { ascending: false, nullsFirst: true });
-    else request = request.order('created_at', { ascending: false });
-    const { data, count } = await request.order('id', { ascending: true }).range(offset, offset + VEHICLE_PAGE_SIZE - 1);
-    const nextVehicles = (data || []) as unknown as PublicVehicleCard[];
-    setVehicles((current) => append ? [...current, ...nextVehicles] : nextVehicles);
-    setVehicleCount(count ?? 0);
+    const { items, count } = await fetchVehicleCatalogPage(
+      supabase,
+      { q: submittedQuery, brand, stockOrigin, sort },
+      offset
+    );
+    setVehicles((current) => append ? [...current, ...items] : items);
+    setVehicleCount(count);
     setLoading(false);
     setLoadingMore(false);
   }, [brand, sort, stockOrigin, submittedQuery]);
 
-  useEffect(() => { void loadVehicles(); }, [loadVehicles]);
+  useEffect(() => {
+    if (skipInitialLoadRef.current) {
+      skipInitialLoadRef.current = false;
+      return;
+    }
+    void loadVehicles();
+  }, [loadVehicles]);
 
   return (
     <>

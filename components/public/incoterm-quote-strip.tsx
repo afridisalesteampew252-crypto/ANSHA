@@ -9,7 +9,7 @@ type Props = {
 };
 
 function formatAmount(currency: string, value: number) {
-  return `${currency} ${value.toLocaleString()}`;
+  return `${currency} ${value.toLocaleString('en-US')}`;
 }
 
 /** Public Incoterm quote strip when show_price is on and any FOB/C&F/CIF is set. */

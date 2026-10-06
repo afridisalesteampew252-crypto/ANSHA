@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createPublicSupabaseClient } from '@/lib/supabase/public';
+import { getPublicVehicleBySlug } from '@/lib/public-listing-data';
 import { publicVehicleImageUrl } from '@/lib/public-media';
 import {
   absoluteMediaUrl,
@@ -17,16 +17,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = createPublicSupabaseClient();
-  const { data } = await supabase
-    .from('vehicles')
-    .select(
-      'title, description, make, model, year, variant, vehicle_photos(storage_path, is_cover, sort_order, is_auction_sheet)'
-    )
-    .eq('slug', slug)
-    .eq('is_published', true)
-    .eq('stock_status', 'available')
-    .maybeSingle();
+  const data = await getPublicVehicleBySlug(slug);
 
   if (!data) {
     return {
@@ -35,15 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const rawPhotos = (data.vehicle_photos || []) as Array<{
-    storage_path: string;
-    is_cover: boolean | null;
-    sort_order: number | null;
-    is_auction_sheet: boolean | null;
-  }>;
-  const photos = rawPhotos
-    .filter((photo) => !photo.is_auction_sheet)
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const photos = data.vehicle_photos || [];
   const cover = photos.find((p) => p.is_cover) || photos[0];
   const imageUrl = cover?.storage_path
     ? publicVehicleImageUrl(cover.storage_path)

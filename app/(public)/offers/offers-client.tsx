@@ -1,40 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
 import { ArrowRight, CarFront, Package, Tag } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import { formatDealDiscount, formatDealSalePrice } from '@/lib/site-offers';
-import { supabase } from '@/lib/supabase/client';
 import type { SiteOffer } from '@/lib/types';
 
-type OfferRow = SiteOffer & {
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "dd MMM yyyy" in UTC, identical on server and client (no locale/ICU/timezone drift). */
+function formatOfferDate(value: string) {
+  const d = new Date(value);
+  return `${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
+export type OfferRow = SiteOffer & {
   vehicles?: { slug: string; title: string; currency: string } | null;
   parts?: { slug: string; name: string; currency: string } | null;
 };
 
-export default function PublicOffersPage() {
-  const [rows, setRows] = useState<OfferRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data } = await supabase
-        .from('site_offers')
-        .select('*, vehicles(slug, title, currency), parts(slug, name, currency)')
-        .eq('is_published', true)
-        .order('published_at', { ascending: false, nullsFirst: false });
-      if (!active) return;
-      setRows((data || []) as OfferRow[]);
-      setLoading(false);
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
+/** Offers are loaded on the server (ISR) and passed in, so they are in the initial HTML. */
+export default function PublicOffersPage({ rows }: { rows: OfferRow[] }) {
   return (
     <>
       <section className="relative overflow-hidden bg-[#101114] py-12 text-white sm:py-16">
@@ -49,13 +34,7 @@ export default function PublicOffersPage() {
       </section>
       <div className="surface-featured border-t border-accent/10">
       <div className="container-page py-8 sm:py-12">
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-2xl" />
-            ))}
-          </div>
-        ) : rows.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-accent/20 bg-card py-16 text-center">
             <Tag className="mx-auto h-10 w-10 text-muted-foreground/30" />
             <h2 className="mt-4 text-xl font-extrabold">No live offers right now</h2>
@@ -102,7 +81,7 @@ export default function PublicOffersPage() {
                       ) : null}
                       {row.published_at ? (
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(row.published_at), 'dd MMM yyyy')}
+                          {formatOfferDate(row.published_at)}
                         </p>
                       ) : null}
                     </div>
