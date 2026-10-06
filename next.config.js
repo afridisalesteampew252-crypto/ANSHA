@@ -40,6 +40,10 @@ const cspReportOnly = [
 const nextConfig = {
   // Don't advertise the framework in an X-Powered-By header.
   poweredByHeader: false,
+  // The admin assistant reads its editable business knowledge file at runtime.
+  outputFileTracingIncludes: {
+    '/api/admin-assistant': ['./lib/admin-assistant/knowledge.md'],
+  },
   // Allow phone/LAN preview of Turbopack HMR during local development.
   allowedDevOrigins: ['192.168.18.18', '10.244.163.42', 'localhost'],
   async redirects() {
