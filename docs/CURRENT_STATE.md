@@ -9,7 +9,7 @@
 
 # Current State
 
-Verified checkpoint: **2026-09-29**. The public inventory listing indexes are applied to Supabase and verified with generic prepared-query plans. The prior SEO-01…SEO-10 validation is dated 2026-09-22; refer to the current Vercel production deployment before treating later site changes as live. Baseline: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `spmnxwhwsgpaoiklezex`.
+Verified code checkpoint: **2026-10-06**. The public inventory listing indexes remain applied to Supabase and verified with generic prepared-query plans. Public navigation, unified catalog search, and the customer/admin APK download release are committed to `main`; confirm the current Vercel deployment before treating the latest commit as live. Baseline: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `spmnxwhwsgpaoiklezex`.
 
 Canonical site: https://www.anshatradingco.com  
 Supabase: `spmnxwhwsgpaoiklezex` (ANSHA-Mumbai, ap-south-1). Previous Sydney project `spmnxwhwsgpaoiklezex` is kept as a read-only backup since the 2026-10-06 cutover.  
@@ -22,18 +22,32 @@ Hosting: Vercel project `anshanew`
 - Applied migrations `20260928221630_optimize_public_inventory_listing_indexes` and `20260928222037_make_public_listing_indexes_parameter_safe`.
 - Query statistics viewed before the change were cumulative (reset 2026-09-09); collect new traffic before reporting a measured latency reduction.
 
+## Public navigation, search, and Android downloads (2026-10-06)
+
+- Added `/search`, which searches published, available vehicle and parts inventory together and links to the full filtered catalogs.
+- Connected unified search from the desktop header, mobile drawer, homepage finder, and mobile bottom navigation. The header form has a normal `/search` action so it also works before React hydration.
+- Simplified the homepage by removing repetitive promotional, trust, and manufacturer sections while keeping categories, inventory, export markets, sourcing, reviews, and contact paths.
+- Mobile bottom navigation is now Home, Stock, Parts, Search, and WhatsApp. Customer Account remains available from the mobile menu.
+- Simplified the desktop primary navigation and moved secondary destinations into a native, click-toggle **More** disclosure that works before JavaScript loads.
+- Added a keyboard **Skip to main content** link across public pages.
+- Published separate direct-download Android files on `/download`:
+  - Customer APK `com.anshatrading.app` version **1.4** (code **5**) opens `/mobile`.
+  - Admin APK `com.anshatrading.admin` version **1.3** (code **4**) opens `/admin/dashboard`.
+- Both APKs were rebuilt from the current Capacitor/Firebase configuration, passed archive/package validation, and are currently **debug-signed direct-install test builds**. Stable release signing and real-device update testing remain required before store or managed production distribution.
+- Added Playwright coverage for mobile Search/WhatsApp navigation, keyboard skip navigation, combined header search, and the desktop More toggle. The wider ERP/RLS test gap remains.
+
 ## Completion snapshot
 
 | Area | Approx. done | Notes |
 |---|---|---|
-| Public catalog + SEO exporter site | **~99%** | Parts/vehicles/**machinery**/categories/blog/`/reviews`/offers/**70 export markets**; Complete SEO Repair (robots+sitemap+facets noindex+markets empty noindex+shared metadata/schema/breadcrumbs/CWV); FOB/C&F/CIF; **GSC**; favicon/OG; Product JSON-LD rules (`lib/product-schema.ts`); cart & favorites; FX/clock; Deals; featured rotation; Tawk. Remaining: deploy + GSC human steps; no brand microsite; detail schema still client-hydrated |
+| Public catalog + SEO exporter site | **~99%** | Parts/vehicles/**machinery**/categories/blog/`/reviews`/offers/**70 export markets**; unified `/search`; simplified public navigation; Complete SEO Repair (robots+sitemap+facets noindex+markets empty noindex+shared metadata/schema/breadcrumbs/CWV); FOB/C&F/CIF; **GSC**; favicon/OG; Product JSON-LD rules (`lib/product-schema.ts`); cart & favorites; FX/clock; Deals; featured rotation; Tawk. Remaining: production smoke + GSC human steps; no brand microsite; detail schema still client-hydrated |
 | Staff ERP (purchase → GL → VAT/payroll) | **~99%** | Phases 28–38, 46–48, 50, 53–57, **61–71**, **72–78** + post-78: remittances; commissions; bulk reserve; config yards/shipping/freight; reports + Excel; customer auto ID + Actions; **MoneyBreakdown** KPIs (dashboard/analytics/invoices/SOA — All currencies, no FX mixing); stock invoice badges; Make Available clears reservation SOA (SECURITY DEFINER fix) |
 | Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror; advisor harden on `tawk_webhook_receipts` + `touch_admin_last_seen` |
 | Marketing (offers, campaigns, PWA push, subscribers) | **~93%** | Phase 66 campaigns; subscribers Subscribe this device + Send test push; VAPID on Vercel + Edge. Still no open tracking / cron ESP |
 | Customer portal | **~98%** | Verified-email self-registration; safe exact-email CRM linking; stock catalog shortcuts; invoices + SOA, reservations, remittances; Tawk support; admin-approved account deletion |
-| PWA / Capacitor | **~88%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; Capacitor shell docs |
-| Automated tests | **~10%** | CI lint/typecheck/build/brands; no Vitest/Playwright suite |
-| Docs (this set) | **~99%** | Refreshed 2026-09-29; current state, architecture, performance, and APK docs aligned |
+| PWA / Capacitor | **~92%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; customer v1.4 + admin v1.3 APK downloads; stable release signing and real-device update testing remain |
+| Automated tests | **~15%** | CI lint/typecheck/build/brands; Playwright public navigation/search and anonymous security coverage exists, but ERP/RLS/stateful workflows remain thin |
+| Docs (this set) | **~99%** | Current state refreshed 2026-10-06; architecture, performance, deployment, and APK references remain the operating guides |
 
 **Overall product maturity (shipping ERP + public exporter):** roughly **96–98%** of the Phase 1–78 roadmap that was chosen and built. Core MVP is **shipped**. Remaining: Auth leaked-password toggle, bank live feeds, full ESP automation, HR location-scoped approvals, automated tests — not a greenfield rewrite.
 
@@ -125,24 +139,27 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 5. **Tawk webhook** — `TAWK_WEBHOOK_SECRET`, deploy `--no-verify-jwt`, dashboard webhooks → `…/functions/v1/tawk-webhook`. See `docs/Tawk.md`.
 6. **Bank feeds** — CSV/manual only; no live Open Banking OAuth.
 7. **Email newsletter list** — Marketing subscribers = `push_subscriptions` only.
-8. **Automated E2E/unit tests** — still thin.
-9. **Native admin rewrite** — not built. The separate Admin APK is a Capacitor WebView for `/admin/dashboard`, not a standalone native ERP; see [Admin-Android](./Admin-Android.md).
-10. **Manager HR location scope** — inventory scoped by `allowed_stock_origins`; HR shift locations remain global viewer.
-11. **Edge functions** — keep `admin-create-user` / `admin-update-user` redeployed for `allowed_stock_origins` + remittance `office_id` / `shift_id`.
+8. **Automated E2E/unit tests** — public navigation/search and anonymous security have Playwright coverage; ERP, RLS, finance, and stateful workflow coverage remains thin.
+9. **Android release signing** — customer v1.4 and admin v1.3 are debug-signed direct-install builds. Configure a permanent private release keystore, increasing version codes, signed APK/AAB builds, and real-device install/update checks before production distribution.
+10. **Native admin rewrite** — not built. The separate Admin APK is a Capacitor WebView for `/admin/dashboard`, not a standalone native ERP; see [Admin-Android](./Admin-Android.md).
+11. **Manager HR location scope** — inventory scoped by `allowed_stock_origins`; HR shift locations remain global viewer.
+12. **Edge functions** — keep `admin-create-user` / `admin-update-user` redeployed for `allowed_stock_origins` + remittance `office_id` / `shift_id`.
 
 ## Next recommended steps (safe order)
 
-1. Deploy Complete SEO Repair → GSC sitemap re-submit (if needed) + Request indexing → Tag Assistant for `/metrics` gateway.
-2. `/admin/subscribers` Subscribe this device → Send test push.
-3. Enable leaked-password protection.
-4. Confirm Resend / WhatsApp / AI / Tawk webhook if in use.
-5. Spot-check Phase 72–73: claim commission on sold stock; Unknown TTS link → auto-confirm; Allocate To Stocks; remittance Excel/CSV export.
-6. Spot-check Phase 74–76: Configuration Yards / Shipping Companies / Freight charges CRUD.
-7. Spot-check Phase 77–78: bulk reserve; new customer gets Customer ID ≥ 48001; Actions menu → `#soa`; multi-currency KPIs stack currencies (All).
-8. Spot-check **Make Available** on reserved stock (no permission error; SOA Buying clears).
-9. Spot-check public part/vehicle JSON-LD (offers only when price valid; ratings only when published reviews exist).
-10. Spot-check reports hub Excel downloads; vehicles Export Excel.
-11. Add Playwright smoke when ready for quality gates.
+1. Confirm the latest `main` deployment is READY, then smoke-test `/`, `/search`, `/download`, both APK URLs, customer registration, and admin sign-in.
+2. Configure permanent Android release signing; build increasing-version customer/admin APKs or AABs and test clean install plus update on real devices.
+3. Complete GSC sitemap re-submit (if needed) + Request indexing → Tag Assistant for `/metrics` gateway.
+4. `/admin/subscribers` Subscribe this device → Send test push; verify Android FCM on both APKs.
+5. Enable leaked-password protection.
+6. Confirm Resend / WhatsApp / AI / Tawk webhook if in use.
+7. Spot-check Phase 72–73: claim commission on sold stock; Unknown TTS link → auto-confirm; Allocate To Stocks; remittance Excel/CSV export.
+8. Spot-check Phase 74–76: Configuration Yards / Shipping Companies / Freight charges CRUD.
+9. Spot-check Phase 77–78: bulk reserve; new customer gets Customer ID ≥ 48001; Actions menu → `#soa`; multi-currency KPIs stack currencies (All).
+10. Spot-check **Make Available** on reserved stock (no permission error; SOA Buying clears).
+11. Spot-check public part/vehicle JSON-LD (offers only when price valid; ratings only when published reviews exist).
+12. Spot-check reports hub Excel downloads; vehicles Export Excel.
+13. Expand Playwright/RLS coverage for role, finance, reservation, remittance, commission, and mutation workflows on a disposable Supabase project.
 
 ## Doc map
 
