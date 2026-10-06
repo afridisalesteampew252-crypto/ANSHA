@@ -22,7 +22,7 @@ Only modules that exist in the repository are listed as implemented. Later ERP i
 | Export shipments | no | `/admin/export-shipments` (ops; modes DHL/RoRo/20ft/40ft; PDF docs; export master selects; doc-driven status; vehicles + parts; Phase 68 hard-delete draft/cancelled or account-admin force) | `export_shipments`, `export_shipment_vehicles`, `export_shipment_parts` (Phase 63), `export_shipment_documents` (Phase 61–62; storage bucket `export-shipment-documents`); `export_master_options`; RPC `delete_export_shipment` |
 | Landed cost | no | `/admin/landed-cost` (ops) | `landed_cost_packs`, `landed_cost_charges`, `landed_cost_allocations` |
 | Bank accounts | no | `/admin/bank-accounts` (ops + accounts views) | `bank_accounts`, `bank_transactions`, `bank_feed_connections` + CSV import |
-| Expenses | no | `/admin/expenses` (ops + accounts) | `expense_categories`, `expenses` |
+| Expenses | no | `/admin/expenses` (ops + accounts; invoice/receipt attachments) | `expense_categories`, `expenses`, `expense_attachments` (files in private `internal-files/expenses/<expense_id>/`; RPCs `register_expense_attachment` / `delete_expense_attachment`) |
 | General ledger | no | `/admin/ledger` (ops + accounts SELECT views) | `gl_accounts`, `gl_journals`, `gl_journal_lines` (Phase 46 auto-post from remittance/expense/invoice/supplier payment) |
 | Reports hub | no | `/admin/reports` (ops + accounts): hub + 7 operational reports + financial statements; Excel download | `lib/reports/catalog.ts`; GL RPCs for financial; remittance/invoice/stock queries for ops reports; `lib/export-excel.ts` |
 | VAT return | no | `/admin/vat-return` (ops + accounts) | `vat_return_periods` + `get_vat_return_summary` |
