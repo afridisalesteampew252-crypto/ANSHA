@@ -8,7 +8,7 @@ Audit and process docs under `docs/` (including Development, Deployment, Testing
 
 ## 1. Safety
 
-Done in code and deployed to project `ydrnilquojvalhgifest`: `admin-update-user` verifies the caller with the anon JWT (same as create-user); Edge Function CORS is origin-allowlisted, not `*`. Function versions: `admin-create-user` v6, `admin-update-user` v4.
+Done in code and deployed to project `spmnxwhwsgpaoiklezex`: `admin-update-user` verifies the caller with the anon JWT (same as create-user); Edge Function CORS is origin-allowlisted, not `*`. Function versions: `admin-create-user` v6, `admin-update-user` v4.
 
 Still needs your action or approval:
 

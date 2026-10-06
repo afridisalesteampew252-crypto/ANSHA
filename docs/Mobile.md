@@ -137,7 +137,7 @@ The existing `send-web-push` admin function is platform-aware: it continues deli
 Configure the secret from a trusted operator environment, never from the website or APK:
 
 ```bash
-supabase secrets set --project-ref ydrnilquojvalhgifest FCM_SERVICE_ACCOUNT_JSON="$(cat firebase/fcm-service-account.json)"
+supabase secrets set --project-ref spmnxwhwsgpaoiklezex FCM_SERVICE_ACCOUNT_JSON="$(cat firebase/fcm-service-account.json)"
 ```
 
 Keep `firebase/fcm-service-account.json` outside the repository or in a protected local path; only `firebase/google-services.json` belongs in the repository. After deployment, install an APK, sign in, send a test push from `/admin/subscribers`, and verify both the admin response's `native_sent` count and the device notification. Do not treat a token-registration success as proof of delivery.

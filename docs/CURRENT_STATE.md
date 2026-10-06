@@ -9,10 +9,10 @@
 
 # Current State
 
-Verified checkpoint: **2026-09-29**. The public inventory listing indexes are applied to Supabase and verified with generic prepared-query plans. The prior SEO-01…SEO-10 validation is dated 2026-09-22; refer to the current Vercel production deployment before treating later site changes as live. Baseline: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `ydrnilquojvalhgifest`.
+Verified checkpoint: **2026-09-29**. The public inventory listing indexes are applied to Supabase and verified with generic prepared-query plans. The prior SEO-01…SEO-10 validation is dated 2026-09-22; refer to the current Vercel production deployment before treating later site changes as live. Baseline: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `spmnxwhwsgpaoiklezex`.
 
 Canonical site: https://www.anshatradingco.com  
-Supabase: `ydrnilquojvalhgifest` (ap-southeast-2)  
+Supabase: `spmnxwhwsgpaoiklezex` (ANSHA-Mumbai, ap-south-1). Previous Sydney project `spmnxwhwsgpaoiklezex` is kept as a read-only backup since the 2026-10-06 cutover.  
 Hosting: Vercel project `anshanew`
 
 ## Recent database performance fix (2026-09-29)

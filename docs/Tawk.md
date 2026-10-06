@@ -64,24 +64,24 @@ Property / widget IDs are public embed values (not secrets):
 3. Set Edge secret (never commit):
 
 ```bash
-supabase secrets set TAWK_WEBHOOK_SECRET=<secret> --project-ref ydrnilquojvalhgifest
+supabase secrets set TAWK_WEBHOOK_SECRET=<secret> --project-ref spmnxwhwsgpaoiklezex
 ```
 
 4. Deploy with JWT verification **off** (Tawk cannot send a Supabase JWT):
 
 ```bash
-supabase functions deploy tawk-webhook --no-verify-jwt --project-ref ydrnilquojvalhgifest
+supabase functions deploy tawk-webhook --no-verify-jwt --project-ref spmnxwhwsgpaoiklezex
 ```
 
 5. In Tawk → Administration → **Settings** (or **Integrations**) → **Webhooks** → Create:
    - **Name:** e.g. `ANSHA Live chat`
-   - **URL:** `https://ydrnilquojvalhgifest.supabase.co/functions/v1/tawk-webhook`
+   - **URL:** `https://spmnxwhwsgpaoiklezex.supabase.co/functions/v1/tawk-webhook`
    - **Events:** Chat Start, Chat End, New ticket (optional: New Chat Transcript)
    - Save. Tawk shows a **webhook secret** on that page (there is no secret field on the create form).
 6. Copy Tawk’s webhook secret into Supabase Edge (and local `.env.local` only):
 
 ```bash
-supabase secrets set TAWK_WEBHOOK_SECRET=<tawk-shown-secret> --project-ref ydrnilquojvalhgifest
+supabase secrets set TAWK_WEBHOOK_SECRET=<tawk-shown-secret> --project-ref spmnxwhwsgpaoiklezex
 ```
 
    Redeploy is not required after changing the secret alone, but confirm the function is still active.

@@ -68,7 +68,7 @@ Admin gating lives in `proxy.ts` (`export async function proxy`), not `middlewar
 
 ## Linked project
 
-Local `.env.local` must point at an environment that is safe to query. The production Supabase project is `ydrnilquojvalhgifest`. Do not reset it.
+Local `.env.local` must point at an environment that is safe to query. The production Supabase project is `spmnxwhwsgpaoiklezex` (ANSHA-Mumbai, ap-south-1). Do not reset it. The old Sydney project `spmnxwhwsgpaoiklezex` is a backup only.
 
 
 ## Catalog and freight development notes

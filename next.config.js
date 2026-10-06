@@ -5,10 +5,10 @@
  */
 function supabaseOrigins() {
   try {
-    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ydrnilquojvalhgifest.supabase.co');
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://spmnxwhwsgpaoiklezex.supabase.co');
     return [`https://${url.host}`, `wss://${url.host}`];
   } catch {
-    return ['https://ydrnilquojvalhgifest.supabase.co', 'wss://ydrnilquojvalhgifest.supabase.co'];
+    return ['https://spmnxwhwsgpaoiklezex.supabase.co', 'wss://spmnxwhwsgpaoiklezex.supabase.co'];
   }
 }
 
