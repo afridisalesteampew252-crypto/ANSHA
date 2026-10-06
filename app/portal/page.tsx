@@ -34,6 +34,7 @@ function PortalLoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [forgotPassword, setForgotPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -126,6 +127,29 @@ function PortalLoginInner() {
     }
 
     toast.success('A new verification link has been sent. Use the newest email link.');
+  };
+
+  const requestPasswordReset = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      toast.error('Enter the email address for your customer account.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/portal/reset-password`,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast.error(error.message || 'We could not send a password reset email.');
+      return;
+    }
+
+    toast.success('Check your email for a secure password reset link.');
+    setForgotPassword(false);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -314,7 +338,24 @@ function PortalLoginInner() {
                   Create account
                 </Button>
               </div>
-              <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
+              {forgotPassword ? (
+                <form onSubmit={(event) => void requestPasswordReset(event)} className="space-y-4">
+                  <div className="rounded-xl bg-secondary/60 p-3 text-sm text-muted-foreground">
+                    Enter your customer account email and we’ll send a secure link to choose a new password.
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="portal-reset-email">Email</Label>
+                    <Input id="portal-reset-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required autoFocus />
+                  </div>
+                  <Button type="submit" className="h-11 w-full rounded-xl" disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    Email me a reset link
+                  </Button>
+                  <Button type="button" variant="ghost" className="w-full" onClick={() => setForgotPassword(false)}>
+                    Back to sign in
+                  </Button>
+                </form>
+              ) : <form onSubmit={(event) => void handleSubmit(event)} className="space-y-4">
                 {mode === 'signup' ? (
                   <div className="space-y-2">
                     <Label htmlFor="portal-name">Full name</Label>
@@ -345,11 +386,18 @@ function PortalLoginInner() {
                     </p>
                   ) : null}
                 </div>
+                {mode === 'signin' ? (
+                  <div className="flex justify-end">
+                    <button type="button" className="text-sm font-semibold text-accent underline-offset-4 hover:underline" onClick={() => setForgotPassword(true)}>
+                      Forgot password?
+                    </button>
+                  </div>
+                ) : null}
                 <Button type="submit" className="h-11 w-full rounded-xl" disabled={loading || oauthLoading || (mode === 'signin' && loginLockout.secondsRemaining > 0)}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {mode === 'signup' ? 'Create customer account' : 'Sign in'}
                 </Button>
-              </form>
+              </form>}
               <p className="mt-4 text-center text-xs text-muted-foreground">
                 By creating an account you agree to email verification. You can request deletion from Portal Settings.
               </p>
