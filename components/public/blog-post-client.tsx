@@ -1,102 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import {
   Calendar, Link2, MessageCircle, Facebook, Linkedin, ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { BlogCard } from '@/components/public/blog-card';
 import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 import { blogImageUrl } from '@/lib/blog-image';
 import { sanitizeBlogHtml } from '@/lib/sanitize-html';
-import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import type { BlogPostWithCategory, BlogCategory } from '@/lib/types';
 
-export function BlogPostClient({ slug }: { slug: string }) {
-  const [post, setPost] = useState<BlogPostWithCategory | null>(null);
-  const [related, setRelated] = useState<BlogPostWithCategory[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFoundFlag, setNotFoundFlag] = useState(false);
+/** Article view. Post + related posts are loaded on the server (ISR) and passed in. */
+export function BlogPostClient({
+  post,
+  related,
+}: {
+  post: BlogPostWithCategory;
+  related: BlogPostWithCategory[];
+}) {
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*, blog_categories(*)')
-        .eq('slug', slug)
-        .eq('status', 'published')
-        .maybeSingle();
-
-      if (error || !data) {
-        setNotFoundFlag(true);
-        setLoading(false);
-        return;
-      }
-
-      const typedPost = data as unknown as BlogPostWithCategory;
-      setPost(typedPost);
-      setLoading(false);
-
-      if (typedPost.category_id) {
-        const { data: relData } = await supabase
-          .from('blog_posts')
-          .select('*, blog_categories(*)')
-          .eq('status', 'published')
-          .eq('category_id', typedPost.category_id)
-          .neq('id', typedPost.id)
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(3);
-
-        if (relData && relData.length > 0) {
-          setRelated(relData as unknown as BlogPostWithCategory[]);
-        } else {
-          const { data: latestData } = await supabase
-            .from('blog_posts')
-            .select('*, blog_categories(*)')
-            .eq('status', 'published')
-            .neq('id', typedPost.id)
-            .order('published_at', { ascending: false, nullsFirst: false })
-            .limit(3);
-          setRelated((latestData || []) as unknown as BlogPostWithCategory[]);
-        }
-      } else {
-        const { data: latestData } = await supabase
-          .from('blog_posts')
-          .select('*, blog_categories(*)')
-          .eq('status', 'published')
-          .neq('id', typedPost.id)
-          .order('published_at', { ascending: false, nullsFirst: false })
-          .limit(3);
-        setRelated((latestData || []) as unknown as BlogPostWithCategory[]);
-      }
-    })();
-  }, [slug]);
-
-  if (notFoundFlag) {
-    notFound();
-  }
-
-  if (loading || !post) {
-    return (
-      <div className="container-page py-8 max-w-3xl">
-        <Skeleton className="h-5 w-48 mb-6" />
-        <Skeleton className="h-10 w-3/4 mb-4" />
-        <Skeleton className="h-5 w-1/2 mb-6" />
-        <Skeleton className="aspect-[16/9] w-full rounded-xl mb-6" />
-        <div className="space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-4 w-full" />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   const imageUrl = blogImageUrl(post.featured_image);
 
@@ -105,6 +31,8 @@ export function BlogPostClient({ slug }: { slug: string }) {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    // Fixed zone so server HTML and client hydration render the same date.
+    timeZone: 'UTC',
   });
 
   const articleUrl = `${siteConfig.url}/blog/${post.slug}`;

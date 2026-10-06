@@ -37,15 +37,25 @@ export async function POST(req: Request) {
     return Response.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
-  const kind = body.kind === 'vehicle' || body.kind === 'part' ? body.kind : null;
+  const kind =
+    body.kind === 'vehicle' || body.kind === 'part' || body.kind === 'offer' ? body.kind : null;
   if (!kind) {
-    return Response.json({ error: 'kind must be "vehicle" or "part".' }, { status: 400 });
+    return Response.json({ error: 'kind must be "vehicle", "part" or "offer".' }, { status: 400 });
   }
   const slugs = Array.isArray(body.slugs)
     ? Array.from(
         new Set(body.slugs.filter((s): s is string => typeof s === 'string' && SLUG_RE.test(s)))
       ).slice(0, MAX_SLUGS)
     : [];
+
+  if (kind === 'offer') {
+    // Deals appear on /offers and on any linked detail page.
+    revalidatePath('/');
+    revalidatePath('/offers');
+    revalidatePath('/vehicles/[slug]', 'page');
+    revalidatePath('/parts/[slug]', 'page');
+    return Response.json({ revalidated: ['/', '/offers', '/vehicles/[slug]', '/parts/[slug]'] });
+  }
 
   const paths =
     kind === 'vehicle'

@@ -1,43 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ArrowRight, CarFront, Package, Tag } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import { formatDealDiscount, formatDealSalePrice } from '@/lib/site-offers';
-import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import type { SiteOffer } from '@/lib/types';
 
-// Public catalog data is read with the anon client, even for signed-in users.
-const supabase = getPublicCatalogClient();
-
-type OfferRow = SiteOffer & {
+export type OfferRow = SiteOffer & {
   vehicles?: { slug: string; title: string; currency: string } | null;
   parts?: { slug: string; name: string; currency: string } | null;
 };
 
-export default function PublicOffersPage() {
-  const [rows, setRows] = useState<OfferRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const { data } = await supabase
-        .from('site_offers')
-        .select('*, vehicles(slug, title, currency), parts(slug, name, currency)')
-        .eq('is_published', true)
-        .order('published_at', { ascending: false, nullsFirst: false });
-      if (!active) return;
-      setRows((data || []) as OfferRow[]);
-      setLoading(false);
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
-
+/** Offers are loaded on the server (ISR) and passed in, so they are in the initial HTML. */
+export default function PublicOffersPage({ rows }: { rows: OfferRow[] }) {
   return (
     <>
       <section className="relative overflow-hidden bg-[#101114] py-12 text-white sm:py-16">
@@ -52,13 +27,7 @@ export default function PublicOffersPage() {
       </section>
       <div className="surface-featured border-t border-accent/10">
       <div className="container-page py-8 sm:py-12">
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-2xl" />
-            ))}
-          </div>
-        ) : rows.length === 0 ? (
+        {rows.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-accent/20 bg-card py-16 text-center">
             <Tag className="mx-auto h-10 w-10 text-muted-foreground/30" />
             <h2 className="mt-4 text-xl font-extrabold">No live offers right now</h2>
