@@ -55,6 +55,7 @@ import {
   type ShipmentMode,
   type VatChoice,
 } from '@/lib/trade-terms';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 const statusClass: Record<StockStatus, string> = {
   available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -367,6 +368,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
     setLoading(false);
     toast.success('Part saved successfully.');
+    requestPublicRevalidation('part', [part?.slug, slug.trim()]);
     router.push('/admin/parts');
   };
 
@@ -407,6 +409,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
     setReserveBusy(false);
     if (error) return toast.error(error.message);
     toast.success('Part reserved and unpublished from the website.');
+    requestPublicRevalidation('part', [part?.slug]);
     await load();
   };
 
@@ -419,6 +422,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
     setReserveBusy(false);
     if (error) return toast.error(error.message);
     toast.success(republish ? 'Reservation released and published.' : 'Reservation released.');
+    requestPublicRevalidation('part', [part?.slug]);
     await load();
   };
 
@@ -470,6 +474,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
     setUploading(false);
     if (successCount > 0) {
       toast.success(`${successCount} photo(s) uploaded.`);
+      requestPublicRevalidation('part', [part?.slug]);
     }
     e.target.value = '';
   };
@@ -486,6 +491,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
     }
     setPhotos((prev) => prev.map((p) => ({ ...p, is_cover: p.id === photoId })));
     toast.success('Cover photo updated.');
+    requestPublicRevalidation('part', [part?.slug]);
   };
 
   const deletePhoto = async (photoId: string, storagePath: string) => {
@@ -514,6 +520,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
     }
     setPhotoActionId(null);
     toast.success('Photo deleted.');
+    requestPublicRevalidation('part', [part?.slug]);
   };
 
   const getPhotoUrl = (path: string) => {

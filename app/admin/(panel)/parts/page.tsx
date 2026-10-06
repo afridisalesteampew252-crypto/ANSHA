@@ -31,6 +31,7 @@ import { supabase } from '@/lib/supabase/client';
 import { exportShipmentStatusLabel } from '@/lib/vehicle-sales-status';
 import type { AdminRole, PartWithRelations, StockOrigin } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 type AgentOption = { id: string; label: string };
 
@@ -275,6 +276,7 @@ export default function AdminPartsPage() {
     const { error } = await supabase.from('parts').update(changes).eq('id', id);
     if (error) return toast.error(error.message);
     toast.success('Part updated.');
+    requestPublicRevalidation('part', [parts.find((p) => p.id === id)?.slug]);
     await fetchParts();
   }
 
@@ -285,6 +287,7 @@ export default function AdminPartsPage() {
     if (error) return toast.error(error.message);
     if (paths.length) await supabase.storage.from('part-images').remove(paths);
     toast.success('Part deleted.');
+    requestPublicRevalidation('part', [part.slug]);
     await fetchParts();
   }
 

@@ -24,6 +24,7 @@ import {
   VEHICLE_CLASSES,
   type VehicleClass,
 } from '@/lib/vehicle-class';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 interface PendingPhoto {
   file: File;
@@ -231,6 +232,7 @@ function AddVehiclePageInner() {
 
     setLoading(false);
     toast.success(publish ? 'Vehicle published successfully.' : 'Draft saved successfully.');
+    if (publish) requestPublicRevalidation('vehicle', [slug]);
     router.push(`/admin/vehicles/${vehicleId}`);
   };
 

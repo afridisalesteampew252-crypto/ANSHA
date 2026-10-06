@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import type { Category, PartCondition, PartCompatibility } from '@/lib/types';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 interface PendingPhoto {
   file: File;
@@ -216,6 +217,7 @@ export default function AddPartPage() {
 
     setLoading(false);
     toast.success(publish ? 'Part published successfully.' : 'Draft saved successfully.');
+    if (publish) requestPublicRevalidation('part', [slug]);
     router.push('/admin/parts');
   };
 

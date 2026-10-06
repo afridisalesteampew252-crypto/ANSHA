@@ -1,5 +1,3 @@
-import type { Review } from '@/lib/types';
-
 /** Positive catalog amount suitable for Product Offer.price */
 export function positiveCatalogPrice(value: number | null | undefined): number | null {
   if (value == null || Number.isNaN(Number(value))) return null;
@@ -110,45 +108,5 @@ export function buildProductOffer(input: {
     priceCurrency: currency,
     price,
     url: input.url,
-  };
-}
-
-/** Real published testimonials → Product aggregateRating + review (never invented). */
-export function buildProductReviewFields(
-  reviews: Review[],
-  itemReviewed: { name: string; url: string },
-): { aggregateRating?: Record<string, unknown>; review?: Record<string, unknown>[] } {
-  const published = reviews.filter(
-    (r) => r.is_published && r.rating >= 1 && r.rating <= 5 && (r.quote || '').trim().length > 0,
-  );
-  if (published.length === 0) return {};
-
-  const ratingSum = published.reduce((sum, r) => sum + r.rating, 0);
-  const ratingValue = Math.round((ratingSum / published.length) * 10) / 10;
-
-  return {
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue,
-      bestRating: 5,
-      worstRating: 1,
-      reviewCount: published.length,
-    },
-    review: published.slice(0, 10).map((r) => ({
-      '@type': 'Review',
-      author: { '@type': 'Person', name: r.name },
-      reviewBody: r.quote,
-      reviewRating: {
-        '@type': 'Rating',
-        ratingValue: r.rating,
-        bestRating: 5,
-        worstRating: 1,
-      },
-      itemReviewed: {
-        '@type': 'Product',
-        name: itemReviewed.name,
-        url: itemReviewed.url,
-      },
-    })),
   };
 }
