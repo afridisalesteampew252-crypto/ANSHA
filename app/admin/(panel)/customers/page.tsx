@@ -89,6 +89,9 @@ export default function CustomersPage() {
 
   const [selfId, setSelfId] = useState('');
   const [selfRole, setSelfRole] = useState<string>('staff');
+  // Mirrors private.can_assign_customer_owner() (admin, manager). Asked from the DB when the
+  // get_my_workspace_capabilities() RPC exists, so the UI never offers an action that 403s.
+  const [canAssign, setCanAssign] = useState(false);
 
   const load = useCallback(async () => {
     const [{ data }, { data: portals }, { data: auth }, { data: ownerRows }] = await Promise.all([
@@ -101,8 +104,14 @@ export default function CustomersPage() {
     const userId = auth.user?.id || '';
     setSelfId(userId);
     if (userId) {
-      const { data: profile } = await supabase.from('admin_profiles').select('role').eq('id', userId).maybeSingle();
-      setSelfRole(profile?.role || 'staff');
+      const [{ data: profile }, capabilities] = await Promise.all([
+        supabase.from('admin_profiles').select('role').eq('id', userId).maybeSingle(),
+        supabase.rpc('get_my_workspace_capabilities'),
+      ]);
+      const role = profile?.role || 'staff';
+      setSelfRole(role);
+      const caps = capabilities.error ? null : (capabilities.data as { can_assign_customer_owner?: boolean } | null);
+      setCanAssign(caps ? Boolean(caps.can_assign_customer_owner) : role === 'admin' || role === 'manager');
     }
     const records = (data || []) as Customer[];
     setCustomers(records);
@@ -250,6 +259,7 @@ export default function CustomersPage() {
   };
 
   const assignCustomer = async (customerId: string, ownerId: string) => {
+    if (!canAssign) return;
     setAssigningId(customerId);
     const { error } = await supabase.rpc('assign_customer_owner', {
       p_customer_id: customerId,
@@ -258,6 +268,8 @@ export default function CustomersPage() {
     setAssigningId(null);
     if (error) {
       setMessage(error.message);
+      // Permission errors usually mean the cached role is stale: reload role + capabilities.
+      if (error.code === '42501') await load();
       return;
     }
     setMessage(ownerId ? 'Account owner assigned.' : 'Customer moved to the unassigned queue.');
@@ -288,7 +300,6 @@ export default function CustomersPage() {
 
   const existingAvatarSrc = editingId ? avatarUrls[editingId] : null;
   const fieldAgentScoped = isFieldAgentRole(selfRole);
-  const canAssign = selfRole === 'admin' || selfRole === 'manager';
   const unassignedCount = customers.filter((customer) => !customer.owner_id).length;
 
   return (

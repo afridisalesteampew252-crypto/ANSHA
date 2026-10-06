@@ -14,7 +14,10 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import { supabase } from '@/lib/supabase/client';
 
 const PRESENCE_CHANNEL = 'workspace-presence';
-const HEARTBEAT_MS = 45_000;
+// last_seen_at only feeds the "Xm ago" label for OFFLINE teammates (online status comes from
+// the Realtime presence channel), so a 5-minute heartbeat is plenty. Was 45s (~1,450 RPCs/day).
+const HEARTBEAT_MS = 5 * 60_000;
+const MIN_TOUCH_GAP_MS = 2 * 60_000;
 
 type PresenceMeta = {
   user_id: string;
@@ -76,7 +79,12 @@ export function AdminPresenceProvider({
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const previousOnlineRef = useRef<ReadonlySet<string>>(new Set());
 
-  const touchLastSeen = useCallback(async () => {
+  const lastTouchRef = useRef(0);
+
+  const touchLastSeen = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastTouchRef.current < MIN_TOUCH_GAP_MS) return;
+    lastTouchRef.current = now;
     const { data, error } = await supabase.rpc('touch_admin_last_seen');
     if (error) {
       await supabase
@@ -140,7 +148,7 @@ export function AdminPresenceProvider({
           user_id: userId,
           online_at: new Date().toISOString(),
         } satisfies PresenceMeta);
-        await touchLastSeen();
+        await touchLastSeen(true);
       });
 
     const heartbeat = window.setInterval(() => {
@@ -162,7 +170,7 @@ export function AdminPresenceProvider({
       window.clearInterval(heartbeat);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onUnload);
-      void touchLastSeen();
+      void touchLastSeen(true);
       if (channelRef.current) {
         void supabase.removeChannel(channelRef.current);
         channelRef.current = null;

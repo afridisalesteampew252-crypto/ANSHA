@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Bell, CalendarClock, CheckCheck, CircleAlert, Inbox, Mail, MessageCircle, PackageSearch, ReceiptText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -39,51 +39,127 @@ const iconByType = {
   support_message: MessageCircle,
 } as const;
 
-export function AdminNotificationCenter({ userId }: { userId: string }) {
-  const [items, setItems] = useState<Notification[]>([]);
-  const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
-  const instanceId = useId().replace(/[^a-zA-Z0-9-]/g, '');
+/**
+ * One shared notification store per signed-in user. The admin header renders separate
+ * mobile and desktop bells; previously each bell polled every 30s with two queries on top of
+ * its own Realtime channel (~4,000 reads/day per open tab). Now:
+ * - a single Realtime subscription drives updates (admin_notifications is in the
+ *   supabase_realtime publication),
+ * - a 5-minute safety poll runs only while the tab is visible,
+ * - returning to the tab / opening the menu refreshes only if data is older than 60s / 15s.
+ */
+type NotificationSnapshot = { items: Notification[]; unread: number };
+type NotificationStore = {
+  snapshot: NotificationSnapshot;
+  listeners: Set<() => void>;
+  refs: number;
+  lastLoadedAt: number;
+  inFlight: Promise<void> | null;
+  teardown: (() => void) | null;
+};
 
-  const load = useCallback(async () => {
-    const [list, count] = await Promise.all([
-      supabase.from('admin_notifications')
-        .select('id,recipient_id,notification_type,title,body,href,read_at,created_at')
-        .eq('recipient_id', userId).order('created_at', { ascending: false }).limit(30),
-      supabase.from('admin_notifications')
-        .select('id', { count: 'exact', head: true })
-        .eq('recipient_id', userId).is('read_at', null),
-    ]);
-    if (list.error || count.error) {
-      toast.error('Notifications could not be loaded.');
-      return;
+const SAFETY_POLL_MS = 5 * 60_000;
+const STALE_ON_FOCUS_MS = 60_000;
+const STALE_ON_OPEN_MS = 15_000;
+const stores = new Map<string, NotificationStore>();
+
+function getStore(userId: string): NotificationStore {
+  let store = stores.get(userId);
+  if (!store) {
+    store = { snapshot: { items: [], unread: 0 }, listeners: new Set(), refs: 0, lastLoadedAt: 0, inFlight: null, teardown: null };
+    stores.set(userId, store);
+  }
+  return store;
+}
+
+function loadNotifications(userId: string, maxAgeMs = 0): Promise<void> {
+  const store = getStore(userId);
+  if (store.inFlight) return store.inFlight;
+  if (maxAgeMs > 0 && Date.now() - store.lastLoadedAt < maxAgeMs) return Promise.resolve();
+  store.inFlight = (async () => {
+    try {
+      const [list, count] = await Promise.all([
+        supabase.from('admin_notifications')
+          .select('id,recipient_id,notification_type,title,body,href,read_at,created_at')
+          .eq('recipient_id', userId).order('created_at', { ascending: false }).limit(30),
+        supabase.from('admin_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('recipient_id', userId).is('read_at', null),
+      ]);
+      if (list.error || count.error) {
+        toast.error('Notifications could not be loaded.', { id: 'admin-notifications-load' });
+        return;
+      }
+      store.lastLoadedAt = Date.now();
+      store.snapshot = { items: (list.data || []) as Notification[], unread: count.count || 0 };
+      store.listeners.forEach((listener) => listener());
+    } finally {
+      store.inFlight = null;
     }
-    setItems((list.data || []) as Notification[]);
-    setUnread(count.count || 0);
-  }, [userId]);
+  })();
+  return store.inFlight;
+}
+
+function startStore(userId: string) {
+  const store = getStore(userId);
+  let debounce: number | undefined;
+  const scheduleLoad = () => {
+    window.clearTimeout(debounce);
+    debounce = window.setTimeout(() => void loadNotifications(userId), 400);
+  };
+  const channel = supabase.channel(`admin-notifications-${userId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_notifications', filter: `recipient_id=eq.${userId}` }, scheduleLoad)
+    .subscribe();
+  const poll = window.setInterval(() => {
+    if (!document.hidden) void loadNotifications(userId, SAFETY_POLL_MS - 5_000);
+  }, SAFETY_POLL_MS);
+  const onVisible = () => {
+    if (!document.hidden) void loadNotifications(userId, STALE_ON_FOCUS_MS);
+  };
+  document.addEventListener('visibilitychange', onVisible);
+  void loadNotifications(userId);
+  store.teardown = () => {
+    window.clearTimeout(debounce);
+    window.clearInterval(poll);
+    document.removeEventListener('visibilitychange', onVisible);
+    void supabase.removeChannel(channel);
+  };
+}
+
+function useAdminNotifications(userId: string) {
+  const [snapshot, setSnapshot] = useState<NotificationSnapshot>(() => getStore(userId).snapshot);
 
   useEffect(() => {
-    void load();
-    // The header renders separate mobile and desktop bells. Each needs its own channel.
-    const channel = supabase.channel(`admin-notifications-${userId}-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_notifications', filter: `recipient_id=eq.${userId}` }, () => void load())
-      .subscribe();
-    const refresh = () => { if (!document.hidden) void load(); };
-    const timer = window.setInterval(refresh, 30000);
-    window.addEventListener('focus', refresh);
+    const store = getStore(userId);
+    const listener = () => setSnapshot(store.snapshot);
+    store.listeners.add(listener);
+    listener();
+    store.refs += 1;
+    if (store.refs === 1) startStore(userId);
     return () => {
-      window.clearInterval(timer);
-      window.removeEventListener('focus', refresh);
-      void supabase.removeChannel(channel);
+      store.listeners.delete(listener);
+      store.refs -= 1;
+      if (store.refs === 0) {
+        store.teardown?.();
+        store.teardown = null;
+      }
     };
-  }, [load, userId, instanceId]);
+  }, [userId]);
+
+  const reload = useCallback((maxAgeMs = 0) => loadNotifications(userId, maxAgeMs), [userId]);
+  return { ...snapshot, reload };
+}
+
+export function AdminNotificationCenter({ userId }: { userId: string }) {
+  const { items, unread, reload } = useAdminNotifications(userId);
+  const [open, setOpen] = useState(false);
 
   const markRead = async (id: string) => {
     const { error } = await supabase.from('admin_notifications')
       .update({ read_at: new Date().toISOString() })
       .eq('id', id).eq('recipient_id', userId).is('read_at', null);
     if (error) { toast.error('Could not mark notification as read.'); return; }
-    await load();
+    await reload();
   };
 
   const markAllRead = async () => {
@@ -91,10 +167,10 @@ export function AdminNotificationCenter({ userId }: { userId: string }) {
       .update({ read_at: new Date().toISOString() })
       .eq('recipient_id', userId).is('read_at', null);
     if (error) { toast.error('Could not mark notifications as read.'); return; }
-    await load();
+    await reload();
   };
 
-  return <DropdownMenu open={open} onOpenChange={(value) => { setOpen(value); if (value) void load(); }}>
+  return <DropdownMenu open={open} onOpenChange={(value) => { setOpen(value); if (value) void reload(STALE_ON_OPEN_MS); }}>
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="icon" className="relative" aria-label={`${unread} unread notifications`}>
         <Bell className="h-5 w-5" />
