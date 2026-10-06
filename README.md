@@ -1,3 +1,15 @@
+## Live production audit — 2026-10-07
+
+A live audit was completed against GitHub, Vercel, and the new Mumbai Supabase production project. **No production schema changes or deployment were made by the audit.**
+
+- **Supabase:** ANSHA-Mumbai, project `spmnxwhwsgpaoiklezex`, region `ap-south-1`, status ACTIVE_HEALTHY, PostgreSQL 17.11.
+- **Database:** ~38 MB, 118 public tables, 118/118 with RLS enabled, 282 RLS policies, 493 valid indexes, 140 recorded migrations.
+- **Vercel:** project `anshanew`; latest listed production deployment is READY; custom domains are verified.
+- **Current security review:** 3 anonymous and 123 authenticated SECURITY DEFINER RPC grants are flagged by Supabase Advisor. These require authorization/grant review, not blind removal.
+- **Performance review:** 42 multiple-permissive-policy findings, 238 unused-index findings, 60 unindexed foreign-key findings, and 1 Auth connection-allocation advisory.
+- **Production priority:** security/RPC review → RLS regression tests → policy/index cleanup based on real query evidence → broader ERP E2E tests.
+- Full audit: **[docs/PROJECT-AUDIT-2026-10-07.md](./docs/PROJECT-AUDIT-2026-10-07.md)**. Historical audit: [docs/PROJECT-AUDIT.md](./docs/PROJECT-AUDIT.md).
+
 # ANSHA
 
 ANSHA is an automotive export platform with a public website, customer portal, and staff ERP. Its customer and admin Android APKs are Capacitor WebView shells connected to the same Next.js deployment and Supabase project.
