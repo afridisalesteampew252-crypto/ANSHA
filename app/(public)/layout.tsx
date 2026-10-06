@@ -19,7 +19,7 @@ export default function PublicLayout({
         <GoogleTagManager />
         <VercelMetrics />
         <SiteHeader />
-        <main className="min-w-0 max-w-full flex-1 overflow-x-clip">
+        <main id="main-content" tabIndex={-1} className="min-w-0 max-w-full flex-1 overflow-x-clip">
           {children}
         </main>
         <SiteFooter />

@@ -1,8 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,7 +11,6 @@ import {
   CarFront,
   ChevronRight,
   CircleHelp,
-  ClipboardCheck,
   Globe2,
   Headphones,
   PackageSearch,
@@ -20,7 +18,6 @@ import {
   Send,
   ShieldCheck,
   Ship,
-  Tag,
   Truck,
   Wrench,
 } from 'lucide-react';
@@ -33,7 +30,6 @@ import { VehicleCard } from '@/components/public/vehicle-card';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import type { HomeFeaturedData } from '@/lib/home-featured';
-import { getManufacturerLogo, SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import {
   type PublicBlogCard,
   type PublicCategoryCard,
@@ -62,11 +58,6 @@ const BlogCard = dynamic(
   { ssr: true }
 );
 
-interface MakeStat {
-  make: string;
-  count: number;
-}
-
 const HERO_DEPARTMENTS = [
   { href: '/vehicles', icon: CarFront, label: 'Vehicle stock', copy: 'Available export units' },
   { href: '/machinery', icon: Truck, label: 'Heavy equipment', copy: 'Machinery & trucks' },
@@ -82,8 +73,7 @@ export default function HomePageClient({
   const router = useRouter();
   const { dealForVehicle, dealForPart } = useInventoryDeals();
   const [query, setQuery] = useState('');
-  const [finderBrand, setFinderBrand] = useState('all');
-  const [finderCategory, setFinderCategory] = useState('all');
+  const [searchType, setSearchType] = useState<'all' | 'parts' | 'vehicles' | 'machinery'>('all');
   const categories = initialFeatured?.categories ?? [];
   const featuredParts = initialFeatured?.featuredParts ?? [];
   const latestParts = initialFeatured?.latestParts ?? [];
@@ -92,18 +82,12 @@ export default function HomePageClient({
   const latestPosts = initialFeatured?.latestPosts ?? [];
   const loading = false;
 
-  const displayMakes = useMemo<MakeStat[]>(() => SUPPORTED_MANUFACTURERS.slice(0, 12).map((make) => ({
-    make,
-    count: 0,
-  })), []);
-
-  const goToParts = (event: React.FormEvent) => {
+  const goToCatalog = (event: React.FormEvent) => {
     event.preventDefault();
     const params = new URLSearchParams();
     if (query.trim()) params.set('q', query.trim());
-    if (finderBrand !== 'all') params.set('brand', finderBrand);
-    if (finderCategory !== 'all') params.set('category', finderCategory);
-    router.push(`/parts${params.size ? `?${params.toString()}` : ''}`);
+    const destination = searchType === 'all' ? '/search' : `/${searchType}`;
+    router.push(`${destination}${params.size ? `?${params.toString()}` : ''}`);
   };
 
   const featured = featuredParts.length ? featuredParts : latestParts;
@@ -171,101 +155,49 @@ export default function HomePageClient({
         </div>
       </section>
 
-      <section className="border-b border-accent/20 bg-accent text-white">
-        <div className="container-page flex min-w-0 flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center sm:py-5">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
-              <Tag className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white">Featured</p>
-              <h2 className="text-base font-extrabold tracking-tight sm:text-lg">Current deals &amp; export offers</h2>
-              <p className="mt-0.5 text-sm text-white/95">Published promotions from ANSHA — always linked here.</p>
-            </div>
-          </div>
-          <Button asChild className="h-11 w-full shrink-0 rounded-full bg-white px-5 text-sm font-bold text-accent hover:bg-white/90 sm:w-auto">
-            <Link href="/offers">View deals <ArrowRight className="h-4 w-4" /></Link>
-          </Button>
-        </div>
-      </section>
-
       <section className="surface-featured border-b border-accent/15 py-8 sm:py-10">
         <div className="container-page min-w-0">
           <form
-            onSubmit={goToParts}
-            className="grid gap-3 rounded-2xl border border-accent/20 bg-[#101114] p-4 text-white shadow-[0_18px_50px_rgba(16,17,20,0.22)] sm:p-6 lg:grid-cols-[1.4fr_1fr_1fr_auto] lg:items-end"
+            onSubmit={goToCatalog}
+            className="grid gap-3 rounded-2xl border border-accent/20 bg-[#101114] p-4 text-white shadow-[0_18px_50px_rgba(16,17,20,0.22)] sm:p-6 lg:grid-cols-[1.5fr_.75fr_auto] lg:items-end"
           >
-            <div className="lg:col-span-4">
-              <span className="eyebrow text-[#ff8a8a]">Catalog finder</span>
-              <h2 className="mt-1.5 text-lg font-extrabold tracking-tight text-white sm:text-xl">Find the right part faster</h2>
+            <div className="lg:col-span-3">
+              <span className="eyebrow text-[#ff8a8a]">Search all stock</span>
+              <h2 className="mt-1.5 text-lg font-extrabold tracking-tight text-white sm:text-xl">Find vehicles and parts from one place</h2>
             </div>
             <label className="block">
-              <span className="mb-1.5 block text-xs font-bold text-white/55">Part, OEM or chassis</span>
+              <span className="mb-1.5 block text-xs font-bold text-white/55">Make, model, OEM, chassis or part</span>
               <span className="relative block">
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="e.g. 81110-52J30, NHP10, headlight"
+                  placeholder="e.g. Toyota, NHP10, 81110-52J30"
                   className="h-12 rounded-xl border-white/15 bg-white/10 pl-10 text-white placeholder:text-white/40"
                 />
               </span>
             </label>
             <label>
-              <span className="mb-1.5 block text-xs font-bold text-white/55">Manufacturer</span>
+              <span className="mb-1.5 block text-xs font-bold text-white/55">Search in</span>
               <select
-                value={finderBrand}
-                onChange={(event) => setFinderBrand(event.target.value)}
+                value={searchType}
+                onChange={(event) => setSearchType(event.target.value as typeof searchType)}
                 className="h-12 w-full rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white"
               >
-                <option value="all" className="text-foreground">All manufacturers</option>
-                {SUPPORTED_MANUFACTURERS.map((brand) => (
-                  <option key={brand} value={brand} className="text-foreground">{brand}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span className="mb-1.5 block text-xs font-bold text-white/55">Category</span>
-              <select
-                value={finderCategory}
-                onChange={(event) => setFinderCategory(event.target.value)}
-                className="h-12 w-full rounded-xl border border-white/15 bg-white/10 px-3 text-sm text-white"
-              >
-                <option value="all" className="text-foreground">All categories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.slug} className="text-foreground">{category.name}</option>
-                ))}
+                <option value="all" className="text-foreground">Everything</option>
+                <option value="vehicles" className="text-foreground">Vehicles</option>
+                <option value="parts" className="text-foreground">Parts</option>
+                <option value="machinery" className="text-foreground">Machinery</option>
               </select>
             </label>
             <Button type="submit" variant="accent" className="h-12 rounded-xl text-sm font-bold">
               <PackageSearch className="h-4 w-4" /> Search
             </Button>
-            <p className="flex items-center gap-2 text-[11px] text-white/50 lg:col-span-4">
+            <p className="flex items-center gap-2 text-[11px] text-white/50 lg:col-span-3">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-accent" />
               Published ANSHA inventory only.
             </p>
           </form>
-        </div>
-      </section>
-
-      <section className="surface-cool max-w-full overflow-x-clip border-b border-border">
-        <div className="container-page grid min-w-0 grid-cols-2 divide-x divide-y divide-border/80 py-1 lg:grid-cols-4 lg:divide-y-0">
-          {[
-            { icon: BadgeCheck, title: 'Verified Stock', text: 'Accurate listings and condition' },
-            { icon: Ship, title: 'Global Export', text: 'Shipping coordination worldwide' },
-            { icon: ClipboardCheck, title: 'Fitment Support', text: 'OEM and chassis matching' },
-            { icon: Headphones, title: 'Human Service', text: 'Direct help on WhatsApp' },
-          ].map((item) => (
-            <div key={item.title} className="flex min-h-[4.75rem] items-center gap-3 px-3 py-3.5 sm:min-h-24 sm:px-5 sm:py-4">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-accent/10 text-accent sm:h-11 sm:w-11">
-                <item.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-              </span>
-              <div>
-                <h3 className="text-[13px] font-extrabold leading-tight sm:text-sm">{item.title}</h3>
-                <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground sm:mt-1 sm:text-xs">{item.text}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -354,39 +286,6 @@ export default function HomePageClient({
               <p className="mt-1 text-sm text-muted-foreground">Send your requirements and the team will source the right part.</p>
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="surface-cool py-14 sm:py-20">
-        <div className="container-page min-w-0">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">Manufacturer directory</span>
-              <h2>Popular brands we supply</h2>
-              <p>Open a marque to browse published parts.</p>
-            </div>
-            <Link href="/parts" className="section-link">All brands <ArrowRight className="h-4 w-4" /></Link>
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-            {displayMakes.map(({ make, count }) => (
-              <Link
-                key={make}
-                href={`/parts?brand=${encodeURIComponent(make)}`}
-                className="group flex min-h-[5.5rem] flex-col items-center justify-center rounded-xl border border-border bg-card p-2 text-center transition hover:-translate-y-0.5 hover:border-accent/35 hover:shadow-md sm:min-h-24"
-              >
-                <Image
-                  src={getManufacturerLogo(make)}
-                  alt={`${make} logo`}
-                  width={52}
-                  height={52}
-                  loading="lazy"
-                  className="h-9 w-12 object-contain transition group-hover:scale-105"
-                />
-                <strong className="mt-2 line-clamp-1 text-[10px] sm:text-[11px]">{make}</strong>
-                {count > 0 && <span className="mt-0.5 text-[9px] font-semibold text-accent">{count} in stock</span>}
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
 

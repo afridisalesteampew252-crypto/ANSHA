@@ -2,15 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CarFront, Home, MessageCircle, UserRound, Wrench } from 'lucide-react';
+import { CarFront, Home, MessageCircle, Search, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { siteConfig } from '@/lib/site-config';
 
 const items = [
   { href: '/', label: 'Home', icon: Home, match: 'home' },
   { href: '/vehicles', label: 'Stock', icon: CarFront, match: 'stock' },
   { href: '/parts', label: 'Parts', icon: Wrench, match: 'parts' },
-  { href: '/portal/home', label: 'Account', icon: UserRound, match: 'portal' },
-  { href: '/portal/support', label: 'Chat', icon: MessageCircle, match: 'support' },
+  { href: '/search', label: 'Search', icon: Search, match: 'search' },
+  {
+    href: `https://wa.me/${siteConfig.whatsappNumber}`,
+    label: 'WhatsApp',
+    icon: MessageCircle,
+    match: 'whatsapp',
+    external: true,
+  },
 ] as const;
 
 export function MobileBottomNav() {
@@ -19,8 +26,8 @@ export function MobileBottomNav() {
     if (match === 'home') return pathname === '/';
     if (match === 'stock') return pathname.startsWith('/vehicles') || pathname.startsWith('/machinery');
     if (match === 'parts') return pathname.startsWith('/parts') || pathname.startsWith('/categories');
-    if (match === 'support') return pathname.startsWith('/portal/support');
-    return pathname.startsWith('/portal/home') || pathname.startsWith('/portal/inquiries') || pathname.startsWith('/portal/reservations') || pathname.startsWith('/portal/invoices') || pathname.startsWith('/portal/account') || pathname.startsWith('/portal/profile') || pathname.startsWith('/portal/payments') || pathname.startsWith('/portal/settings');
+    if (match === 'search') return pathname.startsWith('/search');
+    return false;
   };
 
   return (
@@ -36,7 +43,10 @@ export function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              target={'external' in item && item.external ? '_blank' : undefined}
+              rel={'external' in item && item.external ? 'noopener noreferrer' : undefined}
               aria-current={active ? 'page' : undefined}
+              aria-label={'external' in item && item.external ? 'Chat with ANSHA on WhatsApp (opens in a new tab)' : undefined}
               className={cn(
                 'relative my-1 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1rem] px-0.5 text-[10px] font-bold transition-all duration-200 active:scale-95',
                 active ? 'bg-white/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]' : 'text-white/65 hover:bg-white/10 hover:text-white'

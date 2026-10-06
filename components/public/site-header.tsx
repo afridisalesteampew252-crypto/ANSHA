@@ -43,6 +43,14 @@ const navLinks = [
   { href: '/download', label: 'Download app' },
 ];
 
+const desktopPrimaryLinks = navLinks.filter((link) =>
+  ['/', '/parts', '/vehicles', '/machinery', '/about'].includes(link.href)
+);
+
+const desktopMoreLinks = navLinks.filter((link) =>
+  ['/blog', '/contact', '/download'].includes(link.href)
+);
+
 function CountBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
@@ -90,11 +98,17 @@ export function SiteHeader() {
     const query = searchQuery.trim();
     if (!query) return;
     setMobileOpen(false);
-    router.push(`/parts?q=${encodeURIComponent(query)}`);
+    router.push(`/search?q=${encodeURIComponent(query)}`);
   };
 
   return (
     <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-x-clip">
+      <a
+        href="#main-content"
+        className="sr-only left-4 top-4 z-[100] rounded-lg bg-background px-4 py-3 text-sm font-bold text-foreground shadow-xl focus:not-sr-only focus:fixed focus:outline-none focus:ring-2 focus:ring-accent"
+      >
+        Skip to main content
+      </a>
       <div className="hidden bg-[#101114] text-white lg:block">
         <div className="container-page flex h-9 min-w-0 items-center justify-between text-[11px]">
           <p className="flex items-center gap-2 font-semibold uppercase tracking-[0.14em] text-white/65">
@@ -125,12 +139,13 @@ export function SiteHeader() {
             />
           </Link>
 
-          <form onSubmit={handleSearch} className="mx-auto hidden max-w-xl flex-1 md:block">
+          <form action="/search" onSubmit={handleSearch} className="mx-auto hidden max-w-xl flex-1 md:block">
             <div className="relative flex h-11 items-center overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-card lg:h-12">
               <Search className="absolute left-4 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search OEM, part number, chassis, make or model"
+                name="q"
+                placeholder="Search vehicles, OEM, parts, chassis or stock"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 className="h-full rounded-xl border-0 bg-transparent pl-11 pr-32 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -207,7 +222,7 @@ export function SiteHeader() {
               Deals
             </Link>
             <nav className="flex h-full min-w-0 flex-1 items-center gap-0.5 lg:gap-1" aria-label="Primary">
-              {navLinks.filter((link) => link.href !== '/offers').map((link) => {
+              {desktopPrimaryLinks.map((link) => {
                 const active = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
                 if (link.href === '/vehicles') return (
                   <div key={link.href} className="group relative flex h-full shrink-0 items-center">
@@ -232,6 +247,25 @@ export function SiteHeader() {
                   </Link>
                 );
               })}
+              <div className="group relative flex h-full shrink-0 items-center">
+                <button
+                  type="button"
+                  className={cn(
+                    'relative flex h-full items-center gap-1 px-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-3 lg:text-sm',
+                    desktopMoreLinks.some((link) => pathname.startsWith(link.href)) && 'text-accent'
+                  )}
+                  aria-haspopup="menu"
+                >
+                  More <ChevronDown className="h-3.5 w-3.5" />
+                </button>
+                <div className="invisible absolute right-0 top-full z-50 w-48 translate-y-2 rounded-xl border border-border bg-background p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100" role="menu">
+                  {desktopMoreLinks.map((link) => (
+                    <Link key={link.href} href={link.href} className="block rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground" role="menuitem">
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </nav>
             <Button asChild variant="accent" size="sm" className="ml-1 shrink-0 rounded-lg px-3.5 lg:ml-3 lg:px-5">
               <Link href="/contact"><span className="lg:hidden">Quote</span><span className="hidden lg:inline">Request a quote</span></Link>
@@ -252,10 +286,10 @@ export function SiteHeader() {
                 <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Explore ANSHA</p><p className="mt-0.5 text-sm font-bold">Stock, parts &amp; export support</p></div>
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10"><PackageSearch className="h-4 w-4 text-red-400" /></span>
               </div>
-              <form onSubmit={handleSearch} className="md:hidden">
+              <form action="/search" onSubmit={handleSearch} className="md:hidden">
                 <div className="relative">
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input type="search" placeholder="OEM, part number, chassis..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="h-12 rounded-2xl border-accent/15 bg-white/80 pl-10 pr-20 shadow-sm dark:bg-card/80" />
+                  <Input name="q" type="search" placeholder="Vehicles, OEM, parts, chassis..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="h-12 rounded-2xl border-accent/15 bg-white/80 pl-10 pr-20 shadow-sm dark:bg-card/80" />
                   <Button type="submit" size="sm" variant="accent" className="absolute right-1.5 top-1.5 h-9 rounded-xl px-3">Go</Button>
                 </div>
               </form>
@@ -289,6 +323,9 @@ export function SiteHeader() {
               <div className="grid grid-cols-2 gap-2">
                 <Button asChild variant="accent" className="h-12"><Link href="/parts">Find parts</Link></Button>
                 <Button asChild variant="outline" className="h-12"><Link href="/contact">Get a quote</Link></Button>
+                <Button asChild variant="outline" className="col-span-2 h-12 bg-white/70 dark:bg-white/5">
+                  <Link href="/portal"><User className="h-4 w-4" />Customer account</Link>
+                </Button>
               </div>
               <InstallAppButton className="h-12 w-full justify-center rounded-xl" size="default" label="Download / Install app" />
               <LanguageSwitcher className="h-12 w-full justify-center rounded-xl" />
