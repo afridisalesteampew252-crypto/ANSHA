@@ -2,7 +2,7 @@
 
 ## What exists
 
-- `npm run lint` — ESLint 9 + `eslint-config-next` 16.3.5, zero warnings allowed
+- `npm run lint` — ESLint 9 + `eslint-config-next` 16.3.8, zero warnings allowed
 - `npm run typecheck` — TypeScript `strict`
 - `npm run build` — App Router production compile
 - `npm run verify:brands` — mapped manufacturer SVGs present and named

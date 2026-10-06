@@ -59,7 +59,7 @@ Completed on 2026-09-15.
 
 Completed on 2026-09-15.
 
-- Upgraded incrementally through Next.js 14 and 15 to Next.js 16.3.5 and React 19.3.0.
+- Upgraded incrementally through Next.js 14 and 15 to Next.js 16.3.8 and React 19.3.0.
 - Migrated asynchronous route parameters and renamed Next.js middleware to `proxy.ts`.
 - Added a Suspense boundary for the parts catalog search-parameter route.
 - Removed the Netlify build plugin and obsolete Next.js lint bypass.
