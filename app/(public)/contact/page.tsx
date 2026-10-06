@@ -94,8 +94,10 @@ export default function ContactPage() {
                         <Mail className="h-5 w-5 text-accent" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium">Email</p>
-                        <p className="text-sm text-muted-foreground">{siteConfig.email}</p>
+                        <p className="text-sm font-medium">Sales</p>
+                        <a href={`mailto:${siteConfig.salesEmail}`} className="text-sm text-muted-foreground hover:text-accent">{siteConfig.salesEmail}</a>
+                        <p className="mt-2 text-sm font-medium">Customer Care</p>
+                        <a href={`mailto:${siteConfig.careEmail}`} className="text-sm text-muted-foreground hover:text-accent">{siteConfig.careEmail}</a>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
