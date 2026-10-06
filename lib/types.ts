@@ -1344,6 +1344,18 @@ export interface Expense {
   updated_at: string;
 }
 
+/** Invoice / receipt file attached to an expense (private bucket internal-files). */
+export interface ExpenseAttachment {
+  id: string;
+  expense_id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
 /** Phase 37 Ã¢â‚¬" payroll / leave / EOS MVP (ops-only). */
 export type EmployeeStatus = 'active' | 'inactive' | 'terminated';
 export type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other';
@@ -1705,6 +1717,7 @@ export interface Database {
       eos_estimate_logs: TableDef<EosEstimateLog>;
       expense_categories: TableDef<ExpenseCategory>;
       expenses: TableDef<Expense>;
+      expense_attachments: TableDef<ExpenseAttachment>;
       export_master_options: TableDef<import('./export-masters').ExportMasterOption>;
       export_shipment_documents: TableDef<ExportShipmentDocument>;
       export_shipment_parts: TableDef<ExportShipmentPart>;

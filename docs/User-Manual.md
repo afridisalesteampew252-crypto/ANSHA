@@ -243,7 +243,7 @@ Office and shift live on **Users** (`/admin/users`). Remittances nav does not ex
 | Page | Path | How to use |
 |---|---|---|
 | Bank accounts | `/admin/bank-accounts` | Ops: post in/out transactions, reconcile, CSV import. **Admin** creates/deletes accounts. |
-| Expenses | `/admin/expenses` | Create → post or cancel operating expenses (OPEX-). Optional bank link. |
+| Expenses | `/admin/expenses` | Create → post or cancel operating expenses (OPEX-). Optional bank link. Attach invoices/receipts (PDF, JPG, PNG, WEBP, max 10 MB each) when creating, editing, or from the detail panel; files are private (signed links). Cancelled expenses are read-only. |
 | General ledger | `/admin/ledger` | Draft/post journals (JE-). **Admin** reverses posted journals and edits chart of accounts. Auto-posts may appear from remittances, expenses, invoices, supplier payments. |
 | Reports hub | `/admin/reports` | Hub for **Customer Balance Payments**, **Customer Sales Value Stats**, **Customer Registrations**, **Office Sales Stats**, **Purchase Statistics**, **Resource Sales Stats**, **Resource Sales Value Stats**, plus **Financial statements** (trial balance / P&L / balance sheet). Each report supports filters and **Excel** download. Multi-currency columns stay separate (no FX conversion). |
 | VAT return | `/admin/vat-return` | Pick dates → review summary → optional snapshot → CSV export. Reporting-first. |

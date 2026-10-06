@@ -18,6 +18,7 @@ type AuditRow = AuditLog & {
 
 const ENTITY_OPTIONS = [
   { value: 'all', label: 'All entity types' },
+  { value: 'expense', label: 'Expense' },
   { value: 'invoice', label: 'Invoice' },
   { value: 'part', label: 'Part' },
   { value: 'vehicle', label: 'Vehicle' },

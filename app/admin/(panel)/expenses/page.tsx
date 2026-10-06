@@ -11,7 +11,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 import { useFinanceSettings } from '@/lib/use-finance-settings';
-import type { Expense, ExpenseCategory, ExpensePaymentMethod, ExpenseStatus } from '@/lib/types';
+import {
+  ExpenseAttachmentCount,
+  ExpenseAttachmentsPanel,
+  PendingExpenseAttachments,
+  uploadExpenseAttachments,
+} from '@/components/admin/expense-attachments';
+import { groupAttachmentsByExpense } from '@/lib/expense-attachments';
+import type {
+  Expense,
+  ExpenseAttachment,
+  ExpenseCategory,
+  ExpensePaymentMethod,
+  ExpenseStatus,
+} from '@/lib/types';
 
 type BankOption = { id: string; label: string };
 
@@ -54,6 +67,30 @@ export default function ExpensesPage() {
   const [bankAccountId, setBankAccountId] = useState('');
   const [bankReference, setBankReference] = useState('');
   const [notes, setNotes] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<ExpenseAttachment[]>([]);
+  // False until public.expense_attachments exists (migration 20261006040000).
+  const [attachmentsReady, setAttachmentsReady] = useState(true);
+
+  const loadAttachments = useCallback(async (expenseIds: string[]) => {
+    if (expenseIds.length === 0) {
+      setAttachments([]);
+      return;
+    }
+    const { data, error } = await supabase
+      .from('expense_attachments')
+      .select('id,expense_id,storage_path,file_name,mime_type,size_bytes,uploaded_by,created_at')
+      .in('expense_id', expenseIds)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.warn('Expense attachments unavailable:', error.message);
+      setAttachmentsReady(false);
+      setAttachments([]);
+      return;
+    }
+    setAttachmentsReady(true);
+    setAttachments((data || []) as ExpenseAttachment[]);
+  }, []);
 
   const load = useCallback(async () => {
     const [expRes, catRes, bankRes] = await Promise.all([
@@ -63,8 +100,10 @@ export default function ExpensesPage() {
     ]);
     if (expRes.error) toast.error(expRes.error.message);
     if (catRes.error) toast.error(catRes.error.message);
-    setExpenses((expRes.data || []) as Expense[]);
+    const expenseRows = (expRes.data || []) as Expense[];
+    setExpenses(expenseRows);
     setCategories((catRes.data || []) as ExpenseCategory[]);
+    await loadAttachments(expenseRows.map((row) => row.id));
     if (!bankRes.error && bankRes.data) {
       setBanks(
         bankRes.data.map((row) => ({
@@ -75,11 +114,14 @@ export default function ExpensesPage() {
     } else {
       setBanks([]);
     }
-  }, []);
+  }, [loadAttachments]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const attachmentsByExpense = useMemo(() => groupAttachmentsByExpense(attachments), [attachments]);
+  const attachmentsFor = (id: string) => attachmentsByExpense.get(id) || [];
 
   const selected = expenses.find((row) => row.id === selectedId) || null;
   const categoryName = (id: string) => categories.find((row) => row.id === id)?.name || id.slice(0, 8);
@@ -88,11 +130,16 @@ export default function ExpensesPage() {
     const q = query.trim().toLowerCase();
     if (!q) return expenses;
     return expenses.filter((row) =>
-      [row.expense_number, row.status, row.payee, row.payment_method, categoryName(row.category_id)].some((value) =>
-        value?.toLowerCase().includes(q)
-      )
+      [
+        row.expense_number,
+        row.status,
+        row.payee,
+        row.payment_method,
+        categoryName(row.category_id),
+        ...(attachmentsByExpense.get(row.id) || []).map((file) => file.file_name),
+      ].some((value) => value?.toLowerCase().includes(q))
     );
-  }, [expenses, query, categories]);
+  }, [expenses, query, categories, attachmentsByExpense]);
 
   const resetForm = () => {
     setShowForm(false);
@@ -106,6 +153,7 @@ export default function ExpensesPage() {
     setBankAccountId('');
     setBankReference('');
     setNotes('');
+    setPendingFiles([]);
   };
 
   const fillFromSelected = () => {
@@ -146,15 +194,32 @@ export default function ExpensesPage() {
       p_notes: notes || null,
       p_post: post,
     });
-    setBusy(false);
     if (error) {
+      setBusy(false);
       toast.error(error.message);
       return;
     }
-    toast.success(post ? 'Expense posted.' : 'Expense saved as draft.');
+    const expenseId = data ? String(data) : null;
+    const files = pendingFiles;
+    let attachError: string | null = null;
+    let attached = 0;
+    if (expenseId && files.length > 0 && attachmentsReady) {
+      const result = await uploadExpenseAttachments(expenseId, files);
+      attached = result.attached;
+      attachError = result.error;
+    }
+    setBusy(false);
+    const saved = post ? 'Expense posted' : 'Expense saved as draft';
+    if (attachError) {
+      toast.error(`${saved}, but not every file was attached (${attached}/${files.length}). ${attachError}`);
+    } else if (files.length > 0 && !attachmentsReady) {
+      toast.warning(`${saved}. Attachments are not available yet, so files were not uploaded.`);
+    } else {
+      toast.success(attached ? `${saved} with ${attached} attachment${attached === 1 ? '' : 's'}.` : `${saved}.`);
+    }
     resetForm();
     await load();
-    if (data) setSelectedId(String(data));
+    if (expenseId) setSelectedId(expenseId);
   };
 
   const saveUpdate = async () => {
@@ -319,6 +384,18 @@ export default function ExpensesPage() {
               <Label>Notes</Label>
               <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
             </div>
+            {attachmentsReady ? (
+              editing && selected ? (
+                <ExpenseAttachmentsPanel
+                  expenseId={selected.id}
+                  expenseStatus={selected.status}
+                  attachments={attachmentsFor(selected.id)}
+                  onChanged={() => loadAttachments(expenses.map((row) => row.id))}
+                />
+              ) : (
+                <PendingExpenseAttachments files={pendingFiles} onChange={setPendingFiles} disabled={busy} />
+              )
+            ) : null}
             <div className="flex flex-wrap gap-2">
               {editing ? (
                 <Button type="button" disabled={busy} onClick={() => void saveUpdate()}>
@@ -375,7 +452,10 @@ export default function ExpensesPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-mono font-semibold">{row.expense_number}</span>
-                  <Badge className={statusBadge[row.status]}>{row.status}</Badge>
+                  <span className="flex items-center gap-2">
+                    <ExpenseAttachmentCount count={attachmentsFor(row.id).length} />
+                    <Badge className={statusBadge[row.status]}>{row.status}</Badge>
+                  </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {categoryName(row.category_id)} · {row.expense_date} · {money(row.amount, row.currency)}
@@ -425,6 +505,18 @@ export default function ExpensesPage() {
                   <p className="text-sm text-muted-foreground">Ref: {selected.bank_reference}</p>
                 ) : null}
                 {selected.notes ? <p className="text-sm">{selected.notes}</p> : null}
+                {attachmentsReady ? (
+                  <ExpenseAttachmentsPanel
+                    expenseId={selected.id}
+                    expenseStatus={selected.status}
+                    attachments={attachmentsFor(selected.id)}
+                    onChanged={() => loadAttachments(expenses.map((row) => row.id))}
+                  />
+                ) : (
+                  <p className="rounded-lg border border-dashed px-3 py-3 text-xs text-muted-foreground">
+                    Invoice and receipt attachments will appear here once the expense attachments database update is applied.
+                  </p>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {selected.status === 'draft' ? (
                     <>
