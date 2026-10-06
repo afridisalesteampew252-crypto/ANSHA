@@ -78,7 +78,11 @@ export function SiteFooter() {
               </li>
               <li className="flex items-start gap-2.5 text-white/70">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <a href={`mailto:${siteConfig.email}`} className="break-all hover:text-accent">{siteConfig.email}</a>
+                <a href={`mailto:${siteConfig.salesEmail}`} className="break-all hover:text-accent">{siteConfig.salesEmail}</a>
+              </li>
+              <li className="flex items-start gap-2.5 text-white/70">
+                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <a href={`mailto:${siteConfig.careEmail}`} className="break-all hover:text-accent">{siteConfig.careEmail}</a>
               </li>
               <li className="flex items-start gap-2.5 text-white/70">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
