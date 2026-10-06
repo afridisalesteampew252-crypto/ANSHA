@@ -67,6 +67,7 @@ export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -77,6 +78,7 @@ export function SiteHeader() {
 
   useEffect(() => {
     setMobileOpen(false);
+    setMoreOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -254,9 +256,11 @@ export function SiteHeader() {
                 onKeyDown={(event) => {
                   if (event.key === 'Escape') {
                     event.currentTarget.open = false;
+                    setMoreOpen(false);
                     event.currentTarget.querySelector<HTMLElement>('summary')?.focus();
                   }
                 }}
+                onToggle={(event) => setMoreOpen(event.currentTarget.open)}
               >
                 <summary
                   className={cn(
@@ -264,10 +268,14 @@ export function SiteHeader() {
                     desktopMoreLinks.some((link) => pathname.startsWith(link.href)) && 'text-accent'
                   )}
                   aria-haspopup="menu"
+                  onClick={() => setMoreOpen((open) => !open)}
                 >
                   More <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
                 </summary>
-                <div className="invisible absolute right-0 top-full z-50 w-48 translate-y-2 rounded-xl border border-border bg-background p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-open:visible group-open:translate-y-0 group-open:opacity-100" role="menu">
+                <div className={cn(
+                  'absolute right-0 top-full z-[70] w-48 rounded-xl border border-border bg-background p-2 shadow-xl transition',
+                  moreOpen ? 'visible translate-y-0 opacity-100 pointer-events-auto' : 'invisible translate-y-2 opacity-0 pointer-events-none'
+                )} role="menu">
                   {desktopMoreLinks.map((link) => (
                     <Link key={link.href} href={link.href} className="block rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground" role="menuitem">
                       {link.label}

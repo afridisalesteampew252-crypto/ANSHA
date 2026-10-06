@@ -43,11 +43,18 @@ function PortalLoginInner() {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   useEffect(() => {
     const error = searchParams.get('error');
     if (error === 'unauthorized') toast.error('This account does not have active customer portal access.');
-    if (error === 'confirmation') toast.error('That confirmation link is invalid or expired.');
+    if (error === 'confirmation') {
+      toast.error(searchParams.get('reason') === 'expired'
+        ? 'That confirmation link has expired or was already used. Request a new link below.'
+        : 'That confirmation link could not be completed. Request a new link below.');
+      setMode('signup');
+      setVerificationSent(true);
+    }
     if (error === 'setup') toast.error('We could not finish portal setup. Please sign in again or contact ANSHA.');
   }, [searchParams]);
 
@@ -94,6 +101,31 @@ function PortalLoginInner() {
       p_full_name: name?.trim() || null,
     });
     if (error) throw error;
+  };
+
+  const resendVerification = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      toast.error('Enter your email address first.');
+      setVerificationSent(false);
+      setMode('signup');
+      return;
+    }
+
+    setResendingVerification(true);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: normalizedEmail,
+      options: { emailRedirectTo: portalAuthCallback() },
+    });
+    setResendingVerification(false);
+
+    if (error) {
+      toast.error(error.message || 'We could not send a new verification link.');
+      return;
+    }
+
+    toast.success('A new verification link has been sent. Use the newest email link.');
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -255,8 +287,12 @@ function PortalLoginInner() {
             <div className="space-y-4 text-center">
               <p className="text-sm text-muted-foreground">
                 We sent a verification link to <strong className="text-foreground">{email}</strong>. Open it to finish
-                creating your portal. Verification protects existing customer records.
+                creating your portal. Older links expire after a short time, so always use the newest email.
               </p>
+              <Button type="button" variant="default" className="w-full" onClick={() => void resendVerification()} disabled={resendingVerification}>
+                {resendingVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Send a new verification link
+              </Button>
               <Button type="button" variant="outline" className="w-full" onClick={() => setVerificationSent(false)}>
                 Use another email
               </Button>

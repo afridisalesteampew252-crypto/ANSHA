@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     redirectUrl.pathname = '/portal';
-    redirectUrl.search = 'error=confirmation';
+    const reason = /expired|invalid|used/i.test(error.message) ? 'expired' : 'exchange';
+    redirectUrl.search = `error=confirmation&reason=${reason}`;
     return NextResponse.redirect(redirectUrl);
   }
 
