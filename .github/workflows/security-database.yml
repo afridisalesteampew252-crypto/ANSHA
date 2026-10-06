@@ -1,0 +1,30 @@
+name: Phase 1 Database Security
+
+on:
+  push:
+    branches:
+      - security/phase-1-definer-rls
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/tests/**'
+      - '.github/workflows/security-database.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  database-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start disposable Supabase services and apply all migrations
+        run: supabase start
+      - name: Rebuild the disposable database from migration history
+        run: supabase db reset --local
+      - name: Run Phase 1 database regression tests
+        run: supabase test db

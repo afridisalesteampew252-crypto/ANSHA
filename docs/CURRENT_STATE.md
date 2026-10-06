@@ -214,3 +214,29 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 - Only an active admin can approve a deletion. The Edge Function deletes the Supabase Auth user and anonymizes customer PII; transaction records may remain only for legal, tax, fraud-prevention, or audit obligations.
 - Migration: `20260923010000_customer_self_service_portal.sql`.
 - Edge Function: `portal-delete-account` (JWT required).
+
+
+## Phase 1 security branch checkpoint — 2026-10-07
+
+Branch: `security/phase-1-definer-rls`. These changes are **not applied to production**.
+
+Completed in this branch:
+- Removed anonymous execution from native FCM registration.
+- Removed anonymous execution from browser push subscription registration.
+- Removed authenticated execution from the intentionally public `verify_invoice(uuid)` RPC.
+- Hardened `next_purchase_order_number()` and `next_shipment_code()` to use `search_path=''`.
+- Restricted six workspace/receivables RLS policies from `PUBLIC` to `authenticated`.
+- Added a Phase 1 security regression checklist covering SECURITY DEFINER grants, RLS, customer ownership, high-risk ERP RPCs, invoice verification, and push registration.
+- Reviewed the three anonymous SECURITY DEFINER functions and confirmed `verify_invoice(uuid)` is intentionally public but narrowly scoped to `verification_code` + `verification_enabled`.
+- Hardened every remaining application `SECURITY DEFINER` function with a non-empty `search_path` to `search_path=''`.
+- Scoped manager customer/invoice visibility to records assigned to that manager, including direct assignment RPC enforcement.
+- Added inventory reservation ownership triggers, scoped manager publishing to assigned stock origins, and made manual invoice-stock application receivables-only.
+- Added pgTAP catalog regression coverage for grants, definer search paths, RLS roles/manager scope, inventory triggers, and high-risk RPC guards.
+- Added a branch-only GitHub Actions database job that rebuilds disposable Supabase services and runs the pgTAP suite; it does not link to production.
+
+Still required before merge:
+- Run `supabase db reset` and `supabase test db` against a disposable/CI Supabase stack, then complete role fixtures for customer, sales, accounts, manager, and admin users.
+- Complete application-level E2E coverage for assignment, invoice visibility/balances, reservations, remittances, finance, notifications, and portal workflows.
+- Re-run the performance advisor after the security migrations. Multiple-permissive policies and unused indexes were reviewed as performance findings, not safe deletion instructions; change them only with current plans and workload evidence.
+
+**Merge/deploy rule:** do not merge or deploy this branch until the complete Phase 1 regression pass is green.
