@@ -28,7 +28,7 @@ export function formatDealSalePrice(
   currency = 'USD',
 ): string | null {
   if (salePrice == null || Number.isNaN(Number(salePrice)) || Number(salePrice) < 0) return null;
-  return `${currency} ${Number(salePrice).toLocaleString()}`;
+  return `${currency} ${Number(salePrice).toLocaleString('en-US')}`;
 }
 
 /** Effective display price: sale_price, else list × (1 − discount%), else null. */

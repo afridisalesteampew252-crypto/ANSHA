@@ -60,9 +60,9 @@ export function VehicleDetailClient({ vehicle, deal, relatedVehicles }: VehicleD
       label: machineryUnit && vehicle.operating_hours != null ? 'Operating hours' : 'Mileage',
       value:
         vehicle.operating_hours != null
-          ? `${vehicle.operating_hours.toLocaleString()} hrs`
+          ? `${vehicle.operating_hours.toLocaleString('en-US')} hrs`
           : vehicle.mileage != null
-            ? `${vehicle.mileage.toLocaleString()} km`
+            ? `${vehicle.mileage.toLocaleString('en-US')} km`
             : null,
     },
     { icon: Palette, label: 'Color', value: vehicle.color },
@@ -145,11 +145,11 @@ export function VehicleDetailClient({ vehicle, deal, relatedVehicles }: VehicleD
               {dealPrice != null ? (
                 <div className="mt-1 flex flex-wrap items-baseline gap-2">
                   <p className="text-2xl font-black tracking-tight sm:text-3xl">
-                    {vehicle.currency} {dealPrice.toLocaleString()}
+                    {vehicle.currency} {dealPrice.toLocaleString('en-US')}
                   </p>
                   {hasPrice ? (
                     <span className="text-sm text-white/40 line-through">
-                      {vehicle.currency} {listingPrice!.toLocaleString()}
+                      {vehicle.currency} {listingPrice!.toLocaleString('en-US')}
                     </span>
                   ) : null}
                 </div>

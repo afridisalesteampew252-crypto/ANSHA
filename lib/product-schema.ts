@@ -77,7 +77,7 @@ export function publicPriceLabel(input: {
   const amount = resolveProductOfferPrice(input);
   const currency = (input.currency || '').trim();
   if (amount != null && currency) {
-    return `${currency} ${amount.toLocaleString()}`;
+    return `${currency} ${amount.toLocaleString('en-US')}`;
   }
   return input.askLabel ?? 'Ask for quote';
 }

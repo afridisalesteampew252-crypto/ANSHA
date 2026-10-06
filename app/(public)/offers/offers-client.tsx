@@ -1,10 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { format } from 'date-fns';
 import { ArrowRight, CarFront, Package, Tag } from 'lucide-react';
 import { formatDealDiscount, formatDealSalePrice } from '@/lib/site-offers';
 import type { SiteOffer } from '@/lib/types';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "dd MMM yyyy" in UTC, identical on server and client (no locale/ICU/timezone drift). */
+function formatOfferDate(value: string) {
+  const d = new Date(value);
+  return `${String(d.getUTCDate()).padStart(2, '0')} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
 
 export type OfferRow = SiteOffer & {
   vehicles?: { slug: string; title: string; currency: string } | null;
@@ -74,7 +81,7 @@ export default function PublicOffersPage({ rows }: { rows: OfferRow[] }) {
                       ) : null}
                       {row.published_at ? (
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(row.published_at), 'dd MMM yyyy')}
+                          {formatOfferDate(row.published_at)}
                         </p>
                       ) : null}
                     </div>

@@ -168,11 +168,11 @@ export function PartDetailClient({ part, deal, relatedParts }: PartDetailClientP
                   <p className="text-xs font-semibold uppercase tracking-wider text-white/50">Deal price</p>
                   <div className="mt-0.5 flex flex-wrap items-baseline gap-2">
                     <p className="text-2xl font-black">
-                      {part.currency} {dealPrice.toLocaleString()}
+                      {part.currency} {dealPrice.toLocaleString('en-US')}
                     </p>
                     {hasListPrice ? (
                       <span className="text-sm text-white/40 line-through">
-                        {part.currency} {listingPrice!.toLocaleString()}
+                        {part.currency} {listingPrice!.toLocaleString('en-US')}
                       </span>
                     ) : null}
                   </div>

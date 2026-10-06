@@ -47,7 +47,7 @@ export function InventoryDealBanner({ offer, currency = 'USD', listPrice, classN
             ) : null}
             {showStruck ? (
               <span className="text-sm text-muted-foreground line-through">
-                {currency} {listPrice!.toLocaleString()}
+                {currency} {listPrice!.toLocaleString('en-US')}
               </span>
             ) : null}
           </div>

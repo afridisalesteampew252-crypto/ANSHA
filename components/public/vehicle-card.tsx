@@ -56,13 +56,13 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
       {catalogPriceLines.map((line) => (
         <div key={line.label} className="min-w-0">
           <span className="block text-[9px] font-bold uppercase tracking-wider text-orange-700 dark:text-orange-300 sm:text-[10px]">{line.label}</span>
-          <strong className="block whitespace-nowrap text-xs font-extrabold tracking-tight text-foreground sm:text-base">{vehicle.currency} {line.amount.toLocaleString()}</strong>
+          <strong className="block whitespace-nowrap text-xs font-extrabold tracking-tight text-foreground sm:text-base">{vehicle.currency} {line.amount.toLocaleString('en-US')}</strong>
         </div>
       ))}
     </div>
   ) : null;
   const savedPriceLabel = dealPrice != null ? priceLabel : catalogPriceLines.length > 0
-    ? catalogPriceLines.map((line) => `${line.label} ${vehicle.currency} ${line.amount.toLocaleString()}`).join(' · ')
+    ? catalogPriceLines.map((line) => `${line.label} ${vehicle.currency} ${line.amount.toLocaleString('en-US')}`).join(' · ')
     : priceLabel;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(`Hello ${siteConfig.name}, I'm interested in ${vehicle.title}. Is it available?`)}`;
   const saveItem = toVehicleSaveItem({
@@ -166,9 +166,9 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
             <span className="inline-flex items-center gap-1"><Car className="h-3.5 w-3.5 text-accent" />{vehicle.transmission}</span>
           ) : null}
           {vehicle.operating_hours != null ? (
-            <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-accent" />{vehicle.operating_hours.toLocaleString()} hrs</span>
+            <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-accent" />{vehicle.operating_hours.toLocaleString('en-US')} hrs</span>
           ) : vehicle.mileage != null ? (
-            <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-accent" />{vehicle.mileage.toLocaleString()} km</span>
+            <span className="inline-flex items-center gap-1"><Gauge className="h-3.5 w-3.5 text-accent" />{vehicle.mileage.toLocaleString('en-US')} km</span>
           ) : null}
         </div>
         <div className="mt-auto space-y-2 border-t border-orange-500/20 pt-2.5 sm:pt-4">
@@ -189,7 +189,7 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
             )}
             {dealPrice != null && listPrice != null && dealPrice < listPrice ? (
               <span className="mt-0.5 block text-[11px] text-muted-foreground line-through sm:text-xs">
-                {vehicle.currency} {listPrice.toLocaleString()}
+                {vehicle.currency} {listPrice.toLocaleString('en-US')}
               </span>
             ) : null}
           </div>

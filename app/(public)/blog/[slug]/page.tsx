@@ -32,7 +32,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const imageUrl = blogImageUrl(data.featured_image, { absolute: true }) || absoluteUrl('/images/og-default.jpg');
 
   return {
-    title,
+    // Absolute: the blog layout's own title would otherwise stop the root brand template.
+    title: { absolute: `${title} | ${siteConfig.name}` },
     description,
     alternates: { canonical },
     openGraph: {
