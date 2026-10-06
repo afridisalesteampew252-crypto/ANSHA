@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { BookmarkPlus, ChevronLeft, ChevronRight, ExternalLink, Loader2, Menu, Plus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,13 @@ import {
   type AdminNavGroup,
 } from '@/components/admin/admin-sidebar-nav';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+// Admin-only assistant drawer. Loaded on demand so non-admin roles never download it;
+// the API route (/api/admin-assistant) enforces the same admin-only rule server-side.
+const AdminAssistantLauncher = dynamic(
+  () => import('@/components/admin/admin-assistant/admin-assistant-launcher').then((m) => m.AdminAssistantLauncher),
+  { ssr: false }
+);
 
 function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
   const fieldAgent = isFieldAgentRole(profile.role);
@@ -176,6 +184,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const accounts = isAccountsRole(profile.role);
   const isManager = profile.role === 'manager';
   const receivables = canManageReceivables(profile.role);
+  const canUseAssistant = isAccountAdminRole(profile.role) && profile.is_active !== false;
   const visibleGroups = filterNavGroups(profile);
   const pageTitle =
     pathname === '/admin/profile'
@@ -274,6 +283,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               <Button asChild variant="accent"><Link href="/admin/invoices/new"><Plus className="h-4 w-4" />New invoice</Link></Button>
             ) : null}
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
+            {canUseAssistant ? <AdminAssistantLauncher /> : null}
             <AdminCommandTrigger />
             <AdminNotificationCenter userId={profile.id} />
             
