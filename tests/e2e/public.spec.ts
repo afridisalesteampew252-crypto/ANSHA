@@ -43,6 +43,16 @@ test('header search uses the combined catalog search', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Find vehicles and parts' })).toBeVisible();
 });
 
+test('desktop More menu toggles on click', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/about');
+  const more = page.locator('summary').filter({ hasText: 'More' });
+  await more.click();
+  await expect(page.getByRole('menuitem', { name: 'Insights' })).toBeVisible();
+  await more.click();
+  await expect(page.getByRole('menuitem', { name: 'Insights' })).not.toBeVisible();
+});
+
 function imageKey(src: string) {
   const url = new URL(src, 'http://playwright.local');
   return url.pathname === '/_next/image' ? url.searchParams.get('url') || src : url.pathname;

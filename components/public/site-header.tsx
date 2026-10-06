@@ -75,7 +75,9 @@ export function SiteHeader() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  useEffect(() => setMobileOpen(false), [pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     // Lock page scroll when drawer is open without clearing overflow-x: clip.
@@ -247,25 +249,32 @@ export function SiteHeader() {
                   </Link>
                 );
               })}
-              <div className="group relative flex h-full shrink-0 items-center">
-                <button
-                  type="button"
+              <details
+                className="group relative flex h-full shrink-0 items-center"
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.currentTarget.open = false;
+                    event.currentTarget.querySelector<HTMLElement>('summary')?.focus();
+                  }
+                }}
+              >
+                <summary
                   className={cn(
-                    'relative flex h-full items-center gap-1 px-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:px-3 lg:text-sm',
+                    'relative flex h-full cursor-pointer list-none items-center gap-1 px-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden lg:px-3 lg:text-sm',
                     desktopMoreLinks.some((link) => pathname.startsWith(link.href)) && 'text-accent'
                   )}
                   aria-haspopup="menu"
                 >
-                  More <ChevronDown className="h-3.5 w-3.5" />
-                </button>
-                <div className="invisible absolute right-0 top-full z-50 w-48 translate-y-2 rounded-xl border border-border bg-background p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100" role="menu">
+                  More <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
+                </summary>
+                <div className="invisible absolute right-0 top-full z-50 w-48 translate-y-2 rounded-xl border border-border bg-background p-2 opacity-0 shadow-xl transition group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-open:visible group-open:translate-y-0 group-open:opacity-100" role="menu">
                   {desktopMoreLinks.map((link) => (
                     <Link key={link.href} href={link.href} className="block rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground" role="menuitem">
                       {link.label}
                     </Link>
                   ))}
                 </div>
-              </div>
+              </details>
             </nav>
             <Button asChild variant="accent" size="sm" className="ml-1 shrink-0 rounded-lg px-3.5 lg:ml-3 lg:px-5">
               <Link href="/contact"><span className="lg:hidden">Quote</span><span className="hidden lg:inline">Request a quote</span></Link>
