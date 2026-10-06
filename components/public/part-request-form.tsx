@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { HoneypotField } from '@/components/public/honeypot-field';
+import { FORM_LIMITS, isValidOptionalEmail, publicFormErrorMessage, screenSubmission, useFormStartTime } from '@/lib/public-form-guard';
 
 const STEPS = [
   { id: 'contact', label: 'Contact' },
@@ -30,6 +32,8 @@ export function PartRequestForm() {
   const [partName, setPartName] = useState('');
   const [partNumber, setPartNumber] = useState('');
   const [message, setMessage] = useState('');
+  const [honeypot, setHoneypot] = useState('');
+  const startedAtRef = useFormStartTime();
 
   const stepIndex = STEPS.findIndex((item) => item.id === step);
 
@@ -44,12 +48,17 @@ export function PartRequestForm() {
     setPartNumber('');
     setMessage('');
     setStep('contact');
+    startedAtRef.current = Date.now();
   };
 
   const goNext = () => {
     if (step === 'contact') {
       if (!name.trim()) {
         toast.error('Please enter your name.');
+        return;
+      }
+      if (!isValidOptionalEmail(email)) {
+        toast.error('Please enter a valid email address.');
         return;
       }
       setStep('vehicle');
@@ -77,6 +86,17 @@ export function PartRequestForm() {
       setStep('part');
       return;
     }
+    if (!isValidOptionalEmail(email)) {
+      toast.error('Please enter a valid email address.');
+      setStep('contact');
+      return;
+    }
+    if (screenSubmission({ honeypot, startedAt: startedAtRef.current, text: `${partName} ${message}` }) === 'bot') {
+      // Pretend success so automated submitters get no signal.
+      toast.success('Your request has been submitted. We will contact you soon.');
+      resetForm();
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.from('part_requests').insert({
       customer_name: name.trim(),
@@ -91,7 +111,7 @@ export function PartRequestForm() {
     });
     setLoading(false);
     if (error) {
-      toast.error('Failed to submit request. Please try again.');
+      toast.error(publicFormErrorMessage(error, 'Failed to submit request. Please try again.'));
       return;
     }
     toast.success('Your request has been submitted. We will contact you soon.');
@@ -99,7 +119,8 @@ export function PartRequestForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="relative space-y-5">
+      <HoneypotField value={honeypot} onChange={setHoneypot} />
       <ol className="flex items-center gap-2" aria-label="Request steps">
         {STEPS.map((item, index) => {
           const active = item.id === step;
@@ -139,6 +160,7 @@ export function PartRequestForm() {
               <Input
                 id="pr-name"
                 value={name}
+                maxLength={FORM_LIMITS.name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="Full name"
@@ -153,6 +175,7 @@ export function PartRequestForm() {
                 type="tel"
                 inputMode="tel"
                 value={phone}
+                maxLength={FORM_LIMITS.phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+00 000 000 0000"
                 className="h-11"
@@ -167,6 +190,7 @@ export function PartRequestForm() {
               type="email"
               inputMode="email"
               value={email}
+              maxLength={FORM_LIMITS.email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               className="h-11"
@@ -183,6 +207,7 @@ export function PartRequestForm() {
             <Input
               id="pr-make"
               value={make}
+              maxLength={FORM_LIMITS.make}
               onChange={(e) => setMake(e.target.value)}
               placeholder="Toyota"
               className="h-11"
@@ -193,6 +218,7 @@ export function PartRequestForm() {
             <Input
               id="pr-model"
               value={model}
+              maxLength={FORM_LIMITS.model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="Aqua"
               className="h-11"
@@ -223,6 +249,7 @@ export function PartRequestForm() {
               <Input
                 id="pr-partname"
                 value={partName}
+                maxLength={FORM_LIMITS.partName}
                 onChange={(e) => setPartName(e.target.value)}
                 placeholder="Headlight assembly"
                 className="h-11"
@@ -233,6 +260,7 @@ export function PartRequestForm() {
               <Input
                 id="pr-partnum"
                 value={partNumber}
+                maxLength={FORM_LIMITS.partNumber}
                 onChange={(e) => setPartNumber(e.target.value)}
                 placeholder="81110-52J30"
                 className="h-11"
@@ -244,6 +272,7 @@ export function PartRequestForm() {
             <Textarea
               id="pr-message"
               value={message}
+              maxLength={FORM_LIMITS.message}
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
               placeholder="Any additional information that helps us find the right part..."

@@ -17,6 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import { HoneypotField } from '@/components/public/honeypot-field';
+import { FORM_LIMITS, isValidOptionalEmail, publicFormErrorMessage, screenSubmission, useFormStartTime } from '@/lib/public-form-guard';
 
 interface InquiryDialogProps {
   partId?: string;
@@ -43,6 +45,8 @@ export function InquiryDialog({
   const [usingPortalProfile, setUsingPortalProfile] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [honeypot, setHoneypot] = useState('');
+  const startedAtRef = useFormStartTime();
   const [message, setMessage] = useState(
     partName ? `I'm interested in: ${partName}` : ''
   );
@@ -92,6 +96,16 @@ export function InquiryDialog({
       toast.error('Please fill in your name and message.');
       return;
     }
+    if (!isValidOptionalEmail(email)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    if (!profileId && screenSubmission({ honeypot, startedAt: startedAtRef.current, text: message }) === 'bot') {
+      // Pretend success so automated submitters get no signal.
+      toast.success('Your inquiry has been sent. We will contact you soon.');
+      setOpen(false);
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.from('inquiries').insert({
       part_id: partId || null,
@@ -106,7 +120,7 @@ export function InquiryDialog({
     setLoading(false);
 
     if (error) {
-      toast.error('Failed to send inquiry. Please try again.');
+      toast.error(publicFormErrorMessage(error, 'Failed to send inquiry. Please try again.'));
       return;
     }
 
@@ -137,7 +151,8 @@ export function InquiryDialog({
               : 'Send us a message about any part you need. We\'ll get back to you shortly.'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="relative space-y-4">
+          <HoneypotField value={honeypot} onChange={setHoneypot} />
           {profileLoading ? (
             <div className="rounded-xl border border-dashed bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
               Loading your account details…
@@ -159,6 +174,7 @@ export function InquiryDialog({
                 <Input
                   id="inquiry-name"
                   value={name}
+                  maxLength={FORM_LIMITS.name}
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Your full name"
@@ -171,6 +187,7 @@ export function InquiryDialog({
                     id="inquiry-email"
                     type="email"
                     value={email}
+                    maxLength={FORM_LIMITS.email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
                   />
@@ -180,6 +197,7 @@ export function InquiryDialog({
                   <Input
                     id="inquiry-phone"
                     value={phone}
+                    maxLength={FORM_LIMITS.phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+00 000 000 0000"
                   />
@@ -192,6 +210,7 @@ export function InquiryDialog({
             <Textarea
               id="inquiry-message"
               value={message}
+              maxLength={FORM_LIMITS.message}
               onChange={(e) => setMessage(e.target.value)}
               required
               rows={4}
