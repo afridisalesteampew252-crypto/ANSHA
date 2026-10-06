@@ -203,8 +203,10 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 
 ### `remind-request-dues`
 
-- GET or POST, no end-user JWT (`verify_jwt` off)
-- Auth: `Authorization: Bearer <CRON_SECRET>` (Edge Function secret `CRON_SECRET`)
+- GET or POST, no end-user JWT (`verify_jwt = false` in `supabase/config.toml`, so a plain
+  `supabase functions deploy remind-request-dues` keeps the gateway JWT check off)
+- Auth: `x-cron-secret: <CRON_SECRET>` or `Authorization: Bearer <CRON_SECRET>` (Edge Function
+  secret `CRON_SECRET`, min. 16 chars, constant-time compare). Missing secret → 401.
 - Calls `process_workspace_request_due_reminders()` with the service role
 - Writes idempotent `workspace_request_due_reminders` rows and `admin_notifications` (`request_due`)
 
@@ -212,7 +214,9 @@ Invoked from `/admin/users` via `supabase.functions.invoke`. Shared CORS allowli
 
 - Vercel Cron daily at 04:00 UTC (`0 4 * * *` in `vercel.json`; Hobby plan rejects hourly schedules)
 - Auth: same `CRON_SECRET` (Vercel env); platform sends `Authorization: Bearer <CRON_SECRET>`
-- Proxies to `remind-request-dues` using only the publishable key + cron secret (no service role on Next.js)
+- Proxies to `remind-request-dues` using only the publishable key + cron secret (no service role on Next.js);
+  sends the secret as both `x-cron-secret` and `Authorization: Bearer`
+- `CRON_SECRET` unset on Vercel → 503 (logged); wrong/missing bearer → 401
 
 Service-role keys exist only as Edge Function secrets (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). They must not be added as `NEXT_PUBLIC_*` variables.
 
