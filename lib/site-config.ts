@@ -18,7 +18,7 @@ export const siteConfig = {
     'Dubai-based global exporter of vehicles, automotive parts, and heavy machinery. Browse published stock by make, model, year, OEM number, chassis code, and stock origin.',
   whatsappNumber: '971501677980',
   whatsappDisplay: '+971 50 167 7980',
-  email: 'info@anshatrading.com',
+  email: 'info@anshatradingco.com',
   phone: '+971 50 167 7980',
   address: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba, Dubai, U.A.E.',
   taxRegistrationNumber: '105335274400003',

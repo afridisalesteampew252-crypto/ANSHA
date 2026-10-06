@@ -77,7 +77,7 @@ Web Push (Phase 24 + VAPID ops path) — generate once, then split public vs pri
 3. **Edge Function `send-web-push` (staff send):** set secrets on Supabase project `ydrnilquojvalhgifest` — never `NEXT_PUBLIC_*`, never git:
 
 ```
-supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT="mailto:info@anshatrading.com" --project-ref ydrnilquojvalhgifest
+supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT="mailto:admin@anshatradingco.com" --project-ref ydrnilquojvalhgifest
 supabase functions deploy send-web-push --project-ref ydrnilquojvalhgifest
 ```
 

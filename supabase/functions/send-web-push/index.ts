@@ -70,10 +70,10 @@ function vapidKeysToJwk(publicKeyBase64Url: string, privateKeyBase64Url: string)
 
 function normalizeVapidSubject(raw: string) {
   const subject = raw.trim();
-  if (!subject) return 'mailto:info@anshatrading.com';
+  if (!subject) return 'mailto:admin@anshatradingco.com';
   if (subject.startsWith('mailto:') || subject.startsWith('https:')) return subject;
   if (subject.includes('@')) return `mailto:${subject}`;
-  throw new Error('VAPID_SUBJECT must be a mailto: or https: URL (e.g. mailto:info@anshatrading.com).');
+  throw new Error('VAPID_SUBJECT must be a mailto: or https: URL (e.g. mailto:admin@anshatradingco.com).');
 }
 
 function isStalePushError(error: unknown) {
@@ -106,7 +106,7 @@ Deno.serve(async (request) => {
     const vapidPublicRaw = Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('NEXT_PUBLIC_VAPID_PUBLIC_KEY');
     const vapidPrivateRaw = Deno.env.get('VAPID_PRIVATE_KEY');
     const vapidSubject = normalizeVapidSubject(
-      Deno.env.get('VAPID_SUBJECT') || 'mailto:info@anshatrading.com'
+      Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@anshatradingco.com'
     );
     const authorization = request.headers.get('Authorization') || '';
 
