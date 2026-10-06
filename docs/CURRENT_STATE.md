@@ -214,3 +214,26 @@ Earlier phases (1–68) remain under `supabase/migrations/`.
 - Only an active admin can approve a deletion. The Edge Function deletes the Supabase Auth user and anonymizes customer PII; transaction records may remain only for legal, tax, fraud-prevention, or audit obligations.
 - Migration: `20260923010000_customer_self_service_portal.sql`.
 - Edge Function: `portal-delete-account` (JWT required).
+
+
+## Phase 1 security branch checkpoint — 2026-10-07
+
+Branch: `security/phase-1-definer-rls`. These changes are **not applied to production**.
+
+Completed in this branch:
+- Removed anonymous execution from native FCM registration.
+- Removed anonymous execution from browser push subscription registration.
+- Removed authenticated execution from the intentionally public `verify_invoice(uuid)` RPC.
+- Hardened `next_purchase_order_number()` and `next_shipment_code()` to use `search_path=''`.
+- Restricted six workspace/receivables RLS policies from `PUBLIC` to `authenticated`.
+- Added a Phase 1 security regression checklist covering SECURITY DEFINER grants, RLS, customer ownership, high-risk ERP RPCs, invoice verification, and push registration.
+- Reviewed the three anonymous SECURITY DEFINER functions and confirmed `verify_invoice(uuid)` is intentionally public but narrowly scoped to `verification_code` + `verification_enabled`.
+
+Still required before merge:
+- Run the regression matrix against a disposable/CI Supabase database with representative customer, sales, accounts, manager, and admin users.
+- Review the remaining authenticated SECURITY DEFINER RPCs against their private role helpers and direct RPC usage.
+- Review the 42 multiple-permissive-policy findings for safe consolidation only where semantics are unchanged.
+- Review 238 unused indexes and 60 unindexed foreign keys using real query plans before changing indexes.
+- Complete application-level E2E coverage for assignment, invoice visibility/balances, reservations, remittances, finance, notifications, and portal workflows.
+
+**Merge/deploy rule:** do not merge or deploy this branch until the complete Phase 1 regression pass is green.
