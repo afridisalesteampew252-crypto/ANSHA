@@ -63,7 +63,7 @@ PLAYWRIGHT_BASE_URL=https://your-preview.vercel.app npm run test:e2e:public
 
 Run `npm run test:e2e` for the complete suite. Configure role accounts and fixture IDs from `.env.example`; missing optional fixtures produce explicit skips.
 
-Stateful stock, remittance, and unknown-TTS tests require `E2E_ALLOW_MUTATIONS=1` and a disposable Supabase branch/project. The suite refuses the production project `ydrnilquojvalhgifest` and production domain, and restores or reverses fixture changes where possible.
+Stateful stock, remittance, and unknown-TTS tests require `E2E_ALLOW_MUTATIONS=1` and a disposable Supabase branch/project. The suite refuses the production project `spmnxwhwsgpaoiklezex` and production domain, and restores or reverses fixture changes where possible.
 
 
 ## Catalog price and freight checks

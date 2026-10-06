@@ -74,11 +74,11 @@ Web Push (Phase 24 + VAPID ops path) — generate once, then split public vs pri
 
 1. From the repo root (`ANSHA/`): `npx web-push generate-vapid-keys` (prints Public Key + Private Key).
 2. **Next.js (browser subscribe):** set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the Public Key in local `.env.local` and on the Vercel project (**Settings → Environment Variables**) for **Production** and **Preview**. Redeploy Next after changing it — `NEXT_PUBLIC_*` is baked at build time.
-3. **Edge Function `send-web-push` (staff send):** set secrets on Supabase project `ydrnilquojvalhgifest` — never `NEXT_PUBLIC_*`, never git:
+3. **Edge Function `send-web-push` (staff send):** set secrets on Supabase project `spmnxwhwsgpaoiklezex` — never `NEXT_PUBLIC_*`, never git:
 
 ```
-supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT="mailto:info@anshatrading.com" --project-ref ydrnilquojvalhgifest
-supabase functions deploy send-web-push --project-ref ydrnilquojvalhgifest
+supabase secrets set VAPID_PUBLIC_KEY=<public> VAPID_PRIVATE_KEY=<private> VAPID_SUBJECT="mailto:info@anshatrading.com" --project-ref spmnxwhwsgpaoiklezex
+supabase functions deploy send-web-push --project-ref spmnxwhwsgpaoiklezex
 ```
 
 `VAPID_SUBJECT` is optional (defaults to a mailto). Notifications only fire when staff opts in (offers checkbox, blog “PWA push on publish”, campaigns Send now, or subscribers test) — nothing auto-sends from the database.
@@ -94,7 +94,7 @@ Outbound email (Phase 39): set Edge Function secrets for `send-outbound-email` (
 | `RESEND_API_KEY` | yes | Resend API key (`re_…`). Without it the function returns HTTP 503 with a clear error. |
 | `RESEND_FROM_EMAIL` | no | Default `ANSHA Trading <noreply@anshatradingco.com>`. Must be a verified Resend sender/domain. |
 
-Set with Supabase CLI against project `ydrnilquojvalhgifest`, e.g. `supabase secrets set RESEND_API_KEY=re_… RESEND_FROM_EMAIL="ANSHA Trading <noreply@anshatradingco.com>"`. Redeploy `send-outbound-email` after changing secrets. SMTP is not wired in this MVP — Resend only.
+Set with Supabase CLI against project `spmnxwhwsgpaoiklezex`, e.g. `supabase secrets set RESEND_API_KEY=re_… RESEND_FROM_EMAIL="ANSHA Trading <noreply@anshatradingco.com>"`. Redeploy `send-outbound-email` after changing secrets. SMTP is not wired in this MVP — Resend only.
 
 AI ops assistant (Phase 42): set on the **Vercel** project (and local `.env.local`), not as browser `NEXT_PUBLIC_*` values:
 
@@ -119,7 +119,7 @@ WhatsApp Business Cloud API (Phase 40): set Edge Function secrets for `send-what
 | `WHATSAPP_PHONE_NUMBER_ID` | yes | WhatsApp Business phone number ID from Meta. |
 | `WHATSAPP_API_VERSION` | no | Graph API version; default `v21.0`. |
 
-Set with Supabase CLI against project `ydrnilquojvalhgifest`, e.g. `supabase secrets set WHATSAPP_ACCESS_TOKEN=… WHATSAPP_PHONE_NUMBER_ID=…`. Redeploy `send-whatsapp` after changing secrets. Admin UI `/admin/whatsapp` probes `action: status` and shows setup instructions when secrets are missing (no crash).
+Set with Supabase CLI against project `spmnxwhwsgpaoiklezex`, e.g. `supabase secrets set WHATSAPP_ACCESS_TOKEN=… WHATSAPP_PHONE_NUMBER_ID=…`. Redeploy `send-whatsapp` after changing secrets. Admin UI `/admin/whatsapp` probes `action: status` and shows setup instructions when secrets are missing (no crash).
 
 Google Tag Manager: set on the **Vercel** project (and local `.env.local`). The container ID is publishable (not a secret). Loaded from:
 
@@ -182,11 +182,11 @@ Tawk.to live chat (public widget + admin agent inbox): set on the **Vercel** pro
 
 Leave property/widget blank to disable the public widget. Admin Live chat is **admin + manager only** (see `docs/Roles.md`). Redeploy Next.js after changing Vercel env.
 
-**Phase 58 (activated):** Tawk webhook mirror — Edge secret `TAWK_WEBHOOK_SECRET`, migration `20260920070000_phase_58_tawk_chat_events.sql`, Edge Function `tawk-webhook` deployed with `--no-verify-jwt`, Tawk dashboard → Webhooks → URL `https://ydrnilquojvalhgifest.supabase.co/functions/v1/tawk-webhook` (Chat Start, Chat End, New ticket). Full steps: `docs/Tawk.md`. Never commit the webhook secret.
+**Phase 58 (activated):** Tawk webhook mirror — Edge secret `TAWK_WEBHOOK_SECRET`, migration `20260920070000_phase_58_tawk_chat_events.sql`, Edge Function `tawk-webhook` deployed with `--no-verify-jwt`, Tawk dashboard → Webhooks → URL `https://spmnxwhwsgpaoiklezex.supabase.co/functions/v1/tawk-webhook` (Chat Start, Chat End, New ticket). Full steps: `docs/Tawk.md`. Never commit the webhook secret.
 
 ## Phase 61 / 61b (export docs + Incoterms)
 
-App-only ship after schema already applied on Supabase `ydrnilquojvalhgifest`:
+App-only ship after schema already applied on Supabase `spmnxwhwsgpaoiklezex`:
 
 - Migrations in git: `20260920100000_phase_61_export_docs_incoterms_reservations.sql`, `20260920150000_phase_61b_reservation_inspection_invoice_terms.sql` — **do not re-apply** if already in `schema_migrations`.
 - Storage bucket `export-shipment-documents` (private; signed URLs from admin UI) is created by the Phase 61 migration.
@@ -232,7 +232,7 @@ App-only ship after schema already applied:
 
 ## Phase 69 (remittances module)
 
-App-only ship after schema already applied on Supabase `ydrnilquojvalhgifest`:
+App-only ship after schema already applied on Supabase `spmnxwhwsgpaoiklezex`:
 
 - Migrations: `20260921010000_phase_69_remittance_module_offices_shifts.sql`, `20260921011000_phase_69_drop_create_remittance_14arg.sql` — **do not re-apply** if already in `schema_migrations`.
 - No new Vercel or Edge Function secrets.

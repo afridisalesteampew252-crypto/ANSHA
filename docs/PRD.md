@@ -48,7 +48,7 @@ CRM `customers` are not logins until portal access is enabled by an admin.
 
 ## Constraints
 
-- Single Supabase project (`ydrnilquojvalhgifest`); no second database for a new surface
+- Single Supabase project (`spmnxwhwsgpaoiklezex`); no second database for a new surface
 - RLS is the API; no Server Actions
 - Forward-only migrations; never reset production
 - Secrets never in `NEXT_PUBLIC_*` or docs

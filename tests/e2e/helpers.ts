@@ -28,7 +28,7 @@ export function mutationSkipReason() {
   const db = process.env.E2E_SUPABASE_URL || '';
   const site = process.env.PLAYWRIGHT_BASE_URL || '';
   if (!db || !process.env.E2E_SUPABASE_PUBLISHABLE_KEY) return 'Set E2E_SUPABASE_URL and E2E_SUPABASE_PUBLISHABLE_KEY';
-  if (db.includes('ydrnilquojvalhgifest')) return 'Mutation tests are blocked against production Supabase';
+  if (db.includes('spmnxwhwsgpaoiklezex') || db.includes('ydrnilquojvalhgifest')) return 'Mutation tests are blocked against production Supabase';
   if (/anshatradingco\.com/i.test(site)) return 'Mutation tests are blocked against production';
   return undefined;
 }

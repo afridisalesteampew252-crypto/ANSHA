@@ -1,6 +1,6 @@
 # Database
 
-PostgreSQL on the active Supabase project `ANSHA` (`ydrnilquojvalhgifest`) is the system of record. All application features share this database.
+PostgreSQL on the active Supabase project `ANSHA` (`spmnxwhwsgpaoiklezex`) is the system of record. All application features share this database.
 
 ## Rules
 
