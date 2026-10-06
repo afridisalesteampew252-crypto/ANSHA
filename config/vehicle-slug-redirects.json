@@ -1,0 +1,45 @@
+{
+  "_comment": "Permanent (301) redirects for renamed public vehicle slugs: /vehicles/<from> -> /vehicles/<to>. Add an entry whenever a published vehicle's slug changes. Read by next.config.js.",
+  "redirects": [
+    {
+      "from": "aston-martin-dbx-2020-lgn04549-11786",
+      "to": "aston-martin-vantage-2020-lgn04549-11786",
+      "reason": "Vantage coupe (VIN SCFSMGAW…, photos), not a DBX"
+    },
+    {
+      "from": "nissan-rogue-2014-ec532518-12041",
+      "to": "infiniti-qx60-2014-ec532518-12041",
+      "reason": "Taiwan rename: Infiniti QX60 (VIN 5N1AL0MM…)"
+    },
+    {
+      "from": "lexus-rx-2015-f4168306-54215",
+      "to": "lexus-lx-570-2015-f4168306-54215",
+      "reason": "Taiwan rename: Lexus LX 570 (VIN JTJHY7AX…)"
+    },
+    {
+      "from": "lexus-nx-2022-n2039960-75648",
+      "to": "lexus-rx-350l-2022-n2039960-75648",
+      "reason": "Taiwan rename: Lexus RX 350L (VIN JTJHZKFA…)"
+    },
+    {
+      "from": "mercedes-benz-glc-2022-nb066262-38814",
+      "to": "mercedes-benz-amg-e-53-2022-nb066262-38814",
+      "reason": "Taiwan rename: Mercedes-AMG E 53"
+    },
+    {
+      "from": "mercedes-benz-c-class-2022-na049152-29078",
+      "to": "mercedes-benz-amg-gt-53-2022-na049152-29078",
+      "reason": "Taiwan rename: Mercedes-AMG GT 53 4-door"
+    },
+    {
+      "from": "mercedes-benz-c-class-2018-jn534701-71200",
+      "to": "mercedes-benz-cla-250-2018-jn534701-71200",
+      "reason": "Taiwan rename: Mercedes-Benz CLA 250 (VIN WDDSJ4GB…)"
+    },
+    {
+      "from": "toyota-camry-2021-mu066577-04299",
+      "to": "toyota-avalon-2021-mu066577-04299",
+      "reason": "Taiwan rename: Toyota Avalon"
+    }
+  ]
+}

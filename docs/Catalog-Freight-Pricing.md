@@ -75,3 +75,11 @@ The country, port, and saved make/model fields support typing to search and drop
 - [Database schema and migrations](./Database.md)
 - [API and Supabase RPCs](./API.md)
 - [Deployment and release checks](./Deployment.md)
+
+## Renaming a published vehicle slug
+
+Public vehicle URLs are `/vehicles/<slug>`. When a published vehicle's slug must change
+(e.g. the make/model was corrected), add `{ "from": "<old-slug>", "to": "<new-slug>" }` to
+`config/vehicle-slug-redirects.json`. `next.config.js` turns each entry into an HTTP **301**
+from the old URL to the new one. Deploy the redirect first (or together), then update the
+slug in the database, so old links never 404.
