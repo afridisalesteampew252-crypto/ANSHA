@@ -53,7 +53,7 @@ Deno.serve(async (request) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY') || Deno.env.get('NEXT_PUBLIC_VAPID_PUBLIC_KEY');
     const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
-    const vapidSubjectRaw = (Deno.env.get('VAPID_SUBJECT') || 'mailto:info@anshatrading.com').trim();
+    const vapidSubjectRaw = (Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@anshatradingco.com').trim();
     const vapidSubject = vapidSubjectRaw.startsWith('mailto:') || vapidSubjectRaw.startsWith('https:')
       ? vapidSubjectRaw
       : `mailto:${vapidSubjectRaw}`;
