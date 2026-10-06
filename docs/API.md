@@ -27,6 +27,14 @@ The product is not a standalone REST/GraphQL backend. Clients talk to Supabase P
 - Requires server env `AI_GATEWAY_API_KEY` (preferred) or `OPENAI_API_KEY`; never exposed to the browser
 - Optional `AI_MODEL` (default `openai/gpt-5-mini` via gateway)
 
+`POST /api/admin-assistant`
+
+- **Admin role only** (`admin_profiles.role = 'admin'`, active): 401 without a session, 403 otherwise; cross-site `Origin` → 403
+- Streams a UI message stream for `useChat`; read tools run immediately, write tools need a signed per-call approval (`toolApproval` + `ADMIN_ASSISTANT_APPROVAL_SECRET`)
+- All tools use the caller's cookie session (RLS applies); writes are logged to `audit_logs` as `ai_assistant.<tool>`
+- 429 with `Retry-After` when the per-admin rate limit (20 / 10 min, 200 / day) is hit; 503 when the AI Gateway is not configured
+- Details: [Admin assistant](./Admin-Assistant.md)
+
 There are no Server Actions.
 
 ## Supabase Data API

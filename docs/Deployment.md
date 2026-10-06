@@ -103,6 +103,8 @@ AI ops assistant (Phase 42): set on the **Vercel** project (and local `.env.loca
 | `AI_GATEWAY_API_KEY` | preferred | Vercel AI Gateway; AI SDK default provider |
 | `OPENAI_API_KEY` | fallback | Direct OpenAI when gateway is unset |
 | `AI_MODEL` | no | Override model id |
+| `ADMIN_ASSISTANT_APPROVAL_SECRET` | for assistant changes | 32+ random chars; signs per-action approvals in the admin assistant ([Admin-Assistant.md](./Admin-Assistant.md)) |
+| `ADMIN_ASSISTANT_MODEL` | no | Admin assistant model (default `anthropic/claude-sonnet-5.5`; on Vercel the gateway uses OIDC) |
 
 ## Capacitor (native shell)
 

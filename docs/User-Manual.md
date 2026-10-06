@@ -97,6 +97,7 @@ Open `/admin` after login. Menu groups match the sidebar.
 | Dashboard | `/admin/dashboard` | Review counts and ops charts. Money KPIs use **All currencies** stacked breakdown (no FX mixing). |
 | Analytics | `/admin/analytics` | Pick a date range for sales / stock / purchase / request KPIs. Sales see own-book receivables only. |
 | AI assistant | `/admin/ai` | Ask ops questions grounded in live data. Needs server AI keys (see Tips). |
+| Admin assistant | Header **Assistant** | **Admin only.** Ask about stock, prices, customers, inquiries, requests and dues; it can prepare one-record changes (price, publish, listing text, request assignment, inquiry status) that run only after you press **Approve**. Logged in the audit log. See [Admin assistant](./Admin-Assistant.md). |
 | Audit log | `/admin/audit-log` | **Admin only.** Filter by entity, actor, or date (invoice status, part/vehicle catalog activity, remittance allocations). Append-only. |
 
 ### 5.2 Catalog
