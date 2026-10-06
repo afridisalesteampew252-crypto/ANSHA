@@ -14,7 +14,7 @@ import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { conditionLabels } from '@/lib/site-config';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import {
   PUBLIC_CATEGORY_CARD_SELECT,
   PUBLIC_PART_CARD_SELECT,
@@ -22,6 +22,9 @@ import {
   type PublicPartCard,
 } from '@/lib/public-card-data';
 import type { PartCondition } from '@/lib/types';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 const conditions: PartCondition[] = ['new', 'used', 'refurbished', 'for-parts'];
 const sortOptions = [

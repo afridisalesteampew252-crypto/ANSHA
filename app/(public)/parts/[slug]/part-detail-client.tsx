@@ -31,13 +31,17 @@ import { SaveItemActions, toPartSaveItem } from '@/components/public/save-item-a
 import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { PublicImageGallery } from '@/components/public/public-image-gallery';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import { partImageAlt } from '@/lib/seo';
 import { conditionLabels, conditionBadgeClasses, siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
 import { publicPriceLabel, resolveProductOfferPrice } from '@/lib/product-schema';
 import type { PartWithRelations, SiteOffer } from '@/lib/types';
+import { PUBLIC_PART_DETAIL_SELECT } from '@/lib/public-card-data';
 import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 export function PartDetailClient({ slug }: { slug: string }) {
   const { dealForPart } = useInventoryDeals();
@@ -52,7 +56,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
     (async () => {
       const { data, error } = await supabase
         .from('parts')
-        .select('*, categories(*), part_photos(*), part_compatibility(*)')
+        .select(PUBLIC_PART_DETAIL_SELECT)
         .eq('slug', slug)
         .eq('is_published', true)
         .eq('stock_status', 'available')
@@ -84,7 +88,7 @@ export function PartDetailClient({ slug }: { slug: string }) {
       if (typedData.category_id) {
         const { data: related } = await supabase
           .from('parts')
-          .select('*, categories(*), part_photos(*), part_compatibility(*)')
+          .select(PUBLIC_PART_DETAIL_SELECT)
           .eq('is_published', true)
           .eq('stock_status', 'available')
           .eq('category_id', typedData.category_id)

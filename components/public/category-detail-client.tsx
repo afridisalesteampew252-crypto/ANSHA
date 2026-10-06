@@ -12,8 +12,12 @@ import { publicPartImageUrl } from '@/components/public/catalog-image';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { absoluteUrl } from '@/lib/seo';
 import { buildItemListJsonLd } from '@/lib/seo-schema';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import type { Category, PartWithRelations } from '@/lib/types';
+import { PUBLIC_PART_DETAIL_SELECT } from '@/lib/public-card-data';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 export function CategoryDetailClient({ slug }: { slug: string }) {
   const { dealForPart } = useInventoryDeals();
@@ -40,7 +44,7 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
 
       const { data: partData } = await supabase
         .from('parts')
-        .select('*, categories(*), part_photos(*), part_compatibility(*)')
+        .select(PUBLIC_PART_DETAIL_SELECT)
         .eq('is_published', true)
         .eq('stock_status', 'available')
         .eq('category_id', cat.id)

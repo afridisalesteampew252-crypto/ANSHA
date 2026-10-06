@@ -5,6 +5,7 @@ import { getExportMarket } from '@/lib/export-markets';
 import { buildPageMetadata, sanitizeDescription } from '@/lib/seo';
 import { siteConfig } from '@/lib/site-config';
 import { createPublicSupabaseClient } from '@/lib/supabase/public';
+import { PUBLIC_VEHICLE_DETAIL_SELECT } from '@/lib/public-card-data';
 import type { VehicleWithPhotos } from '@/lib/types';
 import MarketPageClient from './market-page-client';
 import { EXPORT_MARKET_SHIPPING_GUIDE_BY_CODE } from '@/lib/export-market-shipping';
@@ -21,7 +22,7 @@ const loadMarketInventory = cache(async (code: string) => {
   const [{ data: vehicles }, { data: config }, { count }] = await Promise.all([
     supabase
       .from('vehicles')
-      .select('*, vehicle_photos(*)')
+      .select(PUBLIC_VEHICLE_DETAIL_SELECT)
       .eq('is_published', true)
       .eq('stock_status', 'available')
       .contains('destination_markets', [code])

@@ -18,12 +18,15 @@ import {
   isVehicleClass,
   type VehicleClass,
 } from '@/lib/vehicle-class';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import {
   PUBLIC_VEHICLE_CARD_SELECT,
   type PublicVehicleCard,
 } from '@/lib/public-card-data';
 import type { StockOrigin } from '@/lib/types';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 function syncMachineryQuery(input: {
   query: string;

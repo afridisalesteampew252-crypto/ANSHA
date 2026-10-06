@@ -12,12 +12,15 @@ import { VehicleCard } from '@/components/public/vehicle-card';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import { SUPPORTED_MANUFACTURERS } from '@/lib/manufacturer-logos';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import {
   PUBLIC_VEHICLE_CARD_SELECT,
   type PublicVehicleCard,
 } from '@/lib/public-card-data';
 import type { StockOrigin } from '@/lib/types';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 const VEHICLE_PAGE_SIZE = 48;
 

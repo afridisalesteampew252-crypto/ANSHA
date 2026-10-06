@@ -7,11 +7,17 @@ import { Loader2, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 
 type Inquiry = {
   id: string; message: string; status: string; created_at: string;
   parts: { name: string; part_code: string; slug: string } | null;
   vehicles: { title: string; stock_number: string | null; slug: string } | null;
+};
+
+type InquiryRow = {
+  id: string; message: string; status: string; created_at: string;
+  part_id: string | null; vehicle_id: string | null;
 };
 
 export default function PortalInquiriesPage() {
@@ -22,10 +28,37 @@ export default function PortalInquiriesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error: queryError } = await supabase.from('inquiries')
-      .select('id,message,status,created_at,parts(name,part_code,slug),vehicles(title,stock_number,slug)')
+      .select('id,message,status,created_at,part_id,vehicle_id')
       .order('created_at', { ascending: false });
     setError(queryError?.message || '');
-    setRows((data || []) as unknown as Inquiry[]);
+    const inquiries = (data || []) as InquiryRow[];
+    // Stock details come from the public (anon) catalog: customer accounts cannot read the
+    // vehicles/parts tables directly (internal cost columns are staff-only).
+    const vehicleIds = Array.from(new Set(inquiries.map((row) => row.vehicle_id).filter((id): id is string => Boolean(id))));
+    const partIds = Array.from(new Set(inquiries.map((row) => row.part_id).filter((id): id is string => Boolean(id))));
+    const catalog = getPublicCatalogClient();
+    const [vehicleRes, partRes] = await Promise.all([
+      vehicleIds.length
+        ? catalog.from('vehicles').select('id,title,stock_number,slug').in('id', vehicleIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; title: string; stock_number: string | null; slug: string }> }),
+      partIds.length
+        ? catalog.from('parts').select('id,name,part_code,slug').in('id', partIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; name: string; part_code: string; slug: string }> }),
+    ]);
+    const vehicleById = new Map((vehicleRes.data || []).map((row) => [row.id, row]));
+    const partById = new Map((partRes.data || []).map((row) => [row.id, row]));
+    setRows(inquiries.map((row) => {
+      const vehicle = row.vehicle_id ? vehicleById.get(row.vehicle_id) : undefined;
+      const part = row.part_id ? partById.get(row.part_id) : undefined;
+      return {
+        id: row.id,
+        message: row.message,
+        status: row.status,
+        created_at: row.created_at,
+        vehicles: vehicle ? { title: vehicle.title, stock_number: vehicle.stock_number, slug: vehicle.slug } : null,
+        parts: part ? { name: part.name, part_code: part.part_code, slug: part.slug } : null,
+      };
+    }));
     setLoading(false);
   }, []);
   useEffect(() => { void load(); }, [load]);

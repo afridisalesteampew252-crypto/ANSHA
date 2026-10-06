@@ -6,8 +6,11 @@ import { format } from 'date-fns';
 import { ArrowRight, CarFront, Package, Tag } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDealDiscount, formatDealSalePrice } from '@/lib/site-offers';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import type { SiteOffer } from '@/lib/types';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 type OfferRow = SiteOffer & {
   vehicles?: { slug: string; title: string; currency: string } | null;

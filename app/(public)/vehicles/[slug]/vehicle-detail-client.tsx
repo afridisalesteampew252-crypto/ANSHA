@@ -22,7 +22,7 @@ import { VehiclePhotoGallery } from '@/components/public/vehicle-photo-gallery';
 import { InventoryDealBanner } from '@/components/public/inventory-deal-banner';
 import { IncotermQuoteStrip } from '@/components/public/incoterm-quote-strip';
 import { SaveItemActions, toVehicleSaveItem } from '@/components/public/save-item-actions';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import { siteConfig } from '@/lib/site-config';
 import { effectiveDealPrice } from '@/lib/site-offers';
 import { publicPriceLabel, resolveProductOfferPrice } from '@/lib/product-schema';
@@ -30,11 +30,15 @@ import type { SiteOffer, VehicleWithPhotos } from '@/lib/types';
 import { PageBreadcrumbs } from '@/components/seo/page-breadcrumbs';
 import { publicVehicleImageUrl } from '@/components/public/catalog-image';
 import { publicVehiclePhotos } from '@/lib/vehicle-photos';
+import { PUBLIC_VEHICLE_DETAIL_SELECT } from '@/lib/public-card-data';
 import {
   equipmentCategoryLabel,
   isMachineryClass,
   vehicleClassLabel,
 } from '@/lib/vehicle-class';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 export function VehicleDetailClient({ slug }: { slug: string }) {
   const [vehicle, setVehicle] = useState<VehicleWithPhotos | null>(null);
@@ -48,7 +52,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
     (async () => {
       const { data, error } = await supabase
         .from('vehicles')
-        .select('*, vehicle_photos(*)')
+        .select(PUBLIC_VEHICLE_DETAIL_SELECT)
         .eq('slug', slug)
         .eq('is_published', true)
         .eq('stock_status', 'available')
@@ -79,7 +83,7 @@ export function VehicleDetailClient({ slug }: { slug: string }) {
         typedData.make
           ? supabase
               .from('vehicles')
-              .select('*, vehicle_photos(*)')
+              .select(PUBLIC_VEHICLE_DETAIL_SELECT)
               .eq('is_published', true)
               .eq('stock_status', 'available')
               .eq('make', typedData.make)

@@ -7,8 +7,11 @@ import { CatalogImage } from '@/components/public/catalog-image';
 import { resolveCategoryImage } from '@/lib/category-images';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicCatalogClient } from '@/lib/supabase/public-catalog';
 import type { Category } from '@/lib/types';
+
+// Public catalog data is read with the anon client, even for signed-in users.
+const supabase = getPublicCatalogClient();
 
 interface CategoryWithCount extends Category {
   part_count: number;
