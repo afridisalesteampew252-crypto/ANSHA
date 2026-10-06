@@ -28,6 +28,7 @@ import { SearchableSelect, customerSelectOption } from '@/components/admin/searc
 import { StockLinkedInvoices } from '@/components/admin/stock-linked-invoices';
 import { VehicleFreightEstimator } from '@/components/admin/vehicle-freight-estimator';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
+import { PriceSanityHint } from '@/components/admin/price-sanity-hint';
 import { VehicleDestinationMarketsField } from '@/components/admin/vehicle-destination-markets-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -1593,6 +1594,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                     if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
                   }}
                 />
+                <PriceSanityHint price={priceFob} currency={currency} make={make} model={model} year={year} excludeVehicleId={id} />
               </div>
             </div>
             <Button type="submit" disabled={saving}>

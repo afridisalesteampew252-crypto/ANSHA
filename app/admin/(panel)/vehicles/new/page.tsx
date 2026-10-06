@@ -15,6 +15,7 @@ import { isAuctionSheetFilename, VEHICLE_PHOTO_VIEWS, VEHICLE_PHOTO_VIEW_LABELS,
 import { toast } from 'sonner';
 import { STOCK_ORIGINS, defaultStockPoolForOrigin, type StockPool } from '@/lib/stock';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
+import { PriceSanityHint } from '@/components/admin/price-sanity-hint';
 import { VehicleDestinationMarketsField } from '@/components/admin/vehicle-destination-markets-field';
 import {
   EQUIPMENT_CATEGORIES,
@@ -522,6 +523,7 @@ function AddVehiclePageInner() {
                 if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
               }}
             />
+            <PriceSanityHint price={priceFob} currency={currency} make={make} model={model} year={year} />
           </CardContent>
         </Card>
 
