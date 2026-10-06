@@ -72,12 +72,12 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
     "exceljs": "^4.4.0",
-    "fflate": "0.8.2",
+    "fflate": "0.8.3",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
-    "next": "16.3.5",
+    "next": "16.3.8",
     "next-themes": "^0.3.0",
-    "postcss": "8.4.30",
+    "postcss": "8.5.29",
     "react": "19.3.0",
     "react-day-picker": "^8.10.1",
     "react-dom": "19.3.0",
@@ -104,7 +104,7 @@
     "@types/react-dom": "19.1.9",
     "@types/sanitize-html": "^2.16.1",
     "eslint": "9.35.0",
-    "eslint-config-next": "16.3.5"
+    "eslint-config-next": "16.3.8"
   },
   "engines": {
     "node": ">=20.9.0"
