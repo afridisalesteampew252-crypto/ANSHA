@@ -1,3 +1,28 @@
+# Current State
+
+**Live audit: 2026-10-07.** This is the current infrastructure baseline; see [PROJECT-AUDIT-2026-10-07](./PROJECT-AUDIT-2026-10-07.md) for the full verified audit. No production schema changes or deployment were made by the audit.
+
+## Verified production infrastructure
+
+- **Supabase:** ANSHA-Mumbai — `spmnxwhwsgpaoiklezex` — Mumbai `ap-south-1` — ACTIVE_HEALTHY — PostgreSQL 17.11.
+- **Database:** ~38 MB at audit time; 118 public tables; all 118 have RLS enabled; 282 RLS policies; 493 valid indexes; 140 migrations recorded; latest migration `20261006040000`.
+- **Vercel:** project `anshanew`; latest listed production deployment READY; custom domains verified.
+- **Vercel production commit:** `2bd4268a` (customer password recovery).
+- **Domains:** `anshatrading.co` and `www.anshatrading.co` are configured in Vercel to redirect to `www.anshatradingco.com`. Registrar-side GoDaddy DNS/forwarding must still be correct for the redirect to be observed publicly.
+- **Compute:** Supabase Pro + Micro is currently sufficient; no evidence from this audit requires a larger compute tier.
+
+## Live advisor findings
+
+- **Security:** 3 anonymous SECURITY DEFINER functions and 123 authenticated SECURITY DEFINER functions are flagged for EXECUTE review.
+- **Security:** 2 private-schema tables have RLS enabled with no policies; confirm intentional deny-by-default.
+- **Performance:** 42 multiple-permissive-policy findings.
+- **Performance:** 238 unused-index findings; review before deletion.
+- **Performance:** 60 unindexed foreign-key findings.
+- **Performance:** Auth connection allocation is currently absolute (10); revisit if compute is increased.
+- **Testing:** ERP/RLS/stateful workflow coverage remains much thinner than public-route coverage.
+
+**Do not blindly delete policies, functions, or indexes.** Review → test → migration → verify → document → deploy.
+
 ## Catalog prices and freight (2026-09-29)
 
 - Vehicle listings prioritize a positive FOB value and keep FOB synchronized with the legacy listing-price field; public cards/details show available FOB, C&F, and CIF terms.
