@@ -86,7 +86,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium">Phone</p>
-                        <p className="text-sm text-muted-foreground">{siteConfig.phone}</p>
+                        <a href={siteConfig.telHref} className="text-sm text-muted-foreground hover:text-accent">{siteConfig.phone}</a>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

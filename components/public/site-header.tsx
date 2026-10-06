@@ -293,7 +293,7 @@ export function SiteHeader() {
               <InstallAppButton className="h-12 w-full justify-center rounded-xl" size="default" label="Download / Install app" />
               <LanguageSwitcher className="h-12 w-full justify-center rounded-xl" />
               <div className="space-y-1 border-t border-border pt-4 text-sm text-muted-foreground">
-                <a href={`tel:${siteConfig.phone}`} className="flex min-h-11 items-center gap-2"><Phone className="h-4 w-4 text-accent" />{siteConfig.phone}</a>
+                <a href={siteConfig.telHref} className="flex min-h-11 items-center gap-2"><Phone className="h-4 w-4 text-accent" />{siteConfig.phone}</a>
                 <a href={`mailto:${siteConfig.email}`} className="flex min-h-11 items-center gap-2 break-all"><Mail className="h-4 w-4 shrink-0 text-accent" />{siteConfig.email}</a>
               </div>
             </div>

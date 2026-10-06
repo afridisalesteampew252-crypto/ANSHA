@@ -6,6 +6,7 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { blogImageUrl } from '@/lib/blog-image';
 import { createPublicSupabaseClient, absoluteUrl } from '@/lib/supabase/public';
 import { buildArticleJsonLd, buildBreadcrumbListJsonLd } from '@/lib/seo-schema';
+import { stripTrailingBrand } from '@/lib/seo';
 import { siteConfig } from '@/lib/site-config';
 import type { BlogPostWithCategory } from '@/lib/types';
 
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const title = data.meta_title || data.title;
+  const title = stripTrailingBrand(data.meta_title || data.title);
   const description =
     data.meta_description ||
     data.excerpt ||

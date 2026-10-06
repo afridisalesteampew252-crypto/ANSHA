@@ -49,7 +49,7 @@ export default function CookiePolicyPage() {
           </section>
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-foreground">5. Contact and updates</h2>
-            <p>We may update this policy when the technologies we use change. {siteConfig.name}<br />{siteConfig.address}<br />Email: <a href={`mailto:${siteConfig.email}`} className="text-accent underline">{siteConfig.email}</a><br />Phone: {siteConfig.phone}</p>
+            <p>We may update this policy when the technologies we use change. {siteConfig.name}<br />{siteConfig.address}<br />Email: <a href={`mailto:${siteConfig.email}`} className="text-accent underline">{siteConfig.email}</a><br />Phone: <a href={siteConfig.telHref} className="text-accent underline">{siteConfig.phone}</a></p>
             <p>See our <Link href="/privacy" className="text-accent underline">Privacy Notice</Link> and <Link href="/terms" className="text-accent underline">Terms of Use</Link>.</p>
           </section>
         </article>
