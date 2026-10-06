@@ -36,6 +36,23 @@ const cspReportOnly = [
   "frame-ancestors 'self'",
 ].join('; ');
 
+/**
+ * Renamed public vehicle slugs -> true HTTP 301 (not 308) so search engines and old links
+ * move to the corrected URL. Source of truth: config/vehicle-slug-redirects.json.
+ */
+const VEHICLE_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+function vehicleSlugRedirects() {
+  const { redirects = [] } = require('./config/vehicle-slug-redirects.json');
+  const seen = new Set();
+  return redirects.map(({ from, to }) => {
+    if (!VEHICLE_SLUG_RE.test(from) || !VEHICLE_SLUG_RE.test(to) || from === to || seen.has(from)) {
+      throw new Error(`Invalid vehicle slug redirect: ${from} -> ${to}`);
+    }
+    seen.add(from);
+    return { source: `/vehicles/${from}`, destination: `/vehicles/${to}`, statusCode: 301 };
+  });
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Don't advertise the framework in an X-Powered-By header.
@@ -59,6 +76,7 @@ const nextConfig = {
         destination: 'https://www.anshatradingco.com/:path*',
         permanent: true,
       },
+      ...vehicleSlugRedirects(),
     ];
   },
   /**
