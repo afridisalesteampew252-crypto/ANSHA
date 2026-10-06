@@ -106,7 +106,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full min-w-0 max-w-full overflow-x-clip">
+    <header className="sticky top-0 z-[100] w-full min-w-0 max-w-full overflow-x-clip">
       <a
         href="#main-content"
         className="sr-only left-4 top-4 z-[100] rounded-lg bg-background px-4 py-3 text-sm font-bold text-foreground shadow-xl focus:not-sr-only focus:fixed focus:outline-none focus:ring-2 focus:ring-accent"
@@ -209,7 +209,7 @@ export function SiteHeader() {
         <HeaderMarketStrip />
 
         <div className="hidden border-t border-border/70 bg-white/95 dark:bg-card/95 md:block">
-          <div className="container-page flex h-11 items-center gap-1.5 overflow-x-auto overscroll-x-contain touch-pan-x lg:h-12 lg:gap-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="container-page relative z-[110] flex h-11 items-center gap-1.5 overflow-visible lg:h-12 lg:gap-2">
             <Link href="/categories" className="-ml-2 flex h-[calc(100%_-_8px)] shrink-0 items-center gap-2 rounded-lg bg-[#101114] px-3 text-sm font-bold text-white lg:px-5">
               <PackageSearch className="h-4 w-4 text-red-400" />
               <span className="hidden lg:inline">Browse categories</span>
@@ -252,7 +252,7 @@ export function SiteHeader() {
                 );
               })}
               <details
-                className="group relative flex h-full shrink-0 items-center"
+                className="group relative z-[120] flex h-full shrink-0 items-center"
                 onKeyDown={(event) => {
                   if (event.key === 'Escape') {
                     event.currentTarget.open = false;
