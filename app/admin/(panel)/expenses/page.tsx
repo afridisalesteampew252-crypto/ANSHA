@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Loader2, Plus, Receipt, Search, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CheckCircle2, Download, Loader2, Plus, Receipt, Search, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,14 @@ import {
   uploadExpenseAttachments,
 } from '@/components/admin/expense-attachments';
 import { groupAttachmentsByExpense } from '@/lib/expense-attachments';
+import { downloadExcelWorkbook } from '@/lib/export-excel';
+import {
+  DEFAULT_EXPENSE_REPORT_FILTERS,
+  fetchAllExpenseAttachments,
+  fetchExpenseReport,
+  matchesExpenseReport,
+  type ExpenseReportFilters,
+} from '@/lib/expense-report';
 import type {
   Expense,
   ExpenseAttachment,
@@ -51,7 +59,10 @@ export default function ExpensesPage() {
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [banks, setBanks] = useState<BankOption[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
+  const [reportFilters, setReportFilters] = useState<ExpenseReportFilters>({ ...DEFAULT_EXPENSE_REPORT_FILTERS });
+  const [exporting, setExporting] = useState(false);
+  const exportLock = useRef(false);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -77,25 +88,22 @@ export default function ExpensesPage() {
       setAttachments([]);
       return;
     }
-    const { data, error } = await supabase
-      .from('expense_attachments')
-      .select('id,expense_id,storage_path,file_name,mime_type,size_bytes,uploaded_by,created_at')
-      .in('expense_id', expenseIds)
-      .order('created_at', { ascending: true });
-    if (error) {
-      console.warn('Expense attachments unavailable:', error.message);
+    try {
+      const data = await fetchAllExpenseAttachments(supabase, expenseIds);
+      setAttachmentsReady(true);
+      setAttachments(data);
+    } catch (error) {
+      console.warn('Expense attachments unavailable:', error instanceof Error ? error.message : String(error));
       setAttachmentsReady(false);
       setAttachments([]);
-      return;
     }
-    setAttachmentsReady(true);
-    setAttachments((data || []) as ExpenseAttachment[]);
   }, []);
 
   const load = useCallback(async () => {
+    setLoading(true);
     const [expRes, catRes, bankRes] = await Promise.all([
       supabase.from('expenses').select('*').order('expense_date', { ascending: false }).limit(150),
-      supabase.from('expense_categories').select('*').eq('is_active', true).order('sort_order'),
+      supabase.from('expense_categories').select('*').order('sort_order'),
       supabase.from('bank_accounts').select('id,name,bank_name,currency').eq('is_active', true).order('name').limit(100),
     ]);
     if (expRes.error) toast.error(expRes.error.message);
@@ -114,6 +122,7 @@ export default function ExpensesPage() {
     } else {
       setBanks([]);
     }
+    setLoading(false);
   }, [loadAttachments]);
 
   useEffect(() => {
@@ -127,19 +136,50 @@ export default function ExpensesPage() {
   const categoryName = (id: string) => categories.find((row) => row.id === id)?.name || id.slice(0, 8);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return expenses;
-    return expenses.filter((row) =>
-      [
-        row.expense_number,
-        row.status,
-        row.payee,
-        row.payment_method,
-        categoryName(row.category_id),
-        ...(attachmentsByExpense.get(row.id) || []).map((file) => file.file_name),
-      ].some((value) => value?.toLowerCase().includes(q))
-    );
-  }, [expenses, query, categories, attachmentsByExpense]);
+    return expenses.filter((row) => matchesExpenseReport(
+      row,
+      reportFilters,
+      categories.find((category) => category.id === row.category_id)?.name || row.category_id.slice(0, 8),
+      (attachmentsByExpense.get(row.id) || []).map((file) => file.file_name),
+    ));
+  }, [expenses, reportFilters, categories, attachmentsByExpense]);
+
+  const reportCurrencies = useMemo(() => Array.from(new Set([
+    ...financeSettings.enabled_currencies,
+    ...expenses.map((row) => row.currency),
+  ])).sort(), [financeSettings.enabled_currencies, expenses]);
+  const invalidReportRange = Boolean(reportFilters.from && reportFilters.to && reportFilters.from > reportFilters.to);
+  const updateReportFilter = <Key extends keyof ExpenseReportFilters>(key: Key, value: ExpenseReportFilters[Key]) => {
+    setReportFilters((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const exportExpenses = async () => {
+    if (exportLock.current || invalidReportRange) return;
+    exportLock.current = true;
+    setExporting(true);
+    try {
+      const report = await fetchExpenseReport(supabase, { ...reportFilters });
+      if (report.count === 0) {
+        toast.info('No expenses match these filters.');
+        return;
+      }
+      await downloadExcelWorkbook({
+        filename: 'ansha-expenses',
+        sheetName: 'Expenses',
+        columns: report.columns,
+        rows: report.rows,
+        freezeHeader: true,
+        autoFilter: true,
+        numberFormats: { amount: '#,##0.00' },
+      });
+      toast.success(`Excel downloaded: ${report.count} expense${report.count === 1 ? '' : 's'}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not export expenses. Please try again.');
+    } finally {
+      exportLock.current = false;
+      setExporting(false);
+    }
+  };
 
   const resetForm = () => {
     setShowForm(false);
@@ -288,16 +328,22 @@ export default function ExpensesPage() {
             Record and post operating expenses. Payroll is out of scope for this module.
           </p>
         </div>
-        <Button
-          type="button"
-          onClick={() => {
-            resetForm();
-            setShowForm(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          New expense
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" disabled={loading || exporting || busy || invalidReportRange} onClick={() => void exportExpenses()}>
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {exporting ? 'Exporting expenses…' : 'Export Excel'}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            New expense
+          </Button>
+        </div>
       </div>
 
       {showForm ? (
@@ -333,7 +379,7 @@ export default function ExpensesPage() {
                   onChange={(e) => setCategoryId(e.target.value)}
                 >
                   <option value="">Select category</option>
-                  {categories.map((row) => (
+                  {categories.filter((row) => row.is_active || (editing && row.id === categoryId)).map((row) => (
                     <option key={row.id} value={row.id}>
                       {row.name}
                     </option>
@@ -422,15 +468,59 @@ export default function ExpensesPage() {
         </Card>
       ) : null}
 
-      <div className="relative max-w-xl">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search number, payee, category, status"
-          className="pl-10"
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Expense report</CardTitle>
+          <CardDescription>Set filters, then export every matching expense. Amounts keep their original currency.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="expense-report-from">From date</Label>
+              <Input id="expense-report-from" type="date" value={reportFilters.from} max={reportFilters.to || undefined} disabled={exporting} onChange={(event) => updateReportFilter('from', event.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="expense-report-to">To date</Label>
+              <Input id="expense-report-to" type="date" value={reportFilters.to} min={reportFilters.from || undefined} disabled={exporting} onChange={(event) => updateReportFilter('to', event.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="expense-report-currency">Report currency</Label>
+              <select id="expense-report-currency" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={reportFilters.currency} disabled={exporting} onChange={(event) => updateReportFilter('currency', event.target.value)}>
+                <option value="">All currencies</option>
+                {reportCurrencies.map((code) => <option key={code} value={code}>{code}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="expense-report-category">Report category</Label>
+              <select id="expense-report-category" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={reportFilters.categoryId} disabled={exporting} onChange={(event) => updateReportFilter('categoryId', event.target.value)}>
+                <option value="">All categories</option>
+                {categories.map((row) => <option key={row.id} value={row.id}>{row.name}{row.is_active ? '' : ' (inactive)'}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="expense-report-status">Report status</Label>
+              <select id="expense-report-status" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={reportFilters.status} disabled={exporting} onChange={(event) => updateReportFilter('status', event.target.value as ExpenseReportFilters['status'])}>
+                <option value="all">All statuses</option>
+                <option value="posted">Posted</option>
+                <option value="draft">Draft</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-64">
+              <Label htmlFor="expense-report-search">Search expenses</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="expense-report-search" value={reportFilters.query} disabled={exporting} onChange={(event) => updateReportFilter('query', event.target.value)} placeholder="Search number, payee, category, notes or receipt" className="pl-10" />
+              </div>
+            </div>
+            <Button type="button" variant="ghost" disabled={exporting} onClick={() => setReportFilters({ ...DEFAULT_EXPENSE_REPORT_FILTERS })}>Clear filters</Button>
+          </div>
+          {invalidReportRange ? <p role="alert" className="text-sm text-destructive">From date must be on or before To date.</p> : null}
+          <p className="text-xs text-muted-foreground">{loading ? 'Loading recent expenses…' : `Showing ${filtered.length} matches from the latest ${expenses.length} expenses.`} Excel includes all matching expenses, including older records.</p>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
         <Card>
@@ -464,7 +554,7 @@ export default function ExpensesPage() {
               </button>
             ))}
             {filtered.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">No expenses yet.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">{loading ? 'Loading expenses…' : 'No matching expenses in the recent list.'}</p>
             ) : null}
           </CardContent>
         </Card>

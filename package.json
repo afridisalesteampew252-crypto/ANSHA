@@ -107,6 +107,9 @@
     "eslint": "9.35.0",
     "eslint-config-next": "16.3.8"
   },
+  "overrides": {
+    "react-is": "19.3.0"
+  },
   "engines": {
     "node": ">=20.9.0"
   }

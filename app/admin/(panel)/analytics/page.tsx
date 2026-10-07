@@ -317,7 +317,7 @@ export default function AdminAnalyticsPage() {
               <CardContent className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={stockData} dataKey="value" nameKey="name" innerRadius={65} outerRadius={100} paddingAngle={3}>
+                    <Pie data={stockData} dataKey="value" nameKey="name" innerRadius={65} outerRadius={100} startAngle={0} endAngle={360} minAngle={0} paddingAngle={3}>
                       {stockData.map((entry, index) => <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />)}
                     </Pie>
                     <Tooltip />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Download, FileBarChart, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FinancialCurrencyDashboard } from '@/components/admin/financial-currency-dashboard';
 import { downloadRowsAsXlsx } from '@/lib/export-excel';
 import { supabase } from '@/lib/supabase/client';
 import { useFinanceSettings } from '@/lib/use-finance-settings';
+import { discoverFinancialCurrencies } from '@/lib/financial-dashboard';
 import type { GlBalanceSheetRow, GlProfitAndLossRow, GlTrialBalanceRow } from '@/lib/types';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -19,6 +21,7 @@ const yearStart = () => `${new Date().getUTCFullYear()}-01-01`;
 
 export default function ReportsPage() {
   const [busy, setBusy] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const financeSettings = useFinanceSettings();
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const reportCurrency = selectedCurrency || financeSettings.default_currency;
@@ -30,44 +33,71 @@ export default function ReportsPage() {
   const money = (value: number) => new Intl.NumberFormat('en-AE', { style: 'currency', currency: reportCurrency, maximumFractionDigits: 2 }).format(Number(value || 0));
 
   useEffect(() => {
-    void supabase.from('gl_journals').select('currency').eq('status', 'posted').limit(1000)
-      .then(({ data }) => {
-        const codes = (data || []).map((row) => row.currency)
-          .filter((code): code is string => typeof code === 'string' && /^[A-Z]{3}$/.test(code));
-        setPostedCurrencies(Array.from(new Set(codes)));
-      });
+    let active = true;
+    void discoverFinancialCurrencies(supabase)
+      .then((codes) => { if (active) setPostedCurrencies(codes); })
+      .catch(() => { if (active) toast.error('Could not load statement currencies. Please try again.'); });
+    return () => { active = false; };
   }, []);
   const [asOf, setAsOf] = useState(today);
   const [pnlFrom, setPnlFrom] = useState(yearStart);
   const [pnlTo, setPnlTo] = useState(today);
 
-  const [trial, setTrial] = useState<GlTrialBalanceRow[]>([]);
-  const [pnl, setPnl] = useState<GlProfitAndLossRow[]>([]);
-  const [bs, setBs] = useState<GlBalanceSheetRow[]>([]);
+  const [trialRows, setTrial] = useState<GlTrialBalanceRow[]>([]);
+  const [pnlRows, setPnl] = useState<GlProfitAndLossRow[]>([]);
+  const [bsRows, setBs] = useState<GlBalanceSheetRow[]>([]);
+  const [trialScope, setTrialScope] = useState('');
+  const [pnlScope, setPnlScope] = useState('');
+  const [bsScope, setBsScope] = useState('');
+  const trial = trialScope === JSON.stringify([reportCurrency, asOf]) ? trialRows : [];
+  const pnl = pnlScope === JSON.stringify([reportCurrency, pnlFrom, pnlTo]) ? pnlRows : [];
+  const bs = bsScope === JSON.stringify([reportCurrency, asOf]) ? bsRows : [];
+  const reportRequest = useRef(0);
+
+  useEffect(() => {
+    reportRequest.current += 1;
+    setBusy(false);
+    setTrial([]);
+    setPnl([]);
+    setBs([]);
+    return () => { reportRequest.current += 1; };
+  }, [asOf, pnlFrom, pnlTo, reportCurrency]);
 
   const loadTrial = useCallback(async () => {
+    const requestId = ++reportRequest.current;
     setBusy(true);
+    setTrial([]);
     const { data, error } = await supabase.rpc('gl_trial_balance_currency', { p_as_of: asOf, p_currency: reportCurrency });
+    if (requestId !== reportRequest.current) return;
     setBusy(false);
     if (error) return toast.error(error.message);
     setTrial((data || []) as GlTrialBalanceRow[]);
+    setTrialScope(JSON.stringify([reportCurrency, asOf]));
   }, [asOf, reportCurrency]);
 
   const loadPnl = useCallback(async () => {
+    const requestId = ++reportRequest.current;
     setBusy(true);
+    setPnl([]);
     const { data, error } = await supabase.rpc('gl_profit_and_loss_currency', { p_from: pnlFrom, p_to: pnlTo, p_currency: reportCurrency });
+    if (requestId !== reportRequest.current) return;
     setBusy(false);
     if (error) return toast.error(error.message);
     setPnl((data || []) as GlProfitAndLossRow[]);
+    setPnlScope(JSON.stringify([reportCurrency, pnlFrom, pnlTo]));
   }, [pnlFrom, pnlTo, reportCurrency]);
 
   const loadBs = useCallback(async () => {
+    const requestId = ++reportRequest.current;
     setBusy(true);
+    setBs([]);
     const { data, error } = await supabase.rpc('gl_balance_sheet_currency', { p_as_of: asOf, p_currency: reportCurrency });
+    if (requestId !== reportRequest.current) return;
     setBusy(false);
     if (error) return toast.error(error.message);
     setBs((data || []) as GlBalanceSheetRow[]);
-  }, [asOf]);
+    setBsScope(JSON.stringify([reportCurrency, asOf]));
+  }, [asOf, reportCurrency]);
 
   const changeCurrency = (code: string) => {
     setSelectedCurrency(code);
@@ -190,7 +220,7 @@ export default function ReportsPage() {
           </Button>
           <h1 className="text-2xl font-bold">Financial statements</h1>
           <p className="text-sm text-muted-foreground">
-            Trial balance, profit &amp; loss, and balance sheet from posted journals.{' '}
+            Currency dashboards, profit &amp; loss, balance sheet and trial balance from posted journals.{' '}
             <Link href="/admin/ledger" className="text-primary underline">
               Open ledger
             </Link>
@@ -198,7 +228,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4">
+      {activeTab !== 'dashboard' ? <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-4">
         <div className="space-y-1.5">
           <Label htmlFor="statement-currency">Statement currency</Label>
           <select id="statement-currency" className="h-10 min-w-32 rounded-md border bg-background px-3 text-sm" value={reportCurrency} onChange={(event) => changeCurrency(event.target.value)}>
@@ -206,14 +236,25 @@ export default function ReportsPage() {
           </select>
         </div>
         <p className="text-sm text-muted-foreground">Each report shows only {reportCurrency} journals. Amounts are never combined across currencies.</p>
-      </div>
+      </div> : null}
 
-      <Tabs defaultValue="pnl">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
+          <TabsTrigger value="dashboard">All currencies dashboard</TabsTrigger>
           <TabsTrigger value="pnl">Profit &amp; loss</TabsTrigger>
           <TabsTrigger value="bs">Balance sheet</TabsTrigger>
           <TabsTrigger value="tb">Trial balance</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <FinancialCurrencyDashboard
+            currencies={financeSettings.enabled_currencies}
+            from={pnlFrom}
+            to={pnlTo}
+            onFromChange={setPnlFrom}
+            onToChange={setPnlTo}
+          />
+        </TabsContent>
 
         <TabsContent value="pnl" className="space-y-4">
           <Card>
