@@ -1,6 +1,6 @@
 # Current State
 
-Code checkpoint: **7 October 2026**. This document separates verified repository
+Code checkpoint: **8 October 2026 (Asia/Karachi)**. This document separates verified repository
 work from production activation. Do not infer database migration execution from
 a GitHub merge.
 
@@ -144,6 +144,36 @@ a GitHub merge.
   PDF and Excel. TT allocations do not credit the same receipt twice;
   proformas/drafts do not become posted receivables.
 - PKR expenses and balanced PKR GL posting passed executable SQL fixtures.
+- `feat/expense-excel-report` adds **Finance → Expenses → Export Excel**, with
+  inclusive date, currency, category, status and text/receipt-name filters.
+  The report reads all matching expenses independently of the recent 150-row
+  list. It includes inactive historical labels, numeric amounts, original
+  currencies, posting status, bank references, notes and attachment filenames.
+  The workbook has a frozen header, column filters and amount formatting.
+  Existing finance-role SELECT policies govern every read; no database
+  migration is needed. This website change awaits the user's branch merge.
+  Instructions: [Expense Excel report](./EXPENSE-REPORT.md).
+- The same branch adds a default **All currencies dashboard** tab under
+  **Reports → Financial statements**. Configured and historical ledger
+  currencies have separate revenue, expense and net-profit figures, expense
+  pies and visible account amounts. Negative expense balances remain credits;
+  charts never combine currencies. Date edits require Refresh dashboard.
+- Statement responses are scoped to their requested currency and dates, so an
+  older in-flight response cannot replace a newer selection or its export.
+  `react-is` is aligned with React 19.3, and pie angles are explicit for the
+  financial, Overview and Analytics charts.
+- Forward migration `20261007203500` fixes all six GL statement RPCs to retain
+  reversed originals alongside their dated opposite entries. Same-period
+  reversals net to zero; later reversals preserve earlier-period history.
+  Existing signatures, ops authorization, search paths and grants stay intact.
+  Ten SQL suites passed locally; the new test fails the old report definitions.
+  This migration is included in the branch and has not yet been applied to
+  production. GL statements retain their existing active admin/staff access.
+- Both new Node regression scripts, actual Expenses XLSX downloads and actual
+  financial-dashboard browser checks passed, including finite pie geometry,
+  mobile layout, filtered older expenses, negative credits, error/retry and
+  stale-response guards. Further manual checks were stopped at the user's
+  request; automatic GitHub/Vercel checks run after the push.
 
 ### Public catalog and freight
 
@@ -278,9 +308,11 @@ a GitHub merge.
    Its forward SELECT-policy change was already applied to the hosted database.
    Confirm the GitHub/Vercel production rollout and check the customer home
    summary, inquiry list and parts refresh behavior.
-3. PR #121 merged the disposable Auth executor setup. Review the final narrow
-   routing correction on `fix/auth-hook-suite-only` after its database replay:
-   only the Auth-hook fixture needs the trusted executor.
+3. PR #122 merged the final Auth executor routing correction. Its full Supabase
+   replay passed migration startup, reset, 15 pgTAP assertions and all nine SQL
+   behavior suites; quality CI and Vercel preview passed too. Only the Auth-hook
+   fixture uses the trusted executor. Review the expense Excel report branch
+   after its application checks pass, then merge for the website rollout.
    Existing agents still require manual review; none are automatically verified.
 4. If direct Auth lockout is required, enable and test the Password Verification
    Attempt hook after obtaining plan support. Do not imply the current gateway

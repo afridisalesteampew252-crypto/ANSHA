@@ -17,6 +17,9 @@ export async function downloadExcelWorkbook(opts: {
   sheetName: string;
   columns: ExcelColumn[];
   rows: Record<string, string | number | boolean | null | undefined>[];
+  freezeHeader?: boolean;
+  autoFilter?: boolean;
+  numberFormats?: Record<string, string>;
 }) {
   const ExcelJS = (await import('exceljs')).default;
   const workbook = new ExcelJS.Workbook();
@@ -29,6 +32,13 @@ export async function downloadExcelWorkbook(opts: {
     key: col.key,
     width: col.width ?? Math.min(40, Math.max(12, col.header.length + 4)),
   }));
+  if (opts.freezeHeader) sheet.views = [{ state: 'frozen', ySplit: 1 }];
+  if (opts.autoFilter && opts.columns.length > 0) {
+    sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: opts.columns.length } };
+  }
+  for (const [key, format] of Object.entries(opts.numberFormats || {})) {
+    sheet.getColumn(key).numFmt = format;
+  }
 
   const header = sheet.getRow(1);
   header.font = { bold: true };
