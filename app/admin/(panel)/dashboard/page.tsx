@@ -37,6 +37,18 @@ const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice',
 const rangeFrom = () => format(subMonths(new Date(), 5), 'yyyy-MM-01');
 const rangeTo = () => format(new Date(), 'yyyy-MM-dd');
 
+function isValidOpsAnalyticsSummary(value: unknown): value is OpsAnalyticsSummary {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<OpsAnalyticsSummary>;
+  return Boolean(
+    candidate.viewer &&
+    candidate.sales &&
+    candidate.stock &&
+    candidate.counts &&
+    candidate.requests
+  );
+}
+
 function KpiCard({
   label,
   value,
@@ -219,8 +231,11 @@ export default function AdminDashboardPage() {
       setRemittances((remittanceRes.data || []) as Remittance[]);
       setInventory([...(partStockRes.data || []), ...(vehicleStockRes.data || [])] as InventoryRow[]);
       setRecentInquiries(recentRes.data || []);
-      if (!analyticsRes.error && analyticsRes.data) {
-        setAnalytics(analyticsRes.data as OpsAnalyticsSummary);
+      if (!analyticsRes.error && isValidOpsAnalyticsSummary(analyticsRes.data)) {
+        setAnalytics(analyticsRes.data);
+      } else if (analyticsRes.error) {
+        // Analytics is supplemental; the dashboard remains usable from the direct queries.
+        console.warn('Dashboard analytics unavailable:', analyticsRes.error.message);
       }
       setLoading(false);
     })().catch(() => {
@@ -230,7 +245,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   const fieldAgent = isFieldAgentRole(role);
-  const isOps = analytics?.viewer.is_ops ?? (!fieldAgent && role !== 'manager');
+  const isOps = analytics?.viewer?.is_ops ?? (!fieldAgent && role !== 'manager');
   const receivables = useMemo(() => invoices.filter(isReceivable), [invoices]);
 
   const moneyByCurrency = useMemo(() => {
