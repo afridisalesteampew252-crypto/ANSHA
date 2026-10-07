@@ -54,9 +54,9 @@ These currently have RLS but no policies: `private.admin_assistant_requests`, `p
 
 Using test users representing customer, sales/field agent, accounts, manager, and admin, verify direct RPC invocation and the corresponding UI action for customer reassignment, bulk stock reservation, vehicle price changes, invoice stock application, purchase-order confirmation/cancellation, payroll cancellation/deletion, GL posting/reversal, supplier-payment allocation/reversal, remittance reversal, and vehicle public-listing changes.
 
-Automated catalog assertions live in `supabase/tests/database/phase_1_security.test.sql` and run with `supabase test db` after `supabase db reset`. They verify the definer search paths, execution grants, authenticated-only policies, manager owner scoping, inventory guard triggers, and privileged RPC guards.
+Automated catalog assertions live in `supabase/tests/database/phase_1_security.test.sql` and run with `supabase test db` after `supabase db reset`. They verify the definer search paths, execution grants, authenticated-only policies, manager owner scoping, inventory guard triggers, and privileged RPC guards. Executable behavior fixtures in `tests/database/*.test.sql` enforce actual `SET ROLE` privileges/RLS and invoke allowed and forbidden mutations. Run these with `psql -X -v ON_ERROR_STOP=1` against the same disposable database; catalog/function-text checks alone are insufficient.
 
-The `Phase 1 Database Security` GitHub Actions workflow performs that reset and test run against disposable local containers whenever this security branch is pushed. It has no production project reference or database credentials.
+The `Database Regression` GitHub Actions workflow performs that reset, pgTAP catalog tests, and transactional behavior suites on relevant pull requests or manual dispatch. It has no production project reference or database credentials.
 
 ## Customer ownership boundary
 
@@ -66,7 +66,7 @@ Phase 1 now enforces manager ownership in both RLS and `assign_customer_owner()`
 
 ## Inventory mutation boundary
 
-Reservation transitions are allowed only for ops users, a field agent acting for an assigned customer, or a manager acting for an assigned customer and assigned stock origin. Accounts, customer, and anonymous callers are rejected by row triggers even when a definer RPC performs the update. Public-listing changes require ops access or a manager's assigned stock origin; manual invoice-stock application is receivables-only.
+Reservation transitions are allowed only for ops users, a field agent acting for an assigned customer, or a manager acting for an assigned customer and assigned stock origin. Release transitions and publishing through a release RPC are also guarded. Accounts cannot reserve/release; approved invoice finalization remains a receivables action. Direct catalog table writes are ops/assigned-origin manager only; field agents use the reservation RPCs. A valid customer-owner reassignment can still cascade reservation-owner metadata without changing status or origin.
 
 ## Invoice verification boundary
 
@@ -85,3 +85,4 @@ Do not apply these migrations directly to production until regression checks pas
 - Multiple-permissive policies are not merged mechanically: many are intentional OR paths for public catalog, customer portal, and workspace roles. Consolidate only from a fresh advisor export when an equivalent single policy can be regression-tested.
 - Do not remove indexes solely because the advisor reports them unused. The counters are workload- and reset-dependent, and several indexes protect infrequent month-end, audit, or foreign-key operations.
 - The targeted high-traffic foreign-key indexes in `20260923180341_add_high_traffic_foreign_key_indexes.sql` and `20261006013000_add_missing_join_fk_indexes.sql` remain. Re-run the advisor on the disposable database and compare with production query plans before adding the remaining low-traffic indexes.
+- The 2026-10-07 review adds four justified workflow FK indexes and a read-only advisor evidence report. See [Database review](PHASE-1-DATABASE-REVIEW.md) and [RPC audit](PHASE-1-RPC-AUDIT.md) for exact boundaries, test coverage and configuration limitations.
