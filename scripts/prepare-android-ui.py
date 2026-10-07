@@ -76,6 +76,19 @@ replacement = """public class MainActivity extends BridgeActivity {
             return insets;
         });
         androidx.core.view.ViewCompat.requestApplyInsets(content);
+        // A short branded opening animates independently of network loading.
+        android.widget.FrameLayout root = (android.widget.FrameLayout) content;
+        android.widget.ImageView opening = new android.widget.ImageView(this);
+        opening.setBackgroundColor(android.graphics.Color.WHITE);
+        opening.setImageResource(getResources().getIdentifier("ic_launcher_foreground", "mipmap", getPackageName()));
+        opening.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
+        root.addView(opening, new android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT));
+        opening.setAlpha(0f);
+        opening.animate().alpha(1f).setDuration(180).withEndAction(() ->
+            opening.animate().alpha(0f).setStartDelay(350).setDuration(220)
+                .withEndAction(() -> root.removeView(opening)).start()).start();
     }
 }"""
 if needle not in java:

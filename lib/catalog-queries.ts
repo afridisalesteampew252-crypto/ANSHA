@@ -197,7 +197,7 @@ export async function fetchPartsCatalogPage(
   const q = safeSearch(filters.q);
   if (q) {
     request = request.or(
-      `name.ilike.%${q}%,part_code.ilike.%${q}%,oem_number.ilike.%${q}%,part_number.ilike.%${q}%`
+      `name.ilike.%${q}%,brand.ilike.%${q}%,part_code.ilike.%${q}%,oem_number.ilike.%${q}%,part_number.ilike.%${q}%,manufacturer_part_number.ilike.%${q}%,catalog_search_text.ilike.%${q}%`
     );
   }
   if (categoryId) request = request.eq('category_id', categoryId);

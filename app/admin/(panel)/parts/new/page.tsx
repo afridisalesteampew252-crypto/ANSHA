@@ -18,6 +18,8 @@ import { STOCK_ORIGINS } from '@/lib/stock';
 import type { Category, PartCondition, PartCompatibility } from '@/lib/types';
 import { IncotermPriceFields, parseOptionalPrice } from '@/components/admin/incoterm-price-fields';
 import { requestPublicRevalidation } from '@/lib/revalidate-public';
+import { buildPartIdentity, parseCatalogTags } from '@/lib/part-identity';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 
 interface PendingPhoto {
   file: File;
@@ -25,6 +27,7 @@ interface PendingPhoto {
 }
 
 export default function AddPartPage() {
+  const financeSettings = useFinanceSettings();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -41,11 +44,15 @@ export default function AddPartPage() {
   const [priceFob, setPriceFob] = useState('');
   const [priceCf, setPriceCf] = useState('');
   const [priceCif, setPriceCif] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [selectedCurrency, setCurrency] = useState('');
+  const currency = selectedCurrency || financeSettings.default_currency;
   const [quantity, setQuantity] = useState('0');
   const [location, setLocation] = useState('');
   const [stockOrigin, setStockOrigin] = useState('dubai');
   const [description, setDescription] = useState('');
+  const [metaTitle, setMetaTitle] = useState('');
+  const [metaDescription, setMetaDescription] = useState('');
+  const [searchKeywords, setSearchKeywords] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
   const [showPrice, setShowPrice] = useState(false);
@@ -126,6 +133,11 @@ export default function AddPartPage() {
 
     const { count } = await supabase.from('parts').select('id', { count: 'exact', head: true });
     const partCode = `ANS-P-${String((count || 0) + 1).padStart(6, '0')}`;
+    const identity = buildPartIdentity({
+      name, brand, part_number: partNumber, oem_number: oemNumber, condition,
+      compatibility: compatRows,
+      search_keywords: parseCatalogTags(searchKeywords),
+    });
 
     const { data: newPart, error } = await supabase
       .from('parts')
@@ -148,6 +160,9 @@ export default function AddPartPage() {
         stock_origin: stockOrigin,
         stock_status: 'available',
         description: description.trim() || null,
+        meta_title: metaTitle.trim() || identity.meta_title,
+        meta_description: metaDescription.trim() || identity.meta_description,
+        search_keywords: identity.search_keywords,
         is_published: publish,
         is_featured: isFeatured,
         show_price: showPrice,
@@ -454,12 +469,7 @@ export default function AddPartPage() {
                 <Select value={currency} onValueChange={setCurrency}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="JPY">JPY</SelectItem>
-                    <SelectItem value="AED">AED</SelectItem>
-                    <SelectItem value="PKR">PKR</SelectItem>
+                    {Array.from(new Set([...financeSettings.enabled_currencies, currency])).map((code) => <SelectItem key={code} value={code}>{code}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -489,6 +499,15 @@ export default function AddPartPage() {
           </CardHeader>
           <CardContent>
             <Textarea rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the part, its condition, and any notable details..." />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Search &amp; SEO</CardTitle><CardDescription>Leave the title and description blank to generate them from the real part name, brand, number and compatible vehicles.</CardDescription></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2"><Label htmlFor="new-part-meta-title">SEO title</Label><Input id="new-part-meta-title" value={metaTitle} onChange={(event) => setMetaTitle(event.target.value)} maxLength={60} placeholder="Generated automatically when blank" /></div>
+            <div className="space-y-2"><Label htmlFor="new-part-meta-description">SEO description</Label><Textarea id="new-part-meta-description" value={metaDescription} onChange={(event) => setMetaDescription(event.target.value)} maxLength={160} rows={3} placeholder="Generated automatically when blank" /></div>
+            <div className="space-y-2"><Label htmlFor="new-part-search-tags">Additional search tags</Label><Input id="new-part-search-tags" value={searchKeywords} onChange={(event) => setSearchKeywords(event.target.value)} placeholder="Comma-separated aliases or search terms" /><p className="text-xs text-muted-foreground">Part numbers, brand and compatible makes/models are added automatically. Enter confirmed product details; unknown fitment can be completed in a draft.</p></div>
           </CardContent>
         </Card>
 

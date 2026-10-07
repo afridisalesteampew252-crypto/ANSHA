@@ -5,51 +5,10 @@
  */
 
 import { format } from 'date-fns';
-import { formatMoney, normalizeCurrency } from '@/lib/money';
-
-export type SoaInvoiceRow = {
-  id: string;
-  invoice_number: string;
-  document_type: string;
-  issue_date: string;
-  currency: string;
-  status: string;
-  total_amount: number;
-  amount_paid: number;
-  balance_due: number;
-};
-
-export type SoaRemittanceRow = {
-  id: string;
-  remittance_number: string;
-  received_date: string;
-  amount: number;
-  currency: string;
-  status: string;
-  method: string;
-  bank_reference: string | null;
-};
-
-export type SoaAllocationRow = {
-  id: string;
-  remittance_id: string;
-  invoice_id: string;
-  amount: number;
-  currency?: string;
-  invoice_number?: string;
-};
-
-export type SoaLedgerLine = {
-  date: string;
-  reference: string;
-  stock: string;
-  type: string;
-  currency: string;
-  debit: number | null;
-  credit: number | null;
-  balance: number | null;
-  sortKey: string;
-};
+import { formatMoney } from '@/lib/money';
+import type { SoaDateRange, SoaLedgerLine } from '@/lib/soa/ledger';
+export { buildSoaLedgerLines, dateOnly, inDateRange, receivableDocument } from '@/lib/soa/ledger';
+export type { SoaInvoiceRow, SoaRemittanceRow, SoaPaymentRow, SoaAllocationRow, SoaLedgerLine, SoaDateRange } from '@/lib/soa/ledger';
 
 export type SoaParty = {
   code?: string | null;
@@ -60,76 +19,8 @@ export type SoaParty = {
   country?: string | null;
 };
 
-export type SoaDateRange = {
-  from: string; // yyyy-MM-dd or ''
-  to: string; // yyyy-MM-dd or ''
-};
-
 export function todayYmd(): string {
   return format(new Date(), 'yyyy-MM-dd');
-}
-
-export function dateOnly(value: string | null | undefined): string {
-  if (!value) return '';
-  return value.slice(0, 10);
-}
-
-/** Inclusive date filter on yyyy-MM-dd strings. Empty bound = no limit. */
-export function inDateRange(dateValue: string | null | undefined, range: SoaDateRange): boolean {
-  const d = dateOnly(dateValue);
-  if (!d) return false;
-  if (range.from && d < range.from) return false;
-  if (range.to && d > range.to) return false;
-  return true;
-}
-
-export function receivableDocument(documentType: string): boolean {
-  return documentType === 'tax_invoice' || documentType === 'commercial_invoice';
-}
-
-export function buildSoaLedgerLines(opts: {
-  invoices: SoaInvoiceRow[];
-  remittances: SoaRemittanceRow[];
-  allocations?: SoaAllocationRow[];
-  stockRefsByInvoice?: Record<string, string[]>;
-  range: SoaDateRange;
-}): SoaLedgerLine[] {
-  const lines: SoaLedgerLine[] = [];
-
-  for (const inv of opts.invoices) {
-    if (!inDateRange(inv.issue_date, opts.range)) continue;
-    if (inv.status === 'cancelled') continue;
-    const isReceivable = receivableDocument(inv.document_type);
-    lines.push({
-      date: dateOnly(inv.issue_date),
-      reference: inv.invoice_number,
-      stock: (opts.stockRefsByInvoice?.[inv.id] || []).join(', ') || '—',
-      type: inv.document_type.replaceAll('_', ' '),
-      currency: normalizeCurrency(inv.currency),
-      debit: isReceivable ? Number(inv.total_amount || 0) : null,
-      credit: isReceivable ? Number(inv.amount_paid || 0) : null,
-      balance: isReceivable ? Number(inv.balance_due || 0) : null,
-      sortKey: `${dateOnly(inv.issue_date)}|I|${inv.invoice_number}`,
-    });
-  }
-
-  for (const rem of opts.remittances) {
-    if (!inDateRange(rem.received_date, opts.range)) continue;
-    if (rem.status !== 'confirmed') continue;
-    lines.push({
-      date: dateOnly(rem.received_date),
-      reference: rem.remittance_number,
-      stock: rem.bank_reference?.trim() || '—',
-      type: `Remittance (${rem.method.replaceAll('_', ' ')})`,
-      currency: normalizeCurrency(rem.currency),
-      debit: null,
-      credit: Number(rem.amount || 0),
-      balance: null,
-      sortKey: `${dateOnly(rem.received_date)}|R|${rem.remittance_number}`,
-    });
-  }
-
-  return lines.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 }
 
 function sanitizeFilename(raw: string): string {
@@ -188,6 +79,10 @@ export async function downloadSoaExcel(opts: {
 
   sheet.mergeCells('A5:H5');
   sheet.getCell('A5').value = `Generated: ${format(new Date(), 'yyyy-MM-dd HH:mm')}`;
+  sheet.mergeCells('A6:H6');
+  sheet.getCell('A6').value = 'Balances are separate per currency. TT allocations do not add another payment. Negative balance = account credit.';
+  sheet.getCell('A6').alignment = { wrapText: true };
+  sheet.getRow(6).height = 30;
 
   // Blank row 6
   const headerRow = 8;
@@ -224,6 +119,7 @@ export async function downloadSoaExcel(opts: {
     sheet.getCell(rowIdx, 3).value = line.stock === '—' ? '' : line.stock;
     sheet.getCell(rowIdx, 4).value = line.type;
     sheet.getCell(rowIdx, 5).value = line.currency;
+    if (line.kind !== 'transaction') sheet.getRow(rowIdx).font = { bold: true };
 
     const debitCell = sheet.getCell(rowIdx, 6);
     const creditCell = sheet.getCell(rowIdx, 7);
@@ -385,6 +281,7 @@ export function printSoaPdf(opts: {
   ${contactBits ? `<p class="meta">${contactBits}</p>` : ''}
   <p class="meta"><strong>Period:</strong> ${escape(fromLabel)} → ${escape(toLabel)}</p>
   <p class="meta"><strong>Generated:</strong> ${escape(format(new Date(), 'yyyy-MM-dd HH:mm'))}</p>
+  <p class="meta">Balances are separate per currency. TT allocations do not add another payment. Negative balance = account credit.</p>
   <table>
     <colgroup>
       <col class="date" /><col class="ref" /><col class="stock" /><col class="type" />

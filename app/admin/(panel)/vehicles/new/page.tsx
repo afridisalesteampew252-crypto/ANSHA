@@ -25,6 +25,8 @@ import {
   type VehicleClass,
 } from '@/lib/vehicle-class';
 import { requestPublicRevalidation } from '@/lib/revalidate-public';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
+import { normalizeVehicleModel } from '@/lib/vehicle-freight';
 
 interface PendingPhoto {
   file: File;
@@ -41,6 +43,7 @@ export default function AddVehiclePage() {
 }
 
 function AddVehiclePageInner() {
+  const financeSettings = useFinanceSettings();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialClass = isVehicleClass(searchParams.get('class'))
@@ -74,7 +77,8 @@ function AddVehiclePageInner() {
   const [priceFob, setPriceFob] = useState('');
   const [priceCf, setPriceCf] = useState('');
   const [priceCif, setPriceCif] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [selectedCurrency, setCurrency] = useState('');
+  const currency = selectedCurrency || financeSettings.default_currency;
   const [showPrice, setShowPrice] = useState(false);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -118,7 +122,7 @@ function AddVehiclePageInner() {
     });
   };
 
-  const normalizeModelSpec = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+  const normalizeModelSpec = normalizeVehicleModel;
 
   const generateSlug = (text: string) => {
     return text.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').trim();
@@ -503,12 +507,7 @@ function AddVehiclePageInner() {
                   onChange={(e) => setCurrency(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
-                  <option value="AED">AED</option>
-                  <option value="PKR">PKR</option>
+                  {Array.from(new Set([...financeSettings.enabled_currencies, currency])).map((code) => <option key={code} value={code}>{code}</option>)}
                 </select>
               </div>
             </div>

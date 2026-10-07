@@ -91,6 +91,18 @@ function safeAdminUrl(raw: unknown) {
   }
 }
 
+function safeCustomerUrl(raw: unknown) {
+  const fallback = '/portal/notifications';
+  if (typeof raw !== 'string' || !raw.trim()) return fallback;
+  try {
+    const parsed = new URL(raw, 'https://www.anshatradingco.com');
+    if (parsed.origin !== 'https://www.anshatradingco.com' ||
+        !(parsed.pathname === '/portal' || parsed.pathname.startsWith('/portal/') ||
+          parsed.pathname === '/mobile' || parsed.pathname.startsWith('/mobile/'))) return fallback;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch { return fallback; }
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return json(405, { error: 'Method not allowed.' });
@@ -115,6 +127,8 @@ Deno.serve(async (request) => {
     }
 
     const body = await request.json();
+    const audience = body.audience ?? 'admin';
+    if (audience !== 'admin' && audience !== 'customer') return json(400, { error: 'Invalid notification audience.' });
     const notificationId = String(body.notification_id || '');
     if (!/^[0-9a-f-]{36}$/i.test(notificationId)) {
       return json(400, { error: 'A valid notification_id is required.' });
@@ -124,11 +138,22 @@ Deno.serve(async (request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     const { data: notification, error: notificationError } = await service
-      .from('admin_notifications')
+      .from(audience === 'customer' ? 'customer_notifications' : 'admin_notifications')
       .select('id,recipient_id,title,body,href')
       .eq('id', notificationId)
       .maybeSingle();
     if (notificationError || !notification) return json(404, { error: 'Notification not found.' });
+
+    const { data: eligible, error: eligibilityError } = await service.rpc('native_notification_delivery_allowed', {
+      p_id: notificationId, p_audience: audience,
+    });
+    if (eligibilityError) return json(503, { error: 'Notification authorization check unavailable.' });
+    if (eligible !== true) return json(200, { sent: 0, message: 'Recipient no longer has access to this notification.' });
+
+    const { data: recipient } = await service
+      .from(audience === 'customer' ? 'customer_profiles' : 'admin_profiles')
+      .select('id').eq('id', notification.recipient_id).eq('is_active', true).maybeSingle();
+    if (!recipient) return json(200, { sent: 0, message: 'Recipient is inactive.' });
 
     const { data: subscriptions, error: subscriptionsError } = await service
       .from('push_subscriptions')
@@ -145,16 +170,16 @@ Deno.serve(async (request) => {
       message: {
         token: '',
         notification: {
-          title: String(notification.title || 'ANSHA Admin'),
+          title: String(notification.title || (audience === 'customer' ? 'ANSHA Trading' : 'ANSHA Admin')),
           body: String(notification.body || 'You have a new notification.'),
         },
         data: {
-          url: safeAdminUrl(notification.href),
+          url: audience === 'customer' ? safeCustomerUrl(notification.href) : safeAdminUrl(notification.href),
           notificationId: notification.id,
         },
         android: {
           priority: 'HIGH',
-          notification: { channel_id: 'default' },
+          notification: { channel_id: 'ansha_default' },
         },
       },
     };

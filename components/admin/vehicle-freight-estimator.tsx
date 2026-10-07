@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
+import { CONTAINER_SHARE_COUNTS, exportQuotePrices, freightPerVehicle, normalizeVehicleModel, vehicleSizeForVolume, vehicleVolume, type ContainerSizeChoice } from '@/lib/vehicle-freight';
 
-type ModelVolumeOption = { id: string; make: string; model: string; volume_m3: number };
+type ModelVolumeOption = { id: string; make: string; model: string; volume_m3: number; length_m: number | null; width_m: number | null; height_m: number | null };
 
 type FreightOption = {
   id: string;
@@ -19,15 +20,6 @@ type FreightOption = {
   shipping_company: string | null;
 };
 
-const CONTAINER_SHARE_COUNTS = { small: 6, large: 4, xl: 3 } as const;
-type ContainerSize = 'auto' | keyof typeof CONTAINER_SHARE_COUNTS;
-
-function vehicleSizeForVolume(volumeM3: number): keyof typeof CONTAINER_SHARE_COUNTS {
-  if (volumeM3 <= 9) return 'small';
-  if (volumeM3 <= 14) return 'large';
-  return 'xl';
-}
-
 function amount(value: number, currency: string) {
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -36,10 +28,22 @@ function amount(value: number, currency: string) {
   }).format(value);
 }
 
-export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string }) {
+type Props = {
+  vehicleTitle: string;
+  make?: string;
+  model?: string;
+  savedVolumeM3?: number | null;
+  priceFob?: number | null;
+  currency?: string;
+  onQuoteApply?: (prices: { cf: number; cif?: number }) => void;
+};
+
+export function VehicleFreightEstimator({ vehicleTitle, make, model, savedVolumeM3, priceFob, currency, onQuoteApply }: Props) {
   const [country, setCountry] = useState('');
   const [port, setPort] = useState('');
-  const [containerSize, setContainerSize] = useState<ContainerSize>('auto');
+  const [containerSize, setContainerSize] = useState<ContainerSizeChoice>('auto');
+  const [enteredVolume, setEnteredVolume] = useState(savedVolumeM3 ? String(savedVolumeM3) : '');
+  const [insurance, setInsurance] = useState('');
   const [length, setLength] = useState('');
   const [width, setWidth] = useState('');
   const [height, setHeight] = useState('');
@@ -54,12 +58,27 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
 
   useEffect(() => {
     let active = true;
-    void supabase.from('vehicle_model_specs').select('id,make,model,volume_m3').order('make').order('model')
-      .then(({ data }) => { if (active) setModelVolumes((data || []) as ModelVolumeOption[]); });
+    void supabase.from('vehicle_model_specs').select('id,make,model,volume_m3,length_m,width_m,height_m').order('make').order('model')
+      .then(({ data }) => {
+        if (!active) return;
+        const rows = (data || []) as ModelVolumeOption[];
+        setModelVolumes(rows);
+        setEnteredVolume(savedVolumeM3 ? String(savedVolumeM3) : '');
+        setSelectedModelId('');
+        setOptions([]);
+        const match = rows.find((row) => make && model && normalizeVehicleModel(row.make) === normalizeVehicleModel(make) && normalizeVehicleModel(row.model) === normalizeVehicleModel(model));
+        if (match && !savedVolumeM3) {
+          setSelectedModelId(match.id);
+          setModelSearch(`${match.make} ${match.model} · ${Number(match.volume_m3).toFixed(3)} m³`);
+          setLength(match.length_m == null ? '' : String(match.length_m));
+          setWidth(match.width_m == null ? '' : String(match.width_m));
+          setHeight(match.height_m == null ? '' : String(match.height_m));
+        }
+      });
     void supabase.from('freight_charges').select('destination_country,destination_port').eq('is_active', true).limit(2000)
       .then(({ data }) => { if (active) setDestinations((data || []) as Array<{ destination_country: string; destination_port: string | null }>); });
     return () => { active = false; };
-  }, []);
+  }, [make, model, savedVolumeM3]);
 
   const modelOptions = modelVolumes.map((item) => ({
     id: item.id,
@@ -76,16 +95,14 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
     event.preventDefault();
     setError('');
     setOptions([]);
-    const l = Number(length);
-    const w = Number(width);
-    const h = Number(height);
     const savedVolume = Number(modelVolumes.find((item) => item.id === selectedModelId)?.volume_m3);
-    if (!selectedModelId && ![l, w, h].every((n) => Number.isFinite(n) && n > 0)) {
-      setError('Choose a saved make/model or enter positive length, width, and height in metres.');
+    const explicitVolume = Number(enteredVolume);
+    const volume = selectedModelId ? savedVolume : explicitVolume > 0 ? explicitVolume : vehicleVolume(length, width, height);
+    if (!volume || !Number.isFinite(volume) || volume <= 0) {
+      setError('Choose a saved make/model, enter m³, or enter positive length, width, and height in metres.');
       return;
     }
     setBusy(true);
-    const volume = selectedModelId ? savedVolume : l * w * h;
     const { data, error: queryError } = await supabase
       .from('freight_charges')
       .select('id, source_country, source_port, shipment_type, freight_charge, currency, shipping_company')
@@ -100,7 +117,7 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
       setError('Rates could not be loaded. Check your admin access and freight configuration.');
       return;
     }
-    const rows = (data || []) as FreightOption[];
+    const rows = ((data || []) as FreightOption[]).filter((row) => Number.isFinite(Number(row.freight_charge)) && Number(row.freight_charge) >= 0);
     if (!rows.length) {
       setError('No active RoRo or 40-ft rate matches this country and port.');
       return;
@@ -132,6 +149,12 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
               setModelSearch(value);
               const match = modelOptions.find((option) => option.label.toLowerCase() === value.trim().toLowerCase());
               setSelectedModelId(match?.id || '');
+              setEnteredVolume('');
+              const spec = modelVolumes.find((item) => item.id === match?.id);
+              setLength(spec?.length_m == null ? '' : String(spec.length_m));
+              setWidth(spec?.width_m == null ? '' : String(spec.width_m));
+              setHeight(spec?.height_m == null ? '' : String(spec.height_m));
+              setOptions([]);
             }}
           />
           <datalist id="est-model-options">
@@ -147,6 +170,7 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
             onChange={(e) => {
               setCountry(e.target.value);
               setPort('');
+              setOptions([]);
             }}
             placeholder="Type to search countries"
             autoComplete="off"
@@ -162,7 +186,7 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
             id="est-port"
             list="est-port-options"
             value={port}
-            onChange={(e) => setPort(e.target.value)}
+            onChange={(e) => { setPort(e.target.value); setOptions([]); }}
             placeholder={country ? 'Type to search ports' : 'Choose a country first'}
             autoComplete="off"
             required
@@ -173,7 +197,7 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="est-container-size">40-ft sharing size</Label>
-          <select id="est-container-size" value={containerSize} onChange={(e) => setContainerSize(e.target.value as ContainerSize)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+          <select id="est-container-size" value={containerSize} onChange={(e) => setContainerSize(e.target.value as ContainerSizeChoice)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
             <option value="auto">Auto by M³</option>
             <option value="small">Small · 6 vehicles per container</option>
             <option value="large">Large · 4 vehicles per container</option>
@@ -181,6 +205,14 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
           </select>
           <p className="text-xs text-muted-foreground">Auto: up to 9 m³ = small; over 9 to 14 m³ = large; over 14 m³ = XL. Override if your carrier assigns another class.</p>
         </div>
+        {!selectedModelId && <div className="space-y-1.5">
+          <Label htmlFor="est-volume">Vehicle volume (m³)</Label>
+          <Input id="est-volume" type="number" min="0.001" step="0.001" value={enteredVolume} onChange={(event) => { setEnteredVolume(event.target.value); setOptions([]); }} placeholder="Saved vehicle m³, or use dimensions" />
+        </div>}
+        {priceFob != null && currency && <div className="space-y-1.5">
+          <Label htmlFor="est-insurance">Insurance amount ({currency})</Label>
+          <Input id="est-insurance" type="number" min="0" step="0.01" value={insurance} onChange={(event) => setInsurance(event.target.value)} placeholder="Enter insurance to calculate CIF" />
+        </div>}
         {!selectedModelId && [
           ['est-length', 'Length (m)', length, setLength],
           ['est-width', 'Width (m)', width, setWidth],
@@ -194,8 +226,9 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
               min="0.01"
               step="0.01"
               value={value as string}
-              onChange={(e) => (setter as (value: string) => void)(e.target.value)}
-              required
+              onChange={(e) => { (setter as (value: string) => void)(e.target.value); setOptions([]); }}
+              required={!enteredVolume}
+              disabled={Boolean(enteredVolume)}
             />
           </div>
         ))}
@@ -214,12 +247,17 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
           {options.map((option) => {
             const isRoro = option.shipment_type === 'roro';
             const rate = Number(option.freight_charge);
-            const total = isRoro ? (volumeM3 || 0) * rate : rate;
             const resolvedSize = containerSize === 'auto' ? vehicleSizeForVolume(volumeM3 || 0) : containerSize;
             const shareCount = CONTAINER_SHARE_COUNTS[resolvedSize];
-            const perVehicle = isRoro ? total : rate / shareCount;
+            const perVehicle = freightPerVehicle(option.shipment_type, volumeM3!, rate, containerSize);
+            const sameCurrency = currency?.trim().toUpperCase() === option.currency.trim().toUpperCase();
+            const insuranceAmount = Number(insurance);
+            const hasInsurance = insurance.trim() !== '' && Number.isFinite(insuranceAmount) && insuranceAmount >= 0;
+            const quote = priceFob != null && Number.isFinite(Number(priceFob)) && Number(priceFob) >= 0 && sameCurrency
+              ? exportQuotePrices(Number(priceFob), perVehicle, hasInsurance ? insuranceAmount : 0) : null;
             return (
-              <div key={option.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+              <div key={option.id} className="rounded-lg border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-medium">{isRoro ? 'RoRo' : `40-ft container · ${resolvedSize.toUpperCase()} share`} · {option.shipping_company || 'configured rate'}</p>
                   <p className="text-xs text-muted-foreground">
@@ -228,6 +266,12 @@ export function VehicleFreightEstimator({ vehicleTitle }: { vehicleTitle: string
                   </p>
                 </div>
                 <div className="text-right"><p className="text-lg font-bold tabular-nums">{amount(perVehicle, option.currency)}{isRoro ? '' : ' / vehicle'}</p>{!isRoro ? <p className="text-xs text-muted-foreground">Container total: {amount(rate, option.currency)}</p> : null}</div>
+                </div>
+                {quote ? <div className="mt-3 border-t pt-3">
+                  <p className="text-sm font-semibold">FOB {amount(quote.fob, option.currency)} → C&amp;F {amount(quote.cf, option.currency)}{hasInsurance ? ` → CIF ${amount(quote.cif, option.currency)}` : ''}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">C&amp;F includes freight per vehicle. CIF adds the insurance amount you enter; duties and local charges are separate.</p>
+                  {onQuoteApply && <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => onQuoteApply({ cf: quote.cf, ...(hasInsurance ? { cif: quote.cif } : {}) })}>Use these quote prices in the vehicle form</Button>}
+                </div> : currency && priceFob != null && !sameCurrency ? <p className="mt-3 text-xs text-muted-foreground">Freight is in {option.currency}; convert to {currency} before adding it to FOB.</p> : null}
               </div>
             );
           })}

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { bankCsvTemplate, parseBankTransactionsCsv } from '@/lib/bank-csv';
 import { supabase } from '@/lib/supabase/client';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 import type {
   BankAccount,
   BankFeedConnection,
@@ -45,6 +46,7 @@ const emptyTxnForm = {
 };
 
 export default function BankAccountsPage() {
+  const financeSettings = useFinanceSettings();
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
@@ -154,7 +156,7 @@ export default function BankAccountsPage() {
       return;
     }
     setEditingAccountId(null);
-    setAccountForm(emptyAccountForm);
+    setAccountForm({ ...emptyAccountForm, currency: financeSettings.default_currency });
     setShowAccountForm(true);
   };
 
@@ -501,12 +503,8 @@ export default function BankAccountsPage() {
                   onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })}
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
-                  <option>AED</option>
-                  <option>USD</option>
-                  <option>EUR</option>
-                  <option>GBP</option>
-                  <option>PKR</option>
-                  <option>JPY</option>
+                  {!financeSettings.enabled_currencies.includes(accountForm.currency) && <option value={accountForm.currency}>{accountForm.currency} (existing)</option>}
+                  {financeSettings.enabled_currencies.map((code) => <option key={code} value={code}>{code}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">

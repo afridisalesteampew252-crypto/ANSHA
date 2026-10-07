@@ -3,6 +3,9 @@ import { defineConfig, devices } from '@playwright/test';
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3000';
 const local = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(baseURL);
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH;
+const browserProxy = process.env.PLAYWRIGHT_USE_ENV_PROXY === '1'
+  ? process.env.HTTPS_PROXY || process.env.HTTP_PROXY
+  : undefined;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -13,6 +16,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['line'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL,
+    proxy: browserProxy ? { server: browserProxy, bypass: 'localhost,127.0.0.1' } : undefined,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: process.env.PLAYWRIGHT_DISABLE_VIDEO === '1' ? 'off' : 'retain-on-failure',

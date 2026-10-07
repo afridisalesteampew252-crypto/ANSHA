@@ -141,6 +141,15 @@ export function useLoginLockout(scope: 'admin' | 'customer', email: string) {
     setState(emptyState);
   }, [key]);
 
+  const syncServerState = useCallback((attempts: number | undefined, lockedUntil: number) => {
+    if (attempts === undefined && !lockedUntil) return;
+    const now = Date.now();
+    const next: FailureState = { attempts: attempts ?? MAX_FAILED_ATTEMPTS, windowStartedAt: now, lockedUntil };
+    writeStoredValue(key, JSON.stringify(next));
+    setNow(now);
+    setState(next);
+  }, [key]);
+
   return {
     attempts: state.attempts,
     lockedUntil: state.lockedUntil,
@@ -148,5 +157,6 @@ export function useLoginLockout(scope: 'admin' | 'customer', email: string) {
     refresh,
     recordFailure,
     clearFailures,
+    syncServerState,
   };
 }

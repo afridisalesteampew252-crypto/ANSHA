@@ -9,6 +9,8 @@ import {
   Building2,
   CheckCircle2,
   Contact,
+  Eye,
+  EyeOff,
   FileSpreadsheet,
   KeyRound,
   Loader2,
@@ -30,10 +32,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { addToCurrencyMap, formatMoney, normalizeCurrency } from '@/lib/money';
+import { addToCurrencyMap, formatMoney, listCurrencies, normalizeCurrency } from '@/lib/money';
 import { MoneyBreakdown } from '@/components/money-breakdown';
 import { cn } from '@/lib/utils';
-import { downloadRowsAsXlsx } from '@/lib/export-excel';
+import { buildSoaLedgerLines, downloadSoaExcel, printSoaPdf, todayYmd, type SoaPaymentRow } from '@/lib/soa/export';
 
 const money = (value: number, currency = 'AED') => formatMoney(value, currency);
 const receivableDocument = (type: string) => type === 'tax_invoice' || type === 'commercial_invoice';
@@ -61,7 +63,7 @@ type Customer = {
 };
 type Invoice = { id: string; invoice_number: string; document_type: string; issue_date: string; currency: string; status: string; total_amount: number; amount_paid: number; balance_due: number };
 type InvoiceItem = { id: string; invoice_id: string; description: string; quantity: number; line_total: number; inventory_type: string | null; inventory_reference: string | null; vehicle_id?: string | null; part_id?: string | null };
-type Remittance = { id: string; remittance_number: string; received_date: string; amount: number; currency: string; status: string; method: string; bank_reference: string | null };
+type Remittance = { id: string; remittance_number: string; received_date: string; amount: number; currency: string; status: string; method: string; bank_reference: string | null; source_currency: string | null; source_amount: number | null; exchange_rate: number | null };
 type Allocation = { id: string; remittance_id: string; invoice_id: string; invoice_payment_id: string; amount: number; created_at: string };
 type PortalLink = { id: string; email: string; full_name: string | null; is_active: boolean };
 type ReservedBuying = {
@@ -145,9 +147,15 @@ export default function CustomerAccountPage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [payments, setPayments] = useState<SoaPaymentRow[]>([]);
+  const [paymentLoadError, setPaymentLoadError] = useState(false);
+  const [soaFrom, setSoaFrom] = useState('');
+  const [soaTo, setSoaTo] = useState(todayYmd);
+  const [soaCurrency, setSoaCurrency] = useState('');
   const [portalLink, setPortalLink] = useState<PortalLink | null>(null);
   const [portalEmail, setPortalEmail] = useState('');
   const [portalPassword, setPortalPassword] = useState('');
+  const [portalPasswordVisible, setPortalPasswordVisible] = useState(false);
   const [portalBusy, setPortalBusy] = useState(false);
   const [isAccountAdmin, setIsAccountAdmin] = useState(false);
   const [remittanceId, setRemittanceId] = useState('');
@@ -195,7 +203,7 @@ export default function CustomerAccountPage() {
         .eq('id', customerId)
         .single(),
       supabase.from('invoices').select('id,invoice_number,document_type,issue_date,currency,status,total_amount,amount_paid,balance_due').eq('customer_id', customerId).order('issue_date', { ascending: false }),
-      supabase.from('remittances').select('id,remittance_number,received_date,amount,currency,status,method,bank_reference').eq('customer_id', customerId).order('received_date', { ascending: false }),
+      supabase.from('remittances').select('id,remittance_number,received_date,amount,currency,status,method,bank_reference,source_currency,source_amount,exchange_rate').eq('customer_id', customerId).order('received_date', { ascending: false }),
       supabase.from('customer_profiles').select('id,email,full_name,is_active').eq('customer_id', customerId).maybeSingle(),
       supabase.auth.getSession(),
       supabase.from('vehicles').select('id,title,stock_number,chassis_number,price,price_fob,price_cf,price_cif,currency,reservation_price_term').eq('reserved_customer_id', customerId).eq('stock_status', 'reserved'),
@@ -243,12 +251,19 @@ export default function CustomerAccountPage() {
       })),
     ];
     setReservedBuying(reservedRows);
-    const [itemResult, allocationResult] = await Promise.all([
+    const [itemResult, allocationResult, paymentResult] = await Promise.all([
       invoiceRows.length ? supabase.from('invoice_items').select('id,invoice_id,description,quantity,line_total,inventory_type,inventory_reference,vehicle_id,part_id').in('invoice_id', invoiceRows.map((row) => row.id)).order('sort_order') : Promise.resolve({ data: [] }),
       remittanceRows.length ? supabase.from('remittance_allocations').select('id,remittance_id,invoice_id,invoice_payment_id,amount,created_at').in('remittance_id', remittanceRows.map((row) => row.id)).order('created_at', { ascending: false }) : Promise.resolve({ data: [] }),
+      invoiceRows.length ? supabase.from('invoice_payments').select('id,invoice_id,payment_date,amount,method,reference').in('invoice_id', invoiceRows.map((row) => row.id)) : Promise.resolve({ data: [], error: null }),
     ]);
     setItems((itemResult.data || []) as InvoiceItem[]);
     setAllocations((allocationResult.data || []) as Allocation[]);
+    setPaymentLoadError(Boolean(paymentResult.error));
+    setPayments((paymentResult.data || []).map((payment) => {
+      const invoice = invoiceRows.find((row) => row.id === payment.invoice_id)!;
+      const allocation = (allocationResult.data || []).find((row) => row.invoice_payment_id === payment.id);
+      return { ...payment, invoice_number: invoice.invoice_number, currency: invoice.currency, remittance_id: allocation?.remittance_id || null } as SoaPaymentRow;
+    }));
     setLoading(false);
   }, [customerId]);
 
@@ -288,7 +303,7 @@ export default function CustomerAccountPage() {
   }, [customer]);
 
   const allocatedByRemittance = useMemo(() => allocations.reduce<Record<string, number>>((sum, row) => ({ ...sum, [row.remittance_id]: (sum[row.remittance_id] || 0) + Number(row.amount) }), {}), [allocations]);
-  const receivableInvoices = useMemo(() => invoices.filter((row) => receivableDocument(row.document_type) && row.status !== 'cancelled'), [invoices]);
+  const receivableInvoices = useMemo(() => invoices.filter((row) => receivableDocument(row.document_type) && row.status !== 'cancelled' && row.status !== 'draft'), [invoices]);
   const openInvoices = useMemo(() => receivableInvoices.filter((row) => Number(row.balance_due) > 0), [receivableInvoices]);
   const usableRemittances = useMemo(() => remittances.filter((row) => row.status === 'confirmed' && Number(row.amount) - (allocatedByRemittance[row.id] || 0) > 0), [remittances, allocatedByRemittance]);
   const selectedRemittance = remittances.find((row) => row.id === remittanceId);
@@ -326,15 +341,11 @@ export default function CustomerAccountPage() {
       invoices: receivableInvoices
         .filter((row) => row.issue_date.startsWith(key) && normalizeCurrency(row.currency) === chartCurrency)
         .reduce((sum, row) => sum + Number(row.total_amount), 0),
-      payments: allocations
-        .filter((row) => {
-          if (!row.created_at.startsWith(key)) return false;
-          const rem = remittances.find((item) => item.id === row.remittance_id);
-          return normalizeCurrency(rem?.currency) === chartCurrency;
-        })
+      payments: payments
+        .filter((row) => row.payment_date.startsWith(key) && normalizeCurrency(row.currency) === chartCurrency)
         .reduce((sum, row) => sum + Number(row.amount), 0),
     };
-  }), [allocations, chartCurrency, receivableInvoices, remittances]);
+  }), [payments, chartCurrency, receivableInvoices]);
 
   const stockRefsByInvoice = useMemo(() => {
     const map: Record<string, string[]> = {};
@@ -347,47 +358,15 @@ export default function CustomerAccountPage() {
     return map;
   }, [items]);
 
+  const soaRange = useMemo(() => ({ from: soaFrom, to: soaTo }), [soaFrom, soaTo]);
+  const soaCurrencies = listCurrencies([...invoices.map((row) => row.currency), ...remittances.map((row) => row.currency)]);
+  const soaLines = useMemo(() => buildSoaLedgerLines({ invoices, remittances, payments, stockRefsByInvoice, range: soaRange, currency: soaCurrency || undefined }), [invoices, remittances, payments, stockRefsByInvoice, soaRange, soaCurrency]);
+  const invalidSoaRange = Boolean(soaFrom && soaTo && soaFrom > soaTo);
+  const soaParty = customer ? { code: customer.customer_code, name: customer.full_name, company: customer.company_name, email: customer.email, phone: customer.phone, country: customer.country } : null;
   const exportSoaExcel = async () => {
-    if (!customer) return;
-    await downloadRowsAsXlsx({
-      filename: `${customer.customer_code}-soa`,
-      sheetName: 'Customer SOA',
-      columns: [
-        { key: 'date', header: 'Date', width: 14 },
-        { key: 'reference', header: 'Reference', width: 24 },
-        { key: 'entry_type', header: 'Entry type', width: 18 },
-        { key: 'stock', header: 'Stock', width: 28 },
-        { key: 'currency', header: 'Currency', width: 12 },
-        { key: 'debit', header: 'Debit', width: 16 },
-        { key: 'credit', header: 'Credit', width: 16 },
-        { key: 'balance', header: 'Balance', width: 16 },
-        { key: 'status', header: 'Status', width: 16 },
-      ],
-      rows: [
-        ...invoices.map((invoice) => ({
-          date: invoice.issue_date,
-          reference: invoice.invoice_number,
-          entry_type: invoice.document_type.replaceAll('_', ' '),
-          stock: stockRefsByInvoice[invoice.id]?.join(', ') || '',
-          currency: invoice.currency,
-          debit: receivableDocument(invoice.document_type) ? Number(invoice.total_amount || 0) : 0,
-          credit: Number(invoice.amount_paid || 0),
-          balance: receivableDocument(invoice.document_type) ? Number(invoice.balance_due || 0) : 0,
-          status: invoice.status,
-        })),
-        ...remittances.filter((row) => row.status === 'confirmed').map((row) => ({
-          date: row.received_date,
-          reference: row.remittance_number,
-          entry_type: 'confirmed remittance',
-          stock: '',
-          currency: row.currency,
-          debit: 0,
-          credit: Number(row.amount || 0),
-          balance: Math.max(0, Number(row.amount || 0) - (allocatedByRemittance[row.id] || 0)),
-          status: row.status,
-        })),
-      ],
-    });
+    if (!soaParty || paymentLoadError || invalidSoaRange) return;
+    try { await downloadSoaExcel({ party: soaParty, range: soaRange, lines: soaLines }); }
+    catch { setNotice('Statement Excel export failed. Please try again.'); }
   };
 
   const reservedStockIds = useMemo(() => new Set(reservedBuying.map((row) => row.stock_id)), [reservedBuying]);
@@ -491,15 +470,15 @@ export default function CustomerAccountPage() {
     if (!portalLink?.email || !isAccountAdmin) return;
     setPortalBusy(true);
     setNotice('Sending password reset email…');
-    const { error } = await supabase.auth.resetPasswordForEmail(portalLink.email, {
-      redirectTo: `${window.location.origin}/portal/reset-password`,
+    const { data, error } = await supabase.functions.invoke('portal-password-reset', {
+      body: { customer_id: customerId },
     });
     setPortalBusy(false);
-    if (error) {
-      setNotice(error.message);
+    if (error || data?.error) {
+      setNotice(data?.error || error?.message || 'Could not send the reset email.');
       return;
     }
-    setNotice(`Password reset email sent to ${portalLink.email}.`);
+    setNotice(`Password reset email sent to ${data.email}.`);
   };
 
   if (loading) return <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -849,7 +828,12 @@ export default function CustomerAccountPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="portal-password">Temporary password</Label>
-              <Input id="portal-password" type="text" required minLength={8} value={portalPassword} onChange={(event) => setPortalPassword(event.target.value)} placeholder="At least 8 characters" />
+              <div className="relative">
+                <Input id="portal-password" type={portalPasswordVisible ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={portalPassword} onChange={(event) => setPortalPassword(event.target.value)} placeholder="At least 8 characters" className="pr-11" />
+                <button type="button" aria-label={portalPasswordVisible ? 'Hide temporary password' : 'Show temporary password'} aria-pressed={portalPasswordVisible} onClick={() => setPortalPasswordVisible((value) => !value)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+                  {portalPasswordVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                </button>
+              </div>
             </div>
             <div className="flex items-end">
               <Button type="submit" variant="accent" disabled={portalBusy}>
@@ -875,16 +859,25 @@ export default function CustomerAccountPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => void exportSoaExcel()} disabled={invoices.length === 0 && remittances.length === 0}>
+          <Button type="button" variant="outline" onClick={() => void exportSoaExcel()} disabled={paymentLoadError || invalidSoaRange || soaLines.length === 0}>
             <FileSpreadsheet className="h-4 w-4" />
             Download Excel
           </Button>
-          <Button type="button" variant="outline" onClick={() => window.print()}>
+          <Button type="button" variant="outline" disabled={paymentLoadError || invalidSoaRange || soaLines.length === 0} onClick={() => { if (soaParty) printSoaPdf({ party: soaParty, range: soaRange, lines: soaLines }); }}>
             <Printer className="h-4 w-4" />
             Save / Print PDF
           </Button>
         </div>
       </div>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="space-y-1.5"><Label htmlFor="admin-soa-from">From</Label><Input id="admin-soa-from" type="date" value={soaFrom} max={soaTo || todayYmd()} onChange={(event) => setSoaFrom(event.target.value)} className="w-[160px]" /></div>
+        <div className="space-y-1.5"><Label htmlFor="admin-soa-to">To</Label><Input id="admin-soa-to" type="date" value={soaTo} min={soaFrom || undefined} max={todayYmd()} onChange={(event) => setSoaTo(event.target.value || todayYmd())} className="w-[160px]" /></div>
+        <div className="space-y-1.5"><Label htmlFor="admin-soa-currency">Currency</Label><select id="admin-soa-currency" value={soaCurrency} onChange={(event) => setSoaCurrency(event.target.value)} className="h-10 rounded-md border bg-background px-3 text-sm"><option value="">All currencies</option>{soaCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}</select></div>
+        <Button variant="ghost" size="sm" onClick={() => { setSoaFrom(''); setSoaTo(todayYmd()); setSoaCurrency(''); }}><RotateCcw className="h-4 w-4" />Reset statement</Button>
+      </div>
+      {invalidSoaRange && <p role="alert" className="text-sm text-destructive">From date must be on or before the To date.</p>}
+      {paymentLoadError && <p role="alert" className="text-sm text-destructive">Payment history could not be loaded. Reload before exporting the statement.</p>}
+      <p className="text-xs text-muted-foreground">Account totals cover all dates. Ledger and exports use the selected period and currency. A negative balance is account credit.</p>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {([
@@ -984,7 +977,7 @@ export default function CustomerAccountPage() {
       <Card id="ledger" className="scroll-mt-24">
         <CardHeader><CardTitle className="text-lg">Statement ledger</CardTitle></CardHeader>
         <CardContent className="p-0">
-          {invoices.length === 0 ? (
+          {paymentLoadError || soaLines.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-muted-foreground">No documents on this statement yet.</p>
           ) : (
             <div className="overflow-x-auto">
@@ -995,29 +988,25 @@ export default function CustomerAccountPage() {
                     <th className="p-4">Reference</th>
                     <th className="p-4">Stock</th>
                     <th className="p-4">Type</th>
+                    <th className="p-4">Currency</th>
                     <th className="p-4 text-right">Debit</th>
                     <th className="p-4 text-right">Credit</th>
                     <th className="p-4 text-right">Balance</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((invoice) => (
-                    <tr key={invoice.id} className="border-t">
-                      <td className="p-4">{invoice.issue_date}</td>
+                  {soaLines.map((line) => (
+                    <tr key={line.sortKey} className={`border-t ${line.kind !== 'transaction' ? 'bg-secondary/30 font-semibold' : ''}`}>
+                      <td className="p-4">{line.date || '—'}</td>
                       <td className="p-4">
-                        <Link href={`/admin/invoices/${invoice.id}`} className="font-semibold text-primary hover:underline">
-                          {invoice.invoice_number}
-                        </Link>
+                        {line.invoiceId ? <Link href={`/admin/invoices/${line.invoiceId}`} className="font-semibold text-primary hover:underline">{line.reference}</Link> : line.reference}
                       </td>
-                      <td className="p-4 text-xs text-muted-foreground">{stockRefsByInvoice[invoice.id]?.join(', ') || '—'}</td>
-                      <td className="p-4 capitalize">{invoice.document_type.replaceAll('_', ' ')}</td>
-                      <td className="p-4 text-right">
-                        {receivableDocument(invoice.document_type) ? money(invoice.total_amount, invoice.currency) : 'Non-posting'}
-                      </td>
-                      <td className="p-4 text-right">{money(invoice.amount_paid, invoice.currency)}</td>
-                      <td className="p-4 text-right font-semibold">
-                        {receivableDocument(invoice.document_type) ? money(invoice.balance_due, invoice.currency) : '—'}
-                      </td>
+                      <td className="p-4 text-xs text-muted-foreground">{line.stock}</td>
+                      <td className="p-4 capitalize">{line.type}</td>
+                      <td className="p-4">{line.currency}</td>
+                      <td className="p-4 text-right">{line.debit != null ? money(line.debit, line.currency) : '—'}</td>
+                      <td className="p-4 text-right">{line.credit != null ? money(line.credit, line.currency) : '—'}</td>
+                      <td className="p-4 text-right font-semibold">{money(line.balance, line.currency)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1045,6 +1034,7 @@ export default function CustomerAccountPage() {
                     <div className="text-right">
                       <p className="font-semibold">{money(row.amount, row.currency)}</p>
                       <p className="text-xs text-muted-foreground">{money(Number(row.amount) - used, row.currency)} available</p>
+                      {row.exchange_rate != null && row.source_currency && <p className="mt-1 text-xs text-muted-foreground">Original {money(Number(row.source_amount), row.source_currency)} · 1 {row.source_currency} = {row.exchange_rate} {row.currency}</p>}
                     </div>
                   </div>
                   <div className="mt-3 space-y-2">

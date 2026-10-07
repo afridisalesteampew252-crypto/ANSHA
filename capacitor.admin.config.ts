@@ -17,6 +17,7 @@ const config: CapacitorConfig = {
   server: {
     url: serverUrl,
     cleartext: false,
+    errorPath: 'index.html',
   },
   plugins: {
     PushNotifications: {

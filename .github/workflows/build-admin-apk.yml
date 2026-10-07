@@ -1,27 +1,29 @@
 name: Build ANSHA Admin APK
 
 permissions:
-  contents: write
+  contents: read
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - codex/run-admin-apk-once
   workflow_dispatch:
     inputs:
       server_url:
-        description: Admin dashboard URL to load in the APK
+        description: Admin app HTTPS URL
         required: true
         default: https://www.anshatradingco.com/admin/dashboard
         type: string
 
+concurrency:
+  group: apk-admin-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-admin-apk:
+  build-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      ANDROID_VERSION_CODE: '5'
+      ANDROID_VERSION_NAME: '1.4'
+      CAPACITOR_ADMIN_SERVER_URL: ${{ inputs.server_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,55 +35,26 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: npm ci --legacy-peer-deps
-      - name: Select the admin Capacitor config
+      - name: Select admin app configuration
         run: cp capacitor.admin.config.ts capacitor.config.ts
-      - name: Generate the admin Android project
+      - name: Generate Android project
         run: npm run cap:add:admin:android
-      - name: Set admin APK version
-        run: |
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const path = 'android/app/build.gradle';
-          const original = readFileSync(path, 'utf8');
-          if (!/versionCode\s+\d+/.test(original) || !/versionName\s+['"][^'"]+['"]/.test(original)) {
-            throw new Error('Android version fields were not found');
-          }
-          const gradle = original
-            .replace(/versionCode\s+\d+/, 'versionCode 4')
-            .replace(/versionName\s+['"][^'"]+['"]/, 'versionName "1.3"');
-          writeFileSync(path, gradle);
-          NODE
-      - name: Add Firebase config and sync Capacitor
+      - name: Prepare Firebase, version, and Capacitor
         run: npm run cap:sync:admin:android
-        env:
-          CAPACITOR_ADMIN_SERVER_URL: ${{ inputs.server_url }}
-      - name: Apply ANSHA launcher icons and display cutout handling
+      - name: Apply launcher icons, animated opening, and safe screen areas
         run: |
           python -m pip install Pillow==11.3.0
           python scripts/prepare-android-ui.py
-      - name: Build installable debug APK
-        run: cd android && ./gradlew assembleDebug
+      - name: Build installable test APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
+      - name: Record artifact checksum
+        run: sha256sum android/app/build/outputs/apk/debug/app-debug.apk > android/app/build/outputs/apk/debug/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: ansha-admin-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/output-metadata.json
+            android/app/build/outputs/apk/debug/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
-      - name: Publish verified admin APK to the production website
-        if: github.event_name == 'workflow_dispatch' && inputs.server_url == 'https://www.anshatradingco.com/admin/dashboard'
-        env:
-          APK_PATH: android/app/build/outputs/apk/debug/app-debug.apk
-          PUBLISH_PATH: public/downloads/ansha-admin.apk
-        run: |
-          publish_dir="$RUNNER_TEMP/admin-apk-publish"
-          mkdir -p "$publish_dir"
-          git fetch origin main
-          git worktree add "$publish_dir" origin/main
-          install -D "$APK_PATH" "$publish_dir/$PUBLISH_PATH"
-          git -C "$publish_dir" config user.name "github-actions[bot]"
-          git -C "$publish_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C "$publish_dir" add "$PUBLISH_PATH"
-          if ! git -C "$publish_dir" diff --cached --quiet; then
-            git -C "$publish_dir" commit -m "Publish admin APK v1.3"
-            git -C "$publish_dir" push origin HEAD:main
-          fi

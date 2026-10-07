@@ -1,6 +1,16 @@
 [functions.send-admin-push]
 verify_jwt = false
 
+# Password login is public; the handler validates credentials through Auth and
+# reserves attempts via service-only SQL. No authenticated session exists yet.
+[functions.password-login]
+verify_jwt = false
+
+# Handler checks the caller's JWT and active administrator role itself, including
+# publishable-key clients that the legacy JWT gateway does not understand.
+[functions.portal-password-reset]
+verify_jwt = false
+
 # Called once a day by the Vercel cron route /api/cron/request-dues.
 # The gateway JWT check is disabled because the caller authenticates with the shared
 # CRON_SECRET (not a Supabase JWT); the function itself rejects requests without it.

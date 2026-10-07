@@ -11,6 +11,7 @@ import { canManageReceivables } from '@/lib/admin-rbac';
 import { buildPeerStats, peerKey, priceSanityWarning } from '@/lib/price-sanity';
 import { STOCK_ORIGINS } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 import type { AdminRole } from '@/lib/types';
 
 type PriceField = 'price_fob' | 'price_cf' | 'price_cif';
@@ -203,6 +204,7 @@ export default function BulkVehiclePricesPage() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
+    requestPublicRevalidation('vehicle');
     toast.success('Updated ' + String(data ?? selected.length) + ' vehicle prices.');
     setSelected([]);
     await load();

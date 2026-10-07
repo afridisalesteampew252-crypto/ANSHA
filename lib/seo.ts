@@ -74,13 +74,15 @@ export function vehicleImageAlt(
 
 /** Part image alt from real name (and brand when not already in the name). */
 export function partImageAlt(
-  part: { name?: string | null; brand?: string | null },
+  part: { name?: string | null; brand?: string | null; part_number?: string | null; oem_number?: string | null },
   options?: { photoIndex?: number },
 ) {
   const name = collapseWhitespace(part.name || 'Part');
   const brand = collapseWhitespace(part.brand || '');
-  const base =
+  const product =
     brand && !name.toLowerCase().includes(brand.toLowerCase()) ? `${brand} ${name}` : name;
+  const number = collapseWhitespace(part.part_number || part.oem_number || '');
+  const base = number && !product.toLowerCase().includes(number.toLowerCase()) ? `${product} ${number}` : product;
   const index = options?.photoIndex;
   if (index != null && index >= 1) return `${base} — photo ${index}`;
   return base;

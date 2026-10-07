@@ -15,6 +15,7 @@ export const REMITTANCE_EXPORT_COLUMNS = [
   { key: 'bank_account', label: 'Bank Account' },
   { key: 'bank_reference', label: 'Bank Reference' },
   { key: 'exchange_rate', label: 'Exchange Rate' },
+  { key: 'source_currency', label: 'Source Currency' },
   { key: 'instructed_amount', label: 'Instructed Amount' },
   { key: 'remit_amount', label: 'Remit Amount' },
   { key: 'balance', label: 'Balance' },
@@ -46,6 +47,9 @@ export type RemittanceExportSource = {
   customer_name: string;
   customer_country: string | null;
   currency: string;
+  source_currency?: string | null;
+  source_amount?: number | null;
+  exchange_rate?: number | null;
   sender_bank: string | null;
   receiving_bank: string | null;
   bank_reference: string | null;
@@ -100,9 +104,9 @@ export function buildRemittanceExportRow(
     bank_phone: null,
     bank_account: null,
     bank_reference: src.bank_reference,
-    // No FX / instructed-amount fields on remittances yet.
-    exchange_rate: null,
-    instructed_amount: null,
+    exchange_rate: src.exchange_rate ?? null,
+    source_currency: src.source_currency ?? null,
+    instructed_amount: src.source_amount ?? null,
     remit_amount: Number(src.amount),
     balance: remaining,
     remaining_allocation_amount: remaining,

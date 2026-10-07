@@ -29,6 +29,7 @@ import { SystemHealthStatus } from '@/components/admin/system-health-status';
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
 type InventoryRow = { stock_status: string | null; stock_origin: string | null };
+type RecentInquiry = { id: string; customer_name: string; message: string; status: string };
 
 const ACCENT = 'hsl(0 75% 47%)';
 const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
@@ -110,7 +111,7 @@ export default function AdminDashboardPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [inventory, setInventory] = useState<InventoryRow[]>([]);
-  const [recentInquiries, setRecentInquiries] = useState<any[]>([]);
+  const [recentInquiries, setRecentInquiries] = useState<RecentInquiry[]>([]);
   const [analytics, setAnalytics] = useState<OpsAnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -171,7 +172,7 @@ export default function AdminDashboardPage() {
         supabase.from('vehicles').select('id', { count: 'exact', head: true }),
         supabase.from('customers').select('id', { count: 'exact', head: true }),
         supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        supabase.from('inquiries').select('*').order('created_at', { ascending: false }).limit(5),
+        supabase.from('inquiries').select('id,customer_name,message,status').order('created_at', { ascending: false }).limit(5),
         supabase.from('invoices').select('id,issue_date,currency,document_type,total_amount,amount_paid,balance_due,status').gte('issue_date', format(subMonths(new Date(), 6), 'yyyy-MM-dd')),
         supabase.from('remittances').select('id,received_date,currency,amount,status').gte('received_date', format(subMonths(new Date(), 6), 'yyyy-MM-dd')),
         supabase.from('parts').select('stock_status,stock_origin'),

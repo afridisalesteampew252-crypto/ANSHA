@@ -12,7 +12,7 @@ import type {
 export const PUBLIC_CATEGORY_CARD_SELECT = 'id,name,slug,image_url';
 
 export const PUBLIC_PART_CARD_SELECT =
-  'id,name,slug,part_code,oem_number,brand,condition,price,price_fob,price_cf,price_cif,currency,quantity,is_featured,show_price,stock_origin,stock_status,categories(name),part_photos(storage_path,is_cover,sort_order),part_compatibility(make,model,chassis_code,year_from,year_to)';
+  'id,name,slug,part_code,part_number,oem_number,brand,condition,price,price_fob,price_cf,price_cif,currency,quantity,is_featured,show_price,stock_origin,stock_status,categories(name),part_photos(storage_path,is_cover,sort_order),part_compatibility(make,model,chassis_code,year_from,year_to)';
 
 export const PUBLIC_VEHICLE_CARD_SELECT =
   'id,title,slug,make,model,year,transmission,fuel_type,mileage,operating_hours,vehicle_class,equipment_category,price,price_fob,price_cf,price_cif,currency,show_price,is_featured,stock_origin,stock_pool,stock_status,vehicle_photos(storage_path,is_cover,is_auction_sheet,sort_order)';
@@ -39,6 +39,7 @@ export type PublicPartCard = Pick<
   | 'name'
   | 'slug'
   | 'part_code'
+  | 'part_number'
   | 'oem_number'
   | 'brand'
   | 'condition'

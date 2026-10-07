@@ -27,13 +27,16 @@ export function RegisterServiceWorker() {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
     if (isNativeCapacitorRuntime()) return;
 
-    const isLocal =
-      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (process.env.NODE_ENV !== 'production' && !isLocal) return;
+    if (process.env.NODE_ENV !== 'production') return;
 
     let reloaded = false;
+    let hadController = Boolean(navigator.serviceWorker.controller);
 
     const onControllerChange = () => {
+      // The first install claims this tab; reloading then loses typed searches,
+      // open menus and sign-in feedback. Reload only when an existing worker
+      // is replaced by an update.
+      if (!hadController) { hadController = true; return; }
       if (reloaded) return;
       reloaded = true;
       window.location.reload();

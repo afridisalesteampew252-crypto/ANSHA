@@ -37,9 +37,9 @@ import { supabase } from '@/lib/supabase/client';
 import { SHIPMENT_MODE_LABELS, SHIPMENT_MODES, type ShipmentMode } from '@/lib/trade-terms';
 import type { AdminRole, ShippingCompany } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 
 const PAGE_SIZES = [10, 25, 50, 100] as const;
-const CURRENCIES = ['USD', 'AED', 'EUR', 'JPY', 'GBP'] as const;
 
 type FormState = {
   source_country: string;
@@ -65,7 +65,7 @@ const emptyForm = (): FormState => ({
   destination_port: '',
   shipment_type: 'roro',
   freight_charge: '',
-  currency: 'USD',
+  currency: '',
   shipping_company: '',
   contact_person: '',
   contact_number: '',
@@ -95,6 +95,7 @@ function formFromRow(row: FreightCharge): FormState {
 }
 
 export default function FreightChargesPage() {
+  const financeSettings = useFinanceSettings();
   const formRef = useRef<HTMLDivElement>(null);
   const [role, setRole] = useState<AdminRole | null>(null);
   const [rows, setRows] = useState<FreightCharge[]>([]);
@@ -219,7 +220,7 @@ export default function FreightChargesPage() {
       destination_port: form.destination_port.trim() || null,
       shipment_type: form.shipment_type,
       freight_charge: amount,
-      currency: (form.currency.trim() || 'USD').toUpperCase(),
+      currency: (form.currency.trim() || financeSettings.default_currency).toUpperCase(),
       shipping_company: form.shipping_company.trim() || null,
       contact_person: form.contact_person.trim() || null,
       contact_number: form.contact_number.trim() || null,
@@ -437,11 +438,11 @@ export default function FreightChargesPage() {
                   <select
                     id="fc-currency"
                     className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                    value={form.currency}
+                    value={form.currency || financeSettings.default_currency}
                     disabled={busy}
                     onChange={(e) => patch('currency', e.target.value)}
                   >
-                    {CURRENCIES.map((c) => (
+                    {Array.from(new Set([...financeSettings.enabled_currencies, form.currency || financeSettings.default_currency])).map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>

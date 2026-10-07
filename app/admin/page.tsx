@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { useLoginLockout } from '@/components/auth/use-login-lockout';
+import { signInWithProtectedPassword } from '@/lib/password-login';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -44,17 +45,12 @@ export default function AdminLoginPage() {
     if (loginLockout.refresh().lockedUntil > Date.now()) return;
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const { data, error, attempts, lockedUntil } = await signInWithProtectedPassword('admin', email, password);
 
-    if (error) {
-      const attempt = loginLockout.recordFailure();
+    if (error || !data) {
+      loginLockout.syncServerState(attempts, lockedUntil);
       setLoading(false);
-      toast.error(attempt.lockedUntil > Date.now()
-        ? 'Too many failed attempts. Sign-in is locked for 5 minutes.'
-        : `Invalid email or password. ${3 - attempt.attempts} attempts remain before a temporary sign-in lock.`);
+      toast.error(error || 'Sign-in could not be completed.');
       return;
     }
 
@@ -108,6 +104,7 @@ export default function AdminLoginPage() {
               <Input
                 id="admin-email"
                 type="email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -123,6 +120,7 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="current-password"
                   placeholder="Your password"
                   className="pr-11"
                 />

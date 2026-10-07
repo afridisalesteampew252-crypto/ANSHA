@@ -28,9 +28,9 @@ try {
 }
 
 try {
-  const versionCode = Number.parseInt(process.env.ANDROID_VERSION_CODE || '1', 10);
-  const versionName = (process.env.ANDROID_VERSION_NAME || '1.0.0').trim();
-  if (!Number.isInteger(versionCode) || versionCode < 1 || !versionName) {
+  const versionCode = Number(process.env.ANDROID_VERSION_CODE || '6');
+  const versionName = (process.env.ANDROID_VERSION_NAME || '1.5').trim();
+  if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !/^[0-9]+(?:\.[0-9]+){1,3}$/.test(versionName)) {
     throw new Error('ANDROID_VERSION_CODE must be a positive integer and ANDROID_VERSION_NAME must be non-empty.');
   }
   const gradle = await readFile(gradlePath, 'utf8');

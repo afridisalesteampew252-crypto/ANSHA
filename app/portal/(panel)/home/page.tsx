@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { MoneyBreakdown } from '@/components/money-breakdown';
 import { addToCurrencyMap } from '@/lib/money';
 import { supabase } from '@/lib/supabase/client';
+import { receivableDocument } from '@/lib/soa/ledger';
 
 type Invoice = { id: string; invoice_number: string; currency: string; balance_due: number; due_date: string | null; status: string; issue_date: string; document_type: string };
 type Reservation = { id: string; kind: string; title: string; stock_status: string; reservation_eta: string | null };
@@ -58,11 +59,11 @@ export default function PortalHomePage() {
 
   const balances = useMemo(() => {
     const totals: Record<string, number> = {};
-    invoices.filter((row) => row.status !== 'cancelled' && row.status !== 'draft' && Number(row.balance_due) > 0)
+    invoices.filter((row) => receivableDocument(row.document_type) && row.status !== 'cancelled' && row.status !== 'draft' && Number(row.balance_due) > 0)
       .forEach((row) => addToCurrencyMap(totals, row.currency, Number(row.balance_due)));
     return totals;
   }, [invoices]);
-  const openInvoices = invoices.filter((row) => row.status !== 'cancelled' && row.status !== 'draft' && Number(row.balance_due) > 0)
+  const openInvoices = invoices.filter((row) => receivableDocument(row.document_type) && row.status !== 'cancelled' && row.status !== 'draft' && Number(row.balance_due) > 0)
     .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
   const pendingProofs = proofs.filter((row) => row.status === 'submitted').length;
 

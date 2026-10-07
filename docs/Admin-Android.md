@@ -15,6 +15,15 @@ Register a second Android app in the existing Firebase project with the exact pa
 
 ## Build a debug APK
 
+Branch build checkpoint (7 October 2026): customer **1.5 / code 6**, admin
+**1.4 / code 5**. Both archives passed `apksigner verify` and package/config
+checks. Their signing certificate matches the previous website downloads.
+Both include adaptive icons, system-bar/cutout insets, an animated opening,
+and an offline retry screen. Hardware installation, in-place update, Android 13+
+notification permission, foreground/background FCM, and notification-tap routing
+remain real-device checks. Branch artifacts become public after the approved
+web deployment.
+
 From a clean checkout:
 
 ```bash
@@ -27,7 +36,18 @@ cd android
 
 The installable test APK is at `android/app/build/outputs/apk/debug/app-debug.apk`.
 
+For the admin build, select `capacitor.admin.config.ts` as `capacitor.config.ts`
+in a disposable build checkout before `cap:add:admin:android`. The manual GitHub
+workflow performs this step and runs `scripts/prepare-android-ui.py` after sync.
+The customer configuration is the repository default. Version settings are
+`ANDROID_VERSION_CODE` and `ANDROID_VERSION_NAME`; increase the code for updates.
+
 Alternatively, add `firebase/google-services-admin.json`, then run the repository's **Build ANSHA Admin APK** GitHub Actions workflow. It uploads the debug APK as a downloadable artifact. The workflow can point the APK at a Vercel preview by changing the `server_url` input.
+
+Both APK workflows now run only on manual dispatch, upload APK/metadata/checksum
+artifacts, and have read-only repository permissions. They never push commits
+to `main`. Verify artifacts and add them to the review branch before the single
+approved merge/deployment.
 
 Debug APKs are for internal testing. To distribute a release that can be updated cleanly, configure a private Android signing keystore in the release pipeline. Never commit the keystore or its passwords.
 

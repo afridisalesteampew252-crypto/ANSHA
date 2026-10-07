@@ -11,10 +11,14 @@ BEGIN
     RAISE EXCEPTION 'public.get_my_customer_soa() was not found';
   END IF;
 
-  function_definition := replace(
+  -- Anchor the complete declaration: matching the suffix of an already fixed
+  -- default_currency would incorrectly rename it to default_default_currency.
+  -- Fresh PL/pgSQL bodies also retain the declaration without an added ::text.
+  function_definition := regexp_replace(
     function_definition,
-    'currency text := ''AED''::text;',
-    'default_currency text := ''AED''::text;'
+    '(^|\n)([[:blank:]]*)currency text := ''AED''(::text)?;',
+    '\1\2default_currency text := ''AED''\3;',
+    'g'
   );
   function_definition := replace(
     function_definition,
