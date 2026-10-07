@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useLoginLockout } from '@/components/auth/use-login-lockout';
 import { signInWithProtectedPassword } from '@/lib/password-login';
 
+const SESSION_CHECK_TIMEOUT_MS = 8000;
+
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -24,7 +26,15 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Auth recovery can stall when a browser has a stale lock or an interrupted
+      // refresh request. Never leave staff trapped behind the checking spinner.
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<{ data: { session: null } }>((resolve) => {
+          window.setTimeout(() => resolve({ data: { session: null } }), SESSION_CHECK_TIMEOUT_MS);
+        }),
+      ]);
+      const { data: { session } } = sessionResult;
       if (session) {
         const { data: profile } = await supabase
           .from('admin_profiles')
