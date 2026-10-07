@@ -24,8 +24,8 @@ a GitHub merge.
   admin agent/inquiry lists and an agent's own verification record. An anonymous
   invalid-input probe reached the intake RPC and returned validation error
   `22023`, rather than a missing-function error; it did not create an inquiry.
-- The linked-customer inquiry correction is on `fix/customer-linked-inquiries`
-  for the user's merge. Forward migration `20261007102000` is already applied
+- PR **#120** merged the linked-customer inquiry and public parts refresh
+  corrections into `main` at `b3ede39`. Forward migration `20261007102000` is applied
   to production: the customer's current account link governs inquiry SELECT
   access, including guest/manual inquiries, with original-profile fallback only
   for legacy inquiries without a customer link. A read-only customer-role check
@@ -159,12 +159,14 @@ a GitHub merge.
 - The user's menu implementation was preserved. Search reads the submitted
   form directly so hydration does not erase typed input.
 - The public parts count is the number of published, available listings rather
-  than their summed quantity. During this repair, the fresh published count
-  increased from 181 to 182; the first database and website reads agreed at
-  181. The review branch repairs an
+  than their summed quantity. The initial database and website reads agreed at
+  181; subsequent inventory changes increased the published total to 186.
+  PR #120 repairs an
   open catalog's stale state after publishing: updated server data, returning
   to the tab, repeating a search and **Refresh stock** reload the current total
-  without a polling timer. The website change awaits the user's merge.
+  without a polling timer. The merged production rollout succeeded; fresh
+  website and anonymous database reads both returned 186, including Nissan
+  `ANS-P-000183`. Audi `ANS-P-000171` was still unpublished at this checkpoint.
 
 ### Android and communication
 
@@ -256,6 +258,13 @@ a GitHub merge.
   column that collided with `auth.users.role`. Those projections now explicitly
   use their fixture aliases. The fallback Auth table includes the real `role`
   column so subsequent local runs can catch that ambiguity before CI.
+- PR #120 was merged on October 7. Its last database CI failure was runner
+  setup: Supabase's restricted local `postgres` user cannot switch to the Auth
+  hook role. Transactional suites now use the disposable stack's trusted
+  `supabase_admin` executor, after validating the connection is loopback-only.
+  Each suite still switches to the real application/Auth roles for assertions;
+  production grants are unchanged. All nine suites passed locally with the
+  actual Auth role column, Storage delete guard and restricted-role probe.
 
 ## Release order
 
@@ -263,13 +272,13 @@ a GitHub merge.
    their database activation has been checked separately. For a new environment,
    apply the agent feature's three migrations in order before website activation.
    Do not replay older hosted migrations over later definitions.
-2. Review the linked-customer inquiry and public parts refresh corrections on
-   `fix/customer-linked-inquiries`. Its forward SELECT-policy change is compatible
-   with the deployed inquiry list; the home-page query/copy changes remain on
-   this branch for the user's merge.
-3. After the repair branch is merged, GitHub/Vercel builds the production website.
-   Check the customer home summary as well as the inquiry list. Existing agents
-   still require manual review; none are automatically marked verified.
+2. PR #120 merged the linked-customer inquiry and public parts refresh repairs.
+   Its forward SELECT-policy change was already applied to the hosted database.
+   Confirm the GitHub/Vercel production rollout and check the customer home
+   summary, inquiry list and parts refresh behavior.
+3. Review the disposable Auth test-runner correction on
+   `fix/disposable-auth-test-executor` after its database CI replay finishes.
+   Existing agents still require manual review; none are automatically verified.
 4. If direct Auth lockout is required, enable and test the Password Verification
    Attempt hook after obtaining plan support. Do not imply the current gateway
    protects alternative direct Auth clients.
