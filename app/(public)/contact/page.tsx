@@ -12,7 +12,8 @@ import { supabase } from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/site-config';
 import { toast } from 'sonner';
 import { HoneypotField } from '@/components/public/honeypot-field';
-import { FORM_LIMITS, isValidOptionalEmail, publicFormErrorMessage, screenSubmission, useFormStartTime } from '@/lib/public-form-guard';
+import { FORM_LIMITS, publicFormErrorMessage, screenSubmission, useFormStartTime } from '@/lib/public-form-guard';
+import { submitSalesInquiry, validateInquiryContact } from '@/lib/inquiry-referral';
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
@@ -21,16 +22,19 @@ export default function ContactPage() {
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [honeypot, setHoneypot] = useState('');
+  const [inquiryNumber, setInquiryNumber] = useState<string | null>(null);
   const startedAtRef = useFormStartTime();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (!name.trim() || !message.trim()) {
       toast.error('Please fill in your name and message.');
       return;
     }
-    if (!isValidOptionalEmail(email)) {
-      toast.error('Please enter a valid email address.');
+    const contactError = validateInquiryContact(email, phone);
+    if (contactError) {
+      toast.error(contactError);
       return;
     }
     if (screenSubmission({ honeypot, startedAt: startedAtRef.current, text: message }) === 'bot') {
@@ -39,18 +43,18 @@ export default function ContactPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from('inquiries').insert({
-      customer_name: name.trim(),
-      customer_email: email.trim() || null,
-      customer_phone: phone.trim() || null,
-      message: message.trim(),
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(publicFormErrorMessage(error, 'Failed to send message. Please try again.'));
+    let reference: string;
+    try {
+      const receipt = await submitSalesInquiry(supabase, { name, email, phone, message, source: 'website' });
+      reference = receipt.inquiry_number;
+      setInquiryNumber(reference);
+    } catch (error) {
+      toast.error(publicFormErrorMessage(error as { message?: string; hint?: string | null }, 'Failed to send message. Please try again.'));
       return;
+    } finally {
+      setLoading(false);
     }
-    toast.success('Your message has been sent. We will contact you soon.');
+    toast.success(`Inquiry ${reference} received. We will contact you soon.`);
     setName('');
     setEmail('');
     setPhone('');
@@ -128,12 +132,14 @@ export default function ContactPage() {
                   <CardTitle className="text-lg">Send a Message</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {inquiryNumber ? <p role="status" className="mb-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] p-3 text-sm">Your inquiry was received. Reference: <strong>{inquiryNumber}</strong></p> : null}
                   <form onSubmit={handleSubmit} className="relative space-y-4">
                     <HoneypotField value={honeypot} onChange={setHoneypot} />
                     <div className="space-y-2">
                       <Label htmlFor="contact-name">Name *</Label>
                       <Input
                         id="contact-name"
+                        autoComplete="name"
                         value={name}
                         maxLength={FORM_LIMITS.name}
                         onChange={(e) => setName(e.target.value)}
@@ -147,6 +153,7 @@ export default function ContactPage() {
                         <Input
                           id="contact-email"
                           type="email"
+                          autoComplete="email"
                           value={email}
                           maxLength={FORM_LIMITS.email}
                           onChange={(e) => setEmail(e.target.value)}
@@ -157,6 +164,8 @@ export default function ContactPage() {
                         <Label htmlFor="contact-phone">Phone</Label>
                         <Input
                           id="contact-phone"
+                          type="tel"
+                          autoComplete="tel"
                           value={phone}
                           maxLength={FORM_LIMITS.phone}
                           onChange={(e) => setPhone(e.target.value)}
@@ -164,6 +173,7 @@ export default function ContactPage() {
                         />
                       </div>
                     </div>
+                    <p className="text-xs text-muted-foreground">Provide a phone number or email address so we can reply.</p>
                     <div className="space-y-2">
                       <Label htmlFor="contact-message">Message *</Label>
                       <Textarea

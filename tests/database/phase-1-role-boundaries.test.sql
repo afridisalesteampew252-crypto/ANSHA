@@ -52,11 +52,19 @@ FROM generate_series(1,6) n;
 INSERT INTO public.parts(id,part_code,name,slug,stock_origin,is_published,quantity)
 VALUES ('71000000-0000-4000-8004-000000000001','PHASE1-PART','Fixture part','phase1-part','dubai',true,1);
 
-SELECT pg_temp.assert_true(NOT EXISTS (
- SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
- WHERE n.nspname IN ('public','private') AND p.prosecdef AND p.proname <> 'verify_invoice'
+-- Two intentionally narrow anonymous APIs; match signatures so an overload or
+-- same-named private helper cannot accidentally enter the public allowlist.
+SELECT pg_temp.assert_true((SELECT count(*)
+ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ WHERE n.nspname IN ('public','private') AND p.prosecdef
  AND has_function_privilege('anon',p.oid,'EXECUTE')
-), 'anon has no privileged definer entry point except invoice verifier');
+)=2 AND NOT EXISTS (
+ SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ WHERE n.nspname IN ('public','private') AND p.prosecdef
+ AND p.oid NOT IN ('public.verify_invoice(uuid)'::regprocedure,
+   'public.submit_sales_inquiry(text,text,text,text,uuid,uuid,text,text)'::regprocedure)
+ AND has_function_privilege('anon',p.oid,'EXECUTE')
+), 'anonymous SECURITY DEFINER allowlist is exactly invoice verification and validated sales inquiry intake');
 SELECT pg_temp.assert_true(NOT has_function_privilege('authenticated','private.assert_draft_payroll_run(uuid)','EXECUTE')
   AND NOT has_function_privilege('authenticated','private.refresh_payroll_run_totals(uuid)','EXECUTE'), 'internal payroll helpers cannot be called directly');
 

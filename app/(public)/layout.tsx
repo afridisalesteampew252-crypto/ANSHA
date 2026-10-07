@@ -7,6 +7,8 @@ import { TawkToChat } from '@/components/public/tawk-to-chat';
 import { GoogleTagManager } from '@/components/analytics/google-tag-manager';
 import { VercelMetrics } from '@/components/analytics/vercel-metrics';
 import { CookieConsentProvider } from '@/components/privacy/cookie-consent';
+import { Suspense } from 'react';
+import { InquiryReferralCapture } from '@/components/public/inquiry-referral-capture';
 
 export default function PublicLayout({
   children,
@@ -15,6 +17,7 @@ export default function PublicLayout({
 }) {
   return (
     <CookieConsentProvider>
+      <Suspense fallback={null}><InquiryReferralCapture /></Suspense>
       <div className="public-marketing flex min-h-dvh w-full min-w-0 max-w-full flex-col overflow-x-clip pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
         <GoogleTagManager />
         <VercelMetrics />

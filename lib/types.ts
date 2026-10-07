@@ -135,6 +135,15 @@ export interface Inquiry {
   status: InquiryStatus;
   created_at: string;
   updated_at: string;
+  vehicle_id?: string | null;
+  customer_profile_id?: string | null;
+  inquiry_number?: string;
+  inquiry_source?: 'website' | 'mobile' | 'portal' | 'whatsapp' | 'phone' | 'manual';
+  lead_stage?: 'new' | 'assigned' | 'contacted' | 'quoted' | 'won' | 'lost' | 'archived';
+  introduced_by?: string | null;
+  referral_code_snapshot?: string | null;
+  created_by?: string | null;
+  customer_id?: string | null;
 }
 
 export interface Vehicle {
@@ -254,6 +263,8 @@ export type WorkspaceRequestEventType =
   | 'due_date'
   | 'note'
   | 'title_change'
+  | 'lead_stage'
+  | 'customer_link'
   | 'attachment';
 
 export interface WorkspaceRequest {

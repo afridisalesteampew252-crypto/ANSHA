@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-for (const path of ['/admin/dashboard', '/admin/users', '/admin/audit-log', '/admin/remittances']) {
+for (const path of ['/admin/dashboard', '/admin/users', '/admin/audit-log', '/admin/remittances', '/admin/agents', '/admin/inquiries', '/admin/requests']) {
   test(`anonymous ${path} redirects to admin sign-in`, async ({ page }) => {
     await page.goto(path);
     await expect(page).toHaveURL(/\/admin(?:\?.*)?$/);

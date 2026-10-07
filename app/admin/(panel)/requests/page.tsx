@@ -26,7 +26,7 @@ import {
   type RequestStatus,
   type RequestType,
 } from '@/lib/workspace-requests';
-import type { AdminProfile, WorkspaceRequest } from '@/lib/types';
+import type { AdminProfile, AdminRole, WorkspaceRequest } from '@/lib/types';
 
 type RequestRow = WorkspaceRequest & {
   assigned?: Pick<AdminProfile, 'id' | 'full_name' | 'email'> | null;
@@ -52,13 +52,14 @@ function AdminRequestsPageInner() {
   const [staff, setStaff] = useState<Pick<AdminProfile, 'id' | 'full_name' | 'email'>[]>([]);
   const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [role, setRole] = useState<AdminRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('openish');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [creating, setCreating] = useState(false);
-  const [showCreate, setShowCreate] = useState(Boolean(vehicleFromQuery));
+  const [showCreate, setShowCreate] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [newType, setNewType] = useState<Exclude<RequestType, 'inquiry' | 'part_request'>>('shipping');
@@ -67,20 +68,40 @@ function AdminRequestsPageInner() {
   const [newAssignee, setNewAssignee] = useState('');
   const [newDue, setNewDue] = useState('');
   const [newVehicle, setNewVehicle] = useState(vehicleFromQuery);
+  const canCreate = role === 'admin' || role === 'staff';
+  const canAssign = role === 'admin';
+  const isFieldAgent = role === 'sales' || role === 'freelancer';
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: sessionData }, requestsRes, staffRes, vehiclesRes] = await Promise.all([
-      supabase.auth.getSession(),
+    const { data: sessionData } = await supabase.auth.getSession();
+    const actorId = sessionData.session?.user.id || null;
+    const profileRes = actorId
+      ? await supabase.from('admin_profiles').select('role, is_active').eq('id', actorId).maybeSingle()
+      : null;
+    const activeRole = profileRes?.data?.is_active === true &&
+      ['admin', 'staff', 'sales', 'freelancer', 'manager', 'accounts'].includes(profileRes.data.role)
+      ? profileRes.data.role : null;
+    setUserId(actorId);
+    setRole(activeRole);
+    if (!actorId || !activeRole) {
+      setRows([]);
+      setStaff([]);
+      setVehicles([]);
+      setLoading(false);
+      toast.error('An active workspace account is required.');
+      return;
+    }
+    const ops = activeRole === 'admin' || activeRole === 'staff';
+    const [requestsRes, staffRes, vehiclesRes] = await Promise.all([
       supabase
         .from('workspace_requests')
         .select('*, assigned:admin_profiles!assigned_to(id, full_name, email), vehicles(id, title)')
         .order('created_at', { ascending: false }),
-      supabase.from('admin_profiles').select('id, full_name, email').order('full_name'),
-      supabase.from('vehicles').select('id, title, stock_number, chassis_number, make, model').order('created_at', { ascending: false }).limit(80),
+      ops ? supabase.from('admin_profiles').select('id, full_name, email').eq('is_active', true).order('full_name') : Promise.resolve({ data: [] }),
+      ops ? supabase.from('vehicles').select('id, title, stock_number, chassis_number, make, model').order('created_at', { ascending: false }).limit(80) : Promise.resolve({ data: [] }),
     ]);
     if (requestsRes.error) toast.error(requestsRes.error.message);
-    setUserId(sessionData.session?.user.id || null);
     setRows((requestsRes.data || []) as unknown as RequestRow[]);
     setStaff((staffRes.data || []) as Pick<AdminProfile, 'id' | 'full_name' | 'email'>[]);
     setVehicles((vehiclesRes.data || []) as VehicleOption[]);
@@ -92,11 +113,11 @@ function AdminRequestsPageInner() {
   }, [load]);
 
   useEffect(() => {
-    if (vehicleFromQuery) {
+    if (vehicleFromQuery && canCreate) {
       setNewVehicle(vehicleFromQuery);
       setShowCreate(true);
     }
-  }, [vehicleFromQuery]);
+  }, [vehicleFromQuery, canCreate]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -129,6 +150,7 @@ function AdminRequestsPageInner() {
 
   const createRequest = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!canCreate) return;
     if (!newTitle.trim()) {
       toast.error('Title is required.');
       return;
@@ -138,7 +160,7 @@ function AdminRequestsPageInner() {
       p_request_type: newType,
       p_title: newTitle.trim(),
       p_notes: newNotes.trim() || null,
-      p_assigned_to: newAssignee || null,
+      p_assigned_to: canAssign ? newAssignee || null : null,
       p_due_at: newDue ? new Date(newDue).toISOString() : null,
       p_vehicle_id: newVehicle || null,
       p_customer_id: null,
@@ -159,6 +181,7 @@ function AdminRequestsPageInner() {
   };
 
   const deleteRequest = async (row: RequestRow) => {
+    if (!canCreate || row.inquiry_id || row.request_type === 'inquiry') return;
     const ok = window.confirm(
       `Delete request “${row.title}”?\n\nThis permanently removes the ticket, activity, and attachments. Website intake rows are kept. This cannot be undone.`
     );
@@ -175,18 +198,18 @@ function AdminRequestsPageInner() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Requests</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{isFieldAgent ? 'My requests' : 'Requests'}</h1>
           <p className="text-sm text-muted-foreground">
-            Website inquiries and part requests open tickets automatically. Create BL, inspection, or shipping tickets for assignable work.
+            {isFieldAgent ? 'Your assigned work and readable inquiry tickets. Manage sales leads in the inquiries inbox.' : 'Website inquiries and part requests open tickets automatically. Create BL, inspection, or shipping tickets for assignable work.'}
           </p>
         </div>
-        <Button type="button" onClick={() => setShowCreate((open) => !open)}>
+        {canCreate ? <Button type="button" onClick={() => setShowCreate((open) => !open)}>
           <Plus className="h-4 w-4" />
           New ticket
-        </Button>
+        </Button> : null}
       </div>
 
-      {showCreate ? (
+      {canCreate && showCreate ? (
         <Card>
           <CardContent className="p-4">
             <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void createRequest(event)}>
@@ -205,7 +228,7 @@ function AdminRequestsPageInner() {
                   ))}
                 </select>
               </div>
-              <div className="space-y-1.5">
+              {canAssign ? <div className="space-y-1.5">
                 <Label htmlFor="req-assignee">Assign to</Label>
                 <select
                   id="req-assignee"
@@ -220,7 +243,7 @@ function AdminRequestsPageInner() {
                     </option>
                   ))}
                 </select>
-              </div>
+              </div> : null}
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="req-title">Title</Label>
                 <Input id="req-title" value={newTitle} onChange={(event) => setNewTitle(event.target.value)} required maxLength={160} />
@@ -290,14 +313,14 @@ function AdminRequestsPageInner() {
           ))}
         </select>
         <select className="h-10 rounded-md border bg-background px-3 text-sm" value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)}>
-          <option value="all">Anyone</option>
+          <option value="all">{canCreate ? 'Anyone' : 'All readable requests'}</option>
           <option value="mine">Assigned to me</option>
-          <option value="unassigned">Unassigned</option>
-          {staff.map((person) => (
+          {canCreate ? <option value="unassigned">Unassigned</option> : null}
+          {canCreate ? staff.map((person) => (
             <option key={person.id} value={person.id}>
               {person.full_name || person.email}
             </option>
-          ))}
+          )) : null}
         </select>
       </div>
 
@@ -340,7 +363,7 @@ function AdminRequestsPageInner() {
                     </Link>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{format(new Date(row.created_at), 'dd MMM yyyy')}</span>
-                      <Button
+                      {canCreate && !row.inquiry_id && row.request_type !== 'inquiry' ? <Button
                         type="button"
                         size="icon"
                         variant="ghost"
@@ -350,7 +373,7 @@ function AdminRequestsPageInner() {
                         onClick={() => void deleteRequest(row)}
                       >
                         {deletingId === row.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      </Button>
+                      </Button> : null}
                     </div>
                   </div>
                 </CardContent>

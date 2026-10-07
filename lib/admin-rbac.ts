@@ -5,6 +5,16 @@ export function isFieldAgentRole(role: string | null | undefined): boolean {
   return role === 'sales' || role === 'freelancer';
 }
 
+/** Inquiry records are scoped again by the database, including direct RPC access. */
+export function canAccessInquiries(role: string | null | undefined): boolean {
+  return role === 'admin' || role === 'staff' || isFieldAgentRole(role);
+}
+
+/** Administrators review agents; agents submit and view their own verification. */
+export function canAccessAgentVerification(role: string | null | undefined): boolean {
+  return role === 'admin' || isFieldAgentRole(role);
+}
+
 /** Day-to-day trading / finance ops. */
 export function isOpsRole(role: string | null | undefined): boolean {
   return role === 'admin' || role === 'staff';
@@ -130,6 +140,9 @@ export const FIELD_AGENT_NAV_HREFS = new Set([
   '/admin/reservations',
   '/admin/invoices',
   '/admin/commissions',
+  '/admin/inquiries',
+  '/admin/requests',
+  '/admin/agents',
   '/admin/remittances/mine',
   '/admin/chat',
 ]);
@@ -146,6 +159,8 @@ export function isFieldAgentAllowedPath(pathname: string): boolean {
   if (pathname === '/admin/invoices' || pathname === '/admin/invoices/new') return true;
   if (pathname.startsWith('/admin/invoices/') && !pathname.startsWith('/admin/invoices/supplier')) return true;
   if (pathname.startsWith('/admin/commissions')) return true;
+  if (pathname === '/admin/inquiries' || pathname.startsWith('/admin/requests/')) return true;
+  if (pathname === '/admin/requests' || pathname === '/admin/agents') return true;
   // Remittances tagged to this user only
   if (pathname === '/admin/remittances/mine') return true;
   if (pathname.startsWith('/admin/chat')) return true;

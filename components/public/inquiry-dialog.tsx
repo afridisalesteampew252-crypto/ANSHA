@@ -18,7 +18,8 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import { HoneypotField } from '@/components/public/honeypot-field';
-import { FORM_LIMITS, isValidOptionalEmail, publicFormErrorMessage, screenSubmission, useFormStartTime } from '@/lib/public-form-guard';
+import { FORM_LIMITS, publicFormErrorMessage, screenSubmission, useFormStartTime } from '@/lib/public-form-guard';
+import { submitSalesInquiry, validateInquiryContact } from '@/lib/inquiry-referral';
 
 interface InquiryDialogProps {
   partId?: string;
@@ -55,49 +56,50 @@ export function InquiryDialog({
     if (!open || usingPortalProfile) return;
     void (async () => {
       setProfileLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setProfileLoading(false);
-        return;
-      }
-      const { data: profile } = await supabase
-        .from('customer_profiles')
-        .select('id,customer_id,full_name,email')
-        .eq('id', session.user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-      if (!profile) {
-        setProfileLoading(false);
-        return;
-      }
-
-      let savedPhone = '';
-      if (profile.customer_id) {
-        const { data: customer } = await supabase
-          .from('customers')
-          .select('phone')
-          .eq('id', profile.customer_id)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const { data: profile } = await supabase
+          .from('customer_profiles')
+          .select('id,customer_id,full_name,email')
+          .eq('id', session.user.id)
+          .eq('is_active', true)
           .maybeSingle();
-        savedPhone = customer?.phone || '';
-      }
+        if (!profile) return;
 
-      setProfileId(profile.id);
-      setName(profile.full_name || session.user.user_metadata?.full_name || 'Customer');
-      setEmail(profile.email || session.user.email || '');
-      setPhone(savedPhone);
-      setUsingPortalProfile(true);
-      setProfileLoading(false);
+        let savedPhone = '';
+        if (profile.customer_id) {
+          const { data: customer } = await supabase
+            .from('customers')
+            .select('phone')
+            .eq('id', profile.customer_id)
+            .maybeSingle();
+          savedPhone = customer?.phone || '';
+        }
+
+        setProfileId(profile.id);
+        setName(profile.full_name || session.user.user_metadata?.full_name || 'Customer');
+        setEmail(profile.email || session.user.email || '');
+        setPhone(savedPhone);
+        setUsingPortalProfile(true);
+      } catch {
+        // Keep manual inquiry entry available when saved account details cannot load.
+      } finally {
+        setProfileLoading(false);
+      }
     })();
   }, [open, usingPortalProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading || profileLoading) return;
     if (!name.trim() || !message.trim()) {
       toast.error('Please fill in your name and message.');
       return;
     }
-    if (!isValidOptionalEmail(email)) {
-      toast.error('Please enter a valid email address.');
+    const contactError = validateInquiryContact(email, phone);
+    if (contactError) {
+      toast.error(contactError);
       return;
     }
     if (!profileId && screenSubmission({ honeypot, startedAt: startedAtRef.current, text: message }) === 'bot') {
@@ -107,24 +109,18 @@ export function InquiryDialog({
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from('inquiries').insert({
-      part_id: partId || null,
-      vehicle_id: vehicleId || null,
-      customer_profile_id: profileId,
-      customer_name: name.trim(),
-      customer_email: email.trim() || null,
-      customer_phone: phone.trim() || null,
-      message: message.trim(),
-    });
-
-    setLoading(false);
-
-    if (error) {
-      toast.error(publicFormErrorMessage(error, 'Failed to send inquiry. Please try again.'));
+    let inquiryNumber: string;
+    try {
+      const receipt = await submitSalesInquiry(supabase, { name, email, phone, message, partId, vehicleId, source: 'website' });
+      inquiryNumber = receipt.inquiry_number;
+    } catch (error) {
+      toast.error(publicFormErrorMessage(error as { message?: string; hint?: string | null }, 'Failed to send inquiry. Please try again.'));
       return;
+    } finally {
+      setLoading(false);
     }
 
-    toast.success('Your inquiry has been sent. We will contact you soon.');
+    toast.success(`Inquiry ${inquiryNumber} received. We will contact you soon.`);
     setOpen(false);
     if (!usingPortalProfile) {
       setName('');
@@ -167,12 +163,14 @@ export function InquiryDialog({
                 {[email, phone].filter(Boolean).join(' · ') || 'Signed-in customer'}
               </p>
             </div>
-          ) : (
+          ) : null}
+          {!profileLoading && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="inquiry-name">Name *</Label>
                 <Input
                   id="inquiry-name"
+                  autoComplete="name"
                   value={name}
                   maxLength={FORM_LIMITS.name}
                   onChange={(e) => setName(e.target.value)}
@@ -186,6 +184,7 @@ export function InquiryDialog({
                   <Input
                     id="inquiry-email"
                     type="email"
+                    autoComplete="email"
                     value={email}
                     maxLength={FORM_LIMITS.email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -196,6 +195,8 @@ export function InquiryDialog({
                   <Label htmlFor="inquiry-phone">Phone</Label>
                   <Input
                     id="inquiry-phone"
+                    type="tel"
+                    autoComplete="tel"
                     value={phone}
                     maxLength={FORM_LIMITS.phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -203,6 +204,7 @@ export function InquiryDialog({
                   />
                 </div>
               </div>
+              <p className="text-xs text-muted-foreground">Provide a phone number or email address so we can reply.</p>
             </>
           )}
           <div className="space-y-2">
@@ -221,7 +223,7 @@ export function InquiryDialog({
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || profileLoading}>
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />

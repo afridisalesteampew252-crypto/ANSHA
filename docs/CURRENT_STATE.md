@@ -9,11 +9,18 @@ a GitHub merge.
 - GitHub PR **#115** merged the previous security package into `main` at
   `fea3a65461f1c6e82246580492b4f463f34b72fc`. Its tree matched the starting
   security checkout exactly.
-- The follow-up package combines security, performance, customer access,
-  notifications, finance, catalog/freight, Android and communication changes.
-- The user requested the complete code on `release/full-project-package` for
-  their own merge, and separately authorized applying the database and functions
-  now. `main` and the production website remain unchanged by this release.
+- PR **#116** merged the complete security, performance, customer access,
+  notifications, finance, catalog/freight, Android and communication package
+  at `849d52a`. Its backend activation was separately authorized and completed.
+- PRs **#117** and **#118** subsequently added public gallery rotation and the
+  stationary admin sidebar. The latest verified production commit is
+  `389e01b`: vehicle/part galleries rotate every three seconds and the sidebar
+  navigation scrolls independently of page content.
+- `feature/agent-inquiry-verification` prepares the next review package:
+  manually verified sales agents/freelancers, referral attribution, admin
+  assignment and scoped inquiry follow-up. This feature's three new SQL
+  migrations have **not** been applied to production. A GitHub merge does not
+  apply Supabase migrations.
 - Management API access recovered after the environment network update.
   Live history confirmed that PR #115's seven October security migrations had
   not been applied. All 17 October release migrations were then applied in
@@ -46,7 +53,10 @@ a GitHub merge.
 - Eight additional hosted legacy functions were hardened by the optional
   `20261007090000` migration. Final production inspection found no unsafe
   application definer search paths, no public tables without RLS, and only
-  `verify_invoice(uuid)` available to anonymous callers.
+  `verify_invoice(uuid)` available to anonymous callers at that checkpoint.
+  The agent feature deliberately adds one narrow anonymous intake RPC,
+  `submit_sales_inquiry(text,text,text,text,uuid,uuid,text,text)`; direct inquiry
+  writes remain revoked and anonymous callers cannot browse inquiries.
 - The production read-only report found 499 indexes, 386 with zero scans
   (230 non-constraint/non-unique/non-replica candidates), zero exact duplicate
   pairs, 59 FKs without a leading-key index, 51 partially covered FKs, and
@@ -81,6 +91,34 @@ a GitHub merge.
 - Native sender uses the current Mumbai endpoint and `ansha_default` channel,
   and skips duplicate support pushes. Provider secrets and physical delivery
   remain deployment/device checks.
+
+### Agents and customer inquiries — prepared for review
+
+- Active admins manually review an agent's full name, phone and contact email.
+  Only active, verified sales/freelancer accounts can share accepted referral
+  links, receive assignments or use the agent inquiry workflow. Changed
+  contact details require another review; agents cannot undo suspension.
+- Public website/mobile inquiries accept phone **or** email without requiring
+  account creation and display the actual saved inquiry reference. The first
+  browser referral lasts 30 days; the server independently verifies the agent
+  and resolves any signed-in customer identity.
+- Admins assign both direct and referred inquiries. Original introducer,
+  assigned handler and existing customer owner remain separate records.
+  Reassignment preserves referral attribution and revokes the old agent's
+  inquiry, file, activity and related notification access.
+- The inbox provides stages, sources, due follow-ups, notes, search, explicit
+  duplicate-customer review and manually logged WhatsApp/phone inquiries.
+  Agents see assigned leads and their own unassigned submissions; the latter
+  are read-only until admin assignment. Existing closed history becomes
+  Archived without guessing a sale outcome.
+- Legacy request actions, attachment/storage access, reminders, chat context,
+  analytics and ownership cascades follow the inquiry scope. Inquiry-linked
+  ticket edits use the inquiry workflow so status and sales stages stay in
+  sync. Inquiry/audit history cannot be hard-deleted through these clients.
+- Won tracks sales progress; this release does not automatically create
+  invoices, approve payments or calculate/pay referral commissions.
+- Operating and activation guide:
+  [Agent verification and inquiry workflow](./AGENT-INQUIRY-WORKFLOW.md).
 
 ### Finance
 
@@ -127,14 +165,20 @@ a GitHub merge.
 
 ## Verification evidence and limits
 
-- Fresh PostgreSQL 15 replay: **154 migrations passed**, followed by the
-  optional 155th migration and another successful run of all **seven SQL
-  behavior suites**. The hosted-only patch also passed two applications to
-  the eight actual legacy definitions in a rolled-back local fixture.
-- Six Node regression scripts passed: catalog, finance, mobile/PWA, native push,
-  notification stores, and password gateway/cooldown behavior.
-- Lint, TypeScript, 55 brand assets and production build passed. The final
-  production-server browser run passed **24 tests**, with one real-invoice
+- Agent feature fresh PostgreSQL 15 replay: **158 migrations and nine SQL
+  behavior suites passed**, including manual review, inactive/role boundaries,
+  referral validation, agent transfer, creator read-only access, legacy RPC
+  denial, attachment/storage scope, analytics and manager alert compatibility.
+  The prior hosted-only patch also passed two applications to the eight actual
+  legacy definitions in a rolled-back local fixture.
+- The agent feature passed all **eight Node regression scripts**, covering
+  catalog, finance, mobile/PWA, native push, notification stores, password
+  gateway/cooldown, contact normalization/review gates, first referrals and
+  scoped inquiry payloads. Full lint, TypeScript, 55 brand assets and the
+  production build also passed.
+- The prior complete release passed lint, TypeScript, 55 brand assets and a
+  production build. Its production-server browser run passed **24 tests**,
+  with one real-invoice
   fixture test skipped. It covers public routes, anonymous boundaries,
   password controls, mocked gateway cooldowns, More menu and header search.
 - The disposable PostgreSQL fallback validates SQL/RLS/RPC behavior, not the
@@ -150,16 +194,33 @@ a GitHub merge.
   `spmnxwhwsgpaoiklezex`, Vercel `anshanew`, canonical
   `https://www.anshatradingco.com`. Its figures are dated audit evidence,
   not refreshed live measurements.
+- The agent feature adds verification/inquiry SQL fixtures and two Node
+  regression scripts. Actual component browser checks cover manual reviews,
+  public forms, first referral capture, admin assignment, My inquiries,
+  request compatibility, error recovery and mobile layout using isolated
+  local transports. Those fixtures do not establish live authenticated
+  production behavior before this feature is activated.
+- Production-build browser security checks passed **11 tests**, including
+  anonymous boundaries for verification, inquiries and requests. One test
+  requiring a real invoice verification fixture was skipped. Older inquiry
+  detail links and transfer refresh revocation also passed component fixtures.
+- The database CI replay previously failed because two historical SQL files
+  share version `20260920210000`. The workflow now gives the seed a unique
+  version only inside its disposable checkout. Tracked historical SQL names
+  and hosted migration bookkeeping stay intact.
 
 ## Release order
 
-1. Review the combined release branch and its validation evidence. Backend
-   migrations/functions are deployed; production Auth redirects and configured
-   SMTP/FCM settings were preserved.
-2. Merge the release branch when ready. This is the user's remaining website
-   release step; GitHub/Vercel will build the merged production commit.
-3. Confirm Vercel production commit/health, catalog routes and APK downloads;
-   smoke-test sign-in, recovery, ownership, finance, queue and notifications.
+1. Review the agent feature branch and its validation evidence. The prior
+   complete package and gallery/sidebar releases are already merged.
+2. For the agent feature, apply `20261007100000`, `20261007101000`, then
+   `20261007101100` together before activating the new website. These are
+   additive forward migrations; do not replay older hosted migrations.
+3. Merge the reviewed feature when release is authorized. GitHub/Vercel will
+   build its production commit. Confirm production health, agent contact
+   submission/review, anonymous receipts, assignment, transfer isolation and
+   ordinary request behavior. Existing agents require manual review; none are
+   automatically marked verified.
 4. If direct Auth lockout is required, enable and test the Password Verification
    Attempt hook after obtaining plan support. Do not imply the current gateway
    protects alternative direct Auth clients.
