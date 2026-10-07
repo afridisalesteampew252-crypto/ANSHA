@@ -13,14 +13,24 @@ a GitHub merge.
   notifications, finance, catalog/freight, Android and communication package
   at `849d52a`. Its backend activation was separately authorized and completed.
 - PRs **#117** and **#118** subsequently added public gallery rotation and the
-  stationary admin sidebar. The latest verified production commit is
+  stationary admin sidebar. That production checkpoint was
   `389e01b`: vehicle/part galleries rotate every three seconds and the sidebar
   navigation scrolls independently of page content.
-- `feature/agent-inquiry-verification` prepares the next review package:
-  manually verified sales agents/freelancers, referral attribution, admin
-  assignment and scoped inquiry follow-up. This feature's three new SQL
-  migrations have **not** been applied to production. A GitHub merge does not
-  apply Supabase migrations.
+- PR **#119** merged the verified-agent and inquiry workflow into `main` at
+  `e49e9bc`; its production Vercel deployment succeeded. The three required SQL
+  migrations (`20261007100000`, `20261007101000`, `20261007101100`) were then
+  applied together through the Supabase Management API, with migration-history
+  entries and a PostgREST schema reload. Read-only role checks verified the
+  admin agent/inquiry lists and an agent's own verification record. An anonymous
+  invalid-input probe reached the intake RPC and returned validation error
+  `22023`, rather than a missing-function error; it did not create an inquiry.
+- The linked-customer inquiry correction is on `fix/customer-linked-inquiries`
+  for the user's merge. Forward migration `20261007102000` is already applied
+  to production: the customer's current account link governs inquiry SELECT
+  access, including guest/manual inquiries, with original-profile fallback only
+  for legacy inquiries without a customer link. A read-only customer-role check
+  changed from zero visible linked inquiries to both existing linked inquiries;
+  another customer's inquiries and internal tickets/activity remained denied.
 - Management API access recovered after the environment network update.
   Live history confirmed that PR #115's seven October security migrations had
   not been applied. All 17 October release migrations were then applied in
@@ -92,7 +102,7 @@ a GitHub merge.
   and skips duplicate support pushes. Provider secrets and physical delivery
   remain deployment/device checks.
 
-### Agents and customer inquiries — prepared for review
+### Agents and customer inquiries
 
 - Active admins manually review an agent's full name, phone and contact email.
   Only active, verified sales/freelancer accounts can share accepted referral
@@ -115,6 +125,10 @@ a GitHub merge.
   analytics and ownership cascades follow the inquiry scope. Inquiry-linked
   ticket edits use the inquiry workflow so status and sales stages stay in
   sync. Inquiry/audit history cannot be hard-deleted through these clients.
+- Customer inquiry lists include admin-linked guest/manual inquiries. Unlinking,
+  relinking and changing a portal account's customer mapping update access
+  immediately; inactive portal profiles cannot browse either linked or legacy
+  own-profile inquiries. The home summary relies on the same database policy.
 - Won tracks sales progress; this release does not automatically create
   invoices, approve payments or calculate/pay referral commissions.
 - Operating and activation guide:
@@ -165,6 +179,16 @@ a GitHub merge.
 
 ## Verification evidence and limits
 
+- Linked-customer repair: all **nine SQL behavior suites** passed on the
+  previously validated 158-migration baseline plus the forward repair. Expanded
+  real-role cases cover guest/manual links, unrelated/inactive customers,
+  unlink/relink, account remapping, immutable origins and denial of internal
+  activity/files, customer records and inquiry writes. Atomic activation and
+  idempotent migration-history recording also passed locally. Actual-page
+  browser fixtures verified both portal views, safe stock reads, mobile layout,
+  empty states and error/retry. Full release lint, TypeScript, eight Node scripts,
+  55 brand assets and the production build passed. Production role checks are
+  database assertions; they do not establish a real logged-in browser session.
 - Agent feature fresh PostgreSQL 15 replay: **158 migrations and nine SQL
   behavior suites passed**, including manual review, inactive/role boundaries,
   referral validation, agent transfer, creator read-only access, legacy RPC
@@ -198,8 +222,8 @@ a GitHub merge.
   regression scripts. Actual component browser checks cover manual reviews,
   public forms, first referral capture, admin assignment, My inquiries,
   request compatibility, error recovery and mobile layout using isolated
-  local transports. Those fixtures do not establish live authenticated
-  production behavior before this feature is activated.
+  local transports. Those fixtures do not establish actual production browser
+  sessions or physical-device behavior.
 - Production-build browser security checks passed **11 tests**, including
   anonymous boundaries for verification, inquiries and requests. One test
   requiring a real invoice verification fixture was skipped. Older inquiry
@@ -211,16 +235,17 @@ a GitHub merge.
 
 ## Release order
 
-1. Review the agent feature branch and its validation evidence. The prior
-   complete package and gallery/sidebar releases are already merged.
-2. For the agent feature, apply `20261007100000`, `20261007101000`, then
-   `20261007101100` together before activating the new website. These are
-   additive forward migrations; do not replay older hosted migrations.
-3. Merge the reviewed feature when release is authorized. GitHub/Vercel will
-   build its production commit. Confirm production health, agent contact
-   submission/review, anonymous receipts, assignment, transfer isolation and
-   ordinary request behavior. Existing agents require manual review; none are
-   automatically marked verified.
+1. The security package, gallery/sidebar releases and agent feature are merged;
+   their database activation has been checked separately. For a new environment,
+   apply the agent feature's three migrations in order before website activation.
+   Do not replay older hosted migrations over later definitions.
+2. Review the linked-customer inquiry correction on
+   `fix/customer-linked-inquiries`. Its forward SELECT-policy change is compatible
+   with the deployed inquiry list; the home-page query/copy changes remain on
+   this branch for the user's merge.
+3. After the repair branch is merged, GitHub/Vercel builds the production website.
+   Check the customer home summary as well as the inquiry list. Existing agents
+   still require manual review; none are automatically marked verified.
 4. If direct Auth lockout is required, enable and test the Password Verification
    Attempt hook after obtaining plan support. Do not imply the current gateway
    protects alternative direct Auth clients.

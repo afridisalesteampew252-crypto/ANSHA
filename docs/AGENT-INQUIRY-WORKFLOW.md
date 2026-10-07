@@ -1,6 +1,6 @@
 # Agent verification and inquiry workflow
 
-Prepared on `feature/agent-inquiry-verification` for review. This feature has not been merged or deployed to production; its production database and website behavior remain unchanged.
+Merged into `main` in PR #119 on 7 October 2026. The production website deployment succeeded, and all three required database migrations were subsequently applied together. Database activation is verified independently of the GitHub merge.
 
 ## Verify an agent
 
@@ -46,6 +46,8 @@ These entries are manually logged conversations. This release does not automatic
 
 Only an admin can link an inquiry to an existing active customer. Review the suggested contact matches or search the customer list, choose the correct record, then save. Suggestions never automatically merge customers, create a customer, change account ownership or transfer financial records. Matching contact details are a prompt to check the record, not proof that two people are the same customer.
 
+The customer's active portal account can then see that inquiry under **Your stock inquiries**, including inquiries first submitted as a guest or logged manually by an agent. The current customer link controls access: unlinking or changing that link removes the former customer's access. Changing a portal account's customer mapping also updates its inquiry access. The original submission identity remains unchanged; it is a fallback only for legacy inquiries without a customer link. Internal follow-up notes, activity and files remain private to authorized operations users and agents.
+
 A portal inquiry already belongs to its customer account and cannot be moved to a different account through this screen. Customer ownership/reassignment remains its separate authorized workflow.
 
 ## Privacy, history and sales outcomes
@@ -58,12 +60,13 @@ A portal inquiry already belongs to its customer account and cannot be moved to 
 
 ## Release order
 
-Keep this feature on the review branch until release is authorized. Apply the three migrations in order before activating the website changes:
+The original feature's production activation is complete. For a new environment, apply the three migrations in order before activating the website changes:
 
 1. `20261007100000_sales_agent_verification.sql`
 2. `20261007101000_sales_inquiry_workflow.sql`
 3. `20261007101100_scope_workspace_requests_to_agents.sql`
+4. `20261007102000_customer_linked_inquiry_visibility.sql` (forward customer-visibility repair, already activated in production)
 
-The inquiry migration depends on verification; the final migration scopes existing request RPCs, activity, attachments, files and reminders. Confirm all three are applied together, then activate the reviewed website and check contact submission/review, anonymous inquiry receipts, admin assignment and cross-agent isolation.
+The inquiry migration depends on verification; the third migration scopes existing request RPCs, activity, attachments, files and reminders. Apply the original three together, followed by the visibility repair, then activate the reviewed website and check contact submission/review, anonymous inquiry receipts, admin assignment, customer links and cross-agent isolation.
 
 Coordinate this cutover with the website release: the intake migration revokes the direct inserts used by the older public forms. Those older forms cannot submit between the database update and activation of the new website. Complete the build and review before starting that production cutover.

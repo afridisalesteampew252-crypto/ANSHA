@@ -37,7 +37,9 @@ export default function PortalHomePage() {
       supabase.from('customer_profiles').select('full_name,email').eq('id', user.id).eq('is_active', true).maybeSingle(),
       supabase.rpc('get_my_customer_soa'),
       supabase.rpc('get_my_reservations'),
-      supabase.from('inquiries').select('id,message,status,created_at,part_id,vehicle_id').eq('customer_profile_id', user.id).order('created_at', { ascending: false }).limit(4),
+      // RLS follows the profile's current customer account, including earlier
+      // guest inquiries. Unlinked legacy inquiries stay with their submitting profile.
+      supabase.from('inquiries').select('id,message,status,created_at,part_id,vehicle_id').order('created_at', { ascending: false }).limit(4),
       supabase.from('customer_payment_proofs').select('id,status,created_at').order('created_at', { ascending: false }).limit(10),
       supabase.from('support_messages').select('id', { count: 'exact', head: true }).eq('sender_kind', 'agent').is('read_at', null),
     ]);
@@ -93,8 +95,8 @@ export default function PortalHomePage() {
         {reservations.length ? reservations.slice(0, 3).map((row) => <div key={row.kind + row.id} className="border-b pb-2 text-sm last:border-0"><p className="font-medium">{row.title}</p><p className="text-muted-foreground">{row.kind === 'vehicle' ? 'Vehicle' : 'Part'}{row.reservation_eta ? ` · ETA ${format(new Date(row.reservation_eta), 'dd MMM yyyy')}` : ''}</p></div>) : <p className="text-sm text-muted-foreground">No active reservations. Browse stock to find your next item.</p>}
         <Link href="/portal/reservations" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">All reservations <ArrowRight className="h-4 w-4" /></Link>
       </CardContent></Card>
-      <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Send className="h-5 w-5" /> Your stock inquiries</CardTitle></CardHeader><CardContent className="space-y-3">
-        {inquiries.length ? inquiries.map((row) => <div key={row.id} className="border-b pb-2 text-sm last:border-0"><p className="line-clamp-2 font-medium">{row.message}</p><p className="capitalize text-muted-foreground">{row.status.replaceAll('_', ' ')} · {format(new Date(row.created_at), 'dd MMM yyyy')}</p></div>) : <p className="text-sm text-muted-foreground">No account-linked inquiries yet. Ask about any vehicle or part from its stock page.</p>}
+      <Card><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Send className="h-5 w-5" /> Your stock inquiries</CardTitle><p className="text-sm text-muted-foreground">Inquiries you sent or our team linked to your account.</p></CardHeader><CardContent className="space-y-3">
+        {inquiries.length ? inquiries.map((row) => <div key={row.id} className="border-b pb-2 text-sm last:border-0"><p className="line-clamp-2 font-medium">{row.message}</p><p className="capitalize text-muted-foreground">{row.status.replaceAll('_', ' ')} · {format(new Date(row.created_at), 'dd MMM yyyy')}</p></div>) : <p className="text-sm text-muted-foreground">No inquiries linked to your account yet. Ask about stock or contact support to link an earlier inquiry.</p>}
         <Link href="/portal/inquiries" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">All inquiries <ArrowRight className="h-4 w-4" /></Link>
       </CardContent></Card>
     </div>

@@ -17,7 +17,8 @@ SELECT ('81000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,role,'Inquiry ac
 FROM (VALUES(1,'admin'),(2,'staff'),(3,'sales'),(4,'freelancer'),(5,'sales'),(6,'manager'))v(n,role);
 INSERT INTO public.customers(id,customer_code,full_name,email,phone,owner_id) VALUES
  ('81000000-0000-4000-8001-000000000001','INQUIRY-CUSTOMER-1','Existing inquiry customer','existing-inquiry@example.invalid','+971501234567','81000000-0000-4000-8000-000000000006'),
- ('81000000-0000-4000-8001-000000000002','INQUIRY-CUSTOMER-2','Other customer','other-inquiry@example.invalid','+971509876543',NULL);
+ ('81000000-0000-4000-8001-000000000002','INQUIRY-CUSTOMER-2','Other customer','other-inquiry@example.invalid','+971509876543',NULL),
+ ('81000000-0000-4000-8001-000000000003','INQUIRY-CUSTOMER-3','Portal remapping fixture',NULL,NULL,NULL);
 INSERT INTO public.customer_profiles(id,customer_id,email) VALUES
  ('81000000-0000-4000-8000-000000000007','81000000-0000-4000-8001-000000000001','inquiry-actor-7@example.invalid'),
  ('81000000-0000-4000-8000-000000000008','81000000-0000-4000-8001-000000000002','inquiry-actor-8@example.invalid');
@@ -25,6 +26,11 @@ INSERT INTO public.parts(id,part_code,name,slug,is_published,quantity) VALUES
  ('81000000-0000-4000-8002-000000000001','INQUIRY-PART-1','Inquiry published part','inquiry-published-part',true,1),
  ('81000000-0000-4000-8002-000000000002','INQUIRY-PART-2','Inquiry private part','inquiry-private-part',false,1);
 DELETE FROM private.public_form_submissions;
+-- A trusted historical fixture preserves the origin-only, NULL canonical case.
+INSERT INTO public.inquiries(id,customer_name,customer_phone,message,customer_profile_id)
+VALUES('81000000-0000-4000-8003-000000000001','LEGACY-Origin','1234567','Legacy signed inquiry',
+  '81000000-0000-4000-8000-000000000007');
+INSERT INTO pg_temp.inquiry_fixture(key,id) VALUES('legacy-origin','81000000-0000-4000-8003-000000000001');
 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000001"}',true);
@@ -157,7 +163,8 @@ SELECT pg_temp.inquiry_assert((SELECT stock_status='available' AND is_published 
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000007"}',true),set_config('request.headers','{"x-real-ip":"198.51.100.82"}',true);
 INSERT INTO pg_temp.inquiry_fixture(key,id) SELECT 'portal',(public.submit_sales_inquiry('INQUIRY-Portal',NULL,'1234567','Own portal question',NULL,NULL,NULL,'portal')->>'id')::uuid;
-SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE customer_name LIKE 'INQUIRY-%')=1,'customer sees only own signed-in inquiry');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE customer_name LIKE 'INQUIRY-%')=2,'customer sees own signed-in and admin-linked guest inquiries');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('portal','referred')))=2,'portal access includes precisely the original submission and canonical customer link');
 SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.workspace_requests WHERE inquiry_id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='portal'))=0,'portal customer cannot browse internal inquiry tickets');
 SELECT pg_temp.inquiry_denied($s$SELECT public.get_sales_inquiries()$s$,'42501','portal customer cannot use staff inquiry inbox');
 SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000008"}',true);
@@ -188,5 +195,56 @@ SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-
 SELECT pg_temp.inquiry_assert((public.update_workspace_request((SELECT id FROM pg_temp.inquiry_fixture WHERE key='ordinary-request'),'in_progress',NULL,false,now()+interval '1 day',true,NULL,'Ordinary follow-up')).status='in_progress','assigned verified agent retains ordinary request status due notes workflow');
 SELECT pg_temp.inquiry_denied($s$SELECT public.update_workspace_request((SELECT id FROM pg_temp.inquiry_fixture WHERE key='ordinary-request'),NULL,NULL,false,NULL,false,'Unauthorized title')$s$,'42501','ordinary request title remains ops controlled for agents');
 SELECT pg_temp.inquiry_denied($s$SELECT public.update_workspace_request((SELECT id FROM pg_temp.inquiry_fixture WHERE key='ordinary-request'),NULL,'81000000-0000-4000-8000-000000000004',true)$s$,'42501','ordinary request cannot be reassigned by agent');
+
+-- Admin links a manually logged inquiry without rewriting its submission origin.
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000001"}',true);
+SELECT public.update_sales_inquiry(p_inquiry_id=>(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'),
+  p_customer_id=>'81000000-0000-4000-8001-000000000001',p_set_customer=>true);
+SELECT pg_temp.inquiry_assert((SELECT customer_profile_id IS NULL AND created_by='81000000-0000-4000-8000-000000000003'
+  AND introduced_by='81000000-0000-4000-8000-000000000003' FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created')),'manual customer linking preserves all submission attribution');
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000007"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('referred','agent-created')))=2,'current customer reads both guest and manual linked inquiries');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.workspace_requests WHERE inquiry_id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('referred','agent-created')))=0,'customer linking does not expose internal workspace tickets');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.workspace_request_events WHERE request_id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('referred-request','agent-created-request')))=0,'customer linking does not expose internal notes or events');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.workspace_request_attachments WHERE request_id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('referred-request','agent-created-request')))=0,'customer linking does not expose internal attachment metadata');
+SELECT pg_temp.inquiry_denied($s$SELECT public.get_sales_inquiry_events((SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'))$s$,'42501','customer link does not grant the internal activity RPC');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.customers WHERE id='81000000-0000-4000-8001-000000000002')=0,'inquiry link does not grant access to another customer record');
+SELECT pg_temp.inquiry_denied($s$INSERT INTO public.inquiries(customer_name,customer_phone,message,customer_id) VALUES('Spoofed customer link','1234567','Bypass linking','81000000-0000-4000-8001-000000000002')$s$,'42501','customer cannot insert a raw inquiry with an arbitrary customer link');
+SELECT pg_temp.inquiry_denied($s$UPDATE public.inquiries SET customer_id='81000000-0000-4000-8001-000000000002' WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created')$s$,'42501','customer cannot change a canonical inquiry link');
+SELECT pg_temp.inquiry_denied($s$DELETE FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created')$s$,'42501','customer cannot delete a linked inquiry');
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000008"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('referred','agent-created')))=0,'unrelated customer cannot read linked guest or manual inquiry');
+
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000001"}',true);
+UPDATE public.customer_profiles SET is_active=false WHERE id='81000000-0000-4000-8000-000000000007';
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000007"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('referred','agent-created','portal','legacy-origin')))=0,'inactive portal profile cannot read canonical or origin inquiries');
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000001"}',true);
+UPDATE public.customer_profiles SET is_active=true WHERE id='81000000-0000-4000-8000-000000000007';
+SELECT public.update_sales_inquiry(p_inquiry_id=>(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'),p_set_customer=>true);
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000007"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'))=0,'unlinking manual inquiry immediately revokes former customer access');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='referred'))=1,'unlinking one inquiry preserves access to another current customer link');
+
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000001"}',true);
+SELECT public.update_sales_inquiry(p_inquiry_id=>(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'),
+  p_customer_id=>'81000000-0000-4000-8001-000000000002',p_set_customer=>true);
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000007"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'))=0,'relinking manual inquiry never restores old customer access');
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000008"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'))=1,'new linked customer gains manual inquiry access');
+
+-- The original portal UID must not override a later account remapping when the
+-- inquiry has a non-NULL canonical customer. Legacy unlinked origins still work.
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000001"}',true);
+UPDATE public.customer_profiles SET customer_id='81000000-0000-4000-8001-000000000003' WHERE id='81000000-0000-4000-8000-000000000008';
+UPDATE public.customer_profiles SET customer_id='81000000-0000-4000-8001-000000000002' WHERE id='81000000-0000-4000-8000-000000000007';
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000007"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='portal'))=0,'immutable signed-in origin cannot override a mismatched current customer account');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='referred'))=0,'portal account remapping revokes previous canonical customer inquiry access');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='agent-created'))=1,'remapped account sees only its current canonical customer link');
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='legacy-origin'))=1,'NULL canonical legacy inquiry retains its active original profile access');
+SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000008"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.inquiries WHERE id IN (SELECT id FROM pg_temp.inquiry_fixture WHERE key IN ('referred','agent-created','portal','legacy-origin')))=0,'former linked profile loses all access after remapping to another customer');
 ROLLBACK;
 SELECT 'Agent inquiry role/referral/assignment assertions passed' AS result;
