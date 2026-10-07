@@ -30,15 +30,21 @@ SELECT extensions.is(
 
 SELECT extensions.is(
   (
-    SELECT array_agg(DISTINCT p.proname ORDER BY p.proname)
+    SELECT array_agg(p.oid::regprocedure ORDER BY p.oid)
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname IN ('public', 'private')
       AND p.prosecdef
       AND has_function_privilege('anon', p.oid, 'EXECUTE')
   ),
-  ARRAY['verify_invoice']::name[],
-  'verify_invoice is the only anonymous SECURITY DEFINER entry point'
+  (
+    SELECT array_agg(entry ORDER BY entry::oid)
+    FROM unnest(ARRAY[
+      'public.verify_invoice(uuid)'::regprocedure,
+      'public.submit_sales_inquiry(text,text,text,text,uuid,uuid,text,text)'::regprocedure
+    ]) entry
+  ),
+  'anonymous SECURITY DEFINER allowlist is exactly invoice verification and validated sales inquiry intake'
 );
 
 SELECT extensions.ok(
