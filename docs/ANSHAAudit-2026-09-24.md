@@ -17,6 +17,23 @@ The public website has a strong foundation and the current production deployment
 
 The admin site has meaningful role-based route controls and broad operational coverage. Its largest risks are operational safety and state clarity: bulk imports lack a sufficiently strong validation and rollback workflow, offers publish immediately without a review state, some reports lack explicit failure states, and at least one remittance date filter is visibly ignored because the underlying field does not exist.
 
+## Remediation status — 8 October 2026
+
+The following findings from this audit have been remediated and verified in the current ANSHA-Mumbai/Vercel production setup:
+
+| Finding | Status | Evidence |
+|---|---|---|
+| Native FCM delivery | **Complete** | Platform-aware FCM Edge Function senders are deployed and Android delivery was tested with the Firebase service-account secret. |
+| Unified admin record search | **Complete** | `search_workspace_records` RPC, trigram indexes, and the admin search UI cover customers, vehicles, parts, invoices, inquiries, and requests. |
+| Today’s work queue | **Complete** | `get_today_work_queue` powers the prioritized overdue/unassigned dashboard card. |
+| Customer lifecycle timeline | **Complete** | `get_customer_lifecycle_timeline` powers the chronological admin customer timeline. |
+| Customer-list scale and import rollback | **Complete** | Customer pagination and reversible `rollback_import_job` workflow are live. |
+| Password recovery and expired-link handling | **Complete** | Customer portal includes forgot-password, resend-verification, and expired-confirmation error handling. |
+| Desktop More-menu visibility | **Complete** | Stacking/clipping regression was fixed and the production route returns successfully. |
+| Vercel deployment block | **Complete** | Redeploy commit `f9ea90a` is attributed to the verified GitHub email and is `READY` in Mumbai region `bom1`. |
+
+The following remain release or product blockers and are intentionally **not** marked complete: signed production APK/AAB packaging and update policy; full quote/order/reservation/payment workflow; strict mobile notification tap allowlisting; offer draft/review/publish safety; remittance date-filter correctness; Supabase/RLS/Edge Function integration coverage; and a formal Google OAuth end-to-end sign-in test using the production Google Cloud and Supabase dashboards. The current APK should therefore remain described as a synchronized mobile shell/inquiry app, not a complete ecommerce application.
+
 ## Priority summary
 
 | Priority | Finding | Impact | Recommended response |
