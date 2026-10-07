@@ -260,11 +260,13 @@ a GitHub merge.
   column so subsequent local runs can catch that ambiguity before CI.
 - PR #120 was merged on October 7. Its last database CI failure was runner
   setup: Supabase's restricted local `postgres` user cannot switch to the Auth
-  hook role. Transactional suites now use the disposable stack's trusted
+  hook role. Only the Auth-hook suite uses the disposable stack's trusted
   `supabase_admin` executor, after validating the connection is loopback-only.
-  Each suite still switches to the real application/Auth roles for assertions;
-  production grants are unchanged. All nine suites passed locally with the
-  actual Auth role column, Storage delete guard and restricted-role probe.
+  The other eight suites retain `postgres`, including the finance probe of
+  future functions' default grants under the normal migration owner. Suites
+  still switch to the real application/Auth roles for assertions; production
+  grants are unchanged. Auth/Storage compatibility was validated locally
+  with the actual Auth role column, Storage delete guard and restricted role.
 
 ## Release order
 

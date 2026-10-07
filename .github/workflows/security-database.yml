@@ -39,9 +39,10 @@ jobs:
         run: |
           local_db_url="$(supabase status -o json | jq -r '.DB_URL')"
           test -n "$local_db_url"
-          # Supabase's own disposable reset uses supabase_admin. The restricted
-          # postgres role cannot impersonate Auth; fixtures still SET LOCAL ROLE
-          # to exercise actual Auth/RLS permissions without granting membership.
+          # Only the Auth-hook fixture needs the trusted disposable reset role:
+          # postgres cannot impersonate Auth. Keep other suites under postgres
+          # so future-function probes exercise the migration owner's default ACLs.
+          # All fixtures still SET LOCAL ROLE to enforce actual Auth/RLS privileges.
           # https://github.com/supabase/cli/blob/develop/apps/cli-go/internal/db/reset/reset.go
           trusted_db_url="$(LOCAL_DB_URL="$local_db_url" python3 - <<'PY'
           import os
@@ -69,5 +70,9 @@ jobs:
           PY
           )"
           for test_file in tests/database/*.test.sql; do
-            psql "$trusted_db_url" -X -v ON_ERROR_STOP=1 -f "$test_file"
+            if [[ "$test_file" == "tests/database/password-lockout.test.sql" ]]; then
+              psql "$trusted_db_url" -X -v ON_ERROR_STOP=1 -f "$test_file"
+            else
+              psql "$local_db_url" -X -v ON_ERROR_STOP=1 -f "$test_file"
+            fi
           done
