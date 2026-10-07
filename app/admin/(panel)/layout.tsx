@@ -196,7 +196,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       <AdminHealthMonitor role={profile.role} />
       <div className="admin-shell flex min-h-screen min-w-0">
       <AdminCommandCenter groups={visibleGroups} />
-      <aside className={cn('admin-sidebar sticky top-0 hidden h-[100dvh] min-h-0 shrink-0 self-start flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
+      <aside className={cn('admin-sidebar sticky top-0 z-30 hidden h-[100dvh] min-h-0 shrink-0 self-start flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
         <div className={cn('admin-sidebar-brand flex h-24 shrink-0 items-center border-b border-border/80', collapsed ? 'justify-center px-2' : 'px-4')}>
           <Link href="/admin/dashboard" className="flex min-w-0 items-center" aria-label="ANSHA operations dashboard">
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={337} height={135} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
