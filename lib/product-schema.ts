@@ -1,6 +1,6 @@
 /** Positive catalog amount suitable for Product Offer.price */
 export function positiveCatalogPrice(value: number | null | undefined): number | null {
-  if (value == null || Number.isNaN(Number(value))) return null;
+  if (value == null || !Number.isFinite(Number(value))) return null;
   const n = Number(value);
   return n > 0 ? n : null;
 }

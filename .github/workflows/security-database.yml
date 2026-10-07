@@ -1,17 +1,20 @@
-name: Phase 1 Database Security
+name: Database Regression
 
 on:
-  push:
-    branches:
-      - security/phase-1-definer-rls
+  workflow_dispatch:
   pull_request:
     paths:
       - 'supabase/migrations/**'
       - 'supabase/tests/**'
+      - 'tests/database/**'
       - '.github/workflows/security-database.yml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: database-regression-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   database-security:
@@ -28,3 +31,10 @@ jobs:
         run: supabase db reset --local
       - name: Run Phase 1 database regression tests
         run: supabase test db
+      - name: Run transactional role and financial behavior suites
+        run: |
+          local_db_url="$(supabase status -o json | jq -r '.DB_URL')"
+          test -n "$local_db_url"
+          for test_file in tests/database/*.test.sql; do
+            psql "$local_db_url" -X -v ON_ERROR_STOP=1 -f "$test_file"
+          done

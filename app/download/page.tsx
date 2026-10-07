@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: 'Download the ANSHA customer and staff Android apps.',
 };
 
-const customerApkUrl = '/downloads/ansha-trading-mobile.apk?v=1.4';
-const adminApkUrl = '/downloads/ansha-admin.apk?v=1.3';
+const customerApkUrl = '/downloads/ansha-trading-mobile.apk?v=1.5';
+const adminApkUrl = '/downloads/ansha-admin.apk?v=1.4';
 
 export default function DownloadPage() {
   return (
@@ -30,14 +30,14 @@ export default function DownloadPage() {
             <h2 className="mt-2 text-2xl font-black">ANSHA Trading</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">Mobile catalog, offers, inquiries, invoices, account access, and customer support.</p>
             <a href={customerApkUrl} download className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#d21e1e] px-5 text-sm font-black text-white hover:bg-red-600"><Download className="h-5 w-5" />Download customer APK</a>
-            <p className="mt-3 text-xs text-muted-foreground">com.anshatrading.app · Version 1.4 · Updated 6 October 2026</p>
+            <p className="mt-3 text-xs text-muted-foreground">com.anshatrading.app · Version 1.5 · Updated 7 October 2026</p>
           </article>
           <article className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-xs font-black uppercase tracking-[.16em] text-[#d21e1e]">Authorized staff only</p>
             <h2 className="mt-2 text-2xl font-black">ANSHA Admin</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">Protected staff dashboard for inventory, customers, finance, exports, and operations.</p>
             <a href={adminApkUrl} download className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#17191d] px-5 text-sm font-black text-white hover:bg-black"><Download className="h-5 w-5" />Download admin APK</a>
-            <p className="mt-3 text-xs text-muted-foreground">com.anshatrading.admin · Version 1.3 · Updated 6 October 2026</p>
+            <p className="mt-3 text-xs text-muted-foreground">com.anshatrading.admin · Version 1.4 · Updated 7 October 2026</p>
           </article>
         </section>
 
@@ -49,12 +49,15 @@ export default function DownloadPage() {
           <h2 className="text-xl font-black">Latest customer app update</h2>
           <ul className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
             <li>Branded ANSHA app icon and improved screen safe areas</li>
+            <li>Animated opening and connection retry screen</li>
             <li>Customer portal home with account shortcuts</li>
             <li>Tracked inquiries for vehicles and parts</li>
             <li>Support reply alerts and direct inbox opening</li>
             <li>Invoices, account statement, and secure support</li>
           </ul>
         </section>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground"><a href="/downloads/SHA256SUMS" className="underline">Download file checksums</a></p>
 
         <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-[#d21e1e]" /><div><h2 className="text-xl font-black">How to install on Android</h2><ol className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground"><li><strong className="text-foreground">1. Choose</strong> the customer or admin APK above.</li><li><strong className="text-foreground">2. Open</strong> the downloaded file from your browser or Downloads folder.</li><li><strong className="text-foreground">3. Allow installation</strong> from this browser when Android asks for permission.</li><li><strong className="text-foreground">4. Install and open.</strong> Staff must sign in with an authorized ANSHA account.</li></ol><p className="mt-5 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900">These are direct-install test builds. If Android says the app cannot be updated, uninstall the older ANSHA app first, then install this version and sign in again.</p></div></div>

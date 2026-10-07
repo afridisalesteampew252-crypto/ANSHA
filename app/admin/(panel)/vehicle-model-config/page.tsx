@@ -10,13 +10,14 @@ import { Label } from '@/components/ui/label';
 import { canManageReceivables } from '@/lib/admin-rbac';
 import { supabase } from '@/lib/supabase/client';
 import type { AdminRole } from '@/lib/types';
+import { normalizeVehicleModel, vehicleVolume } from '@/lib/vehicle-freight';
 
 type ModelSpec = {
   id: string; make: string; model: string; length_m: number | null;
   width_m: number | null; height_m: number | null; volume_m3: number;
 };
 
-const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+const normalize = normalizeVehicleModel;
 const empty = () => ({ make: '', model: '', length: '', width: '', height: '', volume: '' });
 
 export default function VehicleModelConfigPage() {
@@ -73,7 +74,7 @@ export default function VehicleModelConfigPage() {
     const height = Number(form.height);
     const enteredVolume = Number(form.volume);
     const hasDimensions = [length, width, height].every((value) => Number.isFinite(value) && value > 0);
-    const volume = Number.isFinite(enteredVolume) && enteredVolume > 0 ? enteredVolume : (hasDimensions ? length * width * height : 0);
+    const volume = hasDimensions ? vehicleVolume(length, width, height)! : (Number.isFinite(enteredVolume) && enteredVolume > 0 ? enteredVolume : 0);
     if (!make || !model || !normalize(make) || !normalize(model)) return toast.error('Enter a valid make and model.');
     if (!Number.isFinite(volume) || volume <= 0) return toast.error('Enter an M³ volume or all three dimensions.');
     setBusy(true);
@@ -116,7 +117,7 @@ export default function VehicleModelConfigPage() {
       <div><h1 className="text-2xl font-bold">Vehicle make/model M³</h1><p className="mt-1 text-sm text-muted-foreground">Save each vehicle size once. New manual entries and spreadsheet imports use the matching make/model volume automatically.</p></div>
       <Button variant="outline" onClick={reset}><Plus className="h-4 w-4" />New make/model</Button>
     </div>
-    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Car className="h-5 w-5" />{editing ? 'Edit saved size' : 'Add a saved size'}</CardTitle><CardDescription>Enter M³ directly, or enter dimensions in metres to calculate it.</CardDescription></CardHeader>
+    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Car className="h-5 w-5" />{editing ? 'Edit saved size' : 'Add a saved size'}</CardTitle><CardDescription>Enter M³ directly, or enter all three dimensions in metres. Complete dimensions determine M³ when saved.</CardDescription></CardHeader>
       <CardContent><form onSubmit={save} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[['make', 'Make'], ['model', 'Model'], ['length', 'Length (m)'], ['width', 'Width (m)'], ['height', 'Height (m)'], ['volume', 'M³ volume']].map(([key, label]) =>
           <div key={key} className="space-y-1.5"><Label htmlFor={'spec-' + key}>{label}</Label><Input id={'spec-' + key} type={key === 'make' || key === 'model' ? 'text' : 'number'} min={key === 'make' || key === 'model' ? undefined : '0.001'} step={key === 'make' || key === 'model' ? undefined : '0.001'} value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} required={key === 'make' || key === 'model'} /></div>

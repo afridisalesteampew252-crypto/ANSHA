@@ -26,7 +26,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  const { error: setupError } = await supabase.rpc('ensure_customer_portal_profile');
+  // Password recovery already targets an existing account. Avoid creating or
+  // relinking a portal profile before the customer has chosen the new password.
+  const setupError = next === '/portal/reset-password'
+    ? null
+    : (await supabase.rpc('ensure_customer_portal_profile')).error;
   redirectUrl.pathname = setupError ? '/portal' : next;
   redirectUrl.search = setupError ? 'error=setup' : '';
   return NextResponse.redirect(redirectUrl);

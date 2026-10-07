@@ -10,14 +10,13 @@
     used search_path=public even though all referenced objects are qualified.
 */
 
-ALTER FUNCTION public.next_purchase_order_number()
-  SET search_path = '';
-
-ALTER FUNCTION public.next_shipment_code()
-  SET search_path = '';
-
-COMMENT ON FUNCTION public.next_purchase_order_number()
-  IS 'Authenticated workspace sequence helper. SECURITY DEFINER with empty search_path and explicit object qualification.';
-
-COMMENT ON FUNCTION public.next_shipment_code()
-  IS 'Authenticated workspace sequence helper. SECURITY DEFINER with empty search_path and explicit object qualification.';
+-- These legacy aliases occur in some hosted schemas but are absent from a
+-- fresh migration replay (which uses next_po_number / next_export_shipment_number).
+DO $$ BEGIN
+  IF to_regprocedure('public.next_purchase_order_number()') IS NOT NULL THEN
+    ALTER FUNCTION public.next_purchase_order_number() SET search_path = '';
+  END IF;
+  IF to_regprocedure('public.next_shipment_code()') IS NOT NULL THEN
+    ALTER FUNCTION public.next_shipment_code() SET search_path = '';
+  END IF;
+END $$;

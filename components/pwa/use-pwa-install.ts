@@ -16,11 +16,12 @@ type InstallStore = {
   dismissed: boolean;
 };
 
-let store: InstallStore = {
+const serverSnapshot: InstallStore = {
   deferred: null,
   installed: false,
   dismissed: false,
 };
+let store: InstallStore = serverSnapshot;
 
 const listeners = new Set<() => void>();
 
@@ -43,7 +44,7 @@ function getSnapshot() {
 }
 
 function getServerSnapshot(): InstallStore {
-  return { deferred: null, installed: false, dismissed: false };
+  return serverSnapshot;
 }
 
 function detectInstalled() {

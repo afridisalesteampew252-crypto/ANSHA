@@ -11,5 +11,11 @@ CREATE INDEX IF NOT EXISTS purchase_order_lines_part_id_idx
   ON public.purchase_order_lines (part_id) WHERE part_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS purchase_order_lines_vehicle_id_idx
   ON public.purchase_order_lines (vehicle_id) WHERE vehicle_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS inventory_stock_events_invoice_id_idx
-  ON public.inventory_stock_events (invoice_id) WHERE invoice_id IS NOT NULL;
+-- Some installations have this optional event table outside the committed
+-- migrations. A fresh clone must still be replayable without that table.
+DO $$ BEGIN
+  IF to_regclass('public.inventory_stock_events') IS NOT NULL THEN
+    CREATE INDEX IF NOT EXISTS inventory_stock_events_invoice_id_idx
+      ON public.inventory_stock_events (invoice_id) WHERE invoice_id IS NOT NULL;
+  END IF;
+END $$;

@@ -47,10 +47,18 @@ export default async function PartDetailPage({ params }: Props) {
     name: part.name,
     description: part.description || `${part.name} supplied by ${siteConfig.name}`,
     sku: part.part_code,
-    mpn: part.part_number || part.oem_number || undefined,
+    mpn: part.manufacturer_part_number || part.part_number || part.oem_number || undefined,
     brand: part.brand ? { '@type': 'Brand', name: part.brand } : undefined,
     image: photos.map((photo) => publicPartImageUrl(photo.storage_path)),
     url: pageUrl,
+    ...(part.part_compatibility?.length ? {
+      isAccessoryOrSparePartFor: part.part_compatibility.map((fitment) => ({
+        '@type': 'Vehicle',
+        name: [fitment.make, fitment.model, fitment.chassis_code].filter(Boolean).join(' '),
+        ...(fitment.make ? { brand: { '@type': 'Brand', name: fitment.make } } : {}),
+        ...(fitment.model ? { model: fitment.model } : {}),
+      })),
+    } : {}),
     ...(offers ? { offers } : {}),
   };
 

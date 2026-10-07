@@ -56,6 +56,8 @@ import {
   type VatChoice,
 } from '@/lib/trade-terms';
 import { requestPublicRevalidation } from '@/lib/revalidate-public';
+import { buildPartIdentity } from '@/lib/part-identity';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 
 const statusClass: Record<StockStatus, string> = {
   available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -75,6 +77,7 @@ function formatTagList(values: string[] | null | undefined): string {
 }
 
 export default function EditPartPage(props: { params: Promise<{ id: string }> }) {
+  const financeSettings = useFinanceSettings();
   const params = use(props.params);
   const { id } = params;
   const router = useRouter();
@@ -307,6 +310,11 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
 
     setLoading(true);
 
+    const identity = buildPartIdentity({
+      name, brand, part_number: partNumber, oem_number: oemNumber,
+      manufacturer_part_number: manufacturerPartNumber, condition,
+      compatibility: compatRows, search_keywords: parseTagList(searchKeywords),
+    });
     const { error } = await supabase
       .from('parts')
       .update({
@@ -335,9 +343,9 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
         landed_cost: landedCost === '' ? null : parseFloat(landedCost),
         supplier_id: supplierId || null,
         description: description.trim() || null,
-        meta_title: metaTitle.trim() || null,
-        meta_description: metaDescription.trim() || null,
-        search_keywords: parseTagList(searchKeywords),
+        meta_title: metaTitle.trim() || identity.meta_title,
+        meta_description: metaDescription.trim() || identity.meta_description,
+        search_keywords: identity.search_keywords,
         is_published: isPublished,
         is_featured: isFeatured,
         show_price: showPrice,
@@ -961,12 +969,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                    <SelectItem value="JPY">JPY</SelectItem>
-                    <SelectItem value="AED">AED</SelectItem>
-                    <SelectItem value="PKR">PKR</SelectItem>
+                    {Array.from(new Set([...financeSettings.enabled_currencies, currency])).map((code) => <SelectItem key={code} value={code}>{code}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

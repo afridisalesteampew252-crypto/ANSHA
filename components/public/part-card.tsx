@@ -50,7 +50,7 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
   const savedPriceLabel = dealPrice != null ? priceLabel : catalogPriceLines.length > 0
     ? catalogPriceLines.map((line) => `${line.label} ${part.currency} ${line.amount.toLocaleString('en-US')}`).join(' · ')
     : priceLabel;
-  const oemOrCode = part.oem_number || part.part_code;
+  const oemOrCode = part.part_number || part.oem_number || part.part_code;
   const waMessage = `Hello ${siteConfig.name}, I'm interested in ${part.name} (${part.part_code}). Is it available?`;
   const waHref = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent(waMessage)}`;
   const saveItem = toPartSaveItem({

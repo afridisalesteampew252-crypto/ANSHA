@@ -88,6 +88,7 @@ import type {
   VehiclePhoto,
 } from '@/lib/types';
 import { requestPublicRevalidation } from '@/lib/revalidate-public';
+import { normalizeVehicleModel } from '@/lib/vehicle-freight';
 
 const statusClass: Record<StockStatus, string> = {
   available: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
@@ -823,7 +824,19 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
 
       <StockLinkedInvoices vehicleId={vehicle.id} />
 
-      <VehicleFreightEstimator vehicleTitle={vehicle.title} />
+      <VehicleFreightEstimator
+        vehicleTitle={vehicle.title}
+        make={make}
+        model={model}
+        savedVolumeM3={normalizeVehicleModel(make) === normalizeVehicleModel(vehicle.make) && normalizeVehicleModel(model) === normalizeVehicleModel(vehicle.model) ? vehicle.volume_m3 : null}
+        priceFob={parseOptionalPrice(priceFob) ?? parseOptionalPrice(price)}
+        currency={currency}
+        onQuoteApply={({ cf, cif }) => {
+          setPriceCf(String(cf));
+          if (cif != null) setPriceCif(String(cif));
+          toast.success('Quote prices added to the form. Save the vehicle to publish the changes.');
+        }}
+      />
 
       <Card id="photos" className="scroll-mt-24 overflow-hidden">
         <CardHeader>

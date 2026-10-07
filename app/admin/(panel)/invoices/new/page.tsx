@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 import { SearchableSelect, customerSelectOption } from '@/components/admin/searchable-select';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,7 +112,9 @@ export default function NewInvoicePage() {
   const [documentType, setDocumentType] = useState('proforma_invoice');
   const [issueDate, setIssueDate] = useState(today);
   const [dueDate, setDueDate] = useState(defaultDue);
-  const [currency, setCurrency] = useState('AED');
+  const financeSettings = useFinanceSettings();
+  const [currencyOverride, setCurrency] = useState('');
+  const currency = currencyOverride || financeSettings.default_currency;
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState('Payment is due by the date shown on the invoice.');
@@ -465,7 +468,7 @@ export default function NewInvoicePage() {
           <div className="space-y-1.5"><Label htmlFor="invoice-number">Invoice number</Label><Input id="invoice-number" value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value.toUpperCase())} placeholder="RIYA0063 or leave blank" maxLength={40} /><p className="text-xs text-muted-foreground">{editingId ? 'Invoice numbers must remain unique.' : 'Use an existing sales code such as RIYA0063, or leave blank for an automatic INV number.'}</p></div>
           <div className="space-y-1.5"><Label htmlFor="issue-date">Issue date</Label><Input id="issue-date" type="date" value={issueDate} onChange={(event) => setIssueDate(event.target.value)} /></div>
           <div className="space-y-1.5"><Label htmlFor="due-date">Due date</Label><Input id="due-date" type="date" min={issueDate} value={dueDate} onChange={(event) => setDueDate(event.target.value)} /></div>
-          <div className="space-y-1.5"><Label htmlFor="currency">Currency</Label><select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm"><option value="AED">AED</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="PKR">PKR</option></select></div>
+          <div className="space-y-1.5"><Label htmlFor="currency">Currency</Label><select id="currency" value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">{!financeSettings.enabled_currencies.includes(currency) && <option value={currency}>{currency} (existing)</option>}{financeSettings.enabled_currencies.map((code) => <option key={code} value={code}>{code}</option>)}</select></div>
           <div className="space-y-1.5">
             <Label htmlFor="price-term">Price term</Label>
             <select

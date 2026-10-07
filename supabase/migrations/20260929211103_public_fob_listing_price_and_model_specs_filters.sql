@@ -1,4 +1,8 @@
 -- Keep public listing price aligned with FOB, show available export terms, and normalize saved model keys.
+-- Existing installations had this table already; a fresh replay creates it later that day.
+DO $$
+BEGIN
+IF to_regclass('public.vehicle_model_specs') IS NOT NULL THEN
 DELETE FROM public.vehicle_model_specs
 WHERE make = 'HONDA' AND model = 'CR V';
 
@@ -27,6 +31,9 @@ SET normalized_make = btrim(regexp_replace(lower(make), '[^a-z0-9]+', ' ', 'g'))
     updated_at = now()
 WHERE normalized_make IS DISTINCT FROM btrim(regexp_replace(lower(make), '[^a-z0-9]+', ' ', 'g'))
    OR normalized_model IS DISTINCT FROM btrim(regexp_replace(lower(model), '[^a-z0-9]+', ' ', 'g'));
+END IF;
+END;
+$$;
 
 UPDATE public.vehicles
 SET price = price_fob,

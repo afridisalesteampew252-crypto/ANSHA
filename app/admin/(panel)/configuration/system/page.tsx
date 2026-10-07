@@ -120,7 +120,7 @@ export default function SystemConfigurationPage() {
     <Card>
       <CardHeader>
         <CardTitle>Finance currencies</CardTitle>
-        <CardDescription>Sets choices and defaults for expenses, manual journals and financial reports. Existing transactions keep their recorded currency. No exchange conversion is applied.</CardDescription>
+        <CardDescription>Sets choices and defaults for invoices, TT receipts, bank accounts, expenses, manual journals and financial reports. Add PKR or any three-letter currency code here. Existing transactions keep their recorded currency; each converted TT keeps its individual bank rate.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="max-w-xs space-y-2">

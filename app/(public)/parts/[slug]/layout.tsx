@@ -9,6 +9,7 @@ import {
   sanitizeTitle,
 } from '@/lib/seo';
 import { siteConfig } from '@/lib/site-config';
+import { buildPartIdentity } from '@/lib/part-identity';
 
 type Props = {
   children: React.ReactNode;
@@ -32,10 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? publicPartImageUrl(cover.storage_path)
     : absoluteMediaUrl(defaultOgImage.url);
 
-  const title = sanitizeTitle(data.meta_title?.trim() || data.name);
+  const identity = buildPartIdentity({ ...data, compatibility: data.part_compatibility });
+  const title = sanitizeTitle(data.meta_title?.trim() || identity.meta_title);
   const description = sanitizeDescription(
     data.meta_description?.trim() ||
-      data.description?.trim() ||
+      data.description?.trim() || identity.meta_description ||
       [
         data.name,
         data.part_code ? `(${data.part_code})` : null,

@@ -65,7 +65,6 @@ export function SiteHeader() {
   const router = useRouter();
   const { cartCount, favoritesCount } = useCustomerLists();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -97,9 +96,9 @@ export function SiteHeader() {
     };
   }, [mobileOpen]);
 
-  const handleSearch = (event: React.FormEvent) => {
+  const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const query = searchQuery.trim();
+    const query = String(new FormData(event.currentTarget).get('q') || '').trim();
     if (!query) return;
     setMobileOpen(false);
     router.push(`/search?q=${encodeURIComponent(query)}`);
@@ -150,8 +149,6 @@ export function SiteHeader() {
                 type="search"
                 name="q"
                 placeholder="Search vehicles, OEM, parts, chassis or stock"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
                 className="h-full rounded-xl border-0 bg-transparent pl-11 pr-32 focus-visible:ring-0 focus-visible:ring-offset-0"
                 aria-label="Search catalog"
               />
@@ -306,7 +303,7 @@ export function SiteHeader() {
               <form action="/search" onSubmit={handleSearch} className="md:hidden">
                 <div className="relative">
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input name="q" type="search" placeholder="Vehicles, OEM, parts, chassis..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="h-12 rounded-2xl border-accent/15 bg-white/80 pl-10 pr-20 shadow-sm dark:bg-card/80" />
+                  <Input name="q" type="search" placeholder="Vehicles, OEM, parts, chassis..." className="h-12 rounded-2xl border-accent/15 bg-white/80 pl-10 pr-20 shadow-sm dark:bg-card/80" />
                   <Button type="submit" size="sm" variant="accent" className="absolute right-1.5 top-1.5 h-9 rounded-xl px-3">Go</Button>
                 </div>
               </form>

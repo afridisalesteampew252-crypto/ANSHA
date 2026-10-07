@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { safeMobileRoute } from '@/lib/capacitor/safe-mobile-route';
 import { safeAdminRoute } from '@/lib/capacitor/safe-admin-route';
+import { isNativeCapacitorRuntime } from '@/lib/capacitor/runtime';
 
 /**
  * Capacitor-only FCM registration. Registers after a user signs in so a fresh
@@ -11,8 +12,11 @@ import { safeAdminRoute } from '@/lib/capacitor/safe-admin-route';
  */
 export function NativePushNotifications() {
   useEffect(() => {
+    if (!isNativeCapacitorRuntime()) return;
     let cancelled = false;
     let authUnsubscribe: (() => void) | undefined;
+    let userId: string | null = null;
+    let authWork = Promise.resolve();
     const handles: Array<{ remove: () => Promise<void> }> = [];
 
     void import('@capacitor/push-notifications')
@@ -47,17 +51,26 @@ export function NativePushNotifications() {
           });
         }
 
+        // Clear the previous installation/account token before registering.
+        await PushNotifications.unregister();
+        await PushNotifications.removeAllDeliveredNotifications();
+
         handles.push(
-          await PushNotifications.addListener('registration', async ({ value: token }) => {
-            if (!token || cancelled) return;
+          await PushNotifications.addListener('registration', async ({ value }) => {
+            if (!value || !userId || cancelled) return;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session || session.user.id !== userId || cancelled) return;
             const { error } = await supabase.rpc('register_fcm_push_token', {
-              p_token: token,
+              p_token: value,
               p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 300) : null,
             });
             if (error) console.warn('FCM token registration failed:', error.message);
           }),
           await PushNotifications.addListener('registrationError', (error) => {
             console.warn('FCM registration failed:', error);
+          }),
+          await PushNotifications.addListener('pushNotificationReceived', () => {
+            window.dispatchEvent(new Event('ansha:notification'));
           }),
           await PushNotifications.addListener('pushNotificationActionPerformed', ({ notification }) => {
             const route = window.location.pathname.startsWith('/admin')
@@ -67,19 +80,31 @@ export function NativePushNotifications() {
           }),
         );
 
+        const syncUser = (nextUserId: string | null) => {
+          authWork = authWork.then(async () => {
+            if (cancelled || userId === nextUserId) return;
+            if (userId || !nextUserId) {
+              await PushNotifications.unregister();
+              await PushNotifications.removeAllDeliveredNotifications();
+            }
+            userId = nextUserId;
+            if (userId) await registerForSignedInUser();
+          }).catch((error) => console.warn('Native push account sync failed:', error));
+        };
+
         const { data: authState } = supabase.auth.onAuthStateChange((_event, session) => {
-          if (!session || cancelled) return;
+          if (cancelled) return;
           // Supabase auth callbacks must stay synchronous; schedule plugin work
           // after the callback returns to avoid blocking the auth state lock.
-          window.setTimeout(() => void registerForSignedInUser(), 0);
+          window.setTimeout(() => syncUser(session?.user.id ?? null), 0);
         });
         authUnsubscribe = () => authState.subscription.unsubscribe();
 
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) await registerForSignedInUser();
+        syncUser(session?.user.id ?? null);
       })
-      .catch(() => {
-        // The Capacitor bridge is unavailable in desktop/mobile browsers.
+      .catch((error) => {
+        console.warn('Native push initialization failed:', error);
       });
 
     return () => {

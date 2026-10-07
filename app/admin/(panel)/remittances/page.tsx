@@ -41,6 +41,7 @@ import {
   type RemittanceExportColumnKey,
 } from '@/lib/remittance-export';
 import { supabase } from '@/lib/supabase/client';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 import type {
   AdminRole,
   Remittance,
@@ -121,6 +122,9 @@ const emptyForm = {
   received_date: new Date().toISOString().slice(0, 10),
   amount: '',
   currency: 'AED',
+  source_currency: '',
+  source_amount: '',
+  exchange_rate: '',
   method: 'bank_transfer',
   bank_reference: '',
   sender_bank: '',
@@ -137,6 +141,7 @@ const money = (value: number, currency: string) =>
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 export default function RemittancesPage() {
+  const financeSettings = useFinanceSettings();
   const [role, setRole] = useState<AdminRole | null>(null);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [documents, setDocuments] = useState<RemittanceDocument[]>([]);
@@ -164,6 +169,7 @@ export default function RemittancesPage() {
   const [exportColumns, setExportColumns] = useState(defaultRemittanceExportSelection);
 
   const finance = canManageReceivables(role);
+  const fxLocked = Boolean(editingId && remittances.find((row) => row.id === editingId)?.exchange_rate != null);
 
   const load = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -175,8 +181,8 @@ export default function RemittancesPage() {
 
     const [remittanceResult, documentResult, customerResult, invoiceResult, staffResult, officeResult, shiftResult, unknownResult] =
       await Promise.all([
-        supabase.from('remittances').select('*').order('received_date', { ascending: false }).order('created_at', { ascending: false }),
-        supabase.from('remittance_documents').select('*').order('created_at'),
+        supabase.from('remittances').select('id,remittance_number,customer_id,invoice_id,customer_name,received_date,amount,currency,method,bank_reference,sender_bank,receiving_bank,status,notes,created_at,received_by,office_id,shift_id,is_unknown,source_currency,source_amount,exchange_rate').order('received_date', { ascending: false }).order('created_at', { ascending: false }),
+        supabase.from('remittance_documents').select('id,remittance_id,storage_path,file_name').order('created_at'),
         supabase
           .from('customers')
           .select('id,full_name,company_name,customer_code,country,phone,email')
@@ -190,19 +196,19 @@ export default function RemittancesPage() {
           .neq('status', 'cancelled')
           .order('issue_date', { ascending: false }),
         supabase.from('admin_profiles').select('id,full_name,email,office_id,shift_id').eq('is_active', true).order('full_name'),
-        supabase.from('remittance_offices').select('*').eq('is_active', true).order('sort_order').order('name'),
-        supabase.from('remittance_shifts').select('*').eq('is_active', true).order('sort_order').order('name'),
+        supabase.from('remittance_offices').select('id,name,code').eq('is_active', true).order('sort_order').order('name'),
+        supabase.from('remittance_shifts').select('id,name,office_id,hours_label').eq('is_active', true).order('sort_order').order('name'),
         supabase.rpc('count_unknown_remittances'),
       ]);
 
     let allocResult = await supabase
       .from('remittance_allocations')
       .select(
-        '*, invoices(invoice_number, invoice_items(vehicle_id, inventory_reference, vehicles(stock_number, chassis_number)))'
+        'id,remittance_id,invoice_id,invoice_payment_id,amount,created_at, invoices(invoice_number, invoice_items(vehicle_id, inventory_reference, vehicles(stock_number, chassis_number)))'
       );
     if (allocResult.error) {
       // Fall back so Allocate Actions still works if nested stock join is unavailable.
-      allocResult = await supabase.from('remittance_allocations').select('*, invoices(invoice_number)');
+      allocResult = await supabase.from('remittance_allocations').select('id,remittance_id,invoice_id,invoice_payment_id,amount,created_at, invoices(invoice_number)');
     }
 
     if (remittanceResult.error) setMessage(remittanceResult.error.message);
@@ -372,7 +378,7 @@ export default function RemittancesPage() {
   const startCreate = () => {
     setEditingId(null);
     setAllocateFormRemittanceId(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, currency: financeSettings.default_currency });
     setFiles([]);
     setMessage('');
     setOpen(true);
@@ -388,6 +394,9 @@ export default function RemittancesPage() {
       received_date: item.received_date,
       amount: String(item.amount),
       currency: item.currency,
+      source_currency: item.source_currency || '',
+      source_amount: item.source_amount == null ? '' : String(item.source_amount),
+      exchange_rate: item.exchange_rate == null ? '' : String(item.exchange_rate),
       method: item.method,
       bank_reference: item.bank_reference || '',
       sender_bank: item.sender_bank || '',
@@ -435,6 +444,10 @@ export default function RemittancesPage() {
     const isUnknown = !form.customer_id.trim();
     if (!isUnknown && !form.customer_name.trim()) return setMessage('Customer/sender and a positive amount are required.');
     if (Number(form.amount) <= 0) return setMessage('Amount must be greater than zero.');
+    const hasFx = Boolean(form.source_currency || form.source_amount || form.exchange_rate);
+    if (hasFx && (!/^[A-Z]{3}$/.test(form.source_currency) || !Number.isFinite(Number(form.source_amount)) || Number(form.source_amount) <= 0 || !Number.isFinite(Number(form.exchange_rate)) || Number(form.exchange_rate) <= 0)) {
+      return setMessage('Enter the original TT currency, a positive original amount, and a positive bank exchange rate together.');
+    }
     const oversized = files.find((file) => file.size > MAX_FILE_SIZE);
     if (oversized) return setMessage(`${oversized.name} exceeds the 25 MB document limit.`);
     setBusy(true);
@@ -453,6 +466,9 @@ export default function RemittancesPage() {
           received_date: form.received_date,
           amount: Number(form.amount),
           currency: form.currency,
+          source_currency: hasFx ? form.source_currency : null,
+          source_amount: hasFx ? Number(form.source_amount) : null,
+          exchange_rate: hasFx ? Number(form.exchange_rate) : null,
           method: form.method,
           bank_reference: form.bank_reference.trim() || null,
           sender_bank: form.sender_bank.trim() || null,
@@ -470,7 +486,7 @@ export default function RemittancesPage() {
         return setMessage(error.message);
       }
     } else {
-      const { data, error } = await supabase.rpc('create_remittance', {
+      const { data, error } = await supabase.rpc('create_remittance_with_fx', {
         p_customer_id: form.customer_id || null,
         p_invoice_id: form.invoice_id || null,
         p_customer_name: form.customer_name.trim() || form.bank_reference.trim() || 'Unknown TTS',
@@ -486,6 +502,9 @@ export default function RemittancesPage() {
         p_received_by: form.received_by || null,
         p_office_id: form.office_id || null,
         p_shift_id: form.shift_id || null,
+        p_source_currency: hasFx ? form.source_currency : null,
+        p_source_amount: hasFx ? Number(form.source_amount) : null,
+        p_exchange_rate: hasFx ? Number(form.exchange_rate) : null,
       });
       if (error || !data) {
         setBusy(false);
@@ -757,6 +776,9 @@ export default function RemittancesPage() {
           customer_name: item.customer_name,
           customer_country: customer?.country || null,
           currency: item.currency,
+          source_currency: item.source_currency,
+          source_amount: item.source_amount,
+          exchange_rate: item.exchange_rate,
           sender_bank: item.sender_bank,
           receiving_bank: item.receiving_bank,
           bank_reference: item.bank_reference,
@@ -1017,6 +1039,7 @@ export default function RemittancesPage() {
                   step="0.01"
                   required
                   value={form.amount}
+                  disabled={fxLocked}
                   onChange={(event) => setForm({ ...form, amount: event.target.value })}
                 />
               </div>
@@ -1025,16 +1048,32 @@ export default function RemittancesPage() {
                 <select
                   id="rem-currency"
                   value={form.currency}
+                  disabled={fxLocked}
                   onChange={(event) => setForm({ ...form, currency: event.target.value })}
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
-                  <option>AED</option>
-                  <option>USD</option>
-                  <option>EUR</option>
-                  <option>GBP</option>
-                  <option>PKR</option>
+                  {!financeSettings.enabled_currencies.includes(form.currency) && <option value={form.currency}>{form.currency} (existing)</option>}
+                  {financeSettings.enabled_currencies.map((code) => <option key={code} value={code}>{code}</option>)}
                 </select>
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="rem-source-currency">Original TT currency (optional)</Label>
+                <select id="rem-source-currency" value={form.source_currency} disabled={fxLocked} onChange={(event) => setForm({ ...form, source_currency: event.target.value })} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                  <option value="">No currency conversion</option>
+                  {form.source_currency && !financeSettings.enabled_currencies.includes(form.source_currency) && <option value={form.source_currency}>{form.source_currency} (existing)</option>}
+                  {financeSettings.enabled_currencies.map((code) => <option key={code} value={code}>{code}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="rem-source-amount">Original TT amount</Label>
+                <Input id="rem-source-amount" type="number" min="0.01" step="0.01" value={form.source_amount} disabled={fxLocked} onChange={(event) => setForm({ ...form, source_amount: event.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="rem-exchange-rate">Bank exchange rate for this TT</Label>
+                <Input id="rem-exchange-rate" type="number" min="0.0000000001" step="any" value={form.exchange_rate} disabled={fxLocked} onChange={(event) => setForm({ ...form, exchange_rate: event.target.value })} />
+                <p className="text-xs text-muted-foreground">1 {form.source_currency || 'original unit'} = {form.exchange_rate || 'rate'} {form.currency}. Each TT keeps its own rate.</p>
+              </div>
+              {(form.source_currency || fxLocked) && <p className="text-xs text-muted-foreground md:col-span-2">{fxLocked ? 'This TT keeps its original amount, currencies and bank rate. Reverse and replace the receipt to correct them.' : Number(form.source_amount) > 0 && Number(form.exchange_rate) > 0 ? `Bank conversion before charges: ${money(Number(form.source_amount) * Number(form.exchange_rate), form.currency)}. Record the amount actually received above.` : 'Record all three original TT fields together when the bank converted currency.'}</p>}
               <div className="space-y-1.5">
                 <Label htmlFor="rem-method">Method</Label>
                 <select
@@ -1282,6 +1321,7 @@ export default function RemittancesPage() {
                       <p className="text-xs font-normal text-muted-foreground">
                         {money(remaining, item.currency)} remaining
                       </p>
+                      {item.exchange_rate != null && item.source_currency && <p className="text-xs font-normal text-muted-foreground">Original {money(Number(item.source_amount), item.source_currency)} · 1 {item.source_currency} = {item.exchange_rate} {item.currency}</p>}
                     </td>
                     <td className="p-4">
                       <span

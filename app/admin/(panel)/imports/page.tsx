@@ -12,13 +12,16 @@ import { compressCatalogImage } from '@/lib/catalog-image';
 import { STOCK_ORIGINS, defaultStockPoolForOrigin } from '@/lib/stock';
 import { isAuctionSheetFilename } from '@/lib/vehicle-photos';
 import type { StockOrigin } from '@/lib/types';
+import { catalogImageMatchKeys, importNumber, importPartCompatibility, optionalCatalogFields } from '@/lib/catalog-import';
+import { buildPartIdentity, parseCatalogTags } from '@/lib/part-identity';
+import { vehicleVolume } from '@/lib/vehicle-freight';
+import { requestPublicRevalidation } from '@/lib/revalidate-public';
 
 type Entity = 'parts' | 'vehicles';
 type PreviewRow = Record<string, string | number | boolean | null>;
 
 const slugify = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
-const toBoolean = (value: unknown) => value === true || String(value ?? '').trim().toLowerCase() === 'true' || String(value ?? '').trim() === '1';
 
 const templateLinks = {
   parts: '/templates/ansha-parts-import-template.xlsx',
@@ -67,17 +70,56 @@ export default function ImportsPage() {
         if (entity === 'parts') {
           const partCode = String(row.part_code || '').trim(); const name = String(row.name || '').trim();
           if (!partCode || !name) throw new Error('part_code and name are required');
-          const payload = { part_code: partCode, name, slug: String(row.slug || slugify(`${name}-${partCode}`)), brand: row.brand || null, part_number: row.part_number || null, oem_number: row.oem_number || null, condition: row.condition || 'used', price: row.price || null, currency: row.currency || 'USD', quantity: Number(row.quantity || 0), description: row.description || null, location: row.location || null, is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured), show_price: toBoolean(row.show_price) };
-          const { error } = await supabase.from('parts').upsert(payload, { onConflict: 'part_code' }); if (error) throw error;
+          const { data: existing, error: lookupError } = await supabase.from('parts').select('id,slug,brand,part_number,oem_number,manufacturer_part_number,condition,search_keywords,meta_title,meta_description,part_compatibility(make,model,chassis_code,engine_code,year_from,year_to)').eq('part_code', partCode).maybeSingle();
+          if (lookupError) throw lookupError;
+          const compatibility = importPartCompatibility(row);
+          const optional = optionalCatalogFields(row, 'part');
+          const effective = { ...existing, ...optional };
+          const identity = buildPartIdentity({
+            name, brand: String(effective.brand ?? ''),
+            part_number: String(effective.part_number ?? ''),
+            oem_number: String(effective.oem_number ?? ''),
+            manufacturer_part_number: String(effective.manufacturer_part_number ?? ''),
+            condition: String(row.condition || existing?.condition || 'used'),
+            compatibility: compatibility ?? existing?.part_compatibility ?? [],
+            search_keywords: parseCatalogTags(optional.search_keywords ?? existing?.search_keywords ?? []),
+          });
+          const payload = {
+            ...optional, part_code: partCode, name,
+            slug: String(row.slug || existing?.slug || slugify(`${name}-${partCode}`)),
+            ...('condition' in row ? { condition: row.condition || 'used' } : {}),
+            meta_title: ('meta_title' in row ? optional.meta_title : existing?.meta_title) || identity.meta_title,
+            meta_description: ('meta_description' in row ? optional.meta_description : existing?.meta_description) || identity.meta_description,
+            search_keywords: identity.search_keywords,
+          };
+          const { data: saved, error } = await supabase.from('parts').upsert(payload, { onConflict: 'part_code' }).select('id').single(); if (error) throw error;
+          if (compatibility !== undefined) {
+            const { error: removeError } = await supabase.from('part_compatibility').delete().eq('part_id', saved.id);
+            if (removeError) throw removeError;
+            if (compatibility.length) {
+              const { error: fitmentError } = await supabase.from('part_compatibility').insert(compatibility.map((fitment) => ({ ...fitment, part_id: saved.id })));
+              if (fitmentError) throw fitmentError;
+            }
+          }
           results.push({ import_job_id: job.id, row_number: index + 2, record_key: partCode, status: 'success', payload: row });
         } else {
           const chassis = String(row.chassis_number || '').trim(); const make = String(row.make || '').trim(); const model = String(row.model || '').trim();
           if (!chassis || !make || !model) throw new Error('chassis_number, make and model are required');
           const title = String(row.title || `${row.year || ''} ${make} ${model}`.trim());
-          const importedVolume = Number(row.volume_m3);
-           const volumeM3 = Number.isFinite(importedVolume) && importedVolume > 0 ? importedVolume : (vehicleVolumes.get(normalize(make) + '|' + normalize(model)) || null);
-           const payload = { chassis_number: chassis, stock_number: row.stock_number || null, title, slug: String(row.slug || slugify(`${title}-${chassis}`)), make, model, volume_m3: volumeM3, variant: row.variant || null, year: row.year ? Number(row.year) : null, chassis_code: row.chassis_code || null, engine_code: row.engine_code || null, transmission: row.transmission || null, fuel_type: row.fuel_type || null, mileage: row.mileage ? Number(row.mileage) : null, color: row.color || null, price: row.price || null, currency: row.currency || 'USD', description: row.description || null, location: row.location || null, stock_origin: vehicleStockOrigin, stock_pool: defaultStockPoolForOrigin(vehicleStockOrigin), show_price: toBoolean(row.show_price), is_published: toBoolean(row.is_published), is_featured: toBoolean(row.is_featured) };
-          const { data: existing } = await supabase.from('vehicles').select('id').eq('chassis_number', chassis).maybeSingle();
+          const importedVolume = importNumber(row.volume_m3, 'volume_m3');
+          if (importedVolume === 0) throw new Error('volume_m3 must be greater than zero');
+          const hasDimensions = [row.length_m, row.width_m, row.height_m].some((value) => value != null && String(value).trim());
+          const dimensionsVolume = vehicleVolume(row.length_m, row.width_m, row.height_m);
+          if (hasDimensions && !dimensionsVolume) throw new Error('Enter all three positive dimensions in metres');
+          const volumeM3 = importedVolume ?? dimensionsVolume ?? vehicleVolumes.get(normalize(make) + '|' + normalize(model));
+          const { data: existing, error: lookupError } = await supabase.from('vehicles').select('id,slug').eq('chassis_number', chassis).maybeSingle();
+          if (lookupError) throw lookupError;
+          const payload = {
+            ...optionalCatalogFields(row, 'vehicle'), chassis_number: chassis, title,
+            slug: String(row.slug || existing?.slug || slugify(`${title}-${chassis}`)), make, model,
+            ...(volumeM3 != null ? { volume_m3: volumeM3 } : {}),
+            ...(!existing ? { stock_origin: vehicleStockOrigin, stock_pool: defaultStockPoolForOrigin(vehicleStockOrigin) } : {}),
+          };
           const mutation = existing ? supabase.from('vehicles').update(payload).eq('id', existing.id) : supabase.from('vehicles').insert(payload);
           const { error } = await mutation; if (error) throw error;
           results.push({ import_job_id: job.id, row_number: index + 2, record_key: chassis, status: 'success', payload: row });
@@ -89,6 +131,7 @@ export default function ImportsPage() {
     }
     await supabase.from('import_rows').insert(results);
     await supabase.from('import_jobs').update({ status: success === rows.length ? 'completed' : 'completed_with_errors', successful_rows: success, failed_rows: rows.length - success, completed_at: new Date().toISOString() }).eq('id', job.id);
+    if (success) requestPublicRevalidation(entity === 'vehicles' ? 'vehicle' : 'part');
     setBusy(false); setMessage(`Imported ${success} of ${rows.length} rows. ${rows.length - success} failed.`);
   };
 
@@ -106,15 +149,25 @@ export default function ImportsPage() {
     const lookupColumn = entity === 'vehicles' ? 'chassis_number' : 'part_number';
     const table = entity === 'vehicles' ? 'vehicles' : 'parts';
     const bucket = entity === 'vehicles' ? 'vehicle-images' : 'part-images';
-    const { data: records } = await supabase.from(table).select(`id,${lookupColumn}`);
-    const recordMap = new Map(((records || []) as Array<Record<string, string | null>>).map((record) => [normalize(String(record[lookupColumn] || '')), record.id]));
+    const recordMap = new Map<string, string | null>();
+    for (let offset = 0; ; offset += 1000) {
+      const { data: records, error } = await supabase.from(table).select(`id,${lookupColumn}`).order('id').range(offset, offset + 999);
+      if (error) { setBusy(false); return setMessage(error.message); }
+      for (const record of (records || []) as Array<Record<string, string | null>>) {
+        const key = normalize(String(record[lookupColumn] || ''));
+        if (key) recordMap.set(key, recordMap.has(key) ? null : record.id);
+      }
+      if (!records || records.length < 1000) break;
+    }
     const { data: job } = await supabase.from('import_jobs').insert({ import_type: `${entity}_images_zip`, file_name: selected.name, total_rows: imageEntries.length, created_by: user.id }).select('id').single();
     if (!job) { setBusy(false); return setMessage('Could not create image import job.'); }
     let success = 0; const results: Array<Record<string, unknown>> = [];
     for (let index = 0; index < imageEntries.length; index += 1) {
-      const [name, bytes] = imageEntries[index]; const filename = name.split('/').pop() || name; const key = normalize(filename.replace(/\.[^.]+$/, '').split(/[_-](?:image|img|photo)?\d*$/i)[0]); const recordId = recordMap.get(key);
+      const [name, bytes] = imageEntries[index]; const filename = name.split('/').pop() || name;
+      const keys = catalogImageMatchKeys(filename);
+      const key = keys.find((candidate) => recordMap.has(candidate)) || keys[0]; const recordId = recordMap.get(key);
       try {
-        if (!recordId) throw new Error(`No ${lookupColumn} match for ${filename}`);
+        if (!recordId) throw new Error(recordMap.has(key) ? `Multiple parts use this ${lookupColumn}; upload ${filename} on the correct part detail page.` : `No ${lookupColumn} match for ${filename}`);
         const sourceType = filename.toLowerCase().endsWith('.png') ? 'image/png' : filename.toLowerCase().endsWith('.webp') ? 'image/webp' : filename.toLowerCase().endsWith('.gif') ? 'image/gif' : filename.toLowerCase().endsWith('.avif') ? 'image/avif' : 'image/jpeg';
         const optimized = await compressCatalogImage(new Blob([bytes], { type: sourceType }), `${entity}-${key}-${index + 1}`);
         const storagePath = `${recordId}/${Date.now()}-${optimized.file.name}`;
@@ -143,6 +196,7 @@ export default function ImportsPage() {
     }
     await supabase.from('import_rows').insert(results);
     await supabase.from('import_jobs').update({ status: success === imageEntries.length ? 'completed' : 'completed_with_errors', successful_rows: success, failed_rows: imageEntries.length - success, completed_at: new Date().toISOString() }).eq('id', job.id);
+    if (success) requestPublicRevalidation(entity === 'vehicles' ? 'vehicle' : 'part');
     setBusy(false); setMessage(`Uploaded ${success} of ${imageEntries.length} images. ${imageEntries.length - success} unmatched or failed.`);
   };
 

@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 const projectRoot = resolve(import.meta.dirname, '..');
@@ -29,4 +29,13 @@ if (!hasMatchingClient) {
 
 await mkdir(dirname(destination), { recursive: true });
 await copyFile(source, destination);
+const gradlePath = resolve(projectRoot, 'android/app/build.gradle');
+const versionCode = Number(process.env.ANDROID_VERSION_CODE || '5');
+const versionName = (process.env.ANDROID_VERSION_NAME || '1.4').trim();
+if (!Number.isSafeInteger(versionCode) || versionCode < 1 || !/^[0-9]+(?:\.[0-9]+){1,3}$/.test(versionName)) {
+  throw new Error('Invalid Android version settings.');
+}
+const gradle = await readFile(gradlePath, 'utf8');
+if (!/versionCode\s+\d+/.test(gradle) || !/versionName\s+"[^"]+"/.test(gradle)) throw new Error('Android version fields missing.');
+await writeFile(gradlePath, gradle.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`).replace(/versionName\s+"[^"]+"/, `versionName "${versionName}"`));
 console.log(`Prepared Firebase config for ${expectedPackage} at ${destination}`);

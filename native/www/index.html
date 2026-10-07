@@ -7,22 +7,32 @@
     <style>
       body {
         font-family: system-ui, sans-serif;
-        margin: 2rem;
+        margin: 0;
         line-height: 1.5;
         color: #1a1a1a;
+        background: #f4f6f8;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
       }
+      main { max-width: 24rem; padding: 2rem; text-align: center; }
+      h1 { animation: appear .5s ease-out; color: #d21e1e; }
+      @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      @media (prefers-reduced-motion: reduce) { h1 { animation: none; } }
       a {
-        color: #0b3d2e;
+        color: #d21e1e;
+        display: block;
+        padding: .75rem;
+        font-weight: bold;
       }
     </style>
   </head>
   <body>
-    <h1>ANSHA Trading</h1>
-    <p>
-      This file is a Capacitor sync placeholder. The native app loads the live
-      catalog from
-      <a href="https://www.anshatradingco.com">www.anshatradingco.com</a>
-      via <code>server.url</code> in <code>capacitor.config.ts</code>.
-    </p>
+    <main>
+      <h1>ANSHA Trading</h1>
+      <p>We couldn’t connect. Check your internet connection and try again.</p>
+      <a href="https://www.anshatradingco.com/mobile">Open customer app</a>
+      <a href="https://www.anshatradingco.com/admin/dashboard">Open staff app</a>
+    </main>
   </body>
 </html>

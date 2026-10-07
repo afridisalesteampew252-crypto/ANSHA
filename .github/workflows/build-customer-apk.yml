@@ -1,29 +1,29 @@
 name: Build ANSHA Customer APK
 
 permissions:
-  contents: write
+  contents: read
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/build-customer-apk.yml
   workflow_dispatch:
     inputs:
       server_url:
-        description: Customer mobile app URL to load in the APK
+        description: Customer app HTTPS URL
         required: true
-          default: https://www.anshatradingco.com/mobile
+        default: https://www.anshatradingco.com/mobile
         type: string
 
+concurrency:
+  group: apk-customer-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-customer-apk:
+  build-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      ANDROID_VERSION_CODE: '6'
+      ANDROID_VERSION_NAME: '1.5'
+      CAPACITOR_SERVER_URL: ${{ inputs.server_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,63 +35,24 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: npm ci --legacy-peer-deps
-      - name: Generate the customer Android project
+      - name: Generate Android project
         run: npm run cap:add:android
-      - name: Add customer Firebase config and sync Capacitor
+      - name: Prepare Firebase, version, and Capacitor
         run: npm run cap:sync:android
-        env:
-          CAPACITOR_SERVER_URL: ${{ inputs.server_url || 'https://www.anshatradingco.com/mobile' }}
-          ANDROID_VERSION_CODE: '5'
-          ANDROID_VERSION_NAME: '1.4'
-      - name: Apply ANSHA launcher icons and display cutout handling
+      - name: Apply launcher icons, animated opening, and safe screen areas
         run: |
           python -m pip install Pillow==11.3.0
           python scripts/prepare-android-ui.py
-      - name: Build installable customer debug APK
-        run: cd android && ./gradlew assembleDebug
+      - name: Build installable test APK
+        run: cd android && ./gradlew assembleDebug --no-daemon
+      - name: Record artifact checksum
+        run: sha256sum android/app/build/outputs/apk/debug/app-debug.apk > android/app/build/outputs/apk/debug/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: ansha-customer-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/output-metadata.json
+            android/app/build/outputs/apk/debug/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
-      - name: Publish verified APK to the production website
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          APK_PATH: android/app/build/outputs/apk/debug/app-debug.apk
-          PUBLISH_PATH: public/downloads/ansha-trading-mobile.apk
-        run: |
-          publish_dir="$RUNNER_TEMP/customer-apk-publish"
-          mkdir -p "$publish_dir"
-          git fetch origin main
-          git worktree add "$publish_dir" origin/main
-          install -D "$APK_PATH" "$publish_dir/$PUBLISH_PATH"
-          python - "$publish_dir/app/download/page.tsx" <<'PY'
-          from pathlib import Path
-          import sys
-
-          path = Path(sys.argv[1])
-          page = path.read_text()
-          page = page.replace(
-              "const customerApkUrl = '/downloads/ansha-trading-mobile.apk?v=1.3';",
-              "const customerApkUrl = '/downloads/ansha-trading-mobile.apk?v=1.4';",
-          )
-          page = page.replace(
-              "Version 1.3 · Updated 29 September 2026",
-              "Version 1.4 · Updated 6 October 2026",
-          )
-          page = page.replace(
-              "<li>Customer portal home with account shortcuts</li>",
-              "<li>Branded ANSHA app icon and improved screen safe areas</li>\n            <li>Customer portal home with account shortcuts</li>",
-          )
-          if "Version 1.4 · Updated 6 October 2026" not in page or "?v=1.4" not in page:
-              raise SystemExit("Download page did not match the expected v1.3 source; refusing to publish")
-          path.write_text(page)
-          PY
-          git -C "$publish_dir" config user.name "github-actions[bot]"
-          git -C "$publish_dir" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git -C "$publish_dir" add "$PUBLISH_PATH" app/download/page.tsx
-          if ! git -C "$publish_dir" diff --cached --quiet; then
-            git -C "$publish_dir" commit -m "Publish customer APK v1.3"
-            git -C "$publish_dir" push origin HEAD:main
-          fi

@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   Search,
+  RotateCcw,
   Trash2,
   Upload,
   UserRoundCheck,
@@ -54,7 +55,8 @@ const emptyForm = {
 };
 type CustomerForm = typeof emptyForm;
 type PortalMap = Record<string, { email: string; is_active: boolean }>;
-type CustomerAssignee = { id: string; full_name: string; role: 'manager' | 'sales' | 'freelancer' };
+type CustomerAssignee = { id: string; full_name: string; role: 'admin' | 'manager' | 'sales' | 'freelancer' };
+type AssignmentChange = { customerId: string; previousOwnerId: string | null; ownerId: string | null };
 
 const FORM_FIELDS: { key: keyof Omit<CustomerForm, 'avatar_url'>; label: string; required?: boolean }[] = [
   { key: 'full_name', label: 'Full name', required: true },
@@ -86,6 +88,7 @@ export default function CustomersPage() {
   const [saving, setSaving] = useState(false);
   const [assignees, setAssignees] = useState<CustomerAssignee[]>([]);
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [lastAssignment, setLastAssignment] = useState<AssignmentChange | null>(null);
 
   const [selfId, setSelfId] = useState('');
   const [selfRole, setSelfRole] = useState<string>('staff');
@@ -95,7 +98,7 @@ export default function CustomersPage() {
 
   const load = useCallback(async () => {
     const [{ data }, { data: portals }, { data: auth }, { data: ownerRows }] = await Promise.all([
-      supabase.from('customers').select('*').order('created_at', { ascending: false }),
+      supabase.from('customers').select('id,customer_code,full_name,company_name,email,phone,whatsapp,country,address,notes,avatar_url,tax_registration_number,is_active,owner_id,created_at,updated_at').order('created_at', { ascending: false }),
       supabase.from('customer_profiles').select('customer_id,email,is_active'),
       supabase.auth.getUser(),
       supabase.rpc('list_customer_assignees'),
@@ -260,6 +263,10 @@ export default function CustomersPage() {
 
   const assignCustomer = async (customerId: string, ownerId: string) => {
     if (!canAssign) return;
+    const customer = customers.find((item) => item.id === customerId);
+    if (!customer || customer.owner_id === (ownerId || null)) return;
+    if (selfRole === 'manager' && ownerId !== selfId
+        && !window.confirm('Reassign this customer? They will leave your customer list. An administrator can restore the assignment.')) return;
     setAssigningId(customerId);
     const { error } = await supabase.rpc('assign_customer_owner', {
       p_customer_id: customerId,
@@ -272,7 +279,22 @@ export default function CustomersPage() {
       if (error.code === '42501') await load();
       return;
     }
-    setMessage(ownerId ? 'Account owner assigned.' : 'Customer moved to the unassigned queue.');
+    setLastAssignment({ customerId, previousOwnerId: customer.owner_id, ownerId: ownerId || null });
+    setMessage(ownerId ? 'Account owner assigned. The change is recorded in the audit log.' : 'Customer moved to the unassigned queue. The change is recorded in the audit log.');
+    await load();
+  };
+
+  const undoAssignment = async () => {
+    if (selfRole !== 'admin' || !lastAssignment) return;
+    setAssigningId(lastAssignment.customerId);
+    const { error } = await supabase.rpc('restore_customer_owner', {
+      p_customer_id: lastAssignment.customerId,
+      p_expected_owner_id: lastAssignment.ownerId,
+      p_previous_owner_id: lastAssignment.previousOwnerId,
+    });
+    setAssigningId(null);
+    setLastAssignment(null);
+    setMessage(error ? error.message : 'Previous account owner restored. The reversal is recorded in the audit log.');
     await load();
   };
 
@@ -299,7 +321,7 @@ export default function CustomersPage() {
   });
 
   const existingAvatarSrc = editingId ? avatarUrls[editingId] : null;
-  const fieldAgentScoped = isFieldAgentRole(selfRole);
+  const fieldAgentScoped = isFieldAgentRole(selfRole) || selfRole === 'manager';
   const unassignedCount = customers.filter((customer) => !customer.owner_id).length;
 
   return (
@@ -309,7 +331,7 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
           <p className="text-sm text-muted-foreground">
             Manage CRM profiles{fieldAgentScoped ? ' assigned to you' : ''}. Enable customer portal login from each
-            customer&apos;s account page. Account ownership controls the sales and freelancer workflow scope.
+            customer&apos;s account page. Account ownership controls the manager, sales and freelancer workflow scope.
           </p>
         </div>
         <div className="flex shrink-0 flex-col gap-3 sm:items-end">
@@ -328,7 +350,7 @@ export default function CustomersPage() {
         <div className="flex flex-col gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-semibold text-foreground">{unassignedCount} customer{unassignedCount === 1 ? '' : 's'} need an account owner</p>
-            <p className="text-muted-foreground">Assign a manager, sales agent or freelancer so their customer workflow is scoped correctly.</p>
+            <p className="text-muted-foreground">Assign an admin, manager, sales agent or freelancer so their customer workflow is scoped correctly.</p>
           </div>
           <Badge variant="outline" className="w-fit border-amber-500/40 bg-background/60 text-amber-700 dark:text-amber-300">Unassigned queue</Badge>
         </div>
@@ -337,6 +359,9 @@ export default function CustomersPage() {
       {message ? (
         <div className="flex items-start justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-4 py-3 text-sm">
           <p className="text-muted-foreground">{message}</p>
+          {selfRole === 'admin' && lastAssignment ? (
+            <Button type="button" variant="outline" size="sm" disabled={Boolean(assigningId)} onClick={() => void undoAssignment()}><RotateCcw className="h-4 w-4" />Undo assignment</Button>
+          ) : null}
           <Button type="button" variant="ghost" size="sm" className="h-auto shrink-0 px-2 py-0.5" onClick={() => setMessage('')}>
             Dismiss
           </Button>
@@ -470,7 +495,7 @@ export default function CustomersPage() {
                         <td className="p-4">
                           {(() => {
                             const owner = assignees.find((person) => person.id === item.owner_id);
-                            if (canAssign) {
+                            if (canAssign && (selfRole === 'admin' || item.owner_id === selfId)) {
                               return (
                                 <div className="flex min-w-[12rem] flex-col gap-2">
                                   <label>
@@ -687,4 +712,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-

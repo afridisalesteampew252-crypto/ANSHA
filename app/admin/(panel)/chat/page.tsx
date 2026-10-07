@@ -62,6 +62,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { sharedLocationUrl, teamCallUrl } from '@/lib/team-calls';
 
 type Conversation = {
   id: string;
@@ -311,6 +312,7 @@ function ChatPageInner() {
   const initialConversationRef = useRef<string | null>(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('conversation'));
   const recorderRef = useRef<MediaRecorder | null>(null);
   const [recording, setRecording] = useState(false);
+  const [inviting, setInviting] = useState(false);
   useEffect(() => () => { if (recorderRef.current?.state === 'recording') recorderRef.current.stop(); }, []);
 
   const loadConversations = useCallback(async (userId: string) => {
@@ -526,16 +528,16 @@ function ChatPageInner() {
   }, [activeId, entityFilter, filteredConversations]);
 
   async function shareLocation() {
+    if (!activeId || !currentUserId) return;
     if (!navigator.geolocation) return setNotice('Location is unavailable.');
+    const conversationId = activeId;
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-      const latitude = coords.latitude.toFixed(6);
-      const longitude = coords.longitude.toFixed(6);
       const { error } = await supabase.from('chat_messages').insert({
-        conversation_id: activeId, sender_id: currentUserId,
-        body: `📍 Location: https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`,
+        conversation_id: conversationId, sender_id: currentUserId,
+        body: `📍 Location: ${sharedLocationUrl(coords.latitude, coords.longitude)}`,
       });
       if (error) setNotice(error.message);
-      else await loadMessages(activeId, currentUserId);
+      else await loadMessages(conversationId, currentUserId);
     }, (error) => setNotice(error.message), { timeout: 15000, maximumAge: 60000 });
   }
 
@@ -562,17 +564,29 @@ function ChatPageInner() {
   }
 
   async function inviteToCall(kind: 'voice' | 'video') {
-    if (!activeOther) return;
-    const room = `ANSHA-${crypto.randomUUID().replaceAll('-', '')}`;
-    const base = process.env.NEXT_PUBLIC_TEAM_MEETING_BASE_URL || 'https://meet.jit.si';
-    const url = `${base.replace(/\/$/, '')}/${room}#config.startWithVideoMuted=${kind === 'voice'}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-    const { error } = await supabase.from('chat_messages').insert({
-      conversation_id: activeId, sender_id: currentUserId,
-      body: `${kind === 'voice' ? '📞 Voice' : '🎥 Video'} call invitation: ${url}`,
-    });
-    if (error) return setNotice(error.message);
-    await loadMessages(activeId, currentUserId);
+    if (!activeConversation || !currentUserId || inviting) return;
+    const conversationId = activeConversation.id;
+    let callWindow: Window | null = null;
+    setInviting(true);
+    try {
+      const url = teamCallUrl(process.env.NEXT_PUBLIC_TEAM_MEETING_BASE_URL || 'https://meet.jit.si', crypto.randomUUID(), kind);
+      // Reserve a tab during the click to avoid browser popup blocking after I/O.
+      callWindow = window.open('about:blank', '_blank');
+      if (callWindow) callWindow.opener = null;
+      const { error } = await supabase.from('chat_messages').insert({
+        conversation_id: conversationId, sender_id: currentUserId,
+        body: `${kind === 'voice' ? '📞 Voice' : '🎥 Video'} call invitation: ${url}`,
+      });
+      if (error) throw error;
+      if (callWindow) callWindow.location.replace(url);
+      else setNotice('Call invitation sent. Use Join call below to open the meeting.');
+      await loadMessages(conversationId, currentUserId);
+    } catch (error) {
+      callWindow?.close();
+      setNotice(error instanceof Error ? error.message : 'Unable to invite the conversation to a call.');
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function sendMessage() {
@@ -943,9 +957,9 @@ function ChatPageInner() {
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
-                  {activeOther ? <>
-                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => void inviteToCall('voice')} aria-label="Start voice call"><Phone className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => void inviteToCall('video')} aria-label="Start video call"><Video className="h-4 w-4" /></Button>
+                  {activeConversation.participants.some((participant) => participant.user_id !== currentUserId) ? <>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={inviting} onClick={() => void inviteToCall('voice')} aria-label="Start voice call"><Phone className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" disabled={inviting} onClick={() => void inviteToCall('video')} aria-label="Start video call"><Video className="h-4 w-4" /></Button>
                   </> : null}
                   <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => { setLinkType(entityFilter?.type || 'vehicle'); setLinkOpen(true); }} aria-label="Link record">
                     <Link2 className="h-4 w-4" />

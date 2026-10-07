@@ -168,6 +168,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isPortalArea) {
+    // Recovery email tokens are imported by this page after it loads. Requiring
+    // an existing session here would redirect new-browser recovery to sign-in.
+    if (pathname === '/portal/reset-password') return supabaseResponse;
     const isLoginPage = pathname === '/portal';
 
     if (!claims?.sub) {

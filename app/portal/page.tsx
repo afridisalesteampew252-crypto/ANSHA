@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/lib/supabase/client';
 import { isNativeCapacitorRuntime } from '@/lib/capacitor/runtime';
 import { useLoginLockout } from '@/components/auth/use-login-lockout';
+import { signInWithProtectedPassword } from '@/lib/password-login';
 
 function GoogleMark() {
   return (
@@ -139,7 +140,7 @@ function PortalLoginInner() {
 
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: `${window.location.origin}/portal/reset-password`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/portal/reset-password`,
     });
     setLoading(false);
 
@@ -201,16 +202,11 @@ function PortalLoginInner() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error) {
-      const attempt = loginLockout.recordFailure();
+    const { data, error, attempts, lockedUntil } = await signInWithProtectedPassword('customer', email, password);
+    if (error || !data) {
+      loginLockout.syncServerState(attempts, lockedUntil);
       setLoading(false);
-      toast.error(attempt.lockedUntil > Date.now()
-        ? 'Too many failed attempts. Sign-in is locked for 5 minutes.'
-        : `Invalid email or password. ${3 - attempt.attempts} attempts remain before a temporary sign-in lock.`);
+      toast.error(error || 'Sign-in could not be completed.');
       return;
     }
 

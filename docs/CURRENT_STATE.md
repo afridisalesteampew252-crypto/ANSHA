@@ -1,242 +1,169 @@
 # Current State
 
-**Live audit: 2026-10-07.** This is the current infrastructure baseline; see [PROJECT-AUDIT-2026-10-07](./PROJECT-AUDIT-2026-10-07.md) for the full verified audit. No production schema changes or deployment were made by the audit.
+Code checkpoint: **7 October 2026**. This document separates verified repository
+work from production activation. Do not infer database migration execution from
+a GitHub merge.
 
-## Verified production infrastructure
+## Repository and release
 
-- **Supabase:** ANSHA-Mumbai — `spmnxwhwsgpaoiklezex` — Mumbai `ap-south-1` — ACTIVE_HEALTHY — PostgreSQL 17.11.
-- **Database:** ~38 MB at audit time; 118 public tables; all 118 have RLS enabled; 282 RLS policies; 493 valid indexes; 140 migrations recorded; latest migration `20261006040000`.
-- **Vercel:** project `anshanew`; latest listed production deployment READY; custom domains verified.
-- **Vercel production commit:** `2bd4268a` (customer password recovery).
-- **Domains:** `anshatrading.co` and `www.anshatrading.co` are configured in Vercel to redirect to `www.anshatradingco.com`. Registrar-side GoDaddy DNS/forwarding must still be correct for the redirect to be observed publicly.
-- **Compute:** Supabase Pro + Micro is currently sufficient; no evidence from this audit requires a larger compute tier.
+- GitHub PR **#115** merged the previous security package into `main` at
+  `fea3a65461f1c6e82246580492b4f463f34b72fc`. Its tree matched the starting
+  security checkout exactly.
+- The follow-up package combines security, performance, customer access,
+  notifications, finance, catalog/freight, Android and communication changes.
+- The user requested the complete code on `release/full-project-package` for
+  their own merge, and separately authorized applying the database and functions
+  now. `main` and the production website remain unchanged by this release.
+- Management API access recovered after the environment network update.
+  Live history confirmed that PR #115's seven October security migrations had
+  not been applied. All 17 October release migrations were then applied in
+  order, each with its migration-history entry in the same transaction.
+- Historical migration timestamps differ between Git and Supabase. Twenty-one
+  older versions map to previously applied migrations by name; two further
+  historical fixes are already effective in the live schema. These were not
+  blindly replayed over later production functions.
+- `password-login`, `portal-password-reset`, and updated `send-admin-push`
+  deployed successfully, with JWT verification disabled at the gateway and
+  authorization enforced inside the handlers.
+- The direct Auth Password Verification Attempt hook could not be enabled:
+  Supabase returned HTTP **402** because this organization does not support it.
+  The app gateway's three-attempt/five-minute cooldown works independently;
+  direct Supabase Auth calls are not covered until the provider hook is enabled
+  on a supported plan. No plan upgrade was purchased.
 
-## Live advisor findings
+## Verified code changes
 
-- **Security:** 3 anonymous SECURITY DEFINER functions and 123 authenticated SECURITY DEFINER functions are flagged for EXECUTE review.
-- **Security:** 2 private-schema tables have RLS enabled with no policies; confirm intentional deny-by-default.
-- **Performance:** 42 multiple-permissive-policy findings.
-- **Performance:** 238 unused-index findings; review before deletion.
-- **Performance:** 60 unindexed foreign-key findings.
-- **Performance:** Auth connection allocation is currently absolute (10); revisit if compute is increased.
-- **Testing:** ERP/RLS/stateful workflow coverage remains much thinner than public-route coverage.
+### Database security and performance
 
-**Do not blindly delete policies, functions, or indexes.** Review → test → migration → verify → document → deploy.
+- Assignment fails closed for absent/inactive roles. Managers act only on their
+  current customer book; account admins control portal identity links.
+- Reservation guards cover reserve/release/ownership/publishing transitions.
+  Payroll, GL, proof review and transferred invoice-item authorization are
+  exercised with actual role fixtures.
+- Native push checks current recipient ownership again at delivery, including
+  customer reassignment after an alert was queued.
+- Four targeted FK indexes were added. **No unused indexes were deleted.**
+- Eight additional hosted legacy functions were hardened by the optional
+  `20261007090000` migration. Final production inspection found no unsafe
+  application definer search paths, no public tables without RLS, and only
+  `verify_invoice(uuid)` available to anonymous callers.
+- The production read-only report found 499 indexes, 386 with zero scans
+  (230 non-constraint/non-unique/non-replica candidates), zero exact duplicate
+  pairs, 59 FKs without a leading-key index, 51 partially covered FKs, and
+  47 permissive-policy overlap groups. Statistics reset time is unknown;
+  zero scans alone does not establish that an index is unused.
+- Auth allocation changed from 10 connections to **17%** of the current
+  60-connection database capacity and was verified by config readback.
+- Details: [database review](./PHASE-1-DATABASE-REVIEW.md),
+  [RPC audit](./PHASE-1-RPC-AUDIT.md), and
+  [regression checklist](./PHASE-1-SECURITY-REGRESSION.md).
 
-## Catalog prices and freight (2026-09-29)
+### Customers and sign-in
 
-- Vehicle listings prioritize a positive FOB value and keep FOB synchronized with the legacy listing-price field; public cards/details show available FOB, C&F, and CIF terms.
-- Admin bulk vehicle pricing supports FOB, C&F, and CIF, with inventory search and make/model/year/origin/currency/price-status filters.
-- Vehicle make/model M³ configuration provides search and filters and stores dimensions in metres for future matching listings/imports.
-- Freight charges distinguish RoRo rates per M³ from the total price of one 40-ft container.
-- Freight calculator supports saved vehicle dimensions or manual L × W × H, plus type-to-search suggestions for configured countries and their ports.
-- Operational steps: [Catalog Prices and Freight](./Catalog-Freight-Pricing.md). Production status will be confirmed after PR #99 completes and deploys.
+- Audited assignment/reassignment/unassignment plus admin Undo with a
+  concurrent-change guard.
+- Shared server password counter: three wrong passwords within five minutes
+  cause a five-minute lock through the app gateway. Direct provider coverage
+  remains blocked by the Supabase hook plan restriction described above.
+  Browser storage is only a countdown display.
+- Active-admin customer reset, password visibility/confirmation, and recovery
+  links that work in a new browser.
+- Activation: [Customer Authentication](./Customer-Authentication.md).
 
-# Current State
+### Notifications and daily work
 
-Verified code checkpoint: **2026-10-06**. The public inventory listing indexes remain applied to Supabase and verified with generic prepared-query plans. Public navigation, unified catalog search, and the customer/admin APK download release are committed to `main`; confirm the current Vercel deployment before treating the latest commit as live. Baseline: post–Phase **78** ops/SEO/security on `www.anshatradingco.com` / Supabase `spmnxwhwsgpaoiklezex`.
+- Admin and customer notification centers provide unread counts, read/all-read
+  actions, error/retry states and recipient-filtered realtime updates.
+- Customer alerts cover support replies, invoice events and TT proof reviews.
+- Today's Work combines requests, proofs/unknown TTs, invoice issues,
+  reservations, shipments, support and failed imports/email; manager totals
+  preserve ownership scope.
+- Native sender uses the current Mumbai endpoint and `ansha_default` channel,
+  and skips duplicate support pushes. Provider secrets and physical delivery
+  remain deployment/device checks.
 
-Canonical site: https://www.anshatradingco.com  
-Supabase: `spmnxwhwsgpaoiklezex` (ANSHA-Mumbai, ap-south-1). Previous Sydney project `spmnxwhwsgpaoiklezex` is kept as a read-only backup since the 2026-10-06 cutover.  
-Hosting: Vercel project `anshanew`
+### Finance
 
-## Recent database performance fix (2026-09-29)
+- Admin-configured currency choices across TTs, invoices, banks and catalog.
+- Each TT preserves its individual source amount/currency and bank exchange
+  rate; rates are not averaged.
+- Customer invoice totals, paid/remaining amounts and TT/direct payment history.
+- Admin/customer SOA: currency/date filters, opening/running/closing balances,
+  PDF and Excel. TT allocations do not credit the same receipt twice;
+  proformas/drafts do not become posted receivables.
+- PKR expenses and balanced PKR GL posting passed executable SQL fixtures.
 
-- Added `vehicles_public_listing_order_idx` and `parts_public_listing_order_idx` over `(is_published, stock_status, is_featured DESC, created_at DESC)`.
-- Verified with forced generic prepared plans: both listing queries use their matching index and no longer sort by featured/date.
-- Applied migrations `20260928221630_optimize_public_inventory_listing_indexes` and `20260928222037_make_public_listing_indexes_parameter_safe`.
-- Query statistics viewed before the change were cumulative (reset 2026-09-09); collect new traffic before reporting a measured latency reduction.
+### Public catalog and freight
 
-## Public navigation, search, and Android downloads (2026-10-06)
+- Bulk FOB/legacy-price synchronization and public catalog/detail/market/search
+  cache invalidation restored.
+- FOB → C&F → CIF estimates with explicit freight/insurance currency checks.
+- Saved make/model dimensions, automatic volume defaults, RoRo per-M³ rates
+  and 40-foot 6/4/3 sharing.
+- Normalized destination assignment; country-specific inventory remains scoped.
+- Parts SEO/identity/tags/fitment imports and public tag search.
+- Import templates preserve omitted values and report fitment-write failures.
+  Fitment writes are sequential, not a transaction across the complete import.
+- The user's menu implementation was preserved. Search reads the submitted
+  form directly so hydration does not erase typed input.
 
-- Added `/search`, which searches published, available vehicle and parts inventory together and links to the full filtered catalogs.
-- Connected unified search from the desktop header, mobile drawer, homepage finder, and mobile bottom navigation. The header form has a normal `/search` action so it also works before React hydration.
-- Simplified the homepage by removing repetitive promotional, trust, and manufacturer sections while keeping categories, inventory, export markets, sourcing, reviews, and contact paths.
-- Mobile bottom navigation is now Home, Stock, Parts, Search, and WhatsApp. Customer Account remains available from the mobile menu.
-- Simplified the desktop primary navigation and moved secondary destinations into a native, click-toggle **More** disclosure that works before JavaScript loads.
-- Added a keyboard **Skip to main content** link across public pages.
-- Published separate direct-download Android files on `/download`:
-  - Customer APK `com.anshatrading.app` version **1.4** (code **5**) opens `/mobile`.
-  - Admin APK `com.anshatrading.admin` version **1.3** (code **4**) opens `/admin/dashboard`.
-- Both APKs were rebuilt from the current Capacitor/Firebase configuration, passed archive/package validation, and are currently **debug-signed direct-install test builds**. Stable release signing and real-device update testing remain required before store or managed production distribution.
-- Added Playwright coverage for mobile Search/WhatsApp navigation, keyboard skip navigation, combined header search, and the desktop More toggle. The wider ERP/RLS test gap remains.
+### Android and communication
 
-## Completion snapshot
+- Customer APK **1.5 / code 6**, admin APK **1.4 / code 5**, included under
+  `public/downloads` with matching download-page versions and SHA256 checksums.
+- Both built successfully and passed package/signature/config validation.
+  Signing certificates match the previous downloads. These remain debug-signed
+  direct-install builds.
+- Adaptive icons, safe screen insets, animated opening and offline retry screen.
+- Push registration handles signed-in accounts and portal/admin deep links.
+- APK workflows are manual artifact builds with read-only repository
+  permissions; they do not commit directly to main.
+- Team chat supports voice attachments, one-time location, and direct/group
+  Jitsi call invitations. Media is not stored/streamed through Supabase.
+  Jitsi hosting/moderator access and physical call/push tests remain external
+  checks. See [Team Communication](./Team-Communication.md).
+- PWA server snapshots are stable; first service-worker installation no longer
+  reloads an active form. Worker updates can still refresh once.
 
-| Area | Approx. done | Notes |
-|---|---|---|
-| Public catalog + SEO exporter site | **~99%** | Parts/vehicles/**machinery**/categories/blog/`/reviews`/offers/**70 export markets**; unified `/search`; simplified public navigation; Complete SEO Repair (robots+sitemap+facets noindex+markets empty noindex+shared metadata/schema/breadcrumbs/CWV); FOB/C&F/CIF; **GSC**; favicon/OG; Product JSON-LD rules (`lib/product-schema.ts`); cart & favorites; FX/clock; Deals; featured rotation; Tawk. Remaining: production smoke + GSC human steps; no brand microsite; detail schema still client-hydrated |
-| Staff ERP (purchase → GL → VAT/payroll) | **~99%** | Phases 28–38, 46–48, 50, 53–57, **61–71**, **72–78** + post-78: remittances; commissions; bulk reserve; config yards/shipping/freight; reports + Excel; customer auto ID + Actions; **MoneyBreakdown** KPIs (dashboard/analytics/invoices/SOA — All currencies, no FX mixing); stock invoice badges; Make Available clears reservation SOA (SECURITY DEFINER fix) |
-| Ops communications (chat/mail/email/WA/AI/Tawk) | **~96%** | Team Chat presence (Phase 60); Tawk widget + Live chat Needs attention (**admin + manager**); Phase 58 webhook mirror; advisor harden on `tawk_webhook_receipts` + `touch_admin_last_seen` |
-| Marketing (offers, campaigns, PWA push, subscribers) | **~93%** | Phase 66 campaigns; subscribers Subscribe this device + Send test push; VAPID on Vercel + Edge. Still no open tracking / cron ESP |
-| Customer portal | **~98%** | Verified-email self-registration; safe exact-email CRM linking; stock catalog shortcuts; invoices + SOA, reservations, remittances; Tawk support; admin-approved account deletion |
-| PWA / Capacitor | **~92%** | **Anshatradingco APP**; install CTAs; push opt-in + staff test path; customer v1.4 + admin v1.3 APK downloads; stable release signing and real-device update testing remain |
-| Automated tests | **~15%** | CI lint/typecheck/build/brands; Playwright public navigation/search and anonymous security coverage exists, but ERP/RLS/stateful workflows remain thin |
-| Docs (this set) | **~99%** | Current state refreshed 2026-10-06; architecture, performance, deployment, and APK references remain the operating guides |
+## Verification evidence and limits
 
-**Overall product maturity (shipping ERP + public exporter):** roughly **96–98%** of the Phase 1–78 roadmap that was chosen and built. Core MVP is **shipped**. Remaining: Auth leaked-password toggle, bank live feeds, full ESP automation, HR location-scoped approvals, automated tests — not a greenfield rewrite.
+- Fresh PostgreSQL 15 replay: **154 migrations passed**, followed by the
+  optional 155th migration and another successful run of all **seven SQL
+  behavior suites**. The hosted-only patch also passed two applications to
+  the eight actual legacy definitions in a rolled-back local fixture.
+- Six Node regression scripts passed: catalog, finance, mobile/PWA, native push,
+  notification stores, and password gateway/cooldown behavior.
+- Lint, TypeScript, 55 brand assets and production build passed. The final
+  production-server browser run passed **24 tests**, with one real-invoice
+  fixture test skipped. It covers public routes, anonymous boundaries,
+  password controls, mocked gateway cooldowns, More menu and header search.
+- The disposable PostgreSQL fallback validates SQL/RLS/RPC behavior, not the
+  complete Supabase HTTP/Auth/Realtime/Storage services. It excludes pg_net
+  transport and uses the normal unset-Vault-secret delivery branch.
+- Production migration execution, Edge deployment, Auth percentage readback,
+  current index/FK/policy evidence and deployed handler authorization were
+  checked independently. Successful customer login, recovery-email delivery,
+  authenticated UI flows and real-device push/calls still need release smoke
+  checks; local fixtures do not establish those external results.
+- The historical infrastructure snapshot is
+  [PROJECT-AUDIT-2026-10-07](./PROJECT-AUDIT-2026-10-07.md): Mumbai project
+  `spmnxwhwsgpaoiklezex`, Vercel `anshanew`, canonical
+  `https://www.anshatradingco.com`. Its figures are dated audit evidence,
+  not refreshed live measurements.
 
-## What exists now (high signal)
+## Release order
 
-### Public
-- Catalog: `/parts`, `/vehicles`, **`/machinery`**, categories, home finder, inquiry + part request
-- Home featured parts (8) + vehicles (4): **10-minute deterministic rotation** (`lib/featured-rotation.ts`)
-- Deals: `/offers`, inventory-linked discounts (`site_offers.vehicle_id` / `part_id`)
-- Markets: `/markets/[code]` from **`lib/export-markets.ts` (70 destinations)** + admin Trade config
-- Cart + favorites (localStorage); blog; banking; about; contact; invoice verify
-- Testimonials on home + `/reviews`
-- **SEO (SEO-01…10):** `NEXT_PUBLIC_SITE_URL` + `lib/seo.ts`; robots disallow `/admin` `/portal` `/api`; sitemap includes markets when inventory exists; listing facet URLs `noindex,follow` + canonical hub; empty markets `noindex`; Organization/WebSite (root), Article/ItemList/BreadcrumbList helpers; GSC verification; `/favicon.ico`; default OG `/images/og-default.jpg`. Checklist: `docs/Deployment.md` → SEO section
-- **Product JSON-LD:** `lib/product-schema.ts` — omit `offers` unless price+currency valid; real published testimonials only for `aggregateRating`/`review` (never invented). Vehicle/part detail graphs emit after client hydrate (pages are `'use client'`)
-- **Incoterm quotes:** FOB / C&F / CIF when catalog columns are set
-- PWA: manifest **Anshatradingco APP**, SW, install CTAs, push opt-in
-- Header: live Dubai time + AED→USD/EUR/JPY/PKR via `/api/fx`
-- Vehicle galleries hide auction-sheet photos; **Tawk.to** public widget when `NEXT_PUBLIC_TAWK_*` set
+1. Review the combined release branch and its validation evidence. Backend
+   migrations/functions are deployed; production Auth redirects and configured
+   SMTP/FCM settings were preserved.
+2. Merge the release branch when ready. This is the user's remaining website
+   release step; GitHub/Vercel will build the merged production commit.
+3. Confirm Vercel production commit/health, catalog routes and APK downloads;
+   smoke-test sign-in, recovery, ownership, finance, queue and notifications.
+4. If direct Auth lockout is required, enable and test the Password Verification
+   Attempt hook after obtaining plan support. Do not imply the current gateway
+   protects alternative direct Auth clients.
+5. Complete real-device APK install/update/push and two-person/group-call checks.
 
-### Customer portal (`/portal`)
-- **Reservations** (`/portal/reservations`) via `get_my_reservations`
-- Invoices (non-draft) + SOA (`get_my_customer_soa`) with **Buying details** — unpaid reservation proformas cancel when stock returns to **available**
-- Portal account KPIs use shared **`MoneyBreakdown`** (per-currency stack; All currencies = no FX mix)
-
-### Staff ERP (`/admin`)
-- Catalog (parts / **owned vehicles** / **Auction stock** / Machinery filter), customers, reservations, invoices, remittances, commissions
-- **Vehicles** = `stock_pool = owned`; **Auction stock** = `auction_third_party`; transfer actions between pools
-- **Stock management** + **Parts stock** + **Arrival Watch** — dual payment/stock × shipment status
-- **Bulk reserve** (Phase 77): select available vehicles/parts → `bulk_reserve_stock` (partial success OK)
-- **Actions menus** on reserved/sold stock cards: open invoices, claim commission, transfer pool, etc.
-- **Stock list invoice badges** — linked non-cancelled invoices from `invoice_items` (`lib/stock-linked-invoice.ts`)
-- Purchase: suppliers, PO, GRN, supplier payments; Export shipments (DHL/RoRo/20ft/40ft + docs); Landed cost
-- **Configuration**: export masters (`/admin/configuration`); **Yards** (`auction_yards`); **Shipping Companies**; **Freight charges** (ops + accounts write; manager read)
-- **Reports hub** (`/admin/reports`): 7 operational reports + financial statements; Excel download (`lib/export-excel.ts` / `lib/reports/*`)
-- **Vehicles Excel export** from owned/auction inventory lists
-- Reservations: price/shipment/inspection/VAT terms; field-agent requester lock; `reserved_by` on vehicles **and parts**
-- Invoices: Incoterm header/lines; VAT; A4 print; **Allocate remaining** / Unallocate; unallocate-then-delete restores stock
-- **Customers (Phase 78):** auto `customer_code` from `customer_code_seq` (~**48001+**); consignee fields; row **Actions** menu (SOA, invoices, remittances, consignee, edit) — SOA deep-link `#soa`
-- **Customer SOA UI:** `/admin/customers/[id]#soa` — statement KPIs + allocate remittance→invoice; **MoneyBreakdown** for multi-currency totals
-- **Dashboard / analytics / invoices list:** shared `components/money-breakdown.tsx` with currency filter (**All** stacks each currency; never converts)
-- **Multi-currency helpers:** `lib/money.ts` `formatMoneyBreakdown` / `currencyEntries` — sums per currency; **no FX conversion / mixing**
-- Bank accounts, expenses, VAT, payroll/EOS, GL + auto-post
-- Requests hard-delete; Team Chat presence; Live chat (**admin + manager**); Marketing (blog, offers, campaigns, subscribers, trade config)
-- Roles: `admin` | `staff` | `sales` | `freelancer` | `manager` | `accounts`
-- Field agents: catalog lists, own-book customers, reserve, draft proforma, **commissions claim**, My remittances
-- **Remittances (Phases 69–73):** dashboard (office filter), list/receive (**Allocate To Stocks** UI + allocate/unallocate), Unknown TTS (**auto-confirm** when linked to customer + agent), My remittances, **Excel/CSV export dropdown**; office/shift on **Users**
-- **Commissions (Phase 72):** `/admin/commissions` — claim on sold stock; ops/accounts review/pay; manager view
-- Clear reservation on available + SOA Buying sync when stock → available — **Make Available** works via SECURITY DEFINER on `private.sync_catalog_sold_state` / `clear_reservation_buying_documents`
-
-### Inventory ops (data loads)
-
-Live Supabase counts (ops snapshot): **~191** Japan vehicles; **~32** auction-sheet photos; **~2** Dubai vehicles; **~154** Dubai parts; **~16** Japan parts (key-fobs).
-
-Japan Aug 2026 ZIP batches → `stock_origin=japan`, **`stock_pool=auction_third_party`**, published, ask-for-quote. Script: `scripts/import-japan-stock-vehicles.mjs`. WhatsApp/Dubai imports via `scripts/import-whatsapp-parts*.mjs`, `scripts/import-dubai-whatsapp-sep20-stock.mjs`. Singapore WhatsApp one-off (Lexus RX350 draft): `scripts/import-singapore-rx350-once.mjs`. Taiwan auction ZIP drafts: `scripts/import-taiwan-auction-stock.mjs` (local `_import_taiwan_stock*` media not in git).
-
-### Edge Functions
-`admin-create-user`, `admin-update-user`, `portal-create-access`, `send-web-push`, `send-outbound-email`, `send-whatsapp`, `remind-request-dues`, `tawk-webhook` (deploy with `--no-verify-jwt`)
-
-### Migrations
-Through **Phase 78** plus post-78 Make Available + security advisor migrations. **Already applied on remote** for Make Available + security hardening — app deploy ships code + docs only; do not re-apply if present in `schema_migrations`.
-
-| Migration | Scope |
-|---|---|
-| `20260928221630_optimize_public_inventory_listing_indexes.sql` | Initial partial indexes for featured-first public vehicle/parts listing queries; superseded by the parameter-safe follow-up below |
-| `20260928222037_make_public_listing_indexes_parameter_safe.sql` | Replaces the partial indexes with composite indexes that work with parameterized generic plans |
-| `20260922020000_security_advisor_hardening.sql` | `purchase_order_sequences` RLS + deny; `tawk_webhook_receipts` explicit deny; revoke anon on `touch_admin_last_seen`; drop duplicate vehicles reserved_customer index |
-| `20260922010000_fix_sync_catalog_sold_state_security_definer.sql` | `private.sync_catalog_sold_state` + `clear_reservation_buying_documents` SECURITY DEFINER (Make Available permission fix) |
-| `20260921130000_phase_78_customer_auto_id.sql` | `customer_code_seq` (~48001+); consignee columns; prepare trigger |
-| `20260921120000_phase_77_bulk_reserve_stock.sql` | `bulk_reserve_stock` |
-| `20260921110000_phase_76_freight_charges.sql` | `freight_charges` |
-| `20260921100000_phase_75_shipping_companies.sql` | `shipping_companies` |
-| `20260921090000_phase_74_yards_config.sql` | `auction_yards` |
-| `20260921070000_phase_73_remittance_auto_confirm.sql` | Known create → confirmed; link customer+agent → auto-confirm |
-| `20260921060000_phase_72_commission_claims.sql` | `commission_claims` + claim/review RPCs |
-| `20260921050000_soa_sync_on_reservation_release.sql` | Cancel unpaid reservation proformas; portal Buying |
-| `20260921040000_clear_reservation_on_available.sql` | Null reservation metadata on available |
-| `20260921030000_phase_71_allocate_unallocate_fix.sql` | SECURITY DEFINER unallocate |
-| `20260921020000_phase_70_admin_profile_office_shift.sql` | Profile office/shift |
-| `20260921010000` / `11000` Phase 69 | Remittance offices/shifts module |
-
-Earlier phases (1–68) remain under `supabase/migrations/`.
-
-## Known gaps / operator actions
-
-1. **Google Search Console** — after SEO deploy READY: confirm ownership → re-submit `sitemap.xml` if crawl URLs changed → Request indexing for key URLs. Tag Assistant: confirm GTM hits `/metrics` (see `docs/Deployment.md`).
-2. **VAPID verify** — matching keys on Vercel + Edge; confirm via `/admin/subscribers` → Subscribe → Send test push. Do not commit `.env.local`.
-3. **Supabase Auth leaked-password protection** — enable in dashboard.
-4. **Optional secrets** — Resend, WhatsApp, AI Gateway/OpenAI if those UIs should send.
-5. **Tawk webhook** — `TAWK_WEBHOOK_SECRET`, deploy `--no-verify-jwt`, dashboard webhooks → `…/functions/v1/tawk-webhook`. See `docs/Tawk.md`.
-6. **Bank feeds** — CSV/manual only; no live Open Banking OAuth.
-7. **Email newsletter list** — Marketing subscribers = `push_subscriptions` only.
-8. **Automated E2E/unit tests** — public navigation/search and anonymous security have Playwright coverage; ERP, RLS, finance, and stateful workflow coverage remains thin.
-9. **Android release signing** — customer v1.4 and admin v1.3 are debug-signed direct-install builds. Configure a permanent private release keystore, increasing version codes, signed APK/AAB builds, and real-device install/update checks before production distribution.
-10. **Native admin rewrite** — not built. The separate Admin APK is a Capacitor WebView for `/admin/dashboard`, not a standalone native ERP; see [Admin-Android](./Admin-Android.md).
-11. **Manager HR location scope** — inventory scoped by `allowed_stock_origins`; HR shift locations remain global viewer.
-12. **Edge functions** — keep `admin-create-user` / `admin-update-user` redeployed for `allowed_stock_origins` + remittance `office_id` / `shift_id`.
-
-## Next recommended steps (safe order)
-
-1. Confirm the latest `main` deployment is READY, then smoke-test `/`, `/search`, `/download`, both APK URLs, customer registration, and admin sign-in.
-2. Configure permanent Android release signing; build increasing-version customer/admin APKs or AABs and test clean install plus update on real devices.
-3. Complete GSC sitemap re-submit (if needed) + Request indexing → Tag Assistant for `/metrics` gateway.
-4. `/admin/subscribers` Subscribe this device → Send test push; verify Android FCM on both APKs.
-5. Enable leaked-password protection.
-6. Confirm Resend / WhatsApp / AI / Tawk webhook if in use.
-7. Spot-check Phase 72–73: claim commission on sold stock; Unknown TTS link → auto-confirm; Allocate To Stocks; remittance Excel/CSV export.
-8. Spot-check Phase 74–76: Configuration Yards / Shipping Companies / Freight charges CRUD.
-9. Spot-check Phase 77–78: bulk reserve; new customer gets Customer ID ≥ 48001; Actions menu → `#soa`; multi-currency KPIs stack currencies (All).
-10. Spot-check **Make Available** on reserved stock (no permission error; SOA Buying clears).
-11. Spot-check public part/vehicle JSON-LD (offers only when price valid; ratings only when published reviews exist).
-12. Spot-check reports hub Excel downloads; vehicles Export Excel.
-13. Expand Playwright/RLS coverage for role, finance, reservation, remittance, commission, and mutation workflows on a disposable Supabase project.
-
-## Doc map
-
-| Doc | Purpose |
-|---|---|
-| [Modules](./Modules.md) | Implemented module matrix |
-| [Roadmap](./Roadmap.md) | Phase history + remaining platform ideas |
-| [PROJECT-AUDIT](./PROJECT-AUDIT.md) | Stack / structure audit snapshot |
-| [User-Manual](./User-Manual.md) | Operator how-to |
-| [Roles](./Roles.md) | RBAC matrix |
-| [Tawk](./Tawk.md) | Public widget + Live chat webhook |
-| [PWA](./PWA.md) / [Mobile](./Mobile.md) | Customer PWA and Android shell |
-| [Admin-Android](./Admin-Android.md) | Staff APK setup and FCM |
-| [Deployment](./Deployment.md) | Vercel + Edge secrets |
-| [Database](./Database.md) / [Security](./Security.md) | Data & authz |
-| [API](./API.md) | Health/FX/AI + RPCs + Edge |
-| [Architecture](./Architecture.md) | Surfaces and dependency direction |
-
-
-## Customer self-service portal (2026-09-23)
-
-- New customers can register at `/portal` with email verification.
-- `ensure_customer_portal_profile` links a single exact, unclaimed CRM email match; otherwise it creates an isolated customer record. Ambiguous matches are flagged `review_required` and never expose another customer's history.
-- Portal Stock links to published parts, vehicles, and machinery. Reservations, invoices, remittances, buying details, and per-currency SOA remain protected by customer RLS.
-- Tawk live chat now loads in the portal, using the existing public widget configuration.
-- Portal Settings provides in-app deletion requests; `/account-deletion` is the public web deletion resource required for store listings.
-- Only an active admin can approve a deletion. The Edge Function deletes the Supabase Auth user and anonymizes customer PII; transaction records may remain only for legal, tax, fraud-prevention, or audit obligations.
-- Migration: `20260923010000_customer_self_service_portal.sql`.
-- Edge Function: `portal-delete-account` (JWT required).
-
-
-## Phase 1 security branch checkpoint — 2026-10-07
-
-Branch: `security/phase-1-definer-rls`. These changes are **not applied to production**.
-
-Completed in this branch:
-- Removed anonymous execution from native FCM registration.
-- Removed anonymous execution from browser push subscription registration.
-- Removed authenticated execution from the intentionally public `verify_invoice(uuid)` RPC.
-- Hardened `next_purchase_order_number()` and `next_shipment_code()` to use `search_path=''`.
-- Restricted six workspace/receivables RLS policies from `PUBLIC` to `authenticated`.
-- Added a Phase 1 security regression checklist covering SECURITY DEFINER grants, RLS, customer ownership, high-risk ERP RPCs, invoice verification, and push registration.
-- Reviewed the three anonymous SECURITY DEFINER functions and confirmed `verify_invoice(uuid)` is intentionally public but narrowly scoped to `verification_code` + `verification_enabled`.
-- Hardened every remaining application `SECURITY DEFINER` function with a non-empty `search_path` to `search_path=''`.
-- Scoped manager customer/invoice visibility to records assigned to that manager, including direct assignment RPC enforcement.
-- Added inventory reservation ownership triggers, scoped manager publishing to assigned stock origins, and made manual invoice-stock application receivables-only.
-- Added pgTAP catalog regression coverage for grants, definer search paths, RLS roles/manager scope, inventory triggers, and high-risk RPC guards.
-- Added a branch-only GitHub Actions database job that rebuilds disposable Supabase services and runs the pgTAP suite; it does not link to production.
-
-Still required before merge:
-- Run `supabase db reset` and `supabase test db` against a disposable/CI Supabase stack, then complete role fixtures for customer, sales, accounts, manager, and admin users.
-- Complete application-level E2E coverage for assignment, invoice visibility/balances, reservations, remittances, finance, notifications, and portal workflows.
-- Re-run the performance advisor after the security migrations. Multiple-permissive policies and unused indexes were reviewed as performance findings, not safe deletion instructions; change them only with current plans and workload evidence.
-
-**Merge/deploy rule:** do not merge or deploy this branch until the complete Phase 1 regression pass is green.
+Full scope and activation evidence:
+[FULL-PACKAGE-CHECKLIST](./FULL-PACKAGE-CHECKLIST.md).

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Download, FileUp, Loader2, ReceiptText, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { useFinanceSettings } from '@/lib/use-finance-settings';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,7 +29,9 @@ export default function SupplierInvoicesPage() {
   const [supplier, setSupplier] = useState('');
   const [number, setNumber] = useState('');
   const [date, setDate] = useState(today);
-  const [currency, setCurrency] = useState('AED');
+  const financeSettings = useFinanceSettings();
+  const [currencyOverride, setCurrency] = useState('');
+  const currency = currencyOverride || financeSettings.default_currency;
   const [amount, setAmount] = useState('');
   const [reference, setReference] = useState('');
   const [notes, setNotes] = useState('');
@@ -110,7 +113,7 @@ export default function SupplierInvoicesPage() {
       <Card className="h-fit"><CardHeader><CardTitle className="text-lg">Upload received invoice</CardTitle></CardHeader><CardContent><form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5"><Label htmlFor="supplier">Supplier *</Label><Input id="supplier" required value={supplier} onChange={(event) => setSupplier(event.target.value)} /></div>
         <div className="grid grid-cols-2 gap-3"><div className="space-y-1.5"><Label htmlFor="number">Invoice number</Label><Input id="number" value={number} onChange={(event) => setNumber(event.target.value)} /></div><div className="space-y-1.5"><Label htmlFor="date">Invoice date</Label><Input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></div></div>
-        <div className="grid grid-cols-[7rem_1fr] gap-3"><div className="space-y-1.5"><Label>Currency</Label><select value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-10 w-full rounded-md border bg-background px-2 text-sm"><option>AED</option><option>USD</option><option>JPY</option><option>EUR</option><option>GBP</option></select></div><div className="space-y-1.5"><Label htmlFor="amount">Total amount</Label><Input id="amount" type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></div></div>
+        <div className="grid grid-cols-[7rem_1fr] gap-3"><div className="space-y-1.5"><Label>Currency</Label><select value={currency} onChange={(event) => setCurrency(event.target.value)} className="h-10 w-full rounded-md border bg-background px-2 text-sm">{!financeSettings.enabled_currencies.includes(currency) && <option value={currency}>{currency} (existing)</option>}{financeSettings.enabled_currencies.map((code) => <option key={code} value={code}>{code}</option>)}</select></div><div className="space-y-1.5"><Label htmlFor="amount">Total amount</Label><Input id="amount" type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></div></div>
         <div className="space-y-1.5"><Label htmlFor="reference">Purchase / stock reference</Label><Input id="reference" value={reference} onChange={(event) => setReference(event.target.value)} placeholder="PO, chassis, stock or part reference" /></div>
         <div className="space-y-1.5"><Label htmlFor="po">Link purchase order</Label><select id="po" value={purchaseOrderId} onChange={(event) => setPurchaseOrderId(event.target.value)} className="h-10 w-full rounded-md border bg-background px-2 text-sm"><option value="">None</option>{purchaseOrders.map((row) => <option key={row.id} value={row.id}>{row.po_number} · {row.status}</option>)}</select></div>
         <div className="space-y-1.5"><Label htmlFor="document">Invoice document *</Label><Input id="document" type="file" required accept="image/jpeg,image/png,image/webp,application/pdf,.doc,.docx,.xls,.xlsx" onChange={(event) => setFile(event.target.files?.[0] || null)} /><p className="text-xs text-muted-foreground">PDF, image, Word, or Excel up to 25 MB. Stored privately.</p></div>

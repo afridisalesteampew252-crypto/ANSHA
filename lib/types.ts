@@ -143,6 +143,8 @@ export interface Vehicle {
   slug: string;
   make: string;
   model: string;
+  /** Saved vehicle volume in cubic metres, used for RoRo and container freight estimates. */
+  volume_m3: number | null;
   variant: string | null;
   year: number | null;
   chassis_code: string | null;
@@ -648,7 +650,9 @@ export type NotificationType =
   | 'invoice'
   | 'remittance'
   | 'system'
-  | 'request_due';
+  | 'request_due'
+  | 'support_message'
+  | 'payment_proof';
 
 export type WorkspaceRequestDueReminderKind = 'due_soon' | 'overdue';
 
@@ -666,6 +670,19 @@ export interface AdminNotification {
   recipient_id: string;
   actor_id: string | null;
   notification_type: NotificationType;
+  title: string;
+  body: string | null;
+  href: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface CustomerNotification {
+  id: string;
+  recipient_id: string;
+  notification_type: 'support_message' | 'invoice' | 'payment_proof';
   title: string;
   body: string | null;
   href: string | null;
@@ -847,6 +864,10 @@ export interface Remittance {
   received_date: string;
   amount: number;
   currency: string;
+  /** Original TT bank conversion; one source unit equals exchange_rate receipt units. */
+  source_currency?: string | null;
+  source_amount?: number | null;
+  exchange_rate?: number | null;
   method: RemittanceMethod;
   bank_reference: string | null;
   sender_bank: string | null;
@@ -1693,6 +1714,7 @@ export interface Database {
   public: {
     Tables: {
       admin_notifications: TableDef<AdminNotification>;
+      customer_notifications: TableDef<CustomerNotification>;
       admin_profiles: TableDef<AdminProfile>;
       attendance_records: TableDef<AttendanceRecord>;
       auction_yards: TableDef<AuctionYard>;

@@ -18,5 +18,10 @@ export function createPublicSupabaseClient() {
   const { url, key } = getPublicConfig();
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      // Keep public SSR responsive when the database/network is unavailable.
+      // Explicit query abort signals take precedence over this read timeout.
+      fetch: (input, init) => fetch(input, { ...init, signal: init?.signal ?? AbortSignal.timeout(8_000) }),
+    },
   });
 }

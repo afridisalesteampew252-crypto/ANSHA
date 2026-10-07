@@ -7,9 +7,9 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase/client';
+import { PasswordInput } from '@/components/auth/password-input';
 
 type DeletionRequest = { id: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed'; requested_at: string; review_note: string | null };
 
@@ -66,7 +66,7 @@ export default function PortalSettingsPage() {
 
       <Card className="border-white/60 bg-card/85 shadow-lg backdrop-blur-xl dark:border-white/10">
         <CardHeader><CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5 text-accent" />Change password</CardTitle><CardDescription>Use at least 8 characters. This updates your customer portal login immediately.</CardDescription></CardHeader>
-        <CardContent><form onSubmit={changePassword} className="grid max-w-2xl gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="new-password">New password</Label><Input id="new-password" type="password" autoComplete="new-password" minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></div><div className="space-y-2"><Label htmlFor="confirm-password">Confirm password</Label><Input id="confirm-password" type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></div><Button type="submit" className="sm:col-span-2 sm:w-fit" disabled={passwordSaving}>{passwordSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}Update password</Button></form></CardContent>
+        <CardContent><form onSubmit={changePassword} className="grid max-w-2xl gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="new-password">New password</Label><PasswordInput id="new-password" autoComplete="new-password" minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} required /></div><div className="space-y-2"><Label htmlFor="confirm-password">Confirm password</Label><PasswordInput id="confirm-password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></div><Button type="submit" className="sm:col-span-2 sm:w-fit" disabled={passwordSaving}>{passwordSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}Update password</Button></form></CardContent>
       </Card>
 
       <Card className="border-destructive/25 bg-card/85 shadow-lg backdrop-blur-xl">

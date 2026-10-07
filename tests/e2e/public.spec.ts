@@ -1,7 +1,24 @@
 import { expect, test } from '@playwright/test';
 
+// Optional cloud transport: Node uses the environment's existing trusted proxy
+// CA. No browser trust settings change; rendered bytes are fetched with TLS
+// verification from the actual public storage URL, rather than fixture images.
+test.beforeEach(async ({ page }) => {
+  if (process.env.PLAYWRIGHT_PROXY_PUBLIC_IMAGES !== '1') return;
+  const origin = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin;
+  await page.route(`${origin}/storage/v1/object/public/**`, async (route) => {
+    if (route.request().resourceType() !== 'image' || route.request().method() !== 'GET') return route.continue();
+    const response = await fetch(route.request().url(), { signal: AbortSignal.timeout(15_000) });
+    await route.fulfill({
+      status: response.status,
+      contentType: response.headers.get('content-type') || 'application/octet-stream',
+      body: Buffer.from(await response.arrayBuffer()),
+    });
+  });
+});
+
 const pages = [
-  ['home', '/', /Japanese vehicles|automotive|ANSHA/i],
+  ['home', '/', /smarter way to source vehicles & parts/i],
   ['parts', '/parts', /Automotive parts catalog/i],
   ['vehicles', '/vehicles', /vehicles for global markets/i],
   ['machinery', '/machinery', /Heavy machinery|commercial vehicles/i],
@@ -73,7 +90,8 @@ test('updated blog images match on Insights and Home', async ({ page }) => {
   for (const article of articles) {
     const image = page.locator(`a[href="${article.href}"] img`).first();
     await expect(image).toBeVisible();
+    await image.scrollIntoViewIfNeeded();
     expect(imageKey((await image.getAttribute('src'))!)).toBe(imageKey(article.src!));
-    expect(await image.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0);
+    await expect.poll(() => image.evaluate((node: HTMLImageElement) => node.naturalWidth), { timeout: 15_000 }).toBeGreaterThan(0);
   }
 });

@@ -75,6 +75,7 @@ REVOKE ALL ON FUNCTION public.register_fcm_push_token(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.register_fcm_push_token(text, text) TO authenticated;
 
 DROP POLICY IF EXISTS workspace_delete_push_subscriptions ON public.push_subscriptions;
+DROP POLICY IF EXISTS owner_delete_push_subscriptions ON public.push_subscriptions;
 CREATE POLICY owner_delete_push_subscriptions
   ON public.push_subscriptions FOR DELETE TO authenticated
   USING (user_id = (SELECT auth.uid()));
@@ -91,6 +92,7 @@ REVOKE SELECT ON public.push_subscriptions FROM authenticated;
 GRANT SELECT ON public.push_subscriptions TO authenticated;
 
 DROP POLICY IF EXISTS workspace_manage_site_offers ON public.site_offers;
+DROP POLICY IF EXISTS ops_manage_site_offers ON public.site_offers;
 CREATE POLICY ops_manage_site_offers
   ON public.site_offers FOR ALL TO authenticated
   USING ((SELECT private.is_ops_user()))
