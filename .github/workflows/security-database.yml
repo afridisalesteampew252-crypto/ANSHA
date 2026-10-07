@@ -1,17 +1,20 @@
-name: Phase 1 Database Security
+name: Database Regression
 
 on:
-  push:
-    branches:
-      - security/phase-1-definer-rls
+  workflow_dispatch:
   pull_request:
     paths:
       - 'supabase/migrations/**'
       - 'supabase/tests/**'
+      - 'tests/database/**'
       - '.github/workflows/security-database.yml'
 
 permissions:
   contents: read
+
+concurrency:
+  group: database-regression-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   database-security:
@@ -22,9 +25,54 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+      - name: Give the historical seed a unique disposable replay version
+        # Two historical migrations share 20260920210000. Alias only this CI
+        # checkout for disposable replay; preserve tracked SQL and hosted history.
+        run: mv supabase/migrations/20260920210000_seed_export_master_options.sql supabase/migrations/20260920210001_seed_export_master_options.sql
       - name: Start disposable Supabase services and apply all migrations
         run: supabase start
       - name: Rebuild the disposable database from migration history
         run: supabase db reset --local
       - name: Run Phase 1 database regression tests
         run: supabase test db
+      - name: Run transactional role and financial behavior suites
+        run: |
+          local_db_url="$(supabase status -o json | jq -r '.DB_URL')"
+          test -n "$local_db_url"
+          # Only the Auth-hook fixture needs the trusted disposable reset role:
+          # postgres cannot impersonate Auth. Keep other suites under postgres
+          # so future-function probes exercise the migration owner's default ACLs.
+          # All fixtures still SET LOCAL ROLE to enforce actual Auth/RLS privileges.
+          # https://github.com/supabase/cli/blob/develop/apps/cli-go/internal/db/reset/reset.go
+          trusted_db_url="$(LOCAL_DB_URL="$local_db_url" python3 - <<'PY'
+          import os
+          import sys
+          from urllib.parse import urlsplit, urlunsplit
+
+          try:
+              parsed = urlsplit(os.environ['LOCAL_DB_URL'])
+              safe = (
+                  parsed.scheme in ('postgres', 'postgresql')
+                  and parsed.hostname in ('127.0.0.1', 'localhost', '::1')
+                  and parsed.port is not None and 0 < parsed.port < 65536
+                  and parsed.path == '/postgres'
+                  and parsed.username == 'postgres'
+                  and parsed.password is not None
+                  and not parsed.query and not parsed.fragment
+              )
+          except (KeyError, ValueError):
+              raise SystemExit('Invalid disposable database connection metadata') from None
+          if not safe:
+              raise SystemExit('Refusing privileged tests outside the disposable loopback database')
+          userinfo, _, hostport = parsed.netloc.rpartition('@')
+          _, _, encoded_password = userinfo.partition(':')
+          sys.stdout.write(urlunsplit(parsed._replace(netloc='supabase_admin:' + encoded_password + '@' + hostport)))
+          PY
+          )"
+          for test_file in tests/database/*.test.sql; do
+            if [[ "$test_file" == "tests/database/password-lockout.test.sql" ]]; then
+              psql "$trusted_db_url" -X -v ON_ERROR_STOP=1 -f "$test_file"
+            else
+              psql "$local_db_url" -X -v ON_ERROR_STOP=1 -f "$test_file"
+            fi
+          done
