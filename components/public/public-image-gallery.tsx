@@ -23,7 +23,7 @@ type PublicImageGalleryProps = {
 };
 
 const SWIPE_THRESHOLD = 48;
-const AUTO_ROTATE_INTERVAL = 5_000;
+const AUTO_ROTATE_INTERVAL = 3_000;
 
 /** Tiny gray blur so remote catalog images can use Next blur placeholder without new assets. */
 const BLUR_DATA_URL =

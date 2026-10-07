@@ -454,7 +454,7 @@ export function AdminSidebarNav({
   const iconOnly = !mobile && collapsed;
 
   return (
-    <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Admin navigation">
+    <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain p-3" aria-label="Admin navigation">
       {groups.map((group) => {
         const groupActive = group.items.some((item) => isAdminNavActive(pathname, item.href, search));
         const isOpen = openIds.includes(group.id);

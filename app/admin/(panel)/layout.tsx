@@ -196,14 +196,14 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       <AdminHealthMonitor role={profile.role} />
       <div className="admin-shell flex min-h-screen min-w-0">
       <AdminCommandCenter groups={visibleGroups} />
-      <aside className={cn('admin-sidebar relative hidden shrink-0 flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
-        <div className={cn('admin-sidebar-brand flex h-24 items-center border-b border-border/80', collapsed ? 'justify-center px-2' : 'px-4')}>
+      <aside className={cn('admin-sidebar sticky top-0 z-30 hidden h-[100dvh] min-h-0 shrink-0 self-start flex-col border-r border-border/80 transition-[width] duration-200 md:flex', collapsed ? 'w-20' : 'w-64')}>
+        <div className={cn('admin-sidebar-brand flex h-24 shrink-0 items-center border-b border-border/80', collapsed ? 'justify-center px-2' : 'px-4')}>
           <Link href="/admin/dashboard" className="flex min-w-0 items-center" aria-label="ANSHA operations dashboard">
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={337} height={135} priority className={cn('w-auto object-contain transition-all', collapsed ? 'h-12 max-w-[62px]' : 'h-20 max-w-[220px]')} />
           </Link>
         </div>
         <AdminSidebarNav groups={visibleGroups} collapsed={collapsed} chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
-        <div className="border-t border-border/80 p-3">
+        <div className="shrink-0 border-t border-border/80 p-3">
           <AdminProfileMenu compact={collapsed} profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
         </div>
         <Button variant="outline" size="icon" onClick={toggleCollapsed} className="absolute -right-4 top-28 z-10 h-8 w-8 rounded-full bg-background shadow-sm" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
@@ -213,13 +213,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
       {mobileOpen && <>
         <button className="fixed inset-0 z-[60] bg-[#0b0c0f]/50 md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close admin menu overlay" />
-        <aside className="admin-sidebar fixed inset-y-0 left-0 z-[70] flex w-[min(86vw,20rem)] flex-col border-r border-border/80 shadow-2xl md:hidden">
-          <div className="admin-sidebar-brand flex h-20 items-center justify-between border-b border-border/80 px-3">
+        <aside className="admin-sidebar fixed inset-y-0 left-0 z-[70] flex min-h-0 w-[min(86vw,20rem)] flex-col border-r border-border/80 shadow-2xl md:hidden">
+          <div className="admin-sidebar-brand flex h-20 shrink-0 items-center justify-between border-b border-border/80 px-3">
             <Image src="/images/ansha-logo-transparent.webp" alt="ANSHA Trading" width={337} height={135} priority className="h-16 w-auto max-w-[220px] object-contain" />
             <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} aria-label="Close admin menu"><X className="h-5 w-5" /></Button>
           </div>
           <AdminSidebarNav groups={visibleGroups} mobile chatUnread={chatUnread} liveChatOpen={liveChatOpen} unknownRemittances={unknownRemittances} />
-          <div className="border-t border-border/80 p-3"><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
+          <div className="shrink-0 border-t border-border/80 p-3"><AdminProfileMenu profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} /></div>
         </aside>
       </>}
 
