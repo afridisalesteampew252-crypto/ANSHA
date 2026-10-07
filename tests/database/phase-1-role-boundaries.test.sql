@@ -23,10 +23,10 @@ INSERT INTO auth.users(id,email)
 SELECT ('71000000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid, 'phase1-' || n || '@example.invalid'
 FROM generate_series(1,10) n;
 INSERT INTO public.admin_profiles(id,email,full_name,role,is_active,allowed_stock_origins)
-SELECT u.id,u.email,'Phase 1 fixture ' || n, role, n <> 8,
-  CASE WHEN role='manager' THEN ARRAY['dubai'] ELSE '{}'::text[] END
+SELECT u.id,u.email,'Phase 1 fixture ' || v.n, v.role, v.n <> 8,
+  CASE WHEN v.role='manager' THEN ARRAY['dubai'] ELSE '{}'::text[] END
 FROM (VALUES (1,'admin'),(2,'manager'),(3,'manager'),(4,'sales'),(5,'freelancer'),(6,'accounts'),(8,'admin'),(9,'staff')) v(n,role)
-JOIN auth.users u ON u.id=('71000000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid;
+JOIN auth.users u ON u.id=('71000000-0000-4000-8000-' || lpad(v.n::text,12,'0'))::uuid;
 INSERT INTO public.customers(id,customer_code,full_name,owner_id)
 VALUES
  ('71000000-0000-4000-8001-000000000001','phase1-1','Manager one customer','71000000-0000-4000-8000-000000000002'),

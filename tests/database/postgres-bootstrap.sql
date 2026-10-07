@@ -12,7 +12,8 @@ CREATE SCHEMA extensions;
 CREATE SCHEMA vault;
 CREATE TABLE auth.users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  email text, raw_user_meta_data jsonb DEFAULT '{}',
+  -- Supabase Auth also has a role column; keep fixture joins honest locally.
+  email text, role varchar(255), raw_user_meta_data jsonb DEFAULT '{}',
   raw_app_meta_data jsonb DEFAULT '{}', created_at timestamptz DEFAULT now()
 );
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$

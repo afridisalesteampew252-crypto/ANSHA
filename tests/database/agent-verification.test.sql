@@ -19,9 +19,9 @@ INSERT INTO auth.users(id,email)
 SELECT ('76000000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid, 'agent-verification-' || n || '@example.invalid'
 FROM generate_series(1,10) n;
 INSERT INTO public.admin_profiles(id,email,full_name,role,is_active)
-SELECT u.id,u.email,'Agent verification fixture ' || n,role,n NOT IN (6,7)
+SELECT u.id,u.email,'Agent verification fixture ' || v.n,v.role,v.n NOT IN (6,7)
 FROM (VALUES(1,'admin'),(2,'sales'),(3,'freelancer'),(4,'manager'),(5,'staff'),(6,'admin'),(7,'sales'),(8,'accounts'),(9,'sales')) v(n,role)
-JOIN auth.users u ON u.id=('76000000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid;
+JOIN auth.users u ON u.id=('76000000-0000-4000-8000-' || lpad(v.n::text,12,'0'))::uuid;
 
 SET LOCAL ROLE anon;
 SELECT set_config('request.jwt.claims','{"role":"anon"}',true);

@@ -252,6 +252,10 @@ a GitHub merge.
   API's transaction-local delete context while keeping the authenticated JWT
   and row policies active; it verifies the former assignee deletes zero rows
   and the current assignee can still read the retained file.
+- The next Supabase run exposed three fixture joins with an unqualified `role`
+  column that collided with `auth.users.role`. Those projections now explicitly
+  use their fixture aliases. The fallback Auth table includes the real `role`
+  column so subsequent local runs can catch that ambiguity before CI.
 
 ## Release order
 
