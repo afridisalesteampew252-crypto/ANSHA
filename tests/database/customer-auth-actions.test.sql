@@ -19,9 +19,9 @@ INSERT INTO auth.users(id,email)
 SELECT ('74100000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid, 'auth-actions-' || n || '@example.invalid'
 FROM generate_series(1,7) n;
 INSERT INTO public.admin_profiles(id,email,full_name,role,is_active)
-SELECT u.id,u.email,'Auth actions fixture ' || n,role,n <> 4
+SELECT u.id,u.email,'Auth actions fixture ' || v.n,v.role,v.n <> 4
 FROM (VALUES(1,'admin'),(2,'manager'),(3,'staff'),(4,'admin'),(5,'sales')) v(n,role)
-JOIN auth.users u ON u.id=('74100000-0000-4000-8000-' || lpad(n::text,12,'0'))::uuid;
+JOIN auth.users u ON u.id=('74100000-0000-4000-8000-' || lpad(v.n::text,12,'0'))::uuid;
 INSERT INTO public.customers(id,customer_code,full_name,owner_id,is_active)
 VALUES
  ('74100000-0000-4000-8001-000000000001','auth-actions-1','Active recovery customer','74100000-0000-4000-8000-000000000002',true),

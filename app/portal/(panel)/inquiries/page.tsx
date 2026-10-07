@@ -65,12 +65,12 @@ export default function PortalInquiriesPage() {
 
   return <div className="space-y-5">
     <header><h1 className="text-2xl font-bold">Your stock inquiries</h1>
-      <p className="text-sm text-muted-foreground">Track inquiries you sent while signed in to this account.</p></header>
+      <p className="text-sm text-muted-foreground">Track inquiries you sent or our team linked to your account.</p></header>
     {loading ? <p role="status" className="flex items-center gap-2 py-10"><Loader2 className="h-5 w-5 animate-spin" /> Loading inquiries…</p>
       : error ? <Card><CardContent className="space-y-3 p-5"><p role="alert">{error}</p><Button variant="outline" onClick={() => void load()}>Try again</Button></CardContent></Card>
       : rows.length === 0 ? <Card><CardContent className="space-y-3 py-12 text-center">
           <Send className="mx-auto h-8 w-8 text-muted-foreground" /><p className="font-semibold">No inquiries yet</p>
-          <p className="text-sm text-muted-foreground">Open a part or vehicle and select Send Inquiry.</p>
+          <p className="text-sm text-muted-foreground">Send an inquiry from a stock page, or ask support to link an earlier inquiry to your account.</p>
           <Button asChild variant="accent"><Link href="/portal/catalog">Browse stock</Link></Button>
         </CardContent></Card>
       : <ul className="space-y-3">{rows.map((row) => {
