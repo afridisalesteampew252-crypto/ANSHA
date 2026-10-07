@@ -45,6 +45,7 @@ import {
   Upload,
   UserCog,
   UserPlus,
+  ShieldCheck,
   UserX,
   Users,
   WalletCards,
@@ -207,7 +208,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     id: 'team',
     label: 'Team',
     icon: UserCog,
-    items: [{ href: '/admin/users', label: 'Users', icon: UserCog }],
+    items: [
+      { href: '/admin/users', label: 'Users', icon: UserCog },
+      { href: '/admin/agents', label: 'Agent verification', icon: ShieldCheck },
+    ],
   },
   {
     id: 'configuration',

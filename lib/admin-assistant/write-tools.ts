@@ -445,7 +445,7 @@ export function createWriteTools(ctx: AssistantToolContext) {
   const createWorkspaceRequest = defineWriteTool(ctx, {
     name: 'createWorkspaceRequest',
     description:
-      'Create ONE internal workspace request (task) and optionally assign it and set a due date (requires approval). Use listStaff to find the assignee id. Link a vehicle, customer, inquiry or part request when relevant.',
+      'Create ONE internal workspace request (task) and optionally assign it and set a due date (requires approval). Use listStaff to find the assignee id. Link a vehicle, customer or part request when relevant. Handle sales inquiries in the inquiry inbox.',
     inputSchema: z.object({
       requestType: z.enum(requestTypes),
       title: z.string().trim().min(3).max(200),
@@ -458,6 +458,9 @@ export function createWriteTools(ctx: AssistantToolContext) {
       partRequestId: uuid.optional(),
     }),
     prepare: async (input) => {
+      if (input.requestType === 'inquiry' || input.inquiryId) {
+        return { denied: 'Use the inquiry inbox to record, assign and follow up sales inquiries. Each inquiry already has its own request.' };
+      }
       const staff = await loadStaff(supabase);
       if (input.assignedToId) {
         const assignee = staff.find((s) => s.id === input.assignedToId);
@@ -548,11 +551,14 @@ export function createWriteTools(ctx: AssistantToolContext) {
       if (assignedToId && unassign) return { denied: 'Choose either assignedToId or unassign, not both.' };
       if (dueAt && clearDueDate) return { denied: 'Choose either dueAt or clearDueDate, not both.' };
       const [{ data: row, error }, staff] = await Promise.all([
-        supabase.from('workspace_requests').select('id, title, status, assigned_to, due_at, request_type').eq('id', requestId).maybeSingle(),
+        supabase.from('workspace_requests').select('id, title, status, assigned_to, due_at, request_type, inquiry_id').eq('id', requestId).maybeSingle(),
         loadStaff(supabase),
       ]);
       if (error) throw new Error(error.message);
       if (!row) return { denied: 'Workspace request not found (or not visible to you).' };
+      if (row.inquiry_id || row.request_type === 'inquiry') {
+        return { denied: `Use the inquiry inbox to change this sales lead${row.inquiry_id ? `: /admin/inquiries?inquiry=${row.inquiry_id}` : '.'}` };
+      }
       if (assignedToId) {
         const assignee = staff.find((s) => s.id === assignedToId);
         if (!assignee || !assignee.is_active) return { denied: 'Assignee not found or inactive. Use listStaff.' };
@@ -625,12 +631,15 @@ export function createWriteTools(ctx: AssistantToolContext) {
     prepare: async ({ inquiryId, status }) => {
       const { data: row, error } = await supabase
         .from('inquiries')
-        .select('id, status, customer_name, customer_email, message')
+        .select('id, status, lead_stage, customer_name, customer_email, message')
         .eq('id', inquiryId)
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (!row) return { denied: 'Inquiry not found (or not visible to you).' };
       if (row.status === status) return { denied: `The inquiry is already "${status}".` };
+      if ((row.lead_stage === 'won' || row.lead_stage === 'lost') && status !== 'closed') {
+        return { denied: 'Reopen this completed lead using the inquiry inbox stage action.' };
+      }
       return {
         entityType: 'inquiry',
         entityId: row.id,
@@ -642,23 +651,24 @@ export function createWriteTools(ctx: AssistantToolContext) {
             type: 'Inquiry',
             id: row.id,
             label: `${row.customer_name}${row.customer_email ? ` <${row.customer_email}>` : ''}: ${clip(row.message, 80) ?? ''}`,
-            adminUrl: '/admin/inquiries',
+            adminUrl: `/admin/inquiries?inquiry=${row.id}`,
           },
           changes: [change('status', row.status, status)],
-          warnings: [],
+          warnings: status === 'closed' && row.lead_stage !== 'won' && row.lead_stage !== 'lost'
+            ? ['Closes the inquiry and archives its sales follow-up.']
+            : [],
         },
       };
     },
     apply: async ({ inquiryId, status }) => {
-      const { data, error } = await supabase
-        .from('inquiries')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', inquiryId)
-        .select('id, status');
+      const { data, error } = await supabase.rpc('set_sales_inquiry_message_status', {
+        p_inquiry_id: inquiryId,
+        p_status: status,
+      });
       if (error) throw new Error(error.message);
-      const row = (data ?? [])[0];
-      if (!row) throw new Error('No inquiry was updated (permission denied or not found).');
-      return { after: { status: row.status }, message: `Inquiry marked ${row.status}.` };
+      const row = data as { id: string; status: string; lead_stage: string } | null;
+      if (row?.id !== inquiryId) throw new Error('No inquiry was updated (permission denied or not found).');
+      return { after: { status: row.status, lead_stage: row.lead_stage }, message: `Inquiry marked ${row.status}.` };
     },
   });
 

@@ -25,6 +25,10 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+      - name: Give the historical seed a unique disposable replay version
+        # Two historical migrations share 20260920210000. Alias only this CI
+        # checkout for disposable replay; preserve tracked SQL and hosted history.
+        run: mv supabase/migrations/20260920210000_seed_export_master_options.sql supabase/migrations/20260920210001_seed_export_master_options.sql
       - name: Start disposable Supabase services and apply all migrations
         run: supabase start
       - name: Rebuild the disposable database from migration history

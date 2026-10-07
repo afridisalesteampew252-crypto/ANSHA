@@ -58,6 +58,7 @@ function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
     ...group,
     items: group.items.filter((item) => {
       if (item.href === '/admin/users' && !isAccountAdmin) return false;
+      if (item.href === '/admin/agents' && !isAccountAdmin && !fieldAgent) return false;
       if (item.href === '/admin/audit-log' && !isAccountAdmin) return false;
       if (item.href === '/admin/live-chat' && !canAccessLiveChat(profile.role)) return false;
       // Remittances: finance sees full group; others only My remittances
@@ -74,7 +75,12 @@ function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
       if (accounts && !hrefAllowed(ACCOUNTS_NAV_HREFS, item.href)) return false;
       if (isManager && !hrefAllowed(MANAGER_NAV_HREFS, item.href)) return false;
       return true;
-    }),
+    }).map((item) => fieldAgent ? {
+      ...item,
+      label: item.href === '/admin/inquiries' ? 'My inquiries'
+        : item.href === '/admin/requests' ? 'My requests'
+          : item.href === '/admin/agents' ? 'My verification' : item.label,
+    } : item),
   })).filter((group) => group.items.length > 0);
 }
 

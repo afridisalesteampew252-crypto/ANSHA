@@ -26,6 +26,7 @@ import {
 } from '@/lib/workspace-requests';
 import type {
   AdminProfile,
+  AdminRole,
   Inquiry,
   PartRequest,
   WorkspaceRequest,
@@ -36,6 +37,7 @@ import type {
 function toLocalInput(iso: string | null) {
   if (!iso) return '';
   const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return '';
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
@@ -43,7 +45,7 @@ function toLocalInput(iso: string | null) {
 type RequestDetail = WorkspaceRequest & {
   assigned?: Pick<AdminProfile, 'id' | 'full_name' | 'email'> | null;
   vehicles?: { id: string; title: string; slug: string } | null;
-  inquiries?: Pick<Inquiry, 'id' | 'customer_name' | 'customer_email' | 'customer_phone' | 'message' | 'status'> | null;
+  inquiries?: Pick<Inquiry, 'id' | 'customer_name' | 'customer_email' | 'customer_phone' | 'message' | 'status' | 'lead_stage'> | null;
   part_requests?: Pick<
     PartRequest,
     'id' | 'customer_name' | 'email' | 'phone' | 'part_name' | 'part_number' | 'vehicle_make' | 'vehicle_model' | 'message' | 'status'
@@ -59,6 +61,9 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
   const [events, setEvents] = useState<WorkspaceRequestEvent[]>([]);
   const [attachments, setAttachments] = useState<WorkspaceRequestAttachment[]>([]);
   const [staff, setStaff] = useState<Pick<AdminProfile, 'id' | 'full_name' | 'email'>[]>([]);
+  const [role, setRole] = useState<AdminRole | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [verifiedAgent, setVerifiedAgent] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [saving, setSaving] = useState(false);
   const [noting, setNoting] = useState(false);
@@ -72,29 +77,71 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
   const [assignedTo, setAssignedTo] = useState('');
   const [dueAt, setDueAt] = useState('');
   const [activity, setActivity] = useState('');
+  const isInquiry = Boolean(row?.inquiry_id || row?.request_type === 'inquiry');
+  const isOps = role === 'admin' || role === 'staff';
+  const isFieldAgent = role === 'sales' || role === 'freelancer';
+  const assignedToMe = Boolean(userId && row?.assigned_to === userId);
+  // Manager rows are already limited by request RLS to their own customers or assignments.
+  const canManage = Boolean(row && userId && (
+    isOps || (isFieldAgent && verifiedAgent && assignedToMe) ||
+    (!isInquiry && (role === 'manager' || (role === 'accounts' && assignedToMe)))
+  ));
+  const canEditTicket = canManage && !isInquiry;
+  const canAssign = canEditTicket && role === 'admin';
+  const canEditTitle = canEditTicket && !isFieldAgent;
+  const canDelete = isOps && !isInquiry;
+  const inquiryHref = row?.inquiry_id ? `/admin/inquiries?inquiry=${row.inquiry_id}` : '/admin/inquiries';
 
   const load = useCallback(async () => {
     setFetching(true);
-    const [requestRes, eventsRes, attachmentsRes, staffRes] = await Promise.all([
+    const { data: sessionData } = await supabase.auth.getSession();
+    const actorId = sessionData.session?.user.id || null;
+    const profileRes = actorId
+      ? await supabase.from('admin_profiles').select('role, is_active').eq('id', actorId).maybeSingle()
+      : null;
+    const activeRole = profileRes?.data?.is_active === true &&
+      ['admin', 'staff', 'sales', 'freelancer', 'manager', 'accounts'].includes(profileRes.data.role)
+      ? profileRes.data.role : null;
+    setUserId(actorId);
+    setRole(activeRole);
+    setVerifiedAgent(false);
+    if (!actorId || !activeRole) {
+      setRow(null);
+      setFetching(false);
+      toast.error('An active workspace account is required.');
+      router.push('/admin/requests');
+      return;
+    }
+    const fieldAgent = activeRole === 'sales' || activeRole === 'freelancer';
+    const [requestRes, eventsRes, attachmentsRes, staffRes, verificationRes] = await Promise.all([
       supabase
         .from('workspace_requests')
         .select(
-          '*, assigned:admin_profiles!assigned_to(id, full_name, email), vehicles(id, title, slug), inquiries(id, customer_name, customer_email, customer_phone, message, status), part_requests(id, customer_name, email, phone, part_name, part_number, vehicle_make, vehicle_model, message, status)'
+          '*, assigned:admin_profiles!assigned_to(id, full_name, email), vehicles(id, title, slug), inquiries(id, customer_name, customer_email, customer_phone, message, status, lead_stage), part_requests(id, customer_name, email, phone, part_name, part_number, vehicle_make, vehicle_model, message, status)'
         )
         .eq('id', id)
         .maybeSingle(),
       supabase.from('workspace_request_events').select('*').eq('request_id', id).order('created_at', { ascending: false }).limit(100),
       supabase.from('workspace_request_attachments').select('*').eq('request_id', id).order('created_at', { ascending: false }),
-      supabase.from('admin_profiles').select('id, full_name, email').order('full_name'),
+      activeRole === 'admin' ? supabase.from('admin_profiles').select('id, full_name, email').eq('is_active', true).order('full_name') : Promise.resolve({ data: [] }),
+      fieldAgent ? supabase.rpc('get_sales_agents') : Promise.resolve({ data: [] }),
     ]);
 
     if (requestRes.error || !requestRes.data) {
+      setRow(null);
+      setFetching(false);
       toast.error(requestRes.error?.message || 'Request not found.');
       router.push('/admin/requests');
       return;
     }
 
     const next = requestRes.data as unknown as RequestDetail;
+    if (eventsRes.error) toast.error(`Unable to load activity: ${eventsRes.error.message}`);
+    if (attachmentsRes.error) toast.error(`Unable to load attachments: ${attachmentsRes.error.message}`);
+    const ownVerification = Array.isArray(verificationRes.data)
+      ? verificationRes.data.find((agent: { agent_id: string }) => agent.agent_id === actorId)
+      : null;
+    setVerifiedAgent(ownVerification?.verification_status === 'verified' && ownVerification?.is_active === true);
     setRow(next);
     setTitle(next.title);
     setNotes(next.notes || '');
@@ -113,16 +160,19 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!row) return;
+    if (!row || !canEditTicket) return;
+    const dueChanged = dueAt !== toLocalInput(row.due_at);
+    const parsedDue = dueAt ? new Date(dueAt) : null;
+    if (dueChanged && parsedDue && !Number.isFinite(parsedDue.getTime())) return toast.error('Enter a valid due date.');
     setSaving(true);
     const { error } = await supabase.rpc('update_workspace_request', {
       p_request_id: id,
       p_status: status,
-      p_assigned_to: assignedTo || null,
-      p_set_assigned: true,
-      p_due_at: dueAt ? new Date(dueAt).toISOString() : null,
-      p_set_due: true,
-      p_title: title.trim(),
+      p_assigned_to: canAssign ? assignedTo || null : null,
+      p_set_assigned: canAssign && assignedTo !== (row.assigned_to || ''),
+      p_due_at: dueChanged ? parsedDue?.toISOString() || null : null,
+      p_set_due: dueChanged,
+      p_title: canEditTitle && title.trim() !== row.title ? title.trim() : null,
       p_notes: notes,
     });
     setSaving(false);
@@ -132,6 +182,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
   };
 
   const addNote = async () => {
+    if (!canEditTicket) return;
     if (!activity.trim()) {
       toast.error('Write a note first.');
       return;
@@ -149,7 +200,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
   };
 
   const uploadFiles = async (fileList: FileList | null) => {
-    if (!fileList?.length) return;
+    if (!canManage || !fileList?.length) return;
     const files = Array.from(fileList);
     const tooLarge = files.find((file) => file.size > REQUEST_ATTACHMENT_MAX_BYTES);
     if (tooLarge) {
@@ -193,6 +244,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
   };
 
   const removeAttachment = async (attachment: WorkspaceRequestAttachment) => {
+    if (!canManage) return;
     setRemovingId(attachment.id);
     const { error: storageError } = await supabase.storage.from('internal-files').remove([attachment.storage_path]);
     if (storageError) {
@@ -210,7 +262,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
   };
 
   const deleteRequest = async () => {
-    if (!row) return;
+    if (!row || !canDelete) return;
     const ok = window.confirm(
       `Delete request “${row.title}”?\n\nThis permanently removes the ticket, activity, and attachments. Website intake rows are kept. This cannot be undone.`
     );
@@ -251,13 +303,13 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
           </Link>
         </Button>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
+          {canManage ? <Button asChild variant="outline" size="sm">
             <Link href={`/admin/chat?request=${row.id}`}>Open linked chat</Link>
-          </Button>
-          <Button type="button" variant="destructive" size="sm" disabled={deleting} onClick={() => void deleteRequest()}>
+          </Button> : null}
+          {canDelete ? <Button type="button" variant="destructive" size="sm" disabled={deleting} onClick={() => void deleteRequest()}>
             {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             Delete ticket
-          </Button>
+          </Button> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">{row.title}</h1>
@@ -268,7 +320,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
           {overdue ? <Badge variant="destructive">Overdue</Badge> : null}
         </div>
         <p className="text-sm text-muted-foreground">
-          Intake status stays on the original inquiry or part request. This ticket is for assignment, due dates, and activity.
+          {isInquiry ? 'Sales stages, assignment and follow-ups are managed in the inquiries inbox.' : 'Intake status stays on the original part request. This ticket is for assignment, due dates, and activity.'}
         </p>
       </div>
 
@@ -291,7 +343,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
             {intake.message ? <p className="whitespace-pre-wrap rounded-md bg-secondary/50 p-3">{intake.message}</p> : null}
             {row.inquiry_id ? (
               <Button asChild variant="outline" size="sm">
-                <Link href="/admin/inquiries">Open inquiries list</Link>
+                <Link href={inquiryHref}>Open sales inquiry</Link>
               </Button>
             ) : null}
           </CardContent>
@@ -305,14 +357,28 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
               <p className="text-xs text-muted-foreground">Linked vehicle</p>
               <p className="font-medium">{row.vehicles.title}</p>
             </div>
-            <Button asChild variant="outline" size="sm">
+            {['admin', 'staff', 'manager', 'accounts'].includes(role || '') ? <Button asChild variant="outline" size="sm">
               <Link href={`/admin/vehicles/${row.vehicles.id}`}>Vehicle record</Link>
-            </Button>
+            </Button> : null}
           </CardContent>
         </Card>
       ) : null}
 
-      <Card>
+      {isInquiry ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Sales workflow</CardTitle>
+            <CardDescription>Open the sales inquiry to manage its stage, assignment and follow-up.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p><span className="text-muted-foreground">Stage: </span>{row.inquiries?.lead_stage || 'View in inquiries inbox'}</p>
+            <p><span className="text-muted-foreground">Assigned to: </span>{row.assigned?.full_name || row.assigned?.email || 'Unassigned'}</p>
+            <p><span className="text-muted-foreground">Due: </span>{row.due_at ? format(new Date(row.due_at), 'dd MMM yyyy HH:mm') : 'No follow-up date'}</p>
+            {row.notes ? <p className="whitespace-pre-wrap">{row.notes}</p> : null}
+            <Button asChild variant="outline"><Link href={inquiryHref}>Open sales inquiry</Link></Button>
+          </CardContent>
+        </Card>
+      ) : <Card>
         <CardHeader>
           <CardTitle className="text-lg">Assignment and status</CardTitle>
         </CardHeader>
@@ -320,7 +386,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
           <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void save(event)}>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="title">Title</Label>
-              <Input id="title" value={title} onChange={(event) => setTitle(event.target.value)} required maxLength={160} />
+              <Input id="title" value={title} onChange={(event) => setTitle(event.target.value)} readOnly={!canEditTitle} required maxLength={160} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="status">Status</Label>
@@ -328,6 +394,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
                 id="status"
                 className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={status}
+                disabled={!canEditTicket}
                 onChange={(event) => setStatus(event.target.value as RequestStatus)}
               >
                 {REQUEST_STATUSES.map((item) => (
@@ -339,7 +406,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="assignee">Assigned to</Label>
-              <select
+              {canAssign ? <select
                 id="assignee"
                 className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={assignedTo}
@@ -351,25 +418,25 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
                     {person.full_name || person.email || person.id}
                   </option>
                 ))}
-              </select>
+              </select> : <p className="py-2 text-sm">{row.assigned?.full_name || row.assigned?.email || 'Unassigned'}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="due">Due</Label>
-              <Input id="due" type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
+              <Input id="due" type="datetime-local" value={dueAt} disabled={!canEditTicket} onChange={(event) => setDueAt(event.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="notes">Ticket notes</Label>
-              <Textarea id="notes" rows={4} value={notes} onChange={(event) => setNotes(event.target.value)} />
+              <Textarea id="notes" rows={4} value={notes} readOnly={!canEditTicket} maxLength={5000} onChange={(event) => setNotes(event.target.value)} />
             </div>
-            <div>
+            {canEditTicket ? <div>
               <Button type="submit" disabled={saving}>
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 Save ticket
               </Button>
-            </div>
+            </div> : null}
           </form>
         </CardContent>
-      </Card>
+      </Card>}
 
       <Card>
         <CardHeader>
@@ -377,7 +444,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
           <CardDescription>Private files on this ticket. Chat and mail stay on their own conversations.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
+          {canManage ? <div>
             <Label htmlFor="request-files" className="sr-only">
               Attach files
             </Label>
@@ -392,7 +459,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
               }}
             />
             <p className="mt-1 text-xs text-muted-foreground">PDF, images, Office, ZIP, or text. 25 MB each.</p>
-          </div>
+          </div> : null}
           {uploading ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -411,7 +478,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
                   </button>
                   <span className="text-xs text-muted-foreground">{formatBytes(attachment.size_bytes)}</span>
                   <span className="ml-auto text-xs text-muted-foreground">{format(new Date(attachment.created_at), 'dd MMM yyyy HH:mm')}</span>
-                  <Button
+                  {canManage ? <Button
                     type="button"
                     variant="ghost"
                     size="sm"
@@ -420,7 +487,7 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
                   >
                     {removingId === attachment.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     Remove
-                  </Button>
+                  </Button> : null}
                 </li>
               ))}
             </ul>
@@ -434,11 +501,11 @@ export default function AdminRequestDetailPage(props: { params: Promise<{ id: st
           <CardDescription>Append-only. Use this for handoffs and follow-ups.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Textarea rows={3} value={activity} onChange={(event) => setActivity(event.target.value)} placeholder="Add a note" />
+          {canEditTicket ? <><Textarea rows={3} maxLength={5000} value={activity} onChange={(event) => setActivity(event.target.value)} placeholder="Add a note" />
           <Button type="button" onClick={() => void addNote()} disabled={noting}>
             {noting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Add note
-          </Button>
+          </Button></> : isInquiry ? <p className="text-sm text-muted-foreground">Add sales notes and follow-ups in the inquiries inbox.</p> : null}
           {events.length === 0 ? (
             <p className="text-sm text-muted-foreground">No activity yet.</p>
           ) : (

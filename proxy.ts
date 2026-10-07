@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import {
+  canAccessAgentVerification,
+  canAccessInquiries,
   canAccessLiveChat,
   isAccountsAllowedPath,
   isAccountsRole,
@@ -108,6 +110,14 @@ export async function proxy(request: NextRequest) {
     }
 
     if (isLoginPage) {
+      const dashboardUrl = request.nextUrl.clone();
+      dashboardUrl.pathname = '/admin/dashboard';
+      dashboardUrl.search = '';
+      return redirectWithSession(dashboardUrl);
+    }
+
+    if ((pathname.startsWith('/admin/agents') && !canAccessAgentVerification(profile.role)) ||
+        (pathname.startsWith('/admin/inquiries') && !canAccessInquiries(profile.role))) {
       const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/admin/dashboard';
       dashboardUrl.search = '';
