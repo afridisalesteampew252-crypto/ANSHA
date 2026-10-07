@@ -150,11 +150,24 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000003"}',true);
 SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.admin_notifications WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='assignment-alert'))=0,'old assignment notification hidden after transfer');
 SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.workspace_request_attachments WHERE id=(SELECT id FROM pg_temp.inquiry_fixture WHERE key='own-attachment'))=0,'previous uploader loses transferred attachment visibility');
-WITH deleted AS (DELETE FROM storage.objects WHERE bucket_id='internal-files' AND name=(SELECT value FROM pg_temp.inquiry_fixture WHERE key='own-attachment') RETURNING id)
-SELECT pg_temp.inquiry_assert((SELECT count(*) FROM deleted)=0,'previous Storage owner cannot delete transferred inquiry file');
+-- Supabase's BEFORE DELETE statement guard fires even when RLS matches no rows:
+-- https://github.com/supabase/storage/blob/master/migrations/tenant/0055-prevent-direct-deletes.sql
+-- Use the Storage API's transaction-local query context only for this rolled-back
+-- metadata probe. The authenticated role, JWT and DELETE policies remain active.
+DO $$ DECLARE previous_setting text:=current_setting('storage.allow_delete_query',true); removed integer; BEGIN
+  PERFORM set_config('storage.allow_delete_query','true',true);
+  WITH deleted AS (DELETE FROM storage.objects WHERE bucket_id='internal-files' AND name=(SELECT value FROM pg_temp.inquiry_fixture WHERE key='own-attachment') RETURNING id)
+  SELECT count(*) INTO removed FROM deleted;
+  PERFORM set_config('storage.allow_delete_query',coalesce(previous_setting,''),true);
+  PERFORM pg_temp.inquiry_assert(removed=0,'previous Storage owner cannot delete transferred inquiry file');
+EXCEPTION WHEN OTHERS THEN
+  PERFORM set_config('storage.allow_delete_query',coalesce(previous_setting,''),true);
+  RAISE;
+END $$;
 SELECT pg_temp.inquiry_denied($s$SELECT public.delete_workspace_request_attachment((SELECT id FROM pg_temp.inquiry_fixture WHERE key='own-attachment'))$s$,'42501','previous uploader cannot delete transferred attachment metadata');
 SELECT pg_temp.inquiry_denied($s$SELECT public.update_sales_inquiry((SELECT id FROM pg_temp.inquiry_fixture WHERE key='referred'),'lost')$s$,'42501','former assignee cannot edit transferred lead');
 SELECT set_config('request.jwt.claims','{"role":"authenticated","sub":"81000000-0000-4000-8000-000000000004"}',true);
+SELECT pg_temp.inquiry_assert((SELECT count(*) FROM storage.objects WHERE bucket_id='internal-files' AND name=(SELECT value FROM pg_temp.inquiry_fixture WHERE key='own-attachment'))=1,'current assignee sees the actual file retained after former owner deletion attempt');
 SELECT public.update_sales_inquiry((SELECT id FROM pg_temp.inquiry_fixture WHERE key='referred'),'won');
 RESET ROLE;
 SELECT pg_temp.inquiry_assert((SELECT count(*) FROM public.invoices WHERE customer_id='81000000-0000-4000-8001-000000000001')=0,'won stage never creates invoice or approves payment');

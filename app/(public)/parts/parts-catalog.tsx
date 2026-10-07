@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Filter, PackageSearch, Search, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, PackageSearch, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,44 +48,43 @@ function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { dealForPart } = useInventoryDeals();
-  const initialFilters = initial?.filters ?? parsePartsCatalogFilters(searchParams);
-  const [parts, setParts] = useState<PublicPartCard[]>(initial?.items ?? []);
+  const paramsString = searchParams.toString();
+  const filters = useMemo(() => parsePartsCatalogFilters(new URLSearchParams(paramsString)), [paramsString]);
+  const matchingInitial = initial && JSON.stringify(initial.filters) === JSON.stringify(filters) ? initial : undefined;
+  const [parts, setParts] = useState<PublicPartCard[]>(matchingInitial?.items ?? []);
   const [categories, setCategories] = useState<PublicCategoryCard[]>(initial?.categories ?? []);
   const [categoriesLoaded, setCategoriesLoaded] = useState(Boolean(initial));
-  const [loading, setLoading] = useState(!initial);
-  const [totalCount, setTotalCount] = useState(initial?.count ?? 0);
-  const [query, setQuery] = useState(initialFilters.q);
-  const [selectedCategory, setSelectedCategory] = useState(initialFilters.category);
-  const [selectedCondition, setSelectedCondition] = useState(initialFilters.condition);
-  const [selectedBrand, setSelectedBrand] = useState(initialFilters.brand);
-  const [selectedStock, setSelectedStock] = useState(initialFilters.stock);
-  const [sortBy, setSortBy] = useState(initialFilters.sort);
-  const [page, setPage] = useState(initialFilters.page);
+  const [loading, setLoading] = useState(!matchingInitial);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(matchingInitial?.count ?? 0);
+  const [query, setQuery] = useState(filters.q);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const { category: selectedCategory, condition: selectedCondition, brand: selectedBrand, stock: selectedStock, sort: sortBy, page } = filters;
   const pageSize = PARTS_PAGE_SIZE;
-  const appliedQuery = searchParams.get('q') || '';
+  const appliedQuery = filters.q;
   const selectedCategoryId = categories.find((item) => item.slug === selectedCategory)?.id;
   const canFetchParts = selectedCategory === 'all' || categoriesLoaded;
-  // The server already rendered this page for the URL filters; skip that fetch once.
-  const skipInitialFetchRef = useRef(Boolean(initial));
+  const consumedInitialRef = useRef<PartsCatalogInitial | null>(null);
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
-    if (initial) return;
+    if (initial) {
+      setCategories(initial.categories);
+      setCategoriesLoaded(true);
+      return;
+    }
+    let cancelled = false;
     void fetchPublicCategories(supabase).then((rows) => {
+      if (cancelled) return;
       setCategories(rows);
       setCategoriesLoaded(true);
     });
+    return () => { cancelled = true; };
   }, [initial]);
 
   useEffect(() => {
-    const filters = parsePartsCatalogFilters(searchParams);
     setQuery(filters.q);
-    setSelectedCategory(filters.category);
-    setSelectedCondition(filters.condition);
-    setSelectedBrand(filters.brand);
-    setSelectedStock(filters.stock);
-    setSortBy(filters.sort);
-    setPage(filters.page);
-  }, [searchParams]);
+  }, [filters.q]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -94,46 +93,80 @@ function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
     input?.focus({ preventScroll: false });
   }, []);
 
-  const fetchParts = useCallback(async () => {
-    setLoading(true);
-    const { items, count } = await fetchPartsCatalogPage(
-      supabase,
-      {
-        q: appliedQuery,
-        category: selectedCategory,
-        condition: selectedCondition,
-        brand: selectedBrand,
-        stock: selectedStock,
-        sort: sortBy,
-        page,
-      },
-      selectedCategoryId
-    );
-    setParts(items);
-    setTotalCount(count);
-    setLoading(false);
-  }, [appliedQuery, page, selectedBrand, selectedCategory, selectedCategoryId, selectedCondition, selectedStock, sortBy]);
-
   useEffect(() => {
     if (!canFetchParts) return;
-    if (skipInitialFetchRef.current) {
-      skipInitialFetchRef.current = false;
+    // A server refresh keeps this component mounted. Adopt only data for the
+    // current URL, once per payload, so older navigations cannot replace it.
+    if (matchingInitial && consumedInitialRef.current !== matchingInitial) {
+      consumedInitialRef.current = matchingInitial;
+      setParts(matchingInitial.items);
+      setTotalCount(matchingInitial.count);
+      setLoadError(null);
+      setLoading(false);
+      inFlightRef.current = false;
       return;
     }
-    void fetchParts();
-  }, [canFetchParts, fetchParts]);
+    let cancelled = false;
+    inFlightRef.current = true;
+    setLoading(true);
+    setLoadError(null);
+    void (async () => {
+      try {
+        const { items, count, error } = await fetchPartsCatalogPage(supabase, filters, selectedCategoryId);
+        if (cancelled) return;
+        if (error) {
+          setLoadError('Could not refresh stock. Please try again.');
+          return;
+        }
+        setParts(items);
+        setTotalCount(count);
+      } catch {
+        if (!cancelled) setLoadError('Could not refresh stock. Please try again.');
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          inFlightRef.current = false;
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [canFetchParts, filters, matchingInitial, refreshVersion, selectedCategoryId]);
+
+  const refreshStock = useCallback(() => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    setRefreshVersion((version) => version + 1);
+  }, []);
+
+  useEffect(() => {
+    let lastRefresh = 0;
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'hidden' || inFlightRef.current) return;
+      const now = Date.now();
+      if (now - lastRefresh < 1000) return;
+      lastRefresh = now;
+      refreshStock();
+    };
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [refreshStock]);
 
   const setParam = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (!value || value === 'all' || (key === 'page' && value === '1')) params.delete(key);
+    if (!value || (key !== 'q' && value === 'all') || (key === 'page' && value === '1')) params.delete(key);
     else params.set(key, value);
     if (key !== 'page') params.delete('page');
-    router.push(`/parts${params.size ? `?${params.toString()}` : ''}`);
+    if (params.toString() === paramsString) refreshStock();
+    else router.push(`/parts${params.size ? `?${params.toString()}` : ''}`);
   };
 
-  const clearFilters = () => router.push('/parts');
+  const clearFilters = () => { if (!paramsString) refreshStock(); else router.push('/parts'); };
   const activeFilters = [
-    query && { key: 'q', label: `“${query}”` },
+    appliedQuery && { key: 'q', label: `“${appliedQuery}”` },
     selectedBrand !== 'all' && { key: 'brand', label: selectedBrand },
     selectedStock !== 'all' && { key: 'stock', label: stockOriginLabel(selectedStock) },
     selectedCategory !== 'all' && { key: 'category', label: categories.find((category) => category.slug === selectedCategory)?.name || selectedCategory },
@@ -183,7 +216,7 @@ function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
           <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-red-400">ANSHA inventory</span>
           <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div><h1 className="text-3xl font-black tracking-tight sm:text-4xl">Automotive parts catalog</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">Search live stock by product, OEM number, part code, brand, category, or condition.</p></div>
-            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><PackageSearch className="h-5 w-5 text-accent" /><div><strong className="block text-sm">{loading ? 'Checking stock' : `${totalCount} results`}</strong><span className="text-[10px] text-white/45">Published inventory only</span></div></div>
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3"><PackageSearch className="h-5 w-5 shrink-0 text-accent" /><div><strong aria-live="polite" className="block text-sm">{loading ? 'Checking stock' : loadError ? 'Stock unavailable' : `${totalCount} results`}</strong><span className="text-[10px] text-white/45">Published inventory only</span></div><Button type="button" variant="outline" size="sm" disabled={loading} onClick={refreshStock} className="ml-2 shrink-0 border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white"><RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />Refresh stock</Button></div>
           </div>
         </div>
       </section>
@@ -196,7 +229,7 @@ function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
           <Button type="submit" variant="accent" className="absolute right-1.5 top-1.5 h-11 min-w-[5.5rem] rounded-xl px-5">Search</Button>
         </form>
 
-        {activeFilters.length > 0 && <div className="mb-5 flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-muted-foreground">Active:</span>{activeFilters.map((filter) => <Badge key={filter.key} variant="secondary" className="gap-1.5 rounded-full px-3 py-1.5">{filter.label}<button onClick={() => setParam(filter.key, 'all')} aria-label={`Remove ${filter.label} filter`}><X className="h-3 w-3" /></button></Badge>)}</div>}
+        {activeFilters.length > 0 && <div className="mb-5 flex flex-wrap items-center gap-2"><span className="text-xs font-bold text-muted-foreground">Active:</span>{activeFilters.map((filter) => <Badge key={filter.key} variant="secondary" className="gap-1.5 rounded-full px-3 py-1.5">{filter.label}<button onClick={() => setParam(filter.key, filter.key === 'q' ? '' : 'all')} aria-label={`Remove ${filter.label} filter`}><X className="h-3 w-3" /></button></Badge>)}</div>}
 
         <div className="flex gap-5 lg:gap-7">
           <aside className="hidden w-64 shrink-0 lg:block">
@@ -229,12 +262,14 @@ function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
                   <div className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">{filterControls}</div>
                 </SheetContent>
               </Sheet>
-              <p className="hidden text-sm text-muted-foreground sm:block">{loading ? 'Loading…' : `Showing ${parts.length} of ${totalCount}`}</p>
+              <p className="hidden text-sm text-muted-foreground sm:block">{loading ? 'Loading…' : loadError ? 'Stock could not be checked' : `Showing ${parts.length} of ${totalCount}`}</p>
               <Select value={sortBy} onValueChange={(value) => setParam('sort', value)}>
                 <SelectTrigger className="ml-auto h-11 w-[170px] rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>{sortOptions.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+
+            {loadError && <p role="alert" className="mb-4 rounded-xl border border-destructive/25 bg-destructive/5 p-4 text-sm text-destructive">{loadError}{parts.length > 0 ? ' Previously loaded parts remain below.' : ''}</p>}
 
             {loading ? (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
@@ -242,6 +277,8 @@ function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
                   <Skeleton key={index} className="min-h-[18rem] rounded-2xl sm:min-h-[22rem]" />
                 ))}
               </div>
+            ) : loadError && !parts.length ? (
+              <div className="rounded-3xl border border-dashed border-border bg-secondary/30 px-6 py-20 text-center"><PackageSearch className="mx-auto h-12 w-12 text-muted-foreground/25" /><h2 className="mt-5 text-xl font-extrabold">Stock is temporarily unavailable</h2><p className="mt-2 text-sm text-muted-foreground">Use Refresh stock to try again.</p></div>
             ) : parts.length ? (
               <div className="grid grid-cols-2 gap-2 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
                 {parts.map((part, index) => (
@@ -252,7 +289,7 @@ function PartsCatalog({ initial }: { initial?: PartsCatalogInitial }) {
               <div className="rounded-3xl border border-dashed border-border bg-secondary/30 px-6 py-20 text-center"><PackageSearch className="mx-auto h-12 w-12 text-muted-foreground/25" /><h2 className="mt-5 text-xl font-extrabold">No matching parts found</h2><p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">Try fewer filters or send your OEM/chassis details to our sourcing team.</p><div className="mt-5 flex justify-center gap-3"><Button onClick={clearFilters} variant="outline">Clear filters</Button><Button asChild variant="accent"><a href="/contact">Request a part</a></Button></div></div>
             )}
 
-            {totalPages > 1 && <div className="mt-9 flex items-center justify-center gap-3"><Button variant="outline" disabled={page <= 1} onClick={() => setParam('page', String(page - 1))}><ChevronLeft className="h-4 w-4" />Previous</Button><span className="text-xs font-bold text-muted-foreground">Page {page} of {totalPages}</span><Button variant="outline" disabled={page >= totalPages} onClick={() => setParam('page', String(page + 1))}>Next<ChevronRight className="h-4 w-4" /></Button></div>}
+            {!loadError && totalPages > 1 && <div className="mt-9 flex items-center justify-center gap-3"><Button variant="outline" disabled={page <= 1} onClick={() => setParam('page', String(page - 1))}><ChevronLeft className="h-4 w-4" />Previous</Button><span className="text-xs font-bold text-muted-foreground">Page {page} of {totalPages}</span><Button variant="outline" disabled={page >= totalPages} onClick={() => setParam('page', String(page + 1))}>Next<ChevronRight className="h-4 w-4" /></Button></div>}
           </main>
         </div>
       </div>

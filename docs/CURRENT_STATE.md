@@ -158,6 +158,13 @@ a GitHub merge.
   Fitment writes are sequential, not a transaction across the complete import.
 - The user's menu implementation was preserved. Search reads the submitted
   form directly so hydration does not erase typed input.
+- The public parts count is the number of published, available listings rather
+  than their summed quantity. During this repair, the fresh published count
+  increased from 181 to 182; the first database and website reads agreed at
+  181. The review branch repairs an
+  open catalog's stale state after publishing: updated server data, returning
+  to the tab, repeating a search and **Refresh stock** reload the current total
+  without a polling timer. The website change awaits the user's merge.
 
 ### Android and communication
 
@@ -179,6 +186,13 @@ a GitHub merge.
 
 ## Verification evidence and limits
 
+- Public parts refresh: three browser regressions passed against the production
+  build for manual/same-search refresh, tab-return deduplication, applied filters
+  and drafts, zero/error/retry states and obsolete responses arriving after new
+  results. Actual-component fixtures also verified refreshed server payloads,
+  query removal and literal `all` searches. Full release lint, TypeScript, eight
+  Node scripts, 55 brand assets and the production build passed. The Storage
+  fixture correction passed with the official delete guard simulated locally.
 - Linked-customer repair: all **nine SQL behavior suites** passed on the
   previously validated 158-migration baseline plus the forward repair. Expanded
   real-role cases cover guest/manual links, unrelated/inactive customers,
@@ -232,6 +246,12 @@ a GitHub merge.
   share version `20260920210000`. The workflow now gives the seed a unique
   version only inside its disposable checkout. Tracked historical SQL names
   and hosted migration bookkeeping stay intact.
+- PR #120's initial full Supabase run passed migrations, reset and pgTAP but
+  found a Storage fixture compatibility issue: its statement guard rejects raw
+  DELETE before the RLS assertion can run. The fixture now models the Storage
+  API's transaction-local delete context while keeping the authenticated JWT
+  and row policies active; it verifies the former assignee deletes zero rows
+  and the current assignee can still read the retained file.
 
 ## Release order
 
@@ -239,7 +259,7 @@ a GitHub merge.
    their database activation has been checked separately. For a new environment,
    apply the agent feature's three migrations in order before website activation.
    Do not replay older hosted migrations over later definitions.
-2. Review the linked-customer inquiry correction on
+2. Review the linked-customer inquiry and public parts refresh corrections on
    `fix/customer-linked-inquiries`. Its forward SELECT-policy change is compatible
    with the deployed inquiry list; the home-page query/copy changes remain on
    this branch for the user's merge.
