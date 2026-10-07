@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Images, ZoomIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Images, Pause, Play, ZoomIn } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CatalogImage } from '@/components/public/catalog-image';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ type PublicImageGalleryProps = {
 };
 
 const SWIPE_THRESHOLD = 48;
+const AUTO_ROTATE_INTERVAL = 5_000;
 
 /** Tiny gray blur so remote catalog images can use Next blur placeholder without new assets. */
 const BLUR_DATA_URL =
@@ -40,6 +41,14 @@ export function PublicImageGallery({
   const [selectedImage, setSelectedImage] = useState(initialIndex);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [scale, setScale] = useState(1);
+  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [touching, setTouching] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const galleryRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const pinchStartDist = useRef<number | null>(null);
@@ -54,9 +63,42 @@ export function PublicImageGallery({
   }, [lightboxOpen, selectedImage]);
 
   useEffect(() => {
-    const node = thumbRef.current?.querySelector<HTMLElement>('[aria-current="true"]');
-    node?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-  }, [selectedImage]);
+    const container = thumbRef.current;
+    const node = container?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!container || !node) return;
+    // Move only the thumbnail strip; automatic rotation must not scroll the page.
+    container.scrollTo({
+      left: container.scrollLeft + node.getBoundingClientRect().left
+        - container.getBoundingClientRect().left - (container.clientWidth - node.clientWidth) / 2,
+      behavior: reducedMotion ? 'auto' : 'smooth',
+    });
+  }, [selectedImage, reducedMotion]);
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncMotion = () => setReducedMotion(media.matches);
+    const syncVisibility = () => setPageVisible(!document.hidden);
+    syncMotion();
+    syncVisibility();
+    media.addEventListener('change', syncMotion);
+    document.addEventListener('visibilitychange', syncVisibility);
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { threshold: 0.1 });
+    if (galleryRef.current) observer.observe(galleryRef.current);
+    return () => {
+      observer.disconnect();
+      media.removeEventListener('change', syncMotion);
+      document.removeEventListener('visibilitychange', syncVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (images.length < 2 || paused || hovered || focused || touching || lightboxOpen
+      || !visible || !pageVisible || reducedMotion) return;
+    const timer = window.setTimeout(() => {
+      setSelectedImage((index) => (index + 1) % images.length);
+    }, AUTO_ROTATE_INTERVAL);
+    return () => window.clearTimeout(timer);
+  }, [images.length, selectedImage, paused, hovered, focused, touching, lightboxOpen, visible, pageVisible, reducedMotion]);
 
   const current = images[selectedImage];
   const hasMany = images.length > 1;
@@ -106,7 +148,29 @@ export function PublicImageGallery({
   };
 
   return (
-    <div className={cn('min-w-0 space-y-3', className)}>
+    <div
+      ref={galleryRef}
+      className={cn('min-w-0 space-y-3', className)}
+      role="region"
+      aria-label="Product photo gallery"
+      onPointerEnter={(event) => {
+        if (event.pointerType !== 'touch') setHovered(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== 'touch') setHovered(false);
+      }}
+      onPointerDownCapture={() => setFocused(false)}
+      onKeyDownCapture={() => setFocused(true)}
+      onFocusCapture={(event) => setFocused(event.target.matches(':focus-visible'))}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+      }}
+      onTouchStartCapture={() => setTouching(true)}
+      onTouchEndCapture={(event) => {
+        if (event.touches.length === 0) setTouching(false);
+      }}
+      onTouchCancelCapture={() => setTouching(false)}
+    >
       <div
         className={cn(
           'group relative w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-secondary/80 to-background shadow-sm',
@@ -118,6 +182,7 @@ export function PublicImageGallery({
         role={current ? 'button' : undefined}
         tabIndex={current ? 0 : undefined}
         onKeyDown={(event) => {
+          if (event.target !== event.currentTarget) return;
           if (current && (event.key === 'Enter' || event.key === ' ')) {
             event.preventDefault();
             setLightboxOpen(true);
@@ -163,6 +228,20 @@ export function PublicImageGallery({
 
         {hasMany ? (
           <>
+            {!reducedMotion ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setPaused((value) => !value);
+                }}
+                className="absolute bottom-2 left-2 z-10 flex h-11 items-center gap-1.5 rounded-lg bg-background/90 px-3 shadow-md transition hover:bg-background"
+                aria-label={paused ? 'Resume slideshow' : 'Pause slideshow'}
+              >
+                {paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
+                <span className="text-xs font-medium">{paused ? 'Play' : 'Pause'}</span>
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={(event) => {
