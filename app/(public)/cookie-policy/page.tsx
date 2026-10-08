@@ -34,7 +34,7 @@ export default function CookiePolicyPage() {
             <ul className="list-disc space-y-2 pl-5">
               <li><strong className="text-foreground">Essential operation:</strong> Supabase authentication and browser storage needed for customer or staff sign-in, security, and core site functions.</li>
               <li><strong className="text-foreground">App and notification features:</strong> service-worker/browser storage when the app is installed and a push subscription if you choose to allow notifications.</li>
-              <li><strong className="text-foreground">Optional analytics:</strong> Google Tag Manager (container {siteConfig.gtmId}, including any tags configured in that container) and Vercel Analytics/Speed Insights. These are not loaded until you allow analytics. The tags and any storage they use can change with configuration.</li>
+              <li><strong className="text-foreground">Optional analytics:</strong> Google Analytics, Google Tag Manager (including any tags configured in that container), and Vercel Analytics/Speed Insights. These are not loaded until you allow analytics. The tags and any storage they use can change with configuration.</li>
               <li><strong className="text-foreground">Optional support chat:</strong> Tawk.to is loaded only if you allow support-chat technologies; the provider may use its own storage to operate the conversation.</li>
             </ul>
           </section>

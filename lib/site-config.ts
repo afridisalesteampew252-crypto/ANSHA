@@ -33,6 +33,7 @@ export const siteConfig = {
   url: resolveSiteUrl(),
   /** GTM container ID (public). Prefer NEXT_PUBLIC_GTM_ID; this is the production fallback / cookie-policy label. */
   gtmId: 'GTM-TFSZD9WT',
+  googleAnalyticsId: 'G-ZEG0PQ0KJS',
 };
 
 export const conditionLabels: Record<string, string> = {

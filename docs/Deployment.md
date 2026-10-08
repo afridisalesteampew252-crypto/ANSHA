@@ -126,14 +126,14 @@ Google Tag Manager: set on the **Vercel** project (and local `.env.local`). The 
 - `app/(public)/layout.tsx` — all public routes (home, catalog, blog, markets, verify, cookie-policy, etc.) via `components/analytics/google-tag-manager.tsx`
 - `app/portal/layout.tsx` — customer portal (same origin)
 
-Not loaded on `/admin`. Head snippet uses `next/script` (`lazyOnload`) and loads the container from the **first-party gateway path** (default `/metrics?id=…`, no trailing slash), not `www.googletagmanager.com`. Noscript iframe still uses `https://www.googletagmanager.com/ns.html?id=…` — Google tag gateway does **not** support first-party noscript. Configure GA4 and other tags inside the GTM container — do not also load direct `gtag.js` for a measurement ID. Disclosed in `/cookie-policy`. No consent banner yet.
+Not loaded on `/admin`. Head snippet uses `next/script` (`lazyOnload`) and loads the container from the **first-party gateway path** (default `/metrics?id=…`, no trailing slash), not `www.googletagmanager.com`. Noscript iframe still uses `https://www.googletagmanager.com/ns.html?id=…` — Google tag gateway does **not** support first-party noscript. The public layout also loads the requested direct Google Analytics tag `G-ZEG0PQ0KJS` through `components/analytics/google-analytics.tsx`; the measurement ID is stored in `siteConfig.googleAnalyticsId`. Do not configure this same measurement ID in GTM as well, which would duplicate tracking. Both loaders are withheld until the visitor allows analytics in the cookie consent banner. Disclosed in `/cookie-policy`.
 
 | Variable | Required | Notes |
 |---|---|---|
 | `NEXT_PUBLIC_GTM_ID` | yes (prod) | Production value `GTM-TFSZD9WT`. If unset locally, app falls back to `siteConfig.gtmId`. Set to an empty value on Preview to disable GTM. |
 | `NEXT_PUBLIC_GTM_GATEWAY_PATH` | no | Default `/metrics`. Must match the Vercel rewrite measurement path and stay unused by App Router pages. |
 
-Vercel: **Settings → Environment Variables** → add `NEXT_PUBLIC_GTM_ID` = `GTM-TFSZD9WT` for **Production** (and Preview only if you want GTM there). Optional `NEXT_PUBLIC_GTM_GATEWAY_PATH=/metrics`. Remove any leftover `NEXT_PUBLIC_GA_MEASUREMENT_ID` so you do not dual-load gtag. Redeploy after changing — `NEXT_PUBLIC_*` is baked at build time.
+Vercel: **Settings → Environment Variables** → add `NEXT_PUBLIC_GTM_ID` = `GTM-TFSZD9WT` for **Production** (and Preview only if you want GTM there). Optional `NEXT_PUBLIC_GTM_GATEWAY_PATH=/metrics`. The direct Analytics tag uses `siteConfig.googleAnalyticsId`; `NEXT_PUBLIC_GA_MEASUREMENT_ID` is not read. Redeploy after changing — `NEXT_PUBLIC_*` is baked at build time.
 
 ### Google tag gateway for advertisers
 
