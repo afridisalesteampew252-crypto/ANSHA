@@ -1,45 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm ci --legacy-peer-deps",
-  "regions": ["bom1"],
+  "regions": [
+    "bom1"
+  ],
   "crons": [
     {
       "path": "/api/cron/request-dues",
       "schedule": "0 4 * * *"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/metrics",
-      "destination": "https://gtm-tfszd9wt.fps.goog/metrics"
-    },
-    {
-      "source": "/metrics/",
-      "destination": "https://gtm-tfszd9wt.fps.goog/metrics/"
-    },
-    {
-      "source": "/metrics/:path*",
-      "destination": "https://gtm-tfszd9wt.fps.goog/metrics/:path*"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/metrics",
-      "headers": [
-        { "key": "x-vercel-enable-rewrite-caching", "value": "0" }
-      ]
-    },
-    {
-      "source": "/metrics/",
-      "headers": [
-        { "key": "x-vercel-enable-rewrite-caching", "value": "0" }
-      ]
-    },
-    {
-      "source": "/metrics/:path*",
-      "headers": [
-        { "key": "x-vercel-enable-rewrite-caching", "value": "0" }
-      ]
     }
   ]
 }

@@ -31,8 +31,8 @@ export const siteConfig = {
   address: 'Meydan Grandstand, 6th Floor, Meydan Road, Nad Al Sheba, Dubai, U.A.E.',
   taxRegistrationNumber: '105335274400003',
   url: resolveSiteUrl(),
-  /** GTM container ID (public). Prefer NEXT_PUBLIC_GTM_ID; this is the production fallback / cookie-policy label. */
-  gtmId: 'GTM-TFSZD9WT',
+  /** Current Google Tag Manager container, shared by public and portal routes. */
+  gtmId: 'GTM-WZXXGX5V',
   googleAnalyticsId: 'G-ZEG0PQ0KJS',
 };
 

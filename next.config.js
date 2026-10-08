@@ -22,7 +22,7 @@ const cspReportOnly = [
   [
     "connect-src 'self'",
     ...supabaseOrigins(),
-    'https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://gtm-tfszd9wt.fps.goog',
+    'https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com',
     'https://*.tawk.to wss://*.tawk.to',
     'https://va.vercel-scripts.com https://vitals.vercel-insights.com',
   ].join(' '),
@@ -78,29 +78,6 @@ const nextConfig = {
       },
       ...vehicleSlugRedirects(),
     ];
-  },
-  /**
-   * Google tag gateway (first-party `/metrics`).
-   * beforeFiles so Next does not 404 `/metrics?id=…` or 308 `/metrics/` → `/metrics`
-   * before the Vercel/fps.goog upstream rewrite. Keep in sync with vercel.json.
-   */
-  async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: '/metrics',
-          destination: 'https://gtm-tfszd9wt.fps.goog/metrics',
-        },
-        {
-          source: '/metrics/',
-          destination: 'https://gtm-tfszd9wt.fps.goog/metrics/',
-        },
-        {
-          source: '/metrics/:path*',
-          destination: 'https://gtm-tfszd9wt.fps.goog/metrics/:path*',
-        },
-      ],
-    };
   },
   async headers() {
     return [
