@@ -19,6 +19,7 @@ export const siteConfig = {
     'Dubai-based exporter of vehicles, auto parts and heavy machinery. Browse live stock by make, model, OEM number or chassis code and inquire for export.',
   whatsappNumber: '971501677980',
   whatsappDisplay: '+971 50 167 7980',
+  facebookUrl: 'https://www.facebook.com/profile.php?id=61595053026374',
   /** Public sales/contact mailbox. */
   email: 'sales@anshatrading.co',
   salesEmail: 'sales@anshatrading.co',

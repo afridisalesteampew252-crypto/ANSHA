@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
+import { ArrowRight, Facebook, Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 import { siteConfig } from '@/lib/site-config';
 import { InstallAppButton } from '@/components/pwa/install-prompt';
 import { CookieSettingsButton } from '@/components/privacy/cookie-consent';
@@ -38,6 +38,17 @@ export function SiteFooter() {
               <MessageCircle className="h-4 w-4" />
               Chat on WhatsApp
             </a>
+            <div className="mt-3">
+              <a
+                href={siteConfig.facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#1877F2] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#166FE5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1877F2] focus-visible:ring-offset-2 focus-visible:ring-offset-[#101114]"
+              >
+                <Facebook className="h-4 w-4" aria-hidden="true" />
+                Facebook
+              </a>
+            </div>
             <div className="mt-3">
               <InstallAppButton
                 className="border-white/25 bg-white/5 text-white hover:bg-white/10 hover:text-white"
