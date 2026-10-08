@@ -126,7 +126,7 @@ Google tracking is configured in `lib/site-config.ts`:
 - Google Analytics: `G-ZEG0PQ0KJS`, installed directly in the public layout.
 - Google Tag Manager: `GTM-WZXXGX5V`, installed on public and portal routes through the standard `https://www.googletagmanager.com/gtm.js` loader.
 
-Both wait for analytics cookie consent. Admin routes do not load Google tracking. Do not add another Google Analytics tag for `G-ZEG0PQ0KJS` inside GTM; the site already configures it directly. Use Tag Assistant and Analytics Realtime after accepting analytics cookies to verify delivery.
+The root header bootstraps Google Analytics before hydration with Consent Mode: analytics storage defaults to denied unless saved consent allows it; advertising storage, ad user data, and ad personalization remain denied. Google may send limited cookieless signals without analytics consent. The public consent component updates the choice, and the bootstrap skips admin, portal, auth, mobile, and API paths. Tag Manager still waits for analytics consent. Admin routes do not load Google tracking. Do not add another Google Analytics tag for `G-ZEG0PQ0KJS` inside GTM; the site already configures it directly. Use Tag Assistant and Analytics Realtime after accepting analytics cookies to verify delivery.
 
 Container selection comes from `siteConfig.gtmId`, so a stale deployment environment value cannot restore the old container. An explicitly empty `NEXT_PUBLIC_GTM_ID` still disables GTM for Preview. `NEXT_PUBLIC_GTM_GATEWAY_PATH` and `NEXT_PUBLIC_GA_MEASUREMENT_ID` are not read. The old first-party gateway rewrites have been removed.
 

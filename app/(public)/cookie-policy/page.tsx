@@ -34,13 +34,13 @@ export default function CookiePolicyPage() {
             <ul className="list-disc space-y-2 pl-5">
               <li><strong className="text-foreground">Essential operation:</strong> Supabase authentication and browser storage needed for customer or staff sign-in, security, and core site functions.</li>
               <li><strong className="text-foreground">App and notification features:</strong> service-worker/browser storage when the app is installed and a push subscription if you choose to allow notifications.</li>
-              <li><strong className="text-foreground">Optional analytics:</strong> Google Analytics, Google Tag Manager (including any tags configured in that container), and Vercel Analytics/Speed Insights. These are not loaded until you allow analytics. The tags and any storage they use can change with configuration.</li>
+              <li><strong className="text-foreground">Optional analytics:</strong> Google Analytics, Google Tag Manager (including any tags configured in that container), and Vercel Analytics/Speed Insights. Google Analytics loads with Consent Mode and analytics storage denied until you allow analytics; it may send limited cookieless signals before consent. Tag Manager and Vercel analytics load only after you allow analytics. Advertising storage and personalization remain denied.</li>
               <li><strong className="text-foreground">Optional support chat:</strong> Tawk.to is loaded only if you allow support-chat technologies; the provider may use its own storage to operate the conversation.</li>
             </ul>
           </section>
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-foreground">3. Your choices</h2>
-            <p>On your first visit, choose “Accept all”, “Essential only”, or manage analytics and support-chat choices. Optional analytics and chat scripts remain off unless you allow them. Use <CookieSettingsButton className="text-accent underline" /> at the bottom of the site to change your choice. A change takes effect after the page reloads.</p>
+            <p>On your first visit, choose “Accept all”, “Essential only”, or manage analytics and support-chat choices. Analytics cookies, Tag Manager, Vercel analytics, and chat remain off unless you allow them. Google Analytics may send limited cookieless signals while analytics storage is denied. Use <CookieSettingsButton className="text-accent underline" /> at the bottom of the site to change your choice. A change takes effect after the page reloads.</p>
             <p>You can also clear this site’s browser storage and control notifications in your browser or device settings. Blocking essential storage may prevent sign-in or core features from working.</p>
           </section>
           <section className="space-y-3">
