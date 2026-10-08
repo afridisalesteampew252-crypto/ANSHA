@@ -31,6 +31,7 @@ import { PriceSanityHint } from '@/components/admin/price-sanity-hint';
 import { VehicleDestinationMarketsField } from '@/components/admin/vehicle-destination-markets-field';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -125,6 +126,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
   const [photoActionId, setPhotoActionId] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState('details');
+  useEffect(() => {
+    if (window.location.hash === '#photos') setActiveSection('photos');
+  }, []);
   const [draggingPhotoId, setDraggingPhotoId] = useState<string | null>(null);
   const [dropPhotoId, setDropPhotoId] = useState<string | null>(null);
   const photoDrag = useRef<{ id: string; x: number; y: number; moved: boolean; target: string | null } | null>(null);
@@ -815,7 +820,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
@@ -825,7 +830,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{vehicle.title}</h1>
+            <h1 className="text-xl font-bold tracking-tight">{vehicle.title}</h1>
             <p className="text-sm text-muted-foreground">
               {stockPoolLabel(vehicle.stock_pool)} · {stockOriginLabel(vehicle.stock_origin)} ·{' '}
               {vehicle.stock_number || vehicle.chassis_number || vehicle.slug}
@@ -866,27 +871,189 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         </div>
       </div>
 
-      <StockLinkedInvoices vehicleId={vehicle.id} />
-
-      <VehicleFreightEstimator
-        vehicleTitle={vehicle.title}
-        make={make}
-        model={model}
-        savedVolumeM3={normalizeVehicleModel(make) === normalizeVehicleModel(vehicle.make) && normalizeVehicleModel(model) === normalizeVehicleModel(vehicle.model) ? vehicle.volume_m3 : null}
-        priceFob={parseOptionalPrice(priceFob) ?? parseOptionalPrice(price)}
-        currency={currency}
-        onQuoteApply={({ cf, cif }) => {
-          setPriceCf(String(cf));
-          if (cif != null) setPriceCif(String(cif));
-          toast.success('Quote prices added to the form. Save the vehicle to publish the changes.');
-        }}
-      />
-
-      <Card id="photos" className="scroll-mt-24 overflow-hidden">
-        <CardHeader>
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
+        <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto p-1" aria-label="Vehicle edit sections">
+          <TabsTrigger value="details" className="min-h-9 shrink-0">Details</TabsTrigger>
+          <TabsTrigger value="photos" className="min-h-9 shrink-0">Photos ({photos.length})</TabsTrigger>
+          <TabsTrigger value="pricing" className="min-h-9 shrink-0">Pricing</TabsTrigger>
+          <TabsTrigger value="workflow" className="min-h-9 shrink-0">Workflow</TabsTrigger>
+          <TabsTrigger value="history" className="min-h-9 shrink-0">History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="details" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<Card>
+        <CardHeader className="px-4 py-3">
+          <CardTitle className="text-base">Vehicle details</CardTitle>
+          <CardDescription>Catalog fields. Stock availability remains independent of operational stage.</CardDescription>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 pt-0">
+          <form className="space-y-3 [&_input]:h-9 [&_select]:h-9" onSubmit={saveBasics}>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+                <Label htmlFor="title">Title</Label>
+                <Input id="title" value={title} onChange={(event) => setTitle(event.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="make">Make</Label>
+                <Input id="make" value={make} onChange={(event) => setMake(event.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="model">Model</Label>
+                <Input id="model" value={model} onChange={(event) => setModel(event.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="variant">Variant</Label>
+                <Input id="variant" value={variant} onChange={(event) => setVariant(event.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="year">Year</Label>
+                <Input id="year" value={year} onChange={(event) => setYear(event.target.value)} inputMode="numeric" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="vehicle-class">Inventory class</Label>
+                <select
+                  id="vehicle-class"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  value={vehicleClass}
+                  onChange={(event) => {
+                    const next = event.target.value as VehicleClass;
+                    setVehicleClass(next);
+                    if (!isMachineryClass(next)) {
+                      setEquipmentCategory('');
+                      setOperatingHours('');
+                    }
+                  }}
+                >
+                  {VEHICLE_CLASSES.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {isMachineryClass(vehicleClass) ? (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="equipment-category">Equipment type</Label>
+                    <select
+                      id="equipment-category"
+                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                      value={equipmentCategory}
+                      onChange={(event) => setEquipmentCategory(event.target.value)}
+                    >
+                      <option value="">Select type</option>
+                      {EQUIPMENT_CATEGORIES.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="operating-hours">Operating hours</Label>
+                    <Input
+                      id="operating-hours"
+                      value={operatingHours}
+                      onChange={(event) => setOperatingHours(event.target.value)}
+                      inputMode="numeric"
+                      placeholder="6500"
+                    />
+                  </div>
+                </>
+              ) : null}
+              <div className="space-y-1.5">
+                <Label htmlFor="stock-number">Stock number</Label>
+                <Input id="stock-number" value={stockNumber} onChange={(event) => setStockNumber(event.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="chassis-number">Chassis number</Label>
+                <Input id="chassis-number" value={chassisNumber} onChange={(event) => setChassisNumber(event.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="location">Location note</Label>
+                <Input id="location" value={location} onChange={(event) => setLocation(event.target.value)} />
+              </div>
+              <VehicleDestinationMarketsField value={destinationMarkets} onChange={setDestinationMarkets} />
+              <div className="space-y-1.5">
+                <Label htmlFor="stock-origin">Stock location</Label>
+                <select
+                  id="stock-origin"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  value={stockOrigin}
+                  onChange={(event) => setStockOrigin(event.target.value)}
+                >
+                  {STOCK_ORIGINS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stock-pool">Stock pool</Label>
+                <select
+                  id="stock-pool"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  value={stockPool}
+                  onChange={(event) => setStockPool(event.target.value as StockPool)}
+                >
+                  <option value="owned">Owned inventory (Vehicles)</option>
+                  <option value="auction_third_party">Auction stock (third-party)</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="stock-status">Availability</Label>
+                <select
+                  id="stock-status"
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  value={stockStatus}
+                  onChange={(event) => setStockStatus(event.target.value as StockStatus)}
+                >
+                  <option value="available">Available</option>
+                  <option value="reserved">Reserved</option>
+                  <option value="sold">Sold</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sell-price">List price</Label>
+                <Input id="sell-price" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="sell-currency">Currency</Label>
+                <Input id="sell-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} />
+              </div>
+              <div className="flex items-end sm:col-span-2 lg:col-span-3">
+                <div className="flex items-center gap-2 pb-2">
+                  <Switch id="show-sell-price" checked={showPrice} onCheckedChange={setShowPrice} />
+                  <Label htmlFor="show-sell-price">Show prices publicly</Label>
+                </div>
+              </div>
+              <div className="sm:col-span-2 lg:col-span-3">
+                <IncotermPriceFields
+                  currency={currency}
+                  values={{ priceFob, priceCf, priceCif }}
+                  onChange={(patch) => {
+                    if (patch.priceFob !== undefined) setPriceFob(patch.priceFob);
+                    if (patch.priceCf !== undefined) setPriceCf(patch.priceCf);
+                    if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
+                  }}
+                />
+                <PriceSanityHint price={priceFob} currency={currency} make={make} model={model} year={year} excludeVehicleId={id} />
+              </div>
+            </div>
+            <Button type="submit" disabled={saving}>
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save details
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+        </TabsContent>
+        <TabsContent value="photos" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<Card id="photos" className="scroll-mt-24 overflow-hidden">
+        <CardHeader className="px-4 py-3">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="text-lg">Photos</CardTitle>
+              <CardTitle className="text-base">Photos</CardTitle>
               <CardDescription>
                 {photos.length} {photos.length === 1 ? 'image' : 'images'} · Drag photos to reorder
               </CardDescription>
@@ -911,7 +1078,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             </label>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="px-4 pb-4 pt-0 space-y-3">
           <label className="flex cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-4 py-5 text-center transition-colors hover:border-foreground/30 hover:bg-secondary/60">
             <input
               type="file"
@@ -941,7 +1108,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
               <p className="mt-3 text-sm text-muted-foreground">No photos uploaded yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))]">
               {photos.map((photo, index) => (
                 <div
                   key={photo.id}
@@ -951,7 +1118,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                   }`}
                 >
                   <div
-                    className={`relative aspect-square touch-none select-none rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${draggingPhotoId === photo.id ? 'cursor-grabbing opacity-50' : 'cursor-grab'}`}
+                    className={`relative h-28 sm:h-32 touch-none select-none rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${draggingPhotoId === photo.id ? 'cursor-grabbing opacity-50' : 'cursor-grab'}`}
                     role="button"
                     tabIndex={0}
                     aria-label={`Reorder photo ${index + 1}. Drag to another photo, or use arrow keys.`}
@@ -1027,12 +1194,14 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         {VEHICLE_PHOTO_VIEWS.map((view) => <option key={view} value={view}>{VEHICLE_PHOTO_VIEW_LABELS[view]}</option>)}
                       </select>
                     </label>
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-1">
                       <Button
                         type="button"
                         size="sm"
                         variant="ghost"
-                        className="h-8 flex-1 justify-center px-1 text-xs"
+                        className="h-8 w-8 shrink-0 px-0"
+                        title={photo.is_cover ? 'Cover' : 'Make cover'}
+                        aria-label={photo.is_cover ? 'Cover photo' : 'Make cover'}
                         disabled={photo.is_cover || photo.is_auction_sheet || Boolean(photoActionId) || uploadingPhotos}
                         onClick={() => void setCoverPhoto(photo.id)}
                       >
@@ -1041,10 +1210,8 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         ) : (
                           <Star className="h-3.5 w-3.5" />
                         )}
-                        {photo.is_cover ? 'Cover' : 'Make cover'}
+                        <span className="sr-only">{photo.is_cover ? 'Cover' : 'Make cover'}</span>
                       </Button>
-                    </div>
-                    <div className="flex items-center gap-1">
                       <label className="flex-1">
                         <input
                           type="file"
@@ -1060,13 +1227,14 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                           type="button"
                           size="sm"
                           variant="ghost"
-                          className="h-8 w-full justify-start px-2 text-xs"
+                          className="h-8 w-8 px-0"
+                          title="Replace photo"
                           asChild
                           disabled={Boolean(photoActionId) || uploadingPhotos}
                         >
                           <span>
                             <Replace className="h-3.5 w-3.5" />
-                            Replace
+                            <span className="sr-only">Replace photo</span>
                           </span>
                         </Button>
                       </label>
@@ -1089,16 +1257,33 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+        <TabsContent value="pricing" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<StockLinkedInvoices vehicleId={vehicle.id} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Purchase cost &amp; reservation</CardTitle>
+<VehicleFreightEstimator
+        vehicleTitle={vehicle.title}
+        make={make}
+        model={model}
+        savedVolumeM3={normalizeVehicleModel(make) === normalizeVehicleModel(vehicle.make) && normalizeVehicleModel(model) === normalizeVehicleModel(vehicle.model) ? vehicle.volume_m3 : null}
+        priceFob={parseOptionalPrice(priceFob) ?? parseOptionalPrice(price)}
+        currency={currency}
+        onQuoteApply={({ cf, cif }) => {
+          setPriceCf(String(cf));
+          if (cif != null) setPriceCif(String(cif));
+          toast.success('Quote prices added to the form. Save the vehicle to publish the changes.');
+        }}
+      />
+
+<Card>
+        <CardHeader className="px-4 py-3">
+          <CardTitle className="text-base">Purchase cost &amp; reservation</CardTitle>
           <CardDescription>
             Cost comes from receive-stock (GRN) or manual entry. Reserve for a customer to hold stock and hide it from the public catalog.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void saveBasics(event)}>
+        <CardContent className="px-4 pb-4 pt-0 space-y-3">
+          <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => void saveBasics(event)}>
             <label className="space-y-1.5 text-sm">
               <span className="font-medium">Purchase price</span>
               <Input type="number" min="0" step="0.01" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
@@ -1292,9 +1477,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           </p>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
+        </TabsContent>
+        <TabsContent value="workflow" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<Card>
+        <CardHeader className="px-4 py-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Ship className="h-5 w-5" />
             Operational lifecycle
@@ -1304,7 +1490,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             Account admins can force a jump with a reason. Commercial availability stays separate and syncs to sold when you move into Sold.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="px-4 pb-4 pt-0 space-y-3">
           {recommendedNext ? (
             <p className="text-sm text-muted-foreground">
               Next recommended: <span className="font-medium text-foreground">{lifecycleStageLabel(recommendedNext)}</span>
@@ -1383,13 +1569,13 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Record workflow event</CardTitle>
+<Card>
+        <CardHeader className="px-4 py-3">
+          <CardTitle className="text-base">Record workflow event</CardTitle>
           <CardDescription>Log BL, inspection, shipping, and yard actions without changing the stage.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+        <CardContent className="px-4 pb-4 pt-0 space-y-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <label className="space-y-1.5 text-sm">
               <span className="font-medium">Event type</span>
               <select
@@ -1420,14 +1606,14 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Assignable requests</CardTitle>
+<Card>
+        <CardHeader className="px-4 py-3">
+          <CardTitle className="text-base">Assignable requests</CardTitle>
           <CardDescription>
             Lifecycle events stay on this vehicle. Open a BL, inspection, or shipping ticket when work needs an owner and due date.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
+        <CardContent className="px-4 pb-4 pt-0 flex flex-wrap gap-2">
           <Button asChild variant="outline">
             <Link href={`/admin/requests?vehicle=${id}`}>Open requests for this vehicle</Link>
           </Button>
@@ -1436,15 +1622,16 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           </Button>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Activity history</CardTitle>
+        </TabsContent>
+        <TabsContent value="history" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<Card>
+        <CardHeader className="px-4 py-3">
+          <CardTitle className="text-base">Activity history</CardTitle>
           <CardDescription>
             Newest first. Stage changes and workflow events are append-only. Attach private documents per event (internal-files).
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 pb-4 pt-0">
           {events.length === 0 ? (
             <p className="text-sm text-muted-foreground">No lifecycle events yet.</p>
           ) : (
@@ -1546,174 +1733,8 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
           )}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Vehicle details</CardTitle>
-          <CardDescription>Catalog fields. Stock availability remains independent of operational stage.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={saveBasics}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" value={title} onChange={(event) => setTitle(event.target.value)} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="make">Make</Label>
-                <Input id="make" value={make} onChange={(event) => setMake(event.target.value)} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="model">Model</Label>
-                <Input id="model" value={model} onChange={(event) => setModel(event.target.value)} required />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="variant">Variant</Label>
-                <Input id="variant" value={variant} onChange={(event) => setVariant(event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="year">Year</Label>
-                <Input id="year" value={year} onChange={(event) => setYear(event.target.value)} inputMode="numeric" />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="vehicle-class">Inventory class</Label>
-                <select
-                  id="vehicle-class"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={vehicleClass}
-                  onChange={(event) => {
-                    const next = event.target.value as VehicleClass;
-                    setVehicleClass(next);
-                    if (!isMachineryClass(next)) {
-                      setEquipmentCategory('');
-                      setOperatingHours('');
-                    }
-                  }}
-                >
-                  {VEHICLE_CLASSES.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {isMachineryClass(vehicleClass) ? (
-                <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="equipment-category">Equipment type</Label>
-                    <select
-                      id="equipment-category"
-                      className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                      value={equipmentCategory}
-                      onChange={(event) => setEquipmentCategory(event.target.value)}
-                    >
-                      <option value="">Select type</option>
-                      {EQUIPMENT_CATEGORIES.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="operating-hours">Operating hours</Label>
-                    <Input
-                      id="operating-hours"
-                      value={operatingHours}
-                      onChange={(event) => setOperatingHours(event.target.value)}
-                      inputMode="numeric"
-                      placeholder="6500"
-                    />
-                  </div>
-                </>
-              ) : null}
-              <div className="space-y-1.5">
-                <Label htmlFor="stock-number">Stock number</Label>
-                <Input id="stock-number" value={stockNumber} onChange={(event) => setStockNumber(event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="chassis-number">Chassis number</Label>
-                <Input id="chassis-number" value={chassisNumber} onChange={(event) => setChassisNumber(event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="location">Location note</Label>
-                <Input id="location" value={location} onChange={(event) => setLocation(event.target.value)} />
-              </div>
-              <VehicleDestinationMarketsField value={destinationMarkets} onChange={setDestinationMarkets} />
-              <div className="space-y-1.5">
-                <Label htmlFor="stock-origin">Stock location</Label>
-                <select
-                  id="stock-origin"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={stockOrigin}
-                  onChange={(event) => setStockOrigin(event.target.value)}
-                >
-                  {STOCK_ORIGINS.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="stock-pool">Stock pool</Label>
-                <select
-                  id="stock-pool"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={stockPool}
-                  onChange={(event) => setStockPool(event.target.value as StockPool)}
-                >
-                  <option value="owned">Owned inventory (Vehicles)</option>
-                  <option value="auction_third_party">Auction stock (third-party)</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="stock-status">Availability</Label>
-                <select
-                  id="stock-status"
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                  value={stockStatus}
-                  onChange={(event) => setStockStatus(event.target.value as StockStatus)}
-                >
-                  <option value="available">Available</option>
-                  <option value="reserved">Reserved</option>
-                  <option value="sold">Sold</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sell-price">List price</Label>
-                <Input id="sell-price" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sell-currency">Currency</Label>
-                <Input id="sell-currency" value={currency} onChange={(e) => setCurrency(e.target.value)} maxLength={3} />
-              </div>
-              <div className="flex items-end sm:col-span-2">
-                <div className="flex items-center gap-2 pb-2">
-                  <Switch id="show-sell-price" checked={showPrice} onCheckedChange={setShowPrice} />
-                  <Label htmlFor="show-sell-price">Show prices publicly</Label>
-                </div>
-              </div>
-              <div className="sm:col-span-2">
-                <IncotermPriceFields
-                  currency={currency}
-                  values={{ priceFob, priceCf, priceCif }}
-                  onChange={(patch) => {
-                    if (patch.priceFob !== undefined) setPriceFob(patch.priceFob);
-                    if (patch.priceCf !== undefined) setPriceCf(patch.priceCf);
-                    if (patch.priceCif !== undefined) setPriceCif(patch.priceCif);
-                  }}
-                />
-                <PriceSanityHint price={priceFob} currency={currency} make={make} model={model} year={year} excludeVehicleId={id} />
-              </div>
-            </div>
-            <Button type="submit" disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save details
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

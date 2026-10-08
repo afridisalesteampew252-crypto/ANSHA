@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -88,6 +89,10 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
   const [photoActionId, setPhotoActionId] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState('details');
+  useEffect(() => {
+    if (window.location.hash === '#photos') setActiveSection('photos');
+  }, []);
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -550,7 +555,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
   const reservationLocked = stockStatus === 'reserved' || stockStatus === 'sold';
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
@@ -560,7 +565,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Edit Part</h1>
+            <h1 className="text-xl font-bold tracking-tight">Edit Part</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-mono">{part.part_code}</span>
               {' · '}
@@ -594,131 +599,20 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
         </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Photos */}
-        <Card id="photos" className="scroll-mt-24 overflow-hidden">
-          <CardHeader>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="text-lg">Photos</CardTitle>
-                <CardDescription>
-                  {photos.length} {photos.length === 1 ? 'image' : 'images'} · Choose one cover image for listings
-                </CardDescription>
-              </div>
-              <label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleUpload}
-                  disabled={uploading}
-                />
-                <Button type="button" variant="outline" size="sm" asChild disabled={uploading}>
-                  <span>
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    {uploading
-                      ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}`
-                      : 'Upload Photos'}
-                  </span>
-                </Button>
-              </label>
-            </div>
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
+        <TabsList className="flex h-auto w-full justify-start gap-1 overflow-x-auto p-1" aria-label="Part edit sections">
+          <TabsTrigger value="details" className="min-h-9 shrink-0">Details</TabsTrigger>
+          <TabsTrigger value="photos" className="min-h-9 shrink-0">Photos ({photos.length})</TabsTrigger>
+          <TabsTrigger value="compatibility" className="min-h-9 shrink-0">Fitment</TabsTrigger>
+          <TabsTrigger value="pricing" className="min-h-9 shrink-0">Pricing</TabsTrigger>
+          <TabsTrigger value="seo" className="min-h-9 shrink-0">SEO</TabsTrigger>
+        </TabsList>
+        <TabsContent value="details" forceMount className="grid gap-4 lg:grid-cols-2 data-[state=inactive]:hidden">
+<Card>
+          <CardHeader className="px-4 py-3">
+            <CardTitle className="text-base">Basic Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <label className="flex cursor-pointer items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-secondary/30 px-4 py-5 text-center transition-colors hover:border-foreground/30 hover:bg-secondary/60">
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                multiple
-                className="hidden"
-                onChange={handleUpload}
-                disabled={uploading}
-              />
-              {uploading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-accent" />
-              ) : (
-                <Upload className="h-6 w-6 text-muted-foreground" />
-              )}
-              <span>
-                <span className="block text-sm font-semibold">
-                  {uploading ? 'Uploading your images…' : 'Select multiple product photos'}
-                </span>
-                <span className="block text-xs text-muted-foreground">
-                  PNG, JPG or WEBP · clear square images work best
-                </span>
-              </span>
-            </label>
-            {photos.length === 0 ? (
-              <div className="flex flex-col items-center rounded-xl bg-secondary/30 py-10 text-center">
-                <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
-                <p className="mt-3 text-sm text-muted-foreground">No photos uploaded yet.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {photos.map((photo, index) => (
-                  <div
-                    key={photo.id}
-                    className={`group overflow-hidden rounded-xl border bg-secondary/30 ${
-                      photo.is_cover ? 'border-accent ring-2 ring-accent/15' : 'border-border'
-                    }`}
-                  >
-                    <div className="relative aspect-square">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={getPhotoUrl(photo.storage_path)}
-                        alt={`${name || 'Part'} photo ${index + 1}`}
-                        className="h-full w-full object-contain p-2"
-                      />
-                      {photo.is_cover && (
-                        <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-accent px-2 py-1 text-[11px] font-semibold text-accent-foreground shadow-sm">
-                          <Star className="h-3 w-3 fill-current" /> Cover
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 border-t border-border p-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 flex-1 justify-start px-2 text-xs"
-                        disabled={photo.is_cover || photoActionId === photo.id}
-                        onClick={() => setCoverPhoto(photo.id)}
-                      >
-                        {photoActionId === photo.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Star className="h-3.5 w-3.5" />
-                        )}
-                        {photo.is_cover ? 'Cover image' : 'Make cover'}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        disabled={photoActionId === photo.id}
-                        onClick={() => deletePhoto(photo.id, photo.storage_path)}
-                        aria-label={`Delete photo ${index + 1}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {part.id ? <StockLinkedInvoices partId={part.id} /> : null}
-
-        {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Basic Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="px-4 pb-4 pt-0 space-y-3">
             <div className="space-y-2">
               <Label>Part Name *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} required />
@@ -733,11 +627,11 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               />
               <p className="text-xs text-muted-foreground">Public URL: /parts/{slug || '…'}</p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Category</Label>
                 <Select value={categoryId} onValueChange={setCategoryId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -752,7 +646,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               <div className="space-y-2">
                 <Label>Brand</Label>
                 <Select value={brand} onValueChange={setBrand}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select brand" />
                   </SelectTrigger>
                   <SelectContent>
@@ -768,13 +662,12 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
           </CardContent>
         </Card>
 
-        {/* Identification */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Identification</CardTitle>
+<Card>
+          <CardHeader className="px-4 py-3">
+            <CardTitle className="text-base">Identification</CardTitle>
             <CardDescription>OEM, manufacturer, and cross-reference numbers for buyer search.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
+          <CardContent className="px-4 pb-4 pt-0 grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Part Number</Label>
               <Input value={partNumber} onChange={(e) => setPartNumber(e.target.value)} />
@@ -818,12 +711,131 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
           </CardContent>
         </Card>
 
-        {/* Vehicle Compatibility */}
-        <Card>
-          <CardHeader>
+<Card>
+          <CardHeader className="px-4 py-3">
+            <CardTitle className="text-base">Description</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0">
+            <Textarea rows={5} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </CardContent>
+        </Card>
+
+<Card>
+          <CardHeader className="px-4 py-3">
+            <CardTitle className="text-base">Publishing</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0 space-y-3">
+            <div className="flex items-center gap-2">
+              <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+              <Label>Publish this part (visible to customers)</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
+              <Label>Boost in home rotation + featured badge</Label>
+            </div>
+          </CardContent>
+        </Card>
+        </TabsContent>
+        <TabsContent value="photos" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<Card id="photos" className="scroll-mt-24 overflow-hidden">
+          <CardHeader className="px-4 py-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-base">Photos</CardTitle>
+                <CardDescription>
+                  {photos.length} {photos.length === 1 ? 'image' : 'images'} · Choose one cover image for listings
+                </CardDescription>
+              </div>
+              <label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleUpload}
+                  disabled={uploading}
+                />
+                <Button type="button" variant="outline" size="sm" asChild disabled={uploading}>
+                  <span>
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {uploading
+                      ? `Uploading ${uploadProgress.completed}/${uploadProgress.total}`
+                      : 'Upload Photos'}
+                  </span>
+                </Button>
+              </label>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0 space-y-3">
+
+            {photos.length === 0 ? (
+              <div className="flex flex-col items-center rounded-xl bg-secondary/30 py-10 text-center">
+                <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
+                <p className="mt-3 text-sm text-muted-foreground">No photos uploaded yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(140px,1fr))]">
+                {photos.map((photo, index) => (
+                  <div
+                    key={photo.id}
+                    className={`group overflow-hidden rounded-xl border bg-secondary/30 ${
+                      photo.is_cover ? 'border-accent ring-2 ring-accent/15' : 'border-border'
+                    }`}
+                  >
+                    <div className="relative h-28 sm:h-32">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getPhotoUrl(photo.storage_path)}
+                        alt={`${name || 'Part'} photo ${index + 1}`}
+                        className="h-full w-full object-contain p-2"
+                      />
+                      {photo.is_cover && (
+                        <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-accent px-2 py-1 text-[11px] font-semibold text-accent-foreground shadow-sm">
+                          <Star className="h-3 w-3 fill-current" /> Cover
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-2 border-t border-border p-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 flex-1 justify-start px-2 text-xs"
+                        disabled={photo.is_cover || photoActionId === photo.id}
+                        onClick={() => setCoverPhoto(photo.id)}
+                      >
+                        {photoActionId === photo.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Star className="h-3.5 w-3.5" />
+                        )}
+                        {photo.is_cover ? 'Cover' : 'Make cover'}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        disabled={photoActionId === photo.id}
+                        onClick={() => deletePhoto(photo.id, photo.storage_path)}
+                        aria-label={`Delete photo ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        </TabsContent>
+        <TabsContent value="compatibility" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<Card>
+          <CardHeader className="px-4 py-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="text-lg">Vehicle Compatibility</CardTitle>
+                <CardTitle className="text-base">Vehicle Compatibility</CardTitle>
                 <CardDescription>Add compatible vehicles for this part</CardDescription>
               </div>
               <Button type="button" variant="outline" size="sm" onClick={addCompatRow}>
@@ -831,7 +843,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="px-4 pb-4 pt-0 space-y-3">
             {compatRows.map((row, idx) => (
               <div
                 key={idx}
@@ -911,19 +923,21 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
             ))}
           </CardContent>
         </Card>
+        </TabsContent>
+        <TabsContent value="pricing" forceMount className="space-y-4 data-[state=inactive]:hidden">
+{part.id ? <StockLinkedInvoices partId={part.id} /> : null}
 
-        {/* Inventory & sell pricing */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Inventory &amp; Pricing</CardTitle>
+<Card>
+          <CardHeader className="px-4 py-3">
+            <CardTitle className="text-base">Inventory &amp; Pricing</CardTitle>
             <CardDescription>Stock location, quantity, and public sell quotes (FOB / C&amp;F / CIF).</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <CardContent className="px-4 pb-4 pt-0 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <Label>Condition</Label>
                 <Select value={condition} onValueChange={(v) => setCondition(v as PartCondition)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -965,7 +979,7 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
               <div className="space-y-2">
                 <Label>Currency</Label>
                 <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -992,16 +1006,15 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
           </CardContent>
         </Card>
 
-        {/* Purchase cost & reservation */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Purchase cost &amp; reservation</CardTitle>
+<Card>
+          <CardHeader className="px-4 py-3">
+            <CardTitle className="text-base">Purchase cost &amp; reservation</CardTitle>
             <CardDescription>
               Cost from receive-stock (GRN) or manual entry. Reserve to hold stock and hide it from the public catalog.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <CardContent className="px-4 pb-4 pt-0 space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Purchase price</Label>
                 <Input
@@ -1227,24 +1240,14 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
             </div>
           </CardContent>
         </Card>
-
-        {/* Description */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Description</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea rows={5} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </CardContent>
-        </Card>
-
-        {/* SEO */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">SEO</CardTitle>
+        </TabsContent>
+        <TabsContent value="seo" forceMount className="space-y-4 data-[state=inactive]:hidden">
+<Card>
+          <CardHeader className="px-4 py-3">
+            <CardTitle className="text-base">SEO</CardTitle>
             <CardDescription>Optional overrides for search engines and social previews.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="px-4 pb-4 pt-0 space-y-3">
             <div className="space-y-2">
               <Label htmlFor="meta-title">Meta title</Label>
               <Input
@@ -1277,26 +1280,9 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
             </div>
           </CardContent>
         </Card>
-
-        {/* Publishing */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Publishing</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Switch checked={isPublished} onCheckedChange={setIsPublished} />
-              <Label>Publish this part (visible to customers)</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
-              <Label>Boost in home rotation + featured badge</Label>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        </TabsContent>
+      </Tabs>
+      <div className="sticky bottom-2 z-20 flex flex-col-reverse gap-2 rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:justify-end">
           <Button variant="outline" onClick={() => router.push('/admin/parts')}>
             Cancel
           </Button>
@@ -1305,7 +1291,6 @@ export default function EditPartPage(props: { params: Promise<{ id: string }> })
             Save Changes
           </Button>
         </div>
-      </div>
     </div>
   );
 }
