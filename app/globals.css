@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     /* Clean workshop canvas with high-contrast catalog surfaces. */
     --background: 210 16% 96%;
     --foreground: 220 15% 10%;
