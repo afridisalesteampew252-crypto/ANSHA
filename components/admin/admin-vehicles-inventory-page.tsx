@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Car, ChevronDown, Download, Filter, FileSpreadsheet, Gavel, Loader2, Plus, Search, Ship } from 'lucide-react';
@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { downloadRowsAsXlsx } from '@/lib/export-excel';
 import { matchesQuery } from '@/lib/matches-query';
 import { supabase } from '@/lib/supabase/client';
+import { fetchAdminInventory } from '@/lib/admin-inventory-data';
 import { isFieldAgentRole } from '@/lib/admin-rbac';
 import { STOCK_ORIGINS, isAuctionStockPool, stockOriginLabel, stockPoolLabel, type StockPool } from '@/lib/stock';
 import {
@@ -34,7 +35,6 @@ import {
   type VehicleSalesStatus,
 } from '@/lib/vehicle-sales-status';
 import {
-  mapStockLinkedInvoices,
   primaryLinkedInvoiceStatus,
   type StockListLinkedInvoice,
 } from '@/lib/stock-linked-invoice';
@@ -76,6 +76,9 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
   const listBase = isAuction ? '/admin/auction-stock' : '/admin/vehicles';
   const [vehicles, setVehicles] = useState<VehicleWithPhotos[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const inventoryLoad = useRef<AbortController | null>(null);
+  const [visibleList, setVisibleList] = useState({ scope: '', count: 50 });
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [query, setQuery] = useState('');
   const [origin, setOrigin] = useState<'all' | StockOrigin>('all');
@@ -123,76 +126,24 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
   };
 
   const fetchVehicles = useCallback(async () => {
+    inventoryLoad.current?.abort();
+    const controller = new AbortController();
+    inventoryLoad.current = controller;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('vehicles')
-      .select('*, vehicle_photos(*)')
-      .eq('stock_pool', stockPool)
-      .order('created_at', { ascending: false });
-    if (error) toast.error(error.message);
-    const list = (data || []) as unknown as VehicleWithPhotos[];
-    setVehicles(list);
-
-    const vehicleIds = list.map((v) => v.id);
-    const reservedByIds = Array.from(new Set(list.map((v) => v.reserved_by).filter(Boolean))) as string[];
-
-    const [agentRes, linkRes, itemRes] = await Promise.all([
-      supabase
-        .from('admin_profiles')
-        .select('id,full_name,email,role')
-        .in('role', ['sales', 'freelancer', 'manager', 'admin', 'staff'])
-        .eq('is_active', true)
-        .order('full_name')
-        .limit(300),
-      vehicleIds.length
-        ? supabase
-            .from('export_shipment_vehicles')
-            .select('vehicle_id, export_shipments(status,created_at)')
-            .in('vehicle_id', vehicleIds)
-        : Promise.resolve({ data: [], error: null }),
-      vehicleIds.length
-        ? supabase
-            .from('invoice_items')
-            .select('vehicle_id, invoices(id, invoice_number, status, created_at, document_type)')
-            .in('vehicle_id', vehicleIds)
-            .not('vehicle_id', 'is', null)
-            .limit(800)
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-
-    const nameMap: Record<string, string> = {};
-    const agentOpts: AgentOption[] = [];
-    for (const row of agentRes.data || []) {
-      const label = row.full_name || row.email || row.id.slice(0, 8);
-      nameMap[row.id] = label;
-      if (row.role === 'sales' || row.role === 'freelancer') {
-        agentOpts.push({ id: row.id, label });
-      }
+    setLoadError('');
+    try {
+      const result = await fetchAdminInventory<VehicleWithPhotos>(supabase, 'vehicles', controller.signal, stockPool);
+      if (controller.signal.aborted) return;
+      setVehicles(result.list);
+      setAgentNames(result.agentNames);
+      setAgents(result.agentOptions);
+      setShipmentByVehicle(result.shipments);
+      setInvoicesByVehicle(result.invoices);
+    } catch (error) {
+      if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : 'Inventory could not be loaded. Please retry.');
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
     }
-    for (const id of reservedByIds) {
-      if (!nameMap[id]) nameMap[id] = id.slice(0, 8);
-    }
-    setAgentNames(nameMap);
-    setAgents(agentOpts);
-
-    const shipMap: Record<string, { status: string; created: string }> = {};
-    for (const row of linkRes.data || []) {
-      const ship = Array.isArray(row.export_shipments) ? row.export_shipments[0] : row.export_shipments;
-      if (!ship?.status) continue;
-      const prev = shipMap[row.vehicle_id];
-      if (!prev || String(ship.created_at) > prev.created) {
-        shipMap[row.vehicle_id] = { status: ship.status, created: String(ship.created_at || '') };
-      }
-    }
-    setShipmentByVehicle(
-      Object.fromEntries(Object.entries(shipMap).map(([id, value]) => [id, value.status]))
-    );
-
-    setInvoicesByVehicle(
-      mapStockLinkedInvoices(itemRes.data || [], (row) => row.vehicle_id as string | null)
-    );
-
-    setLoading(false);
   }, [stockPool]);
 
   useEffect(() => {
@@ -219,6 +170,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
 
   useEffect(() => {
     void fetchVehicles();
+    return () => inventoryLoad.current?.abort();
   }, [fetchVehicles]);
 
   const salesStatusOf = useCallback(
@@ -578,6 +530,11 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
       ? STOCK_ORIGINS.filter((item) => allowedOrigins.includes(item.value))
       : STOCK_ORIGINS;
 
+  const listScope = JSON.stringify([query, origin, stockStatus, salesStatus, agentFilter, stage, vehicleClass, stockPool]);
+  const visibleCount = visibleList.scope === listScope ? visibleList.count : 50;
+  if (loadError) return <div role="alert" className="space-y-3 rounded-xl border border-destructive/30 p-6"><p>{loadError}</p><Button onClick={() => void fetchVehicles()}>Retry inventory</Button></div>;
+  if (loading && !vehicles.length) return <p role="status" className="p-6 text-sm text-muted-foreground">Loading inventory…</p>;
+
   return (
     <div className="space-y-5">
       {isManager ? (
@@ -883,7 +840,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
               </p>
             </div>
           ) : (
-            filtered.map((vehicle) => (
+            filtered.slice(0, visibleCount).map((vehicle) => (
               <AdminVehicleCard
                 key={vehicle.id}
                 vehicle={vehicle}
@@ -909,6 +866,7 @@ function AdminVehiclesInventoryInner({ stockPool }: { stockPool: StockPool }) {
               />
             ))
           )}
+          {!loading && filtered.length > visibleCount ? <div className="flex justify-center py-4"><Button variant="outline" onClick={() => setVisibleList({ scope: listScope, count: visibleCount + 50 })}>Show more ({filtered.length - visibleCount} remaining)</Button></div> : null}
         </CardContent>
       </Card>
 

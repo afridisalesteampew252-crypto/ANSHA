@@ -1,126 +1,91 @@
-import {
-  convertToModelMessages,
-  createUIMessageStreamResponse,
-  stepCountIs,
-  streamText,
-  tool,
-  toUIMessageStream,
-  type UIMessage,
-} from 'ai';
+import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, stepCountIs, streamText, tool, toUIMessageStream, type UIMessageChunk } from 'ai';
 import { z } from 'zod';
 import { OPS_AI_SYSTEM_PROMPT, isAiConfigured, resolveOpsAiModel } from '@/lib/ai/config';
-import {
-  extractLatestUserText,
-  fetchAiOpsGrounding,
-  formatGroundingForPrompt,
-  requireOpsUser,
-} from '@/lib/ai/ops-context';
+import { extractLatestUserText, fetchAiOpsGrounding, formatGroundingForPrompt, requireOpsUser, type AiOpsGrounding } from '@/lib/ai/ops-context';
+import { AI_CHAT_LIMITS, AiChatRequestError, consumeOpsChatQuota, persistOpsChatMessage, readAiChatRequest } from '@/lib/ai/chat-guard';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-export async function POST(req: Request) {
-  if (!isAiConfigured()) {
-    return Response.json(
-      {
-        error:
-          'AI is not configured. Set AI_GATEWAY_API_KEY or OPENAI_API_KEY in the server environment.',
-      },
-      { status: 503 }
-    );
-  }
+function json(status: number, error: string, headers?: Record<string, string>) {
+  return Response.json({ error }, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
+}
 
+function boundedGrounding(grounding: AiOpsGrounding): string {
+  const text = formatGroundingForPrompt(grounding);
+  if (new TextEncoder().encode(text).byteLength > AI_CHAT_LIMITS.groundingBytes) {
+    throw new AiChatRequestError('Too many matching records. Try a more specific question.', 413);
+  }
+  return text;
+}
+
+export async function POST(req: Request) {
+  const origin = req.headers.get('origin');
+  if (origin) {
+    try {
+      if (new URL(origin).origin !== new URL(req.url).origin) return json(403, 'Cross-site request rejected.');
+    } catch { return json(403, 'Cross-site request rejected.'); }
+  }
   const supabase = await createServerSupabaseClient();
   const auth = await requireOpsUser(supabase);
-  if (!auth.ok) {
-    return Response.json({ error: auth.error }, { status: auth.status });
-  }
+  if (!auth.ok) return json(auth.status, auth.error);
+  if (!isAiConfigured()) return json(503, 'AI is not configured. Contact an administrator.');
 
-  let body: { messages?: UIMessage[]; threadId?: string | null };
   try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: 'Invalid JSON body.' }, { status: 400 });
-  }
-
-  const messages = Array.isArray(body.messages) ? body.messages : [];
-  if (!messages.length) {
-    return Response.json({ error: 'messages are required.' }, { status: 400 });
-  }
-
-  const threadId = typeof body.threadId === 'string' && body.threadId ? body.threadId : null;
-  const latestUserText = extractLatestUserText(messages);
-
-  if (threadId && latestUserText) {
-    const { data: thread } = await supabase
-      .from('ai_chat_threads')
-      .select('id, title, created_by')
-      .eq('id', threadId)
-      .maybeSingle();
-
-    if (!thread || thread.created_by !== auth.user.id) {
-      return Response.json({ error: 'Thread not found.' }, { status: 404 });
+    const { messages, threadId } = await readAiChatRequest(req);
+    if (threadId) {
+      const { data: thread, error } = await supabase.from('ai_chat_threads').select('id,created_by').eq('id', threadId).abortSignal(req.signal).maybeSingle();
+      if (error) return json(503, 'Your conversation could not be checked. Please retry.');
+      if (!thread || thread.created_by !== auth.user.id) return json(404, 'Thread not found.');
     }
+    const modelMessages = await convertToModelMessages(messages);
+    const quota = await consumeOpsChatQuota(supabase);
+    if (!quota.allowed) return json(quota.status, quota.message, { 'Retry-After': String(quota.retryAfterSeconds) });
+    const latestUserText = extractLatestUserText(messages);
+    const grounding = boundedGrounding(await fetchAiOpsGrounding(supabase, latestUserText));
+    if (threadId) await persistOpsChatMessage(supabase, threadId, 'user', latestUserText);
 
-    await supabase.from('ai_chat_messages').insert({
-      thread_id: threadId,
-      role: 'user',
-      content: latestUserText.slice(0, 50000),
-      created_by: auth.user.id,
-    });
-
-    if (thread.title === 'New chat') {
-      const nextTitle = latestUserText.slice(0, 80).trim() || 'New chat';
-      await supabase.from('ai_chat_threads').update({ title: nextTitle }).eq('id', threadId);
-    }
-  }
-
-  let grounding;
-  try {
-    grounding = await fetchAiOpsGrounding(supabase, latestUserText);
-  } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : 'Grounding failed.' },
-      { status: 500 }
-    );
-  }
-
-  const result = streamText({
-    model: resolveOpsAiModel(),
-    instructions: `${OPS_AI_SYSTEM_PROMPT}
-
-Current ops grounding JSON (authoritative; do not invent missing fields):
-${formatGroundingForPrompt(grounding)}`,
-    messages: await convertToModelMessages(messages),
-    stopWhen: stepCountIs(3),
-    maxOutputTokens: 1200,
-    tools: {
-      searchOpsCatalog: tool({
-        description:
-          'Search ANSHA vehicles, parts, customers, and invoices by a short keyword when the initial grounding is insufficient.',
-        inputSchema: z.object({
-          query: z.string().min(1).max(120),
-        }),
-        execute: async ({ query }: { query: string }) => fetchAiOpsGrounding(supabase, query),
+    return createUIMessageStreamResponse({
+      headers: { 'Cache-Control': 'no-store' },
+      stream: createUIMessageStream({
+        execute: async ({ writer }) => {
+          const result = streamText({
+            model: resolveOpsAiModel(),
+            instructions: `${OPS_AI_SYSTEM_PROMPT}\n\nCurrent ops grounding JSON (authoritative; do not invent missing fields):\n${grounding}`,
+            messages: modelMessages,
+            stopWhen: stepCountIs(3), maxOutputTokens: 1200, maxRetries: 0, abortSignal: req.signal,
+            tools: {
+              searchOpsCatalog: tool({
+                description: 'Search ANSHA vehicles, parts, customers, and invoices by a short keyword.',
+                inputSchema: z.object({ query: z.string().min(1).max(120) }),
+                execute: async ({ query }: { query: string }) => JSON.parse(boundedGrounding(await fetchAiOpsGrounding(supabase, query))) as AiOpsGrounding,
+              }),
+            },
+          });
+          let finish: UIMessageChunk | undefined;
+          let failed = false;
+          const reader = toUIMessageStream({ stream: result.stream, onError: () => 'The answer could not be generated. Please retry.' }).getReader();
+          try { while (true) {
+            const { value: chunk, done } = await reader.read();
+            if (done) break;
+            if (chunk.type === 'finish') finish = chunk;
+            else {
+              if (chunk.type === 'error' || chunk.type === 'abort') failed = true;
+              writer.write(chunk);
+            }
+          } } finally { reader.releaseLock(); }
+          if (!failed && !req.signal.aborted && threadId) {
+            const text = await result.text;
+            if (text.trim()) await persistOpsChatMessage(supabase, threadId, 'assistant', text.trim().slice(0, 50000));
+          }
+          if (finish) writer.write(finish);
+        },
+        onError: (error) => error instanceof AiChatRequestError ? error.message : 'The answer could not be completed. Please retry.',
       }),
-    },
-    onFinish: async ({ text }: { text: string }) => {
-      if (!threadId || !text?.trim()) return;
-      await supabase.from('ai_chat_messages').insert({
-        thread_id: threadId,
-        role: 'assistant',
-        content: text.trim().slice(0, 50000),
-        created_by: auth.user.id,
-      });
-      await supabase
-        .from('ai_chat_threads')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', threadId);
-    },
-  });
-
-  return createUIMessageStreamResponse({
-    stream: toUIMessageStream({ stream: result.stream }),
-  });
+    });
+  } catch (error) {
+    return json(error instanceof AiChatRequestError ? error.status : 503,
+      error instanceof AiChatRequestError ? error.message : 'AI chat is temporarily unavailable. Please retry.');
+  }
 }

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { fetchFinancialDashboard, type FinancialCurrencySummary } from '@/lib/financial-dashboard';
 import { formatMoney } from '@/lib/money';
 import { supabase } from '@/lib/supabase/client';
+import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
 
 const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#d97706', '#9333ea', '#0891b2', '#db2777', '#64748b'];
 
@@ -63,15 +64,19 @@ function CurrencySummary({ summary }: { summary: FinancialCurrencySummary }) {
           <h4 className="text-sm font-semibold">Expense account breakdown</h4>
           {positiveTotal > 0 ? (
             <>
-              <div aria-hidden="true" className="h-56 w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
-                  <PieChart>
-                    <Pie data={summary.expenseBreakdown} dataKey="value" nameKey="name" innerRadius="45%" outerRadius="80%" startAngle={0} endAngle={360} minAngle={0} paddingAngle={2} isAnimationActive={false}>
-                      {summary.expenseBreakdown.map((account, index) => <Cell key={account.name} fill={COLORS[index % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatMoney(Number(value), summary.currency)} />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="h-56 w-full min-w-0">
+                <ChartErrorBoundary title={`${summary.currency} expense breakdown`} resetKey={JSON.stringify(summary.expenseBreakdown)}>
+                  <div aria-hidden="true" className="h-full w-full min-w-0">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={100}>
+                      <PieChart>
+                        <Pie data={summary.expenseBreakdown} dataKey="value" nameKey="name" innerRadius="45%" outerRadius="80%" startAngle={0} endAngle={360} minAngle={0} paddingAngle={2} isAnimationActive={false}>
+                          {summary.expenseBreakdown.map((account, index) => <Cell key={account.name} fill={COLORS[index % COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatMoney(Number(value), summary.currency)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </ChartErrorBoundary>
               </div>
               <Table className="table-fixed">
                 <caption className="sr-only">{summary.currency} expense account breakdown</caption>

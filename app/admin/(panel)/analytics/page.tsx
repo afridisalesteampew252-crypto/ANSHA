@@ -16,6 +16,7 @@ import type { OpsAnalyticsSummary } from '@/lib/ops-analytics';
 import { addToCurrencyMap, activeCurrencies, formatMoney } from '@/lib/money';
 import { MoneyBreakdown } from '@/components/money-breakdown';
 import { cn } from '@/lib/utils';
+import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
 
 const ACCENT = 'hsl(0 75% 47%)';
 const COLORS = [ACCENT, '#0f172a', '#10b981', '#c4a35a', '#2563eb', '#64748b'];
@@ -297,17 +298,19 @@ export default function AdminAnalyticsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthly.length ? monthly : [{ month: '—', invoiced: 0, received: 0 }]}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} />
-                    <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
-                    <Legend />
-                    <Bar dataKey="invoiced" name="Invoiced" fill={ACCENT} radius={[5, 5, 0, 0]} />
-                    {isOps ? <Bar dataKey="received" name="Received" fill="#10b981" radius={[5, 5, 0, 0]} /> : null}
-                  </BarChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary title="Monthly invoices" resetKey={JSON.stringify([chartCurrency, monthly])}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthly.length ? monthly : [{ month: '—', invoiced: 0, received: 0 }]}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                      <YAxis tickLine={false} axisLine={false} />
+                      <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
+                      <Legend />
+                      <Bar dataKey="invoiced" name="Invoiced" fill={ACCENT} radius={[5, 5, 0, 0]} />
+                      {isOps ? <Bar dataKey="received" name="Received" fill="#10b981" radius={[5, 5, 0, 0]} /> : null}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               </CardContent>
             </Card>
             <Card>
@@ -315,15 +318,17 @@ export default function AdminAnalyticsPage() {
                 <CardTitle className="text-lg">Stock position</CardTitle>
               </CardHeader>
               <CardContent className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={stockData} dataKey="value" nameKey="name" innerRadius={65} outerRadius={100} startAngle={0} endAngle={360} minAngle={0} paddingAngle={3}>
-                      {stockData.map((entry, index) => <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                <ChartErrorBoundary title="Stock position" resetKey={JSON.stringify(stockData)}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={stockData} dataKey="value" nameKey="name" innerRadius={65} outerRadius={100} startAngle={0} endAngle={360} minAngle={0} paddingAngle={3}>
+                        {stockData.map((entry, index) => <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </ChartErrorBoundary>
               </CardContent>
             </Card>
           </div>
@@ -334,17 +339,19 @@ export default function AdminAnalyticsPage() {
               <CardDescription>Tax versus commercial counts in the selected range.</CardDescription>
             </CardHeader>
             <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthly.length ? monthly : [{ month: '—', tax: 0, commercial: 0 }]}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="tax" name="Tax invoices" fill={ACCENT} radius={[5, 5, 0, 0]} />
-                  <Bar dataKey="commercial" name="Commercial" fill="#0f172a" radius={[5, 5, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <ChartErrorBoundary title="Invoices by type" resetKey={JSON.stringify(monthly)}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthly.length ? monthly : [{ month: '—', tax: 0, commercial: 0 }]}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="tax" name="Tax invoices" fill={ACCENT} radius={[5, 5, 0, 0]} />
+                    <Bar dataKey="commercial" name="Commercial" fill="#0f172a" radius={[5, 5, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartErrorBoundary>
             </CardContent>
           </Card>
 
@@ -353,15 +360,17 @@ export default function AdminAnalyticsPage() {
               <CardTitle className="text-lg">Stock by origin</CardTitle>
             </CardHeader>
             <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={originData.length ? originData : [{ name: 'No stock', value: 0 }]}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="value" name="Units" fill={ACCENT} radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <ChartErrorBoundary title="Stock by origin" resetKey={JSON.stringify(originData)}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={originData.length ? originData : [{ name: 'No stock', value: 0 }]}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                    <Tooltip />
+                    <Bar dataKey="value" name="Units" fill={ACCENT} radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartErrorBoundary>
             </CardContent>
           </Card>
         </>

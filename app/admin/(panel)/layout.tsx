@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,6 +9,7 @@ import { BookmarkPlus, ChevronLeft, ChevronRight, ExternalLink, Loader2, Menu, P
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/client';
+import { fetchChatUnreadCounts } from '@/lib/chat-unread';
 import type { AdminProfile } from '@/lib/types';
 import {
   ACCOUNTS_NAV_HREFS,
@@ -42,6 +43,15 @@ const AdminAssistantLauncher = dynamic(
   () => import('@/components/admin/admin-assistant/admin-assistant-launcher').then((m) => m.AdminAssistantLauncher),
   { ssr: false }
 );
+
+async function withDeadline<T>(operation: PromiseLike<T>, controller: AbortController): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([operation, new Promise<T>((_, reject) => {
+      timeout = setTimeout(() => { controller.abort(); reject(new Error('Request timed out. Please retry.')); }, 15_000);
+    })]);
+  } finally { if (timeout) clearTimeout(timeout); }
+}
 
 function filterNavGroups(profile: AdminProfile): AdminNavGroup[] {
   const fieldAgent = isFieldAgentRole(profile.role);
@@ -110,58 +120,118 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [chatUnread, setChatUnread] = useState(0);
   const [liveChatOpen, setLiveChatOpen] = useState(0);
   const [unknownRemittances, setUnknownRemittances] = useState(0);
+  const [initializationError, setInitializationError] = useState('');
+  const [initializationAttempt, setInitializationAttempt] = useState(0);
+  const [badgeErrors, setBadgeErrors] = useState<string[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+  const [badgeAttempt, setBadgeAttempt] = useState(0);
+  const badgeOwner = useRef('');
 
   useEffect(() => {
-    setCollapsed(window.localStorage.getItem('ansha-admin-sidebar') === 'collapsed');
+    let active = true;
+    const controller = new AbortController();
+    setLoading(true);
+    setInitializationError('');
+    setProfile(null);
+    try { setCollapsed(window.localStorage.getItem('ansha-admin-sidebar') === 'collapsed'); } catch { /* Sidebar remains usable without browser storage. */ }
     void (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return router.replace('/admin');
-      const { data: prof } = await supabase.from('admin_profiles').select('*').eq('id', session.user.id).maybeSingle();
-      if (!prof || prof.is_active === false) {
-        await supabase.auth.signOut();
-        return router.replace(prof?.is_active === false ? '/admin?error=inactive' : '/admin');
-      }
-      setProfile(prof as AdminProfile);
-      if (prof.avatar_url) {
-        const { data } = await supabase.storage.from('profile-images').createSignedUrl(prof.avatar_url, 3600);
-        setAvatarUrl(data?.signedUrl || '');
-      }
-      const { data: memberships } = await supabase.from('chat_participants').select('conversation_id,last_read_at').eq('user_id', session.user.id);
-      if (memberships?.length) {
-        const { data: recent } = await supabase
-          .from('chat_messages')
-          .select('conversation_id,sender_id,created_at')
-          .in('conversation_id', memberships.map((row) => row.conversation_id))
-          .neq('sender_id', session.user.id)
-          .order('created_at', { ascending: false })
-          .limit(200);
-        const readAt = new Map(memberships.map((row) => [row.conversation_id, row.last_read_at]));
-        setChatUnread((recent || []).filter((message) => {
-          const lastRead = readAt.get(message.conversation_id);
-          return !lastRead || message.created_at > lastRead;
-        }).length);
-      }
-      if (canAccessLiveChat(prof.role)) {
-        const [openSessions, openTickets] = await Promise.all([
-          supabase
-            .from('tawk_chat_sessions')
-            .select('id', { count: 'exact', head: true })
-            .eq('status', 'open')
-            .is('dismissed_at', null),
-          supabase
-            .from('tawk_ticket_events')
-            .select('id', { count: 'exact', head: true })
-            .is('dismissed_at', null),
-        ]);
-        setLiveChatOpen((openSessions.count || 0) + (openTickets.count || 0));
-      }
-      if (canManageReceivables(prof.role)) {
-        const { data: unknownCount } = await supabase.rpc('count_unknown_remittances');
-        setUnknownRemittances(Number(unknownCount || 0));
-      }
-      setLoading(false);
+      try {
+        const prof = await withDeadline((async () => {
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) throw new Error('Your session could not be checked. Please retry.');
+          if (!session) { if (active) router.replace('/admin'); return null; }
+          const { data, error } = await supabase.from('admin_profiles')
+            .select('id,email,full_name,role,avatar_url,is_active,created_at')
+            .eq('id', session.user.id).abortSignal(controller.signal).maybeSingle();
+          if (error) throw new Error('Your workspace profile could not be loaded. Please retry.');
+          if (!active) return null;
+          if (!data || data.is_active === false) {
+            await supabase.auth.signOut();
+            if (active) router.replace(data?.is_active === false ? '/admin?error=inactive' : '/admin');
+            return null;
+          }
+          return data as AdminProfile;
+        })(), controller);
+        if (active && prof) setProfile(prof);
+      } catch (error) {
+        if (active) setInitializationError(error instanceof Error ? error.message : 'Admin workspace could not be loaded. Please retry.');
+      } finally { if (active) setLoading(false); }
     })();
+    return () => { active = false; controller.abort(); };
+  }, [initializationAttempt, router]);
+
+  useEffect(() => {
+    if (!profile) return;
+    let active = true;
+    const controllers: AbortController[] = [];
+    if (badgeOwner.current !== profile.id) {
+      badgeOwner.current = profile.id;
+      setChatUnread(0); setLiveChatOpen(0); setUnknownRemittances(0); setAvatarUrl('');
+    }
+    setBadgesLoading(true);
+    const checks: Array<Promise<{ label: string; error: boolean }>> = [];
+    const check = (label: string, load: (controller: AbortController) => Promise<void>) => {
+      const controller = new AbortController();
+      controllers.push(controller);
+      checks.push(withDeadline(load(controller), controller).then(() => ({ label, error: false }), () => ({ label, error: true })));
+    };
+    check('Unread chats', async (controller) => {
+      const result = await fetchChatUnreadCounts(supabase, profile.id, controller.signal);
+      if (active && !controller.signal.aborted) setChatUnread(result.total);
+    });
+    if (canAccessLiveChat(profile.role)) check('Live chat counts', async (controller) => {
+      const results = await Promise.all([
+        supabase.from('tawk_chat_sessions').select('id', { count: 'exact', head: true }).eq('status', 'open').is('dismissed_at', null).abortSignal(controller.signal),
+        supabase.from('tawk_ticket_events').select('id', { count: 'exact', head: true }).is('dismissed_at', null).abortSignal(controller.signal),
+      ]);
+      if (results.some((result) => result.error || result.count === null || !Number.isSafeInteger(result.count) || result.count < 0)) throw new Error('Unavailable');
+      const count = results.reduce((sum, result) => sum + result.count!, 0);
+      if (!Number.isSafeInteger(count)) throw new Error('Unavailable');
+      if (active && !controller.signal.aborted) setLiveChatOpen(count);
+    });
+    if (canManageReceivables(profile.role)) check('Unknown remittance count', async (controller) => {
+      const { data, error } = await supabase.rpc('count_unknown_remittances').abortSignal(controller.signal);
+      const count = typeof data === 'number' || (typeof data === 'string' && /^\d+$/.test(data)) ? Number(data) : Number.NaN;
+      if (error || !Number.isSafeInteger(count) || count < 0) throw new Error('Unavailable');
+      if (active && !controller.signal.aborted) setUnknownRemittances(count);
+    });
+    if (profile.avatar_url) check('Profile photo', async (controller) => {
+      const { data, error } = await supabase.storage.from('profile-images').createSignedUrl(profile.avatar_url!, 3600);
+      if (error || !data?.signedUrl) throw new Error('Unavailable');
+      if (active && !controller.signal.aborted) setAvatarUrl(data.signedUrl);
+    });
+    void Promise.all(checks).then((results) => {
+      if (!active) return;
+      setBadgeErrors(results.filter((result) => result.error).map((result) => result.label));
+      setBadgesLoading(false);
+    });
+    return () => { active = false; controllers.forEach((controller) => controller.abort()); };
+  }, [badgeAttempt, profile]);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setProfile(null); setAvatarUrl(''); setChatUnread(0); setLiveChatOpen(0); setUnknownRemittances(0);
+        badgeOwner.current = '';
+        router.replace('/admin');
+      } else if (event === 'SIGNED_IN' && badgeOwner.current && session?.user.id !== badgeOwner.current) {
+        setProfile(null);
+        setInitializationAttempt((attempt) => attempt + 1);
+      }
+    });
+    return () => subscription.unsubscribe();
   }, [router]);
+
+  useEffect(() => {
+    if (!profile) return;
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      if (pending) clearTimeout(pending);
+      pending = setTimeout(() => setBadgeAttempt((attempt) => attempt + 1), 200);
+    };
+    window.addEventListener('ansha:chat-unread-changed', refresh);
+    return () => { if (pending) clearTimeout(pending); window.removeEventListener('ansha:chat-unread-changed', refresh); };
+  }, [profile]);
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
@@ -173,7 +243,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const toggleCollapsed = () => {
     setCollapsed((current) => {
       const next = !current;
-      window.localStorage.setItem('ansha-admin-sidebar', next ? 'collapsed' : 'expanded');
+      try { window.localStorage.setItem('ansha-admin-sidebar', next ? 'collapsed' : 'expanded'); } catch { /* Keep this session's preference. */ }
       return next;
     });
   };
@@ -184,6 +254,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   };
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-secondary/30"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (initializationError) return <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center"><p role="alert" className="text-sm text-destructive">{initializationError}</p><Button onClick={() => setInitializationAttempt((attempt) => attempt + 1)}>Retry workspace</Button></div>;
   if (!profile) return null;
 
   const fieldAgent = isFieldAgentRole(profile.role);
@@ -302,6 +373,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="mt-2 lg:hidden"><UnifiedRecordSearch /></div>
         </div>
 
+        {badgeErrors.length > 0 ? <div role="alert" className="flex flex-wrap items-center gap-3 border-b border-destructive/20 bg-destructive/5 px-4 py-3 text-sm"><p>{badgeErrors.join(', ')} could not be loaded. Previous counts may be out of date.</p><Button size="sm" variant="outline" disabled={badgesLoading} onClick={() => setBadgeAttempt((attempt) => attempt + 1)}>Retry workspace counts</Button></div> : null}
+        {badgesLoading && !badgeErrors.length ? <p role="status" className="px-4 pt-3 text-xs text-muted-foreground">Loading workspace counts…</p> : null}
         <main className="min-w-0 flex-1 overflow-x-clip p-3 pb-8 sm:p-5 sm:pb-10 md:p-6 md:pb-12 xl:p-8">{children}</main>
       </div>
       </div>

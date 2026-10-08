@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bold, Code2, Eye, Heading2, Heading3, ImageIcon, Italic, Link2, List, ListOrdered, Quote, Type, Upload,
 } from 'lucide-react';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { sanitizeBlogHtml } from '@/lib/sanitize-html';
 
 type Mode = 'write' | 'html' | 'preview';
 
@@ -20,6 +21,15 @@ interface RichTextEditorProps {
 
 function exec(command: string, value?: string) {
   document.execCommand(command, false, value);
+}
+
+function isAllowedEditorUrl(value: string, image = false) {
+  try {
+    const protocol = new URL(value, window.location.href).protocol;
+    return (image ? ['http:', 'https:'] : ['http:', 'https:', 'mailto:', 'tel:']).includes(protocol);
+  } catch {
+    return false;
+  }
 }
 
 const FORMAT_TOOLS = [
@@ -44,14 +54,15 @@ export function RichTextEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const syncingRef = useRef(false);
+  const safeValue = useMemo(() => sanitizeBlogHtml(value), [value]);
 
   useEffect(() => {
     if (mode !== 'write' || !editorRef.current) return;
     if (syncingRef.current) return;
-    if (editorRef.current.innerHTML !== (value || '')) {
-      editorRef.current.innerHTML = value || '';
+    if (editorRef.current.innerHTML !== safeValue) {
+      editorRef.current.innerHTML = safeValue;
     }
-  }, [value, mode]);
+  }, [safeValue, mode]);
 
   const emitFromEditor = () => {
     const html = editorRef.current?.innerHTML || '';
@@ -74,12 +85,20 @@ export function RichTextEditor({
   const insertLink = () => {
     const url = window.prompt('Link URL', 'https://');
     if (!url) return;
+    if (!isAllowedEditorUrl(url)) {
+      window.alert('Use an HTTP, HTTPS, email, or telephone link.');
+      return;
+    }
     run('createLink', url);
   };
 
   const insertImage = () => {
     const url = window.prompt('Image URL', 'https://');
     if (!url) return;
+    if (!isAllowedEditorUrl(url, true)) {
+      window.alert('Use an HTTP or HTTPS image URL.');
+      return;
+    }
     run('insertImage', url);
   };
 
@@ -214,6 +233,20 @@ export function RichTextEditor({
           )}
           onInput={emitFromEditor}
           onBlur={emitFromEditor}
+          onPaste={(event) => {
+            const html = event.clipboardData.getData('text/html');
+            if (!html) return;
+            event.preventDefault();
+            exec('insertHTML', sanitizeBlogHtml(html));
+            emitFromEditor();
+          }}
+          onDrop={(event) => {
+            const html = event.dataTransfer.getData('text/html');
+            if (!html) return;
+            event.preventDefault();
+            exec('insertHTML', sanitizeBlogHtml(html));
+            emitFromEditor();
+          }}
         />
       ) : null}
 
@@ -228,10 +261,10 @@ export function RichTextEditor({
       ) : null}
 
       {mode === 'preview' ? (
-        value.trim() ? (
+        safeValue.trim() ? (
           <div
             className="prose prose-sm min-h-[22rem] max-w-none px-4 py-3 prose-headings:font-bold prose-a:text-accent prose-img:rounded-lg"
-            dangerouslySetInnerHTML={{ __html: value }}
+            dangerouslySetInnerHTML={{ __html: safeValue }}
           />
         ) : (
           <p className="px-4 py-10 text-center text-sm text-muted-foreground">Nothing to preview yet.</p>

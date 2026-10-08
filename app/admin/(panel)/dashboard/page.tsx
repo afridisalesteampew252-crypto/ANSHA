@@ -25,6 +25,8 @@ import {
 import { MoneyBreakdown } from '@/components/money-breakdown';
 import { TodaysWorkQueue } from '@/components/admin/todays-work-queue';
 import { SystemHealthStatus } from '@/components/admin/system-health-status';
+import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
+import { fetchDashboardData } from '@/lib/dashboard-data';
 
 type Invoice = { id: string; issue_date: string; currency: string; document_type: string; total_amount: number; amount_paid: number; balance_due: number; status: string };
 type Remittance = { id: string; received_date: string; currency: string; amount: number; status: string };
@@ -37,82 +39,6 @@ const isReceivable = (invoice: Invoice) => ['tax_invoice', 'commercial_invoice',
 const rangeFrom = () => format(subMonths(new Date(), 5), 'yyyy-MM-01');
 const rangeTo = () => format(new Date(), 'yyyy-MM-dd');
 
-function normalizeOpsAnalyticsSummary(value: unknown): OpsAnalyticsSummary | null {
-  if (!value || typeof value !== 'object') return null;
-  const raw = value as Partial<OpsAnalyticsSummary>;
-  if (!raw.viewer || !raw.sales || !raw.stock || !raw.counts || !raw.requests) return null;
-
-  const sales = raw.sales;
-  const stock = raw.stock;
-  const counts = raw.counts;
-  const requests = raw.requests;
-  const collections = raw.collections;
-  const purchase = raw.purchase;
-
-  return {
-    from: String(raw.from || ''),
-    to: String(raw.to || ''),
-    viewer: {
-      role: String(raw.viewer.role || 'unknown'),
-      is_ops: Boolean(raw.viewer.is_ops),
-      is_sales: Boolean(raw.viewer.is_sales),
-    },
-    sales: {
-      scope: sales.scope === 'own_book' ? 'own_book' : 'company',
-      document_types: Array.isArray(sales.document_types) ? sales.document_types.map(String) : [],
-      totals: {
-        invoice_count: Number(sales.totals?.invoice_count || 0),
-        invoiced_total: Number(sales.totals?.invoiced_total || 0),
-        outstanding_ar: Number(sales.totals?.outstanding_ar || 0),
-        currency_focus: String(sales.totals?.currency_focus || 'AED'),
-      },
-      by_month: Array.isArray(sales.by_month) ? sales.by_month : [],
-      by_currency: Array.isArray(sales.by_currency) ? sales.by_currency : [],
-      outstanding_as_of: Array.isArray(sales.outstanding_as_of) ? sales.outstanding_as_of : [],
-      outstanding_total: Number(sales.outstanding_total || 0),
-    },
-    collections: collections && collections.totals
-      ? {
-        totals: {
-          remittance_count: Number(collections.totals.remittance_count || 0),
-          received_total: Number(collections.totals.received_total || 0),
-          currency_focus: String(collections.totals.currency_focus || 'AED'),
-        },
-        by_month: Array.isArray(collections.by_month) ? collections.by_month : [],
-        by_currency: Array.isArray(collections.by_currency) ? collections.by_currency : [],
-      }
-      : null,
-    stock: {
-      by_status: {
-        available: Number(stock.by_status?.available || 0),
-        reserved: Number(stock.by_status?.reserved || 0),
-        sold: Number(stock.by_status?.sold || 0),
-      },
-      by_origin: Array.isArray(stock.by_origin) ? stock.by_origin : [],
-      parts_total: Number(stock.parts_total || 0),
-      vehicles_total: Number(stock.vehicles_total || 0),
-    },
-    purchase: purchase && purchase.open_pos !== undefined
-      ? {
-        open_pos: Number(purchase.open_pos || 0),
-        draft_pos: Number(purchase.draft_pos || 0),
-        ordered_pos: Number(purchase.ordered_pos || 0),
-        grn_in_range: Number(purchase.grn_in_range || 0),
-        grn_total: Number(purchase.grn_total || 0),
-      }
-      : null,
-    requests: {
-      open: Number(requests.open || 0),
-      overdue: Number(requests.overdue || 0),
-      by_status: requests.by_status && typeof requests.by_status === 'object' ? requests.by_status : {},
-    },
-    counts: {
-      customers: Number(counts.customers || 0),
-      new_inquiries: Number(counts.new_inquiries || 0),
-      portal_users: counts.portal_users == null ? null : Number(counts.portal_users),
-    },
-  };
-}
 
 function KpiCard({
   label,
@@ -195,120 +121,30 @@ export default function AdminDashboardPage() {
   const [moneyCurrency, setMoneyCurrency] = useState('all');
   const [enabledMoneyCurrencies, setEnabledMoneyCurrencies] = useState<string[]>([]);
 
+  const [reloadKey, setReloadKey] = useState(0);
+  const [analyticsWarning, setAnalyticsWarning] = useState('');
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
     setLoadError('');
-    void (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const from = rangeFrom();
-      const to = rangeTo();
-      const profileRes = user
-        ? await supabase.from('admin_profiles').select('role').eq('id', user.id).maybeSingle()
-        : { data: null };
-      const viewerRole = profileRes.data?.role || null;
-      setRole(viewerRole);
-      const fieldAgent = isFieldAgentRole(viewerRole);
-
-      if (fieldAgent) {
-        const [partsRes, vehiclesRes, customersRes, membershipRes, draftRes, reservedRes] = await Promise.all([
-          supabase.from('parts').select('id', { count: 'exact', head: true }),
-          supabase.from('vehicles').select('id', { count: 'exact', head: true }),
-          supabase.from('customers').select('id', { count: 'exact', head: true }),
-          user ? supabase.from('chat_participants').select('conversation_id,last_read_at').eq('user_id', user.id) : Promise.resolve({ data: [] as { conversation_id: string; last_read_at: string | null }[] }),
-          user
-            ? supabase.from('invoices').select('id', { count: 'exact', head: true }).eq('document_type', 'proforma_invoice').eq('status', 'draft').eq('created_by', user.id)
-            : Promise.resolve({ count: 0 }),
-          supabase.from('vehicles').select('id', { count: 'exact', head: true }).eq('stock_status', 'reserved'),
-        ]);
-        let unreadChats = 0;
-        const memberships = membershipRes.data || [];
-        if (user && memberships.length) {
-          const readAt = new Map(memberships.map((row) => [row.conversation_id, row.last_read_at]));
-          const { data: messageRows } = await supabase.from('chat_messages').select('conversation_id,sender_id,created_at').in('conversation_id', memberships.map((row) => row.conversation_id)).neq('sender_id', user.id).order('created_at', { ascending: false }).limit(1000);
-          unreadChats = (messageRows || []).filter((message) => {
-            const lastRead = readAt.get(message.conversation_id);
-            return !lastRead || message.created_at > lastRead;
-          }).length;
-        }
-        setCounts({
-          parts: partsRes.count || 0,
-          vehicles: vehiclesRes.count || 0,
-          customers: customersRes.count || 0,
-          inquiries: 0,
-          unreadChats,
-          portalUsers: 0,
-          pushSubscribers: 0,
-          draftProformas: draftRes.count || 0,
-          reservations: reservedRes.count || 0,
-        });
-        setLoading(false);
-        return;
-      }
-
-      const [partsRes, vehiclesRes, customersRes, inquiryRes, recentRes, invoiceRes, remittanceRes, partStockRes, vehicleStockRes, membershipRes, portalRes, analyticsRes, pushRes, financeSettingsRes] = await Promise.all([
-        supabase.from('parts').select('id', { count: 'exact', head: true }),
-        supabase.from('vehicles').select('id', { count: 'exact', head: true }),
-        supabase.from('customers').select('id', { count: 'exact', head: true }),
-        supabase.from('inquiries').select('id', { count: 'exact', head: true }).eq('status', 'new'),
-        supabase.from('inquiries').select('id,customer_name,message,status').order('created_at', { ascending: false }).limit(5),
-        supabase.from('invoices').select('id,issue_date,currency,document_type,total_amount,amount_paid,balance_due,status').gte('issue_date', format(subMonths(new Date(), 6), 'yyyy-MM-dd')),
-        supabase.from('remittances').select('id,received_date,currency,amount,status').gte('received_date', format(subMonths(new Date(), 6), 'yyyy-MM-dd')),
-        supabase.from('parts').select('stock_status,stock_origin'),
-        supabase.from('vehicles').select('stock_status,stock_origin'),
-        user ? supabase.from('chat_participants').select('conversation_id,last_read_at').eq('user_id', user.id) : Promise.resolve({ data: [] as { conversation_id: string; last_read_at: string | null }[] }),
-        supabase.from('customer_profiles').select('id', { count: 'exact', head: true }),
-        supabase.rpc('get_ops_analytics_summary', { p_from: from, p_to: to }),
-        supabase.from('push_subscriptions').select('id', { count: 'exact', head: true }),
-        supabase.from('system_finance_settings').select('default_currency,enabled_currencies').limit(1).maybeSingle(),
-      ]);
-      let unreadChats = 0;
-      const memberships = membershipRes.data || [];
-      if (user && memberships.length) {
-        const readAt = new Map(memberships.map((row) => [row.conversation_id, row.last_read_at]));
-        const { data: messageRows } = await supabase.from('chat_messages').select('conversation_id,sender_id,created_at').in('conversation_id', memberships.map((row) => row.conversation_id)).neq('sender_id', user.id).order('created_at', { ascending: false }).limit(1000);
-        unreadChats = (messageRows || []).filter((message) => {
-          const lastRead = readAt.get(message.conversation_id);
-          return !lastRead || message.created_at > lastRead;
-        }).length;
-      }
-      setCounts({
-        parts: partsRes.count || 0,
-        vehicles: vehiclesRes.count || 0,
-        customers: customersRes.count || 0,
-        inquiries: inquiryRes.count || 0,
-        unreadChats,
-        portalUsers: portalRes.count || 0,
-        pushSubscribers: pushRes.count || 0,
-        draftProformas: 0,
-        reservations: 0,
-      });
-      const financeSettings = financeSettingsRes.data ?? {
-        enabled_currencies: [] as string[],
-        default_currency: 'AED',
-      };
-      const configuredCurrencies = Array.isArray(financeSettings.enabled_currencies)
-        ? financeSettings.enabled_currencies
-        : [];
-      setEnabledMoneyCurrencies(listCurrencies([
-        ...(configuredCurrencies as string[]),
-        String(financeSettings.default_currency || 'AED'),
-      ]));
-      setInvoices((invoiceRes.data || []) as Invoice[]);
-      setRemittances((remittanceRes.data || []) as Remittance[]);
-      setInventory([...(partStockRes.data || []), ...(vehicleStockRes.data || [])] as InventoryRow[]);
-      setRecentInquiries(recentRes.data || []);
-      if (!analyticsRes.error) {
-        const normalizedAnalytics = normalizeOpsAnalyticsSummary(analyticsRes.data);
-        if (normalizedAnalytics) setAnalytics(normalizedAnalytics);
-      } else if (analyticsRes.error) {
-        // Analytics is supplemental; the dashboard remains usable from the direct queries.
-        console.warn('Dashboard analytics unavailable:', analyticsRes.error.message);
-      }
-      setLoading(false);
-    })().catch(() => {
-      setLoadError('Dashboard data could not be loaded completely. Retry to fetch the latest operational figures.');
-      setLoading(false);
-    });
-  }, []);
+    setAnalyticsWarning('');
+    void fetchDashboardData(supabase, rangeFrom(), rangeTo(), controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        setRole(result.role);
+        setCounts(result.counts);
+        setInvoices(result.invoices);
+        setRemittances(result.remittances);
+        setInventory(result.inventory);
+        setRecentInquiries(result.recentInquiries);
+        setAnalytics(result.analytics);
+        setEnabledMoneyCurrencies(result.currencies);
+        setAnalyticsWarning(result.warning);
+      }).catch((error: unknown) => {
+        if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : 'Dashboard data could not be loaded. Please retry.');
+      }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [reloadKey]);
 
   const fieldAgent = isFieldAgentRole(role);
   const isOps = analytics?.viewer?.is_ops ?? (!fieldAgent && role !== 'manager');
@@ -325,7 +161,7 @@ export default function AdminDashboardPage() {
       }
     } else {
       for (const row of receivables) {
-        addToCurrencyMap(invoiced, row.currency, Number(row.total_amount || 0));
+        if (row.issue_date >= rangeFrom() && row.issue_date <= rangeTo()) addToCurrencyMap(invoiced, row.currency, Number(row.total_amount || 0));
       }
     }
 
@@ -446,9 +282,13 @@ export default function AdminDashboardPage() {
   const errorBanner = loadError ? (
     <div role="alert" className="flex flex-col gap-3 rounded-xl border border-destructive/25 bg-destructive/[0.06] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
       <span>{loadError}</span>
-      <Button type="button" size="sm" variant="outline" onClick={() => window.location.reload()}>Retry</Button>
+      <Button type="button" size="sm" variant="outline" onClick={() => setReloadKey((value) => value + 1)}>Retry</Button>
     </div>
   ) : null;
+
+  // A failed load must not turn unknown figures into zeros or expose stale totals.
+  if (loadError) return <div className="mx-auto max-w-5xl space-y-4"><h1 className="text-2xl font-bold">Dashboard</h1>{errorBanner}</div>;
+  if (loading) return <div role="status" className="p-6 text-sm text-muted-foreground">Loading dashboard…</div>;
 
   if (fieldAgent) {
     return (
@@ -495,6 +335,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       {errorBanner}
+      {analyticsWarning ? <p role="status" className="rounded-lg border p-3 text-sm text-muted-foreground">{analyticsWarning}</p> : null}
       <SystemHealthStatus />
       <section className="admin-dash-hero overflow-hidden rounded-2xl border border-border/80 px-5 py-5 sm:px-6 sm:py-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -635,7 +476,7 @@ export default function AdminDashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartErrorBoundary resetKey={`${reloadKey}:${chartCurrency}`}><ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthly}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
@@ -645,7 +486,7 @@ export default function AdminDashboardPage() {
                 <Bar dataKey="invoiced" name="Invoiced" fill={ACCENT} radius={[5, 5, 0, 0]} />
                 {isOps ? <Bar dataKey="received" name="Received" fill="#10b981" radius={[5, 5, 0, 0]} /> : null}
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></ChartErrorBoundary>
           </CardContent>
         </Card>
         <Card className="border-border/80 shadow-sm">
@@ -654,7 +495,7 @@ export default function AdminDashboardPage() {
             <CardDescription>Parts and vehicles by operational status.</CardDescription>
           </CardHeader>
           <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartErrorBoundary resetKey={`${reloadKey}:${chartCurrency}`}><ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={stockData} dataKey="value" nameKey="name" innerRadius={65} outerRadius={100} startAngle={0} endAngle={360} minAngle={0} paddingAngle={3}>
                   {stockData.map((entry, index) => <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />)}
@@ -662,7 +503,7 @@ export default function AdminDashboardPage() {
                 <Tooltip />
                 <Legend />
               </PieChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></ChartErrorBoundary>
           </CardContent>
         </Card>
       </div>
@@ -674,7 +515,7 @@ export default function AdminDashboardPage() {
             <CardDescription>Tax versus commercial invoice counts by month.</CardDescription>
           </CardHeader>
           <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartErrorBoundary resetKey={`${reloadKey}:${chartCurrency}`}><ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthly}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
@@ -684,7 +525,7 @@ export default function AdminDashboardPage() {
                 <Bar dataKey="tax" name="Tax invoices" fill={ACCENT} radius={[5, 5, 0, 0]} />
                 <Bar dataKey="commercial" name="Commercial" fill="#0f172a" radius={[5, 5, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ResponsiveContainer></ChartErrorBoundary>
           </CardContent>
         </Card>
       ) : null}
@@ -695,7 +536,7 @@ export default function AdminDashboardPage() {
           <CardDescription>Where inventory sits — Dubai (UAE), Japan, Singapore, China, Thailand, Taiwan.</CardDescription>
         </CardHeader>
         <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
+          <ChartErrorBoundary resetKey={`${reloadKey}:${chartCurrency}`}><ResponsiveContainer width="100%" height="100%">
             <BarChart data={originData.length ? originData : [{ name: 'No stock', value: 0 }]}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="name" tickLine={false} axisLine={false} />
@@ -703,7 +544,7 @@ export default function AdminDashboardPage() {
               <Tooltip />
               <Bar dataKey="value" name="Units" fill={ACCENT} radius={[6, 6, 0, 0]} />
             </BarChart>
-          </ResponsiveContainer>
+          </ResponsiveContainer></ChartErrorBoundary>
         </CardContent>
       </Card>
 
