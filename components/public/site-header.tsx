@@ -29,6 +29,7 @@ import { useCustomerLists } from '@/hooks/use-customer-lists';
 import { HeaderMarketStrip } from '@/components/public/header-market-strip';
 import { InstallAppButton } from '@/components/pwa/install-prompt';
 import { LanguageSwitcher } from '@/components/accessibility/language-switcher';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -160,6 +161,7 @@ export function SiteHeader() {
 
           <div className="ml-auto hidden items-center gap-2 xl:flex">
             <InstallAppButton className="rounded-full" label="Install app" />
+            <ThemeToggle className="h-10 w-10 rounded-full border border-border" />
             <Link href="/favorites" className="relative grid h-10 w-10 place-items-center rounded-full border border-border text-foreground transition hover:border-accent hover:text-accent" aria-label={`Favorites${favoritesCount ? `, ${favoritesCount} saved` : ''}`}>
               <Heart className={cn('h-[18px] w-[18px]', favoritesCount > 0 && 'fill-accent text-accent')} />
               <CountBadge count={favoritesCount} />
@@ -185,6 +187,7 @@ export function SiteHeader() {
 
           <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0 xl:hidden">
             <LanguageSwitcher compact className="hidden md:inline-flex" />
+            <ThemeToggle className="h-10 w-10 rounded-xl border border-border sm:h-11 sm:w-11" />
             <Button asChild variant="accent" size="sm" className="hidden h-10 w-10 rounded-xl px-0 shadow-[0_8px_20px_rgba(210,30,30,0.22)] md:inline-flex sm:h-11 sm:w-11 lg:w-auto lg:px-3" title="Customer Account">
               <Link href="/portal" aria-label="Customer Account"><User className="h-4 w-4" /><span className="hidden lg:inline">Customer Account</span></Link>
             </Button>
