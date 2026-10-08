@@ -1,5 +1,4 @@
 import './globals.css';
-import Script from 'next/script';
 import { googleAnalyticsBootstrap } from '@/lib/google-analytics';
 import type { Metadata, Viewport } from 'next';
 import { JetBrains_Mono, Outfit, Plus_Jakarta_Sans } from 'next/font/google';
@@ -97,9 +96,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${plusJakarta.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        <Script id="google-analytics-bootstrap" strategy="beforeInteractive">
-          {googleAnalyticsBootstrap()}
-        </Script>
+        <script
+          id="google-analytics-bootstrap"
+          dangerouslySetInnerHTML={{ __html: googleAnalyticsBootstrap() }}
+        />
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider>

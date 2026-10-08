@@ -15,10 +15,5 @@ window.gtag('consent', 'default', {
 });
 window.gtag('js', new Date());
 window.gtag('config', ${JSON.stringify(siteConfig.googleAnalyticsId)});
-var script = document.createElement('script');
-script.id = 'google-analytics-loader';
-script.async = true;
-script.src = 'https://www.googletagmanager.com/gtag/js?id=${siteConfig.googleAnalyticsId}';
-document.head.appendChild(script);
 })();`;
 }
