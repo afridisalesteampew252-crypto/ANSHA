@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { EXPORT_MARKETS, flagImageUrl, type ExportMarket } from '@/lib/export-markets';
@@ -22,8 +22,54 @@ function continentForMarket(market: ExportMarket): Continent {
   return 'North America';
 }
 
+const SOUTH_AMERICA_TIMEZONES = [
+  'Buenos_Aires', 'Argentina', 'Sao_Paulo', 'Bogota', 'Lima', 'Santiago', 'Caracas', 'La_Paz',
+  'Montevideo', 'Asuncion', 'Guayaquil', 'Manaus', 'Cayenne', 'Paramaribo', 'Guyana',
+];
+
+/** Fallback when the edge doesn't tell us the country: infer the continent from the browser time zone. */
+function continentFromTimeZone(): Continent | null {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const [area, ...rest] = tz.split('/');
+    const city = rest.join('/');
+    if (area === 'Africa') return 'Africa';
+    if (area === 'Asia') return 'Asia';
+    if (area === 'Europe') return 'Europe';
+    if (area === 'Australia' || area === 'Pacific') return 'Oceania';
+    if (area === 'America') {
+      return SOUTH_AMERICA_TIMEZONES.some((name) => city.includes(name)) ? 'South America' : 'North America';
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function ExportMarketsStrip() {
   const [selectedContinent, setSelectedContinent] = useState<Continent | null>(null);
+  const userPicked = useRef(false);
+
+  // Preselect the visitor's own region (edge country first, browser time zone as fallback).
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      let detected: Continent | null = null;
+      try {
+        const res = await fetch('/api/geo', { cache: 'no-store' });
+        const { country } = (await res.json()) as { country: string | null };
+        const market = country ? EXPORT_MARKETS.find((m) => m.code === country) : undefined;
+        if (market) detected = continentForMarket(market);
+      } catch {
+        /* fall through to time zone */
+      }
+      detected = detected ?? continentFromTimeZone();
+      if (active && detected && !userPicked.current) setSelectedContinent(detected);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
   const continentCounts = useMemo(
     () => Object.fromEntries(CONTINENTS.map((continent) => [
       continent,
@@ -64,7 +110,10 @@ export function ExportMarketsStrip() {
               <button
                 key={continent}
                 type="button"
-                onClick={() => setSelectedContinent(selected ? null : continent)}
+                onClick={() => {
+                  userPicked.current = true;
+                  setSelectedContinent(selected ? null : continent);
+                }}
                 aria-pressed={selected}
                 className={selected
                   ? 'min-h-10 rounded-full border border-accent bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm'

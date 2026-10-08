@@ -93,9 +93,8 @@ export function VehicleCard({ vehicle, priority = false, deal = null }: VehicleC
               <Car className="h-12 w-12 text-muted-foreground/25 sm:h-14 sm:w-14" />
             </span>
           )}
-          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#101114]/75 to-transparent" />
           {vehicle.year ? (
-            <span className="absolute bottom-2.5 left-2.5 text-xs font-bold text-white sm:bottom-3 sm:left-3 sm:text-sm">
+            <span className="absolute bottom-2.5 left-2.5 rounded-full bg-[#101114]/85 px-2 py-1 text-xs font-bold text-white sm:bottom-3 sm:left-3 sm:text-sm">
               {vehicle.year} {vehicle.model}
             </span>
           ) : null}
