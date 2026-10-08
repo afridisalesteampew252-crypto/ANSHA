@@ -673,3 +673,12 @@ body.admin-nav-open {
 .goog-te-gadget-icon,
 #goog-gt-tt { display: none !important; }
 body { top: 0 !important; }
+
+/* Dark-mode safety net for components that hard-code light palette utilities.
+   Remap them to the theme tokens so they follow the light/dark toggle. */
+.dark .bg-white { background-color: hsl(var(--card)); }
+.dark .bg-slate-50, .dark .bg-slate-100, .dark .bg-zinc-100, .dark .bg-zinc-200, .dark .bg-gray-50, .dark .bg-gray-100 { background-color: hsl(var(--muted)); }
+.dark .text-zinc-900, .dark .text-slate-900, .dark .text-gray-900 { color: hsl(var(--foreground)); }
+.dark .text-zinc-700, .dark .text-slate-700, .dark .text-zinc-600, .dark .text-slate-600, .dark .text-gray-700 { color: hsl(var(--muted-foreground)); }
+.dark .text-black\/35, .dark .text-black\/40, .dark .text-black\/45, .dark .text-black\/55 { color: hsl(var(--muted-foreground)); }
+.dark .border-black\/5, .dark .border-black\/10 { border-color: hsl(var(--border)); }

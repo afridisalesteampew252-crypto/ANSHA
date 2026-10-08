@@ -23,6 +23,7 @@ import {
 } from '@/lib/admin-rbac';
 import { AdminProfileMenu } from '@/components/admin/admin-profile-menu';
 import { AdminNotificationCenter } from '@/components/admin/admin-notification-center';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { AdminCommandCenter, AdminCommandTrigger } from '@/components/admin/admin-command-center';
 import { AdminMarketChrome } from '@/components/admin/admin-market-chrome';
 import { UnifiedRecordSearch } from '@/components/admin/unified-record-search';
@@ -241,6 +242,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <AdminCommandTrigger compact />
+              <ThemeToggle className="h-9 w-9 rounded-xl" />
               <AdminNotificationCenter userId={profile.id} />
               
               <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
@@ -291,7 +293,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             <Button asChild variant="outline" size="icon" aria-label="View website"><Link href="/" target="_blank"><ExternalLink className="h-4 w-4" /></Link></Button>
             {canUseAssistant ? <AdminAssistantLauncher /> : null}
             <AdminCommandTrigger />
-            <AdminNotificationCenter userId={profile.id} />
+            <ThemeToggle className="h-9 w-9 rounded-xl" />
+              <AdminNotificationCenter userId={profile.id} />
             
             <AdminProfileMenu compact profile={profile} avatarUrl={avatarUrl} onSignOut={handleLogout} />
           </div>
