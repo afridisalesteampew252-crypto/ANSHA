@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useCallback, useEffect, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
@@ -8,8 +8,7 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  ArrowUp,
-  ArrowDown,
+  GripVertical,
   FileText,
   Gavel,
   Image as ImageIcon,
@@ -126,6 +125,10 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 });
   const [photoActionId, setPhotoActionId] = useState<string | null>(null);
+  const [draggingPhotoId, setDraggingPhotoId] = useState<string | null>(null);
+  const [dropPhotoId, setDropPhotoId] = useState<string | null>(null);
+  const photoDrag = useRef<{ id: string; x: number; y: number; moved: boolean; target: string | null } | null>(null);
+  const reorderingPhotos = useRef(false);
 
   const [title, setTitle] = useState('');
   const [make, setMake] = useState('');
@@ -272,7 +275,46 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     ]);
     setSuppliers((supRes.data || []).map((item) => ({ id: item.id, label: `${item.supplier_code} — ${item.name}` })));
     setCustomers((custRes.data || []) as typeof customers);
-  }, [id, router]);
+  }, [
+    id,
+    router,
+    setChassisNumber,
+    setCurrency,
+    setDestinationMarkets,
+    setEquipmentCategory,
+    setLandedCost,
+    setLocation,
+    setMake,
+    setModel,
+    setNextStage,
+    setOperatingHours,
+    setPrice,
+    setPriceCf,
+    setPriceCif,
+    setPriceFob,
+    setPurchaseCurrency,
+    setPurchaseDate,
+    setPurchasePrice,
+    setReserveCustomerId,
+    setReserveEta,
+    setReserveEtd,
+    setReserveInspection,
+    setReservePriceTerm,
+    setReserveRequesterName,
+    setReserveRequesterRole,
+    setReserveShipmentTerm,
+    setReserveVat,
+    setShowPrice,
+    setStockNumber,
+    setStockOrigin,
+    setStockPool,
+    setStockStatus,
+    setSupplierId,
+    setTitle,
+    setVariant,
+    setVehicleClass,
+    setYear,
+  ]);
 
   useEffect(() => {
     void load();
@@ -661,36 +703,38 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     requestPublicRevalidation('vehicle', [vehicle?.slug]);
   };
 
-  const movePhoto = async (photoId: string, direction: -1 | 1) => {
-    if (!vehicle) return;
+  const movePhoto = async (photoId: string, targetIndex: number) => {
+    if (!vehicle || photoActionId || uploadingPhotos || reorderingPhotos.current) return;
     const index = photos.findIndex((photo) => photo.id === photoId);
-    const swapIndex = index + direction;
-    if (index < 0 || swapIndex < 0 || swapIndex >= photos.length) return;
+    const swapIndex = targetIndex;
+    if (index < 0 || swapIndex < 0 || swapIndex >= photos.length || index === swapIndex) return;
 
     const current = photos[index];
-    const neighbor = photos[swapIndex];
+    reorderingPhotos.current = true;
     setPhotoActionId(photoId);
 
     const ordered = [...photos];
     ordered.splice(index, 1);
     ordered.splice(swapIndex, 0, current);
-    const { error: reorderError } = await supabase
-      .from('vehicle_photos')
-      .upsert(ordered.map((photo, sort_order) => ({
-        id: photo.id, vehicle_id: vehicle.id, storage_path: photo.storage_path,
-        is_cover: photo.is_cover, is_auction_sheet: photo.is_auction_sheet,
-        view_type: photo.view_type || 'other', sort_order, created_at: photo.created_at,
-      })));
-    const firstError = reorderError;
-    const secondError = null;
-
-    setPhotoActionId(null);
-    if (firstError || secondError) {
-      toast.error('Could not reorder photos.');
-      return;
+    const normalized = ordered.map((photo, sort_order) => ({ ...photo, sort_order }));
+    setPhotos(normalized);
+    try {
+      const { error } = await supabase
+        .from('vehicle_photos')
+        .upsert(normalized.map((photo) => ({
+          id: photo.id, vehicle_id: vehicle.id, storage_path: photo.storage_path,
+          is_cover: photo.is_cover, is_auction_sheet: photo.is_auction_sheet,
+          view_type: photo.view_type || 'other', sort_order: photo.sort_order, created_at: photo.created_at,
+        })));
+      if (error) throw error;
+      requestPublicRevalidation('vehicle', [vehicle.slug]);
+    } catch {
+      setPhotos(photos);
+      toast.error('Could not reorder photos. Please try again.');
+    } finally {
+      reorderingPhotos.current = false;
+      setPhotoActionId(null);
     }
-
-    setPhotos(ordered.map((photo, sort_order) => ({ ...photo, sort_order })));
   };
 
   const replacePhoto = async (photoId: string, file: File | undefined) => {
@@ -844,7 +888,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
             <div>
               <CardTitle className="text-lg">Photos</CardTitle>
               <CardDescription>
-                {photos.length} {photos.length === 1 ? 'image' : 'images'} · Set cover, reorder, replace, or delete
+                {photos.length} {photos.length === 1 ? 'image' : 'images'} · Drag photos to reorder
               </CardDescription>
             </div>
             <label>
@@ -901,14 +945,62 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
               {photos.map((photo, index) => (
                 <div
                   key={photo.id}
+                  data-photo-id={photo.id}
                   className={`group overflow-hidden rounded-xl border bg-secondary/30 ${
-                    photo.is_cover ? 'border-accent ring-2 ring-accent/15' : 'border-border'
+                    dropPhotoId === photo.id && draggingPhotoId !== photo.id ? 'border-accent ring-4 ring-accent/30' : photo.is_cover ? 'border-accent ring-2 ring-accent/15' : 'border-border'
                   }`}
                 >
-                  <div className="relative aspect-square">
+                  <div
+                    className={`relative aspect-square touch-none select-none rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${draggingPhotoId === photo.id ? 'cursor-grabbing opacity-50' : 'cursor-grab'}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Reorder photo ${index + 1}. Drag to another photo, or use arrow keys.`}
+                    aria-disabled={Boolean(photoActionId || uploadingPhotos)}
+                    onKeyDown={(event) => {
+                      const direction = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[event.key];
+                      if (direction) {
+                        event.preventDefault();
+                        void movePhoto(photo.id, index + direction);
+                      }
+                    }}
+                    onPointerDown={(event) => {
+                      if (event.button !== 0 || photoActionId || uploadingPhotos || reorderingPhotos.current) return;
+                      event.preventDefault();
+                      event.currentTarget.focus();
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      photoDrag.current = { id: photo.id, x: event.clientX, y: event.clientY, moved: false, target: null };
+                    }}
+                    onPointerMove={(event) => {
+                      const drag = photoDrag.current;
+                      if (!drag || drag.id !== photo.id) return;
+                      if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 8 && !drag.moved) return;
+                      drag.moved = true;
+                      if (event.clientY < 80) window.scrollBy(0, -16);
+                      else if (event.clientY > window.innerHeight - 80) window.scrollBy(0, 16);
+                      setDraggingPhotoId(photo.id);
+                      const card = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-photo-id]');
+                      drag.target = card?.dataset.photoId ?? null;
+                      setDropPhotoId(drag.target);
+                    }}
+                    onPointerUp={(event) => {
+                      const drag = photoDrag.current;
+                      photoDrag.current = null;
+                      setDraggingPhotoId(null);
+                      setDropPhotoId(null);
+                      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+                      if (drag?.moved && drag.target) void movePhoto(drag.id, photos.findIndex((item) => item.id === drag.target));
+                    }}
+                    onLostPointerCapture={() => {
+                      photoDrag.current = null;
+                      setDraggingPhotoId(null);
+                      setDropPhotoId(null);
+                    }}
+                  >
+                    <GripVertical className="pointer-events-none absolute bottom-2 left-2 z-10 h-5 w-5 rounded bg-background/90 text-muted-foreground" aria-hidden="true" />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={getPhotoUrl(photo.storage_path)}
+                      draggable={false}
                       alt={`${title || vehicle.title || 'Vehicle'} photo ${index + 1}`}
                       className="h-full w-full object-contain p-2"
                     />
@@ -931,20 +1023,17 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                   <div className="space-y-2 border-t border-border p-2">
                     <label className="block text-xs font-medium text-muted-foreground">
                       Photo angle
-                      <select aria-label="Photo angle" value={photo.view_type || 'other'} disabled={photo.is_auction_sheet || photoActionId === photo.id} onChange={(event) => void setPhotoView(photo.id, event.target.value as VehiclePhotoView)} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">
+                      <select aria-label="Photo angle" value={photo.view_type || 'other'} disabled={photo.is_auction_sheet || Boolean(photoActionId) || uploadingPhotos} onChange={(event) => void setPhotoView(photo.id, event.target.value as VehiclePhotoView)} className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm text-foreground">
                         {VEHICLE_PHOTO_VIEWS.map((view) => <option key={view} value={view}>{VEHICLE_PHOTO_VIEW_LABELS[view]}</option>)}
                       </select>
                     </label>
                     <div className="flex items-center justify-between gap-1">
-                      <Button type="button" size="sm" variant="outline" className="h-8 flex-1 px-2" disabled={index === 0 || photoActionId === photo.id} onClick={() => void movePhoto(photo.id, -1)} aria-label={`Move photo ${index + 1} earlier`}>
-                        <ArrowUp className="h-4 w-4" />Move up
-                      </Button>
                       <Button
                         type="button"
                         size="sm"
                         variant="ghost"
                         className="h-8 flex-1 justify-center px-1 text-xs"
-                        disabled={photo.is_cover || photo.is_auction_sheet || photoActionId === photo.id}
+                        disabled={photo.is_cover || photo.is_auction_sheet || Boolean(photoActionId) || uploadingPhotos}
                         onClick={() => void setCoverPhoto(photo.id)}
                       >
                         {photoActionId === photo.id ? (
@@ -954,9 +1043,6 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         )}
                         {photo.is_cover ? 'Cover' : 'Make cover'}
                       </Button>
-                      <Button type="button" size="sm" variant="outline" className="h-8 flex-1 px-2" disabled={index === photos.length - 1 || photoActionId === photo.id} onClick={() => void movePhoto(photo.id, 1)} aria-label={`Move photo ${index + 1} later`}>
-                        <ArrowDown className="h-4 w-4" />Move down
-                      </Button>
                     </div>
                     <div className="flex items-center gap-1">
                       <label className="flex-1">
@@ -964,7 +1050,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
                           className="hidden"
-                          disabled={photoActionId === photo.id}
+                          disabled={Boolean(photoActionId) || uploadingPhotos}
                           onChange={(event) => {
                             void replacePhoto(photo.id, event.target.files?.[0]);
                             event.currentTarget.value = '';
@@ -976,7 +1062,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                           variant="ghost"
                           className="h-8 w-full justify-start px-2 text-xs"
                           asChild
-                          disabled={photoActionId === photo.id}
+                          disabled={Boolean(photoActionId) || uploadingPhotos}
                         >
                           <span>
                             <Replace className="h-3.5 w-3.5" />
@@ -989,7 +1075,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                         size="icon"
                         variant="ghost"
                         className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        disabled={photoActionId === photo.id}
+                        disabled={Boolean(photoActionId) || uploadingPhotos}
                         onClick={() => void deletePhoto(photo.id, photo.storage_path)}
                         aria-label={`Delete photo ${index + 1}`}
                       >

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Images, Pause, Play, ZoomIn } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Images } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { CatalogImage } from '@/components/public/catalog-image';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ type PublicImageGalleryProps = {
 };
 
 const SWIPE_THRESHOLD = 48;
-const AUTO_ROTATE_INTERVAL = 3_000;
+const AUTO_ROTATE_INTERVAL = 1_500;
 
 /** Tiny gray blur so remote catalog images can use Next blur placeholder without new assets. */
 const BLUR_DATA_URL =
@@ -217,15 +217,6 @@ export function PublicImageGallery({
 
         {badge ? <div className="absolute left-3 top-3 z-10">{badge}</div> : null}
 
-        {current ? (
-          <div className="pointer-events-none absolute inset-0 hidden items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/15 group-hover:opacity-100 sm:flex">
-            <div className="flex items-center gap-2 rounded-lg bg-background/95 px-3 py-1.5 text-sm font-medium shadow-lg">
-              <ZoomIn className="h-4 w-4" />
-              Click to view
-            </div>
-          </div>
-        ) : null}
-
         {hasMany ? (
           <>
             {!reducedMotion ? (
@@ -235,35 +226,11 @@ export function PublicImageGallery({
                   event.stopPropagation();
                   setPaused((value) => !value);
                 }}
-                className="absolute bottom-2 left-2 z-10 flex h-11 items-center gap-1.5 rounded-lg bg-background/90 px-3 shadow-md transition hover:bg-background"
-                aria-label={paused ? 'Resume slideshow' : 'Pause slideshow'}
+                className="sr-only focus:not-sr-only focus:absolute focus:bottom-2 focus:left-2 focus:z-10 focus:rounded-lg focus:bg-background focus:px-3 focus:py-2"
               >
-                {paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
-                <span className="text-xs font-medium">{paused ? 'Play' : 'Pause'}</span>
+                {paused ? 'Resume slideshow' : 'Pause slideshow'}
               </button>
             ) : null}
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                navigatePhoto('prev');
-              }}
-              className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-md transition hover:bg-background sm:opacity-0 sm:group-hover:opacity-100"
-              aria-label="Previous photo"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                navigatePhoto('next');
-              }}
-              className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-background/90 shadow-md transition hover:bg-background sm:opacity-0 sm:group-hover:opacity-100"
-              aria-label="Next photo"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
             <div className="absolute bottom-3 right-3 z-10 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
               {selectedImage + 1} / {images.length}
             </div>
