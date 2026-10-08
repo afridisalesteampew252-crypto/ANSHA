@@ -81,7 +81,6 @@ export function PartCard({ part, priority = false, deal = null }: PartCardProps)
               <Wrench className="h-10 w-10 text-muted-foreground/25 sm:h-12 sm:w-12" />
             </span>
           )}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#101114]/55 to-transparent opacity-80" />
           {part.stock_status === 'sold' && (
             <span className="absolute inset-0 grid place-items-center bg-[#101114]/40 text-2xl font-black uppercase tracking-[0.2em] text-white sm:text-3xl">
               Sold

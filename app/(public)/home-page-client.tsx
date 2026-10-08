@@ -30,6 +30,7 @@ import { VehicleCard } from '@/components/public/vehicle-card';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
 import { useInventoryDeals } from '@/hooks/use-inventory-deals';
 import type { HomeFeaturedData } from '@/lib/home-featured';
+import { HOME_FEATURED_PARTS_LIMIT } from '@/lib/featured-rotation';
 import {
   type PublicBlogCard,
   type PublicCategoryCard,
@@ -275,7 +276,7 @@ export default function HomePageClient({
             </div>
           ) : featured.length ? (
             <div className="grid grid-cols-2 gap-2 sm:gap-5 lg:grid-cols-4">
-              {featured.slice(0, 8).map((part, index) => (
+              {featured.slice(0, HOME_FEATURED_PARTS_LIMIT).map((part, index) => (
                 <PartCard key={part.id} part={part} priority={index < 4} deal={dealForPart(part.id)} />
               ))}
             </div>
