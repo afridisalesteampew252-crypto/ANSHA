@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { format, isSameDay, isToday, isYesterday } from 'date-fns';
 import { supabase } from '@/lib/supabase/client';
+import { fetchChatUnreadCounts } from '@/lib/chat-unread';
 import type { AdminProfile, ChatConversationLink, ChatLinkEntityType } from '@/lib/types';
 import {
   CHAT_LINK_ENTITY_TYPES,
@@ -113,6 +114,36 @@ type ConversationSummary = Conversation & {
 };
 
 type EntityOption = { id: string; label: string; detail?: string };
+
+async function fetchConversationRows<T>(
+  table: 'chat_conversations' | 'chat_participants' | 'chat_conversation_links' | 'chat_attachments', columns: string,
+  filter: 'id' | 'conversation_id' | 'message_id', ids: string[], order: string[], key: (row: T) => string, signal: AbortSignal,
+): Promise<T[]> {
+  const rows: T[] = [];
+  const seen = new Set<string>();
+  for (let start = 0; start < ids.length; start += 100) {
+    const batch = ids.slice(start, start + 100);
+    let offset = 0;
+    let expected: number | null = null;
+    do {
+      signal.throwIfAborted();
+      let request = supabase.from(table).select(columns, { count: 'exact' }).in(filter, batch);
+      for (const column of order) request = request.order(column, { ascending: true });
+      const { data, count, error } = await request.range(offset, offset + 499).abortSignal(signal);
+      if (error || !Array.isArray(data) || count === null || !Number.isSafeInteger(count) || count < 0 ||
+          (expected !== null && count !== expected) || (!data.length && offset < count)) throw new Error('Conversation details could not be loaded. Please retry.');
+      expected = count;
+      for (const row of data as unknown as T[]) {
+        const id = key(row);
+        if (!id || seen.has(id)) throw new Error('Conversations changed while loading. Please retry.');
+        seen.add(id); rows.push(row);
+      }
+      offset += data.length;
+      if (offset > count) throw new Error('Conversations changed while loading. Please retry.');
+    } while (offset < expected);
+  }
+  return rows;
+}
 
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
@@ -283,11 +314,17 @@ function ChatPageInner() {
   const [avatarUrls, setAvatarUrls] = useState<Record<string, string>>({});
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [activeId, setActiveId] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageRows, setMessages] = useState<Message[]>([]);
+  const [messageScope, setMessageScope] = useState('');
+  const messages = messageScope === activeId ? messageRows : [];
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [messageError, setMessageError] = useState('');
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState('');
+  const [conversationError, setConversationError] = useState('');
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
   const [search, setSearch] = useState('');
   const [body, setBody] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -311,40 +348,48 @@ function ChatPageInner() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialConversationRef = useRef<string | null>(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('conversation'));
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const conversationLoadRef = useRef<AbortController | null>(null);
+  const messageLoadRef = useRef<AbortController | null>(null);
+  const userIdRef = useRef('');
   const [recording, setRecording] = useState(false);
   const [inviting, setInviting] = useState(false);
   useEffect(() => () => { if (recorderRef.current?.state === 'recording') recorderRef.current.stop(); }, []);
 
   const loadConversations = useCallback(async (userId: string) => {
-    const { data: membershipData, error: membershipError } = await supabase
-      .from('chat_participants')
-      .select('*')
-      .eq('user_id', userId);
-    if (membershipError) throw membershipError;
-    const memberships = (membershipData || []) as Participant[];
+    conversationLoadRef.current?.abort();
+    const controller = new AbortController();
+    conversationLoadRef.current = controller;
+    setLoadingConversations(true);
+    try {
+    const unreadCounts = await fetchChatUnreadCounts(supabase, userId, controller.signal);
+    const memberships = unreadCounts.memberships;
     const ids = memberships.map((row) => row.conversation_id);
     if (!ids.length) {
       setConversations([]);
+      setConversationError('');
       return;
     }
 
-    const [{ data: conversationData, error: conversationError }, { data: participantData }, { data: recentData }, { data: linkData }] = await Promise.all([
-      supabase.from('chat_conversations').select('*').in('id', ids),
-      supabase.from('chat_participants').select('*').in('conversation_id', ids),
-      supabase.from('chat_messages').select('id,conversation_id,sender_id,body,reply_to_id,created_at,edited_at,deleted_at').in('conversation_id', ids).order('created_at', { ascending: false }).limit(500),
-      supabase.from('chat_conversation_links').select('*').in('conversation_id', ids),
+    const [conversationData, allParticipants, recent, links] = await Promise.all([
+      fetchConversationRows<Conversation>('chat_conversations', 'id,conversation_type,name,created_by,created_at,updated_at,last_message_at,last_message_preview', 'id', ids, ['id'], (row) => row.id, controller.signal),
+      fetchConversationRows<Participant>('chat_participants', 'conversation_id,user_id,is_manager,joined_at,last_read_at,last_delivered_at', 'conversation_id', ids, ['conversation_id', 'user_id'], (row) => `${row.conversation_id}:${row.user_id}`, controller.signal),
+      (async () => {
+        const messages: Omit<Message, 'attachments'>[] = [];
+        for (let start = 0; start < ids.length; start += 100) {
+          // Recent rows are previews only; unread totals come from exact server counts.
+          const { data, error } = await supabase.from('chat_messages').select('id,conversation_id,sender_id,body,reply_to_id,created_at,edited_at,deleted_at')
+            .in('conversation_id', ids.slice(start, start + 100)).order('created_at', { ascending: false }).order('id', { ascending: false }).limit(500).abortSignal(controller.signal);
+          if (error || !Array.isArray(data)) throw new Error('Chat previews could not be loaded. Please retry.');
+          messages.push(...data as Omit<Message, 'attachments'>[]);
+        }
+        return messages;
+      })(),
+      fetchConversationRows<ChatConversationLink>('chat_conversation_links', 'id,conversation_id,entity_type,entity_id,created_by,created_at', 'conversation_id', ids, ['id'], (row) => row.id, controller.signal),
     ]);
-    if (conversationError) throw conversationError;
-
-    const allParticipants = (participantData || []) as Participant[];
-    const recent = (recentData || []) as Omit<Message, 'attachments'>[];
-    const links = (linkData || []) as ChatConversationLink[];
-    const summaries = ((conversationData || []) as Conversation[]).map((conversation) => {
-      const ownMembership = memberships.find((row) => row.conversation_id === conversation.id);
+    if (controller.signal.aborted || userIdRef.current !== userId) return;
+    const summaries = conversationData.map((conversation) => {
       const conversationMessages = recent.filter((message) => message.conversation_id === conversation.id);
-      const unread = conversationMessages.filter((message) =>
-        message.sender_id !== userId && (!ownMembership?.last_read_at || message.created_at > ownMembership.last_read_at)
-      ).length;
+      const unread = unreadCounts.byConversation[conversation.id];
       const latest = conversationMessages[0] || null;
       const previewBody = conversation.last_message_preview
         ?? (latest?.deleted_at ? 'Message removed' : latest?.body || (latest ? 'Attachment' : null));
@@ -367,67 +412,93 @@ function ChatPageInner() {
     }).sort((a, b) => {
       const aTime = a.last_message_at || a.lastMessage?.created_at || a.updated_at;
       const bTime = b.last_message_at || b.lastMessage?.created_at || b.updated_at;
-      return new Date(bTime).getTime() - new Date(aTime).getTime();
+      return new Date(bTime).getTime() - new Date(aTime).getTime() || a.id.localeCompare(b.id);
     });
     setConversations(summaries);
+    setConversationError('');
     const requested = initialConversationRef.current;
     initialConversationRef.current = null;
     setActiveId((current) => requested && summaries.some((item) => item.id === requested)
       ? requested
       : current && summaries.some((item) => item.id === current) ? current : summaries[0]?.id || '');
     const deliveryUpdates = summaries.flatMap((conversation) => {
-      const membership = memberships.find((row) => row.conversation_id === conversation.id);
+      const membership = allParticipants.find((row) => row.conversation_id === conversation.id && row.user_id === userId);
       const latestIncoming = recent.find((message) => message.conversation_id === conversation.id && message.sender_id !== userId);
       if (!latestIncoming || (membership?.last_delivered_at && membership.last_delivered_at >= latestIncoming.created_at)) return [];
-      return [supabase.from('chat_participants').update({ last_delivered_at: latestIncoming.created_at }).eq('conversation_id', conversation.id).eq('user_id', userId)];
+      return [supabase.from('chat_participants').update({ last_delivered_at: latestIncoming.created_at }).eq('conversation_id', conversation.id).eq('user_id', userId).abortSignal(controller.signal)];
     });
-    if (deliveryUpdates.length) await Promise.all(deliveryUpdates);
+    if (deliveryUpdates.length) {
+      const delivered = await Promise.all(deliveryUpdates);
+      if (!controller.signal.aborted && delivered.some((result) => result.error)) setNotice('Delivery receipts could not be updated.');
+    }
+    } catch {
+      const report = !controller.signal.aborted && userIdRef.current === userId;
+      controller.abort();
+      if (report) setConversationError('Chats and unread counts could not be loaded. Please retry.');
+    } finally {
+      if (conversationLoadRef.current === controller) setLoadingConversations(false);
+    }
   }, []);
 
   const loadMessages = useCallback(async (conversationId: string, userId: string) => {
+    messageLoadRef.current?.abort();
+    const controller = new AbortController();
+    messageLoadRef.current = controller;
     if (!conversationId) {
       setMessages([]);
+      setMessageScope('');
       return;
     }
     setLoadingMessages(true);
+    setMessageError('');
+    try {
     const { data, error } = await supabase
       .from('chat_messages')
       .select('*')
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(300);
-    if (error) {
-      setNotice(error.message);
-      setLoadingMessages(false);
-      return;
-    }
-    const rows = (data || []) as Omit<Message, 'attachments'>[];
+      // Render the newest bounded window, then display it chronologically.
+      .order('created_at', { ascending: false }).order('id', { ascending: false })
+      .limit(300).abortSignal(controller.signal);
+    if (error || !Array.isArray(data)) throw new Error('Messages could not be loaded. Please retry the conversation.');
+    const rows = [...data].reverse() as Omit<Message, 'attachments'>[];
     const messageIds = rows.map((row) => row.id);
     let attachments: Attachment[] = [];
     if (messageIds.length) {
-      const { data: attachmentData } = await supabase.from('chat_attachments').select('*').in('message_id', messageIds);
-      attachments = (attachmentData || []) as Attachment[];
+      attachments = await fetchConversationRows<Attachment>('chat_attachments', 'id,message_id,storage_path,file_name,mime_type,size_bytes', 'message_id', messageIds, ['id'], (row) => row.id, controller.signal);
     }
+    if (controller.signal.aborted || userIdRef.current !== userId) return;
     setMessages(rows.map((row) => ({
       ...row,
       attachments: attachments.filter((attachment) => attachment.message_id === row.id),
     })));
-    const latestMessageAt = rows.at(-1)?.created_at || new Date().toISOString();
-    await supabase
+    setMessageScope(conversationId);
+    const latestMessageAt = rows.at(-1)?.created_at;
+    if (latestMessageAt) {
+    const { error: receiptError } = await supabase
       .from('chat_participants')
       .update({ last_delivered_at: latestMessageAt, last_read_at: latestMessageAt })
       .eq('conversation_id', conversationId)
-      .eq('user_id', userId);
-    setLoadingMessages(false);
+      .eq('user_id', userId).abortSignal(controller.signal);
+    if (controller.signal.aborted || userIdRef.current !== userId) return;
+    if (receiptError) setMessageError('Messages loaded, but read receipts could not be saved.');
+    else window.dispatchEvent(new Event('ansha:chat-unread-changed'));
+    }
     window.requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }));
+    } catch {
+      if (!controller.signal.aborted && userIdRef.current === userId) setMessageError('Messages could not be loaded. Please retry the conversation.');
+    } finally {
+      if (messageLoadRef.current === controller) setLoadingMessages(false);
+    }
   }, []);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw new Error('Your chat session could not be checked. Please retry.');
         if (!session || !active) return;
+        userIdRef.current = session.user.id;
         setCurrentUserId(session.user.id);
         const { data: profileData, error: profileError } = await supabase.from('admin_profiles').select('*').order('full_name');
         if (profileError) throw profileError;
@@ -444,13 +515,13 @@ function ChatPageInner() {
         if (active) setAvatarUrls(Object.fromEntries(signed.filter(([, url]) => Boolean(url))));
         await loadConversations(session.user.id);
       } catch (error) {
-        if (active) setNotice(error instanceof Error ? error.message : 'Unable to load chat.');
+        if (active) setConversationError(error instanceof Error ? error.message : 'Unable to load chat.');
       } finally {
         if (active) setLoading(false);
       }
     })();
-    return () => { active = false; };
-  }, [loadConversations, setKnownLastSeen]);
+    return () => { active = false; userIdRef.current = ''; conversationLoadRef.current?.abort(); messageLoadRef.current?.abort(); };
+  }, [bootstrapAttempt, loadConversations, setKnownLastSeen]);
 
   useEffect(() => {
     if (!activeId || !currentUserId) return;
@@ -770,6 +841,7 @@ function ChatPageInner() {
     <div className="-m-4 flex h-[calc(100dvh-7.5rem)] min-h-[560px] overflow-hidden border-y border-border/80 bg-background md:-m-8 md:h-[calc(100dvh-4.75rem)]">
       <section className={cn('flex w-full shrink-0 flex-col border-r border-border/80 bg-card md:w-[22rem] lg:w-[26rem]', activeId && 'hidden md:flex')}>
         <div className="shrink-0 space-y-3 border-b border-border/80 px-4 py-4">
+          {conversationError ? <div role="alert" className="space-y-2 rounded-lg border border-destructive/25 bg-destructive/5 p-3 text-sm"><p>{conversationError}</p><Button size="sm" variant="outline" disabled={loadingConversations} onClick={() => currentUserId && Object.keys(profiles).length ? void loadConversations(currentUserId) : setBootstrapAttempt((attempt) => attempt + 1)}>Retry chats</Button></div> : null}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">Team chat</h1>
@@ -891,10 +963,10 @@ function ChatPageInner() {
                 <MessageCircle className="h-7 w-7" />
               </span>
               <p className="font-display text-base font-semibold text-foreground">
-                {hasSearch || entityFilter ? 'No matching chats' : 'No conversations yet'}
+                {conversationError ? 'Chats are unavailable' : hasSearch || entityFilter ? 'No matching chats' : 'No conversations yet'}
               </p>
               <p className="mt-1.5 max-w-[16rem] text-sm leading-relaxed text-muted-foreground">
-                {entityFilter
+                {conversationError ? 'Retry loading your conversations and unread counts.' : entityFilter
                   ? 'Nothing is linked to this record yet. Start a chat to attach it.'
                   : hasSearch
                     ? 'Try another name, or clear the search.'
@@ -919,6 +991,7 @@ function ChatPageInner() {
         {activeConversation ? (
           <>
             <header className="flex shrink-0 flex-col gap-2 border-b border-border/80 bg-card px-3 py-3 sm:px-4">
+              {messageError ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-destructive"><p>{messageError}</p><Button size="sm" variant="outline" onClick={() => void loadMessages(activeId, currentUserId)}>Retry messages</Button></div> : null}
               <div className="flex items-center gap-2.5 sm:gap-3">
                 <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 md:hidden" onClick={() => setActiveId('')} aria-label="Back to conversations">
                   <ArrowLeft className="h-4 w-4" />
@@ -1001,9 +1074,9 @@ function ChatPageInner() {
                   <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-border/80">
                     <MessageCircle className="h-6 w-6" />
                   </span>
-                  <p className="font-display text-base font-semibold">Start the conversation</p>
+                  <p className="font-display text-base font-semibold">{messageError ? 'Messages are unavailable' : 'Start the conversation'}</p>
                   <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                    Say hello, share a file, or link a vehicle, invoice, or request from the header.
+                    {messageError ? 'Retry loading the messages from the conversation header.' : 'Say hello, share a file, or link a vehicle, invoice, or request from the header.'}
                   </p>
                 </div>
               ) : (

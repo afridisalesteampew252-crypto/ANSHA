@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { format, startOfMonth, subMonths } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ChartErrorBoundary } from '@/components/charts/chart-error-boundary';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -907,16 +908,18 @@ export default function CustomerAccountPage() {
             <p className="text-sm text-muted-foreground">Chart shows {chartCurrency} only — no FX conversion across currencies.</p>
           </CardHeader>
           <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
-                <Bar dataKey="invoices" name="Invoiced" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
-                <Bar dataKey="payments" name="Paid" fill="#10b981" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartErrorBoundary title="Customer invoices and payments" resetKey={JSON.stringify([customerId, chartCurrency, chartData])}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(value) => money(Number(value), chartCurrency)} />
+                  <Bar dataKey="invoices" name="Invoiced" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                  <Bar dataKey="payments" name="Paid" fill="#10b981" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartErrorBoundary>
           </CardContent>
         </Card>
         <Card id="allocate" className="scroll-mt-24">

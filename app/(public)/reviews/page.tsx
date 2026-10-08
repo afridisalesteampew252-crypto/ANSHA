@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { siteConfig } from '@/lib/site-config';
 import { buildPageMetadata } from '@/lib/seo';
 import { WhatsAppButton } from '@/components/public/whatsapp-button';
+import { JsonLd } from '@/components/seo/json-ld';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'Customer Testimonials',
@@ -54,10 +55,7 @@ export default async function ReviewsPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <section className="page-band">
         <div className="container-page py-10 sm:py-14">

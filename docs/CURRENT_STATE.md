@@ -4,6 +4,37 @@ Code checkpoint: **8 October 2026 (Asia/Karachi)**. This document separates veri
 work from production activation. Do not infer database migration execution from
 a GitHub merge.
 
+## Admin reliability branch — 8 October 2026
+
+`fix/admin-reliability-audit` is based on `main` at `d85b0f5` and contains the
+current recovery, complete-read and AI quota fixes for review. It has **not**
+been merged or deployed to production by this task.
+
+- Shared page/admin/root recovery and isolated chart retries keep navigation
+  and surrounding figures usable after a render failure.
+- Required dashboard, inventory, chat and operational-report reads show errors
+  and retry actions instead of reporting failed queries as empty/zero results.
+  Inventory/report pagination handles datasets above 1,000 rows and lower
+  provider caps. Unread chat uses exact server counts. Inventory renders 50
+  cards at a time while totals, filtering and exports use the complete list.
+- Ops AI chat bounds input/history/model output and consumes a durable quota:
+  20 requests per 10 minutes and 200 per rolling 24 hours, per active ops user.
+  Thread messages and timestamps save atomically under the current owner.
+- Stored editor HTML, paste/drop and previews are sanitized. Reviews JSON-LD
+  uses the shared escaping helper; banking details use one canonical source.
+  Sharp is updated to 0.35.5; other dependency advisories remain documented.
+- Verification: production build, TypeScript, lint, 16 unit scripts and 55 brand
+  assets; actual Chromium chart recovery/editor fixtures; local SQL role,
+  quota, rollback and concurrent-request checks. This is not a full authenticated
+  browser or production database security audit.
+- **Before releasing this branch:** apply forward migration
+  `20261008090000_ops_ai_chat_quota.sql`. It has only been applied/tested in the
+  local regression database. Without it the new AI route refuses generation
+  rather than spending without a quota. No production SQL was executed here.
+
+Scope, verification and remaining external/maintenance work:
+[ADMIN-RELIABILITY-AUDIT](./ADMIN-RELIABILITY-AUDIT.md).
+
 ## Repository and release
 
 - GitHub PR **#115** merged the previous security package into `main` at
@@ -144,16 +175,16 @@ a GitHub merge.
   PDF and Excel. TT allocations do not credit the same receipt twice;
   proformas/drafts do not become posted receivables.
 - PKR expenses and balanced PKR GL posting passed executable SQL fixtures.
-- `feat/expense-excel-report` adds **Finance → Expenses → Export Excel**, with
+- PRs #123 and #124 merged **Finance → Expenses → Export Excel**, with
   inclusive date, currency, category, status and text/receipt-name filters.
   The report reads all matching expenses independently of the recent 150-row
   list. It includes inactive historical labels, numeric amounts, original
   currencies, posting status, bank references, notes and attachment filenames.
   The workbook has a frozen header, column filters and amount formatting.
   Existing finance-role SELECT policies govern every read; no database
-  migration is needed. This website change awaits the user's branch merge.
+  migration is needed for the Excel export. These website changes are on `main`.
   Instructions: [Expense Excel report](./EXPENSE-REPORT.md).
-- The same branch adds a default **All currencies dashboard** tab under
+- The merged release adds a default **All currencies dashboard** tab under
   **Reports → Financial statements**. Configured and historical ledger
   currencies have separate revenue, expense and net-profit figures, expense
   pies and visible account amounts. Negative expense balances remain credits;
@@ -167,8 +198,8 @@ a GitHub merge.
   reversals net to zero; later reversals preserve earlier-period history.
   Existing signatures, ops authorization, search paths and grants stay intact.
   Ten SQL suites passed locally; the new test fails the old report definitions.
-  This migration is included in the branch and has not yet been applied to
-  production. GL statements retain their existing active admin/staff access.
+  This migration is on `main`; its production application is still unverified
+  in the recorded release evidence. GL statements retain their existing active admin/staff access.
 - Both new Node regression scripts, actual Expenses XLSX downloads and actual
   financial-dashboard browser checks passed, including finite pie geometry,
   mobile layout, filtered older expenses, negative credits, error/retry and
@@ -311,8 +342,10 @@ a GitHub merge.
 3. PR #122 merged the final Auth executor routing correction. Its full Supabase
    replay passed migration startup, reset, 15 pgTAP assertions and all nine SQL
    behavior suites; quality CI and Vercel preview passed too. Only the Auth-hook
-   fixture uses the trusted executor. Review the expense Excel report branch
-   after its application checks pass, then merge for the website rollout.
+   fixture uses the trusted executor. Expense Excel and financial dashboards
+   subsequently merged in PRs #123/#124. Recharts 2.15.4 fixed the React 19
+   dashboard crash at `d85b0f5`. Review the new reliability branch separately;
+   apply its AI quota migration before releasing the website.
    Existing agents still require manual review; none are automatically verified.
 4. If direct Auth lockout is required, enable and test the Password Verification
    Attempt hook after obtaining plan support. Do not imply the current gateway

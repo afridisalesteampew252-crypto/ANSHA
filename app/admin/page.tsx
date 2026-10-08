@@ -23,37 +23,64 @@ export default function AdminLoginPage() {
   const loginLockout = useLoginLockout('admin', email);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [sessionCheckError, setSessionCheckError] = useState('');
 
   useEffect(() => {
-    (async () => {
-      // Auth recovery can stall when a browser has a stale lock or an interrupted
-      // refresh request. Never leave staff trapped behind the checking spinner.
-      const sessionResult = await Promise.race([
-        supabase.auth.getSession(),
-        new Promise<{ data: { session: null } }>((resolve) => {
-          window.setTimeout(() => resolve({ data: { session: null } }), SESSION_CHECK_TIMEOUT_MS);
-        }),
-      ]);
-      const { data: { session } } = sessionResult;
-      if (session) {
-        const { data: profile } = await supabase
+    let active = true;
+    let expired = false;
+    const controller = new AbortController();
+    // Bound the entire session/profile check. Late results must not redirect
+    // someone who has already started signing in after a stalled request.
+    const timer = window.setTimeout(() => {
+      expired = true;
+      controller.abort();
+      if (active) {
+        setSessionCheckError('Your session could not be checked. You can sign in again.');
+        setChecking(false);
+      }
+    }, SESSION_CHECK_TIMEOUT_MS);
+
+    void (async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (!active || expired) return;
+        if (sessionError) throw sessionError;
+        if (!session) return;
+        const { data: profile, error: profileError } = await supabase
           .from('admin_profiles')
-          .select('id')
+          .select('id, is_active')
           .eq('id', session.user.id)
+          .abortSignal(controller.signal)
           .maybeSingle();
-        if (profile) {
+        if (!active || expired) return;
+        if (profileError) throw profileError;
+        if (profile && profile.is_active !== false) {
           router.replace('/admin/dashboard');
           return;
         }
+        setSessionCheckError(profile?.is_active === false
+          ? 'This account has been deactivated. Contact an administrator or sign in with another staff account.'
+          : 'Sign in with a staff account to access Admin.');
+      } catch {
+        if (active && !expired) setSessionCheckError('Your session could not be checked. You can sign in again.');
+      } finally {
+        window.clearTimeout(timer);
+        if (active && !expired) setChecking(false);
       }
-      setChecking(false);
     })();
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loginLockout.refresh().lockedUntil > Date.now()) return;
     setLoading(true);
+    setSessionCheckError('');
 
     const { data, error, attempts, lockedUntil } = await signInWithProtectedPassword('admin', email, password);
 
@@ -108,6 +135,7 @@ export default function AdminLoginPage() {
           <CardDescription>Staff sign in to manage ANSHA operations</CardDescription>
         </CardHeader>
         <CardContent>
+          {sessionCheckError ? <p role="alert" className="mb-4 text-sm text-destructive">{sessionCheckError}</p> : null}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="admin-email">Email</Label>

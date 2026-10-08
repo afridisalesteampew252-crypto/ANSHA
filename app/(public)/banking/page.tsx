@@ -4,6 +4,7 @@ import { Building2, CircleDollarSign, Landmark, MessageCircle, ShieldCheck } fro
 import { BankDetail } from './bank-detail';
 import { siteConfig } from '@/lib/site-config';
 import { buildPageMetadata } from '@/lib/seo';
+import { primaryBankDetails, usdIntermediaryBankDetails } from '@/lib/banking-details';
 
 export const metadata: Metadata = buildPageMetadata({
   title: 'Official Banking Information',
@@ -12,25 +13,6 @@ export const metadata: Metadata = buildPageMetadata({
   noIndex: true,
   followWhenNoIndex: true,
 });
-
-const primaryBank = [
-  { label: 'Bank name', value: 'WIO BANK' },
-  { label: 'Account holder', value: 'Ansha Trading Co. L.L.C-FZ' },
-  { label: 'IBAN', value: 'AE23 0860 0000 0930 7584 798', copyValue: 'AE230860000009307584798' },
-  { label: 'BIC / SWIFT', value: 'WIOBAEADXXX' },
-  { label: 'Routing code', value: '808610001' },
-  { label: 'Bank address', value: 'Etihad Airways Centre, 5th Floor, Abu Dhabi, U.A.E.' },
-];
-
-const intermediaryBank = [
-  { label: 'Bank name', value: 'CITI BANK NA' },
-  { label: 'Account number', value: '36447154' },
-  { label: 'Branch name', value: 'CITIBANK, N.A.' },
-  { label: 'ABA / routing', value: '021000089' },
-  { label: 'SWIFT code', value: 'CITIUS33 or CITIUS33XXX (if required)', copyValue: 'CITIUS33' },
-  { label: 'Address', value: '388 Greenwich Street, New York, NY 10013, U.S.A.' },
-  { label: 'Branch code', value: '940' },
-];
 
 export default function BankingPage() {
   return (
@@ -90,7 +72,14 @@ export default function BankingPage() {
               </div>
             </div>
             <dl className="px-5 sm:px-6">
-              {primaryBank.map((detail) => <BankDetail key={detail.label} {...detail} />)}
+              {primaryBankDetails.map((detail) => (
+                <BankDetail
+                  key={detail.label}
+                  label={detail.displayLabel ?? detail.label}
+                  value={detail.displayValue ?? detail.value}
+                  copyValue={detail.copyValue}
+                />
+              ))}
             </dl>
           </section>
 
@@ -107,7 +96,14 @@ export default function BankingPage() {
               </div>
             </div>
             <dl className="px-5 sm:px-6">
-              {intermediaryBank.map((detail) => <BankDetail key={detail.label} {...detail} />)}
+              {usdIntermediaryBankDetails.map((detail) => (
+                <BankDetail
+                  key={detail.label}
+                  label={detail.displayLabel ?? detail.label}
+                  value={detail.displayValue ?? detail.value}
+                  copyValue={detail.copyValue}
+                />
+              ))}
             </dl>
           </section>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, Filter, Loader2, Package, Plus, Search, Ship, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,12 +22,12 @@ import {
   type PartSalesStatus,
 } from '@/lib/part-sales-status';
 import {
-  mapStockLinkedInvoices,
   primaryLinkedInvoiceStatus,
   type StockListLinkedInvoice,
 } from '@/lib/stock-linked-invoice';
 import { STOCK_ORIGINS, stockOriginLabel } from '@/lib/stock';
 import { supabase } from '@/lib/supabase/client';
+import { fetchAdminInventory } from '@/lib/admin-inventory-data';
 import { exportShipmentStatusLabel } from '@/lib/vehicle-sales-status';
 import type { AdminRole, PartWithRelations, StockOrigin } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,9 @@ type AgentOption = { id: string; label: string };
 export default function AdminPartsPage() {
   const [parts, setParts] = useState<PartWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const inventoryLoad = useRef<AbortController | null>(null);
+  const [visibleList, setVisibleList] = useState({ scope: '', count: 50 });
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [query, setQuery] = useState('');
   const [origin, setOrigin] = useState<'all' | StockOrigin>('all');
@@ -66,78 +69,24 @@ export default function AdminPartsPage() {
   const isManager = role === 'manager';
 
   const fetchParts = useCallback(async () => {
+    inventoryLoad.current?.abort();
+    const controller = new AbortController();
+    inventoryLoad.current = controller;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('parts')
-      .select('*, categories(*), part_photos(*), part_compatibility(*)')
-      .order('created_at', { ascending: false })
-      .limit(800);
-    if (error) toast.error(error.message);
-    const list = (data || []) as unknown as PartWithRelations[];
-    setParts(list);
-
-    const partIds = list.map((p) => p.id);
-    const reservedByIds = Array.from(new Set(list.map((p) => p.reserved_by).filter(Boolean))) as string[];
-
-    const [agentRes, linkRes, itemRes] = await Promise.all([
-      supabase
-        .from('admin_profiles')
-        .select('id,full_name,email,role')
-        .in('role', ['sales', 'freelancer', 'manager', 'admin', 'staff'])
-        .eq('is_active', true)
-        .order('full_name')
-        .limit(300),
-      partIds.length
-        ? supabase
-            .from('export_shipment_parts')
-            .select('part_id, export_shipments(status,created_at)')
-            .in('part_id', partIds)
-        : Promise.resolve({ data: [], error: null }),
-      partIds.length
-        ? supabase
-            .from('invoice_items')
-            .select('part_id, invoices(id, invoice_number, status, created_at, document_type)')
-            .in('part_id', partIds)
-            .not('part_id', 'is', null)
-            .limit(800)
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-
-    // export_shipment_parts may not exist until migration — ignore missing relation errors
-    if (linkRes.error && !/export_shipment_parts|schema cache|does not exist/i.test(linkRes.error.message)) {
-      toast.error(linkRes.error.message);
+    setLoadError('');
+    try {
+      const result = await fetchAdminInventory<PartWithRelations>(supabase, 'parts', controller.signal);
+      if (controller.signal.aborted) return;
+      setParts(result.list);
+      setAgentNames(result.agentNames);
+      setAgents(result.agentOptions);
+      setShipmentByPart(result.shipments);
+      setInvoicesByPart(result.invoices);
+    } catch (error) {
+      if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : 'Inventory could not be loaded. Please retry.');
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
     }
-
-    const nameMap: Record<string, string> = {};
-    const agentOpts: AgentOption[] = [];
-    for (const row of agentRes.data || []) {
-      const label = row.full_name || row.email || row.id.slice(0, 8);
-      nameMap[row.id] = label;
-      if (row.role === 'sales' || row.role === 'freelancer') {
-        agentOpts.push({ id: row.id, label });
-      }
-    }
-    for (const id of reservedByIds) {
-      if (!nameMap[id]) nameMap[id] = id.slice(0, 8);
-    }
-    setAgentNames(nameMap);
-    setAgents(agentOpts);
-
-    const shipMap: Record<string, { status: string; created: string }> = {};
-    for (const row of linkRes.data || []) {
-      const ship = Array.isArray(row.export_shipments) ? row.export_shipments[0] : row.export_shipments;
-      if (!ship?.status) continue;
-      const prev = shipMap[row.part_id];
-      if (!prev || String(ship.created_at) > prev.created) {
-        shipMap[row.part_id] = { status: ship.status, created: String(ship.created_at || '') };
-      }
-    }
-    setShipmentByPart(Object.fromEntries(Object.entries(shipMap).map(([id, v]) => [id, v.status])));
-
-    setInvoicesByPart(
-      mapStockLinkedInvoices(itemRes.data || [], (row) => row.part_id as string | null)
-    );
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -164,6 +113,7 @@ export default function AdminPartsPage() {
 
   useEffect(() => {
     void fetchParts();
+    return () => inventoryLoad.current?.abort();
   }, [fetchParts]);
 
   const salesStatusOf = useCallback(
@@ -345,6 +295,11 @@ export default function AdminPartsPage() {
     setRequesterTarget(null);
     await fetchParts();
   }
+
+  const listScope = JSON.stringify([query, origin, stockStatus, salesStatus, agentFilter, categoryFilter]);
+  const visibleCount = visibleList.scope === listScope ? visibleList.count : 50;
+  if (loadError) return <div role="alert" className="space-y-3 rounded-xl border border-destructive/30 p-6"><p>{loadError}</p><Button onClick={() => void fetchParts()}>Retry inventory</Button></div>;
+  if (loading && !parts.length) return <p role="status" className="p-6 text-sm text-muted-foreground">Loading inventory…</p>;
 
   return (
     <div className="space-y-5">
@@ -573,7 +528,7 @@ export default function AdminPartsPage() {
               <p className="mt-3 text-sm text-muted-foreground">No parts found.</p>
             </div>
           ) : (
-            filtered.map((part) => (
+            filtered.slice(0, visibleCount).map((part) => (
               <AdminPartCard
                 key={part.id}
                 part={part}
@@ -599,6 +554,7 @@ export default function AdminPartsPage() {
               />
             ))
           )}
+          {!loading && filtered.length > visibleCount ? <div className="flex justify-center py-4"><Button variant="outline" onClick={() => setVisibleList({ scope: listScope, count: visibleCount + 50 })}>Show more ({filtered.length - visibleCount} remaining)</Button></div> : null}
         </CardContent>
       </Card>
 

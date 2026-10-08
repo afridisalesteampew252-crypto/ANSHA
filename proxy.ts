@@ -95,12 +95,8 @@ export async function proxy(request: NextRequest) {
 
     if (!profile || profile.is_active === false) {
       if (isLoginPage) {
-        if (profile?.is_active === false) {
-          const loginUrl = request.nextUrl.clone();
-          loginUrl.pathname = '/admin';
-          loginUrl.searchParams.set('error', 'inactive');
-          return redirectWithSession(loginUrl);
-        }
+        // An inactive session must be able to reach sign in. Redirecting this
+        // URL to itself prevents the page from rendering and loops forever.
         return supabaseResponse;
       }
       const loginUrl = request.nextUrl.clone();
