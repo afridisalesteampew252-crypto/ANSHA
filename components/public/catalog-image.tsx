@@ -40,7 +40,6 @@ export function CatalogImage({
       height={fill ? undefined : height}
       sizes={sizes}
       priority={priority}
-      unoptimized
       quality={65}
       placeholder={placeholder}
       blurDataURL={blurDataURL}
