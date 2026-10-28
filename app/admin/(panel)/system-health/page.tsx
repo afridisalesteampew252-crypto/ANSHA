@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, CircleAlert, CircleCheck, RefreshCw } from 'lucide-react';
+import { Activity, ArrowLeft, CircleAlert, CircleCheck, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase/client';
@@ -67,7 +67,10 @@ export default function SystemHealthPage() {
         <h1 className="flex items-center gap-2 text-2xl font-bold"><Activity className="h-6 w-6 text-accent" />System health</h1>
         <p className="mt-1 text-sm text-muted-foreground">Last checked {checkedAt || 'not yet checked'}{latency !== null ? ` · API ${latency} ms` : ''}</p>
       </div>
-      <Button variant="outline" disabled={busy} onClick={() => void load()}><RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />Check now</Button>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline"><Link href="/admin/image-optimization"><ImageIcon className="h-4 w-4" />Image optimizer</Link></Button>
+        <Button variant="outline" disabled={busy} onClick={() => void load()}><RefreshCw className={`h-4 w-4 ${busy ? 'animate-spin' : ''}`} />Check now</Button>
+      </div>
     </div>
     <div className="rounded-xl border bg-card p-4 text-sm font-semibold">{checks.length === 0 ? 'Checking…' : failed ? `${failed} service check${failed === 1 ? '' : 's'} need attention` : 'All checked services operational'}</div>
     <div className="grid gap-3 md:grid-cols-3">
