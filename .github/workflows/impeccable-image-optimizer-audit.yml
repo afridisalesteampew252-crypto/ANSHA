@@ -1,0 +1,32 @@
+name: Impeccable image optimizer audit
+
+on:
+  push:
+    branches:
+      - feature/impeccable-image-optimizer-audit
+
+jobs:
+  impeccable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run Impeccable detector
+        shell: bash
+        run: |
+          set +e
+          npx --yes impeccable@latest detect --no-config --json "app/admin/(panel)/image-optimization/page.tsx" > impeccable-report.json
+          code=$?
+          cat impeccable-report.json
+          if [ "$code" -eq 1 ]; then
+            echo "Impeccable could not scan the target."
+            exit 1
+          fi
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: impeccable-image-optimizer-report
+          path: impeccable-report.json
