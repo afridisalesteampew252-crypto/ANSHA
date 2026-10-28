@@ -32,6 +32,8 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-mono',
   display: 'swap',
+  // Monospace is used sparingly; do not compete with the primary text fonts during first paint.
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -53,7 +55,17 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     images: [defaultOgImage.url],
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   verification: {
     google: 'r0P5yQPkoLo-6HNp_VwC651U3Opl_c3wXvmSTbbUm2A',
   },
