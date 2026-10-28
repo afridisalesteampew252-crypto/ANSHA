@@ -116,6 +116,17 @@ const nextConfig = {
         ],
       },
       {
+        source: '/auth/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+        ],
+      },
+      {
+        source: '/mobile/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
+      },
+      {
         source: '/api/health',
         headers: [{ key: 'Cache-Control', value: 'no-store, max-age=0' }],
       },
@@ -134,12 +145,11 @@ const nextConfig = {
     ];
   },
   images: {
-    // Serve source images directly to avoid Vercel Image Optimization usage.
-    // Catalog uploads are already converted to compressed WebP before storage.
-    unoptimized: true,
+    // Use the Next/Vercel image pipeline so mobile clients receive appropriately sized AVIF/WebP
+    // instead of the full original catalog upload. Supabase public storage is allow-listed below.
     qualities: [65, 75],
     formats: ['image/avif', 'image/webp'],
-    minimumCacheTTL: 60 * 60 * 24 * 7,
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [64, 96, 128, 256, 384],
     remotePatterns: [
