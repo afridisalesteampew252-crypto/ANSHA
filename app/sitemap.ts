@@ -9,21 +9,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = siteConfig.url;
   const supabase = createPublicSupabaseClient();
 
+  // Static pages do not get a synthetic `lastModified: new Date()` value. A false fresh date
+  // on every sitemap regeneration weakens the usefulness of lastmod for search engines.
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: `${baseUrl}/`, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
-    { url: `${baseUrl}/parts`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/vehicles`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/machinery`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.85 },
-    { url: `${baseUrl}/categories`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.7 },
-    { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
-    { url: `${baseUrl}/reviews`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/offers`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.7 },
-    { url: `${baseUrl}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${baseUrl}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${baseUrl}/cookie-policy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${baseUrl}/banking`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${baseUrl}/`, changeFrequency: 'daily', priority: 1 },
+    { url: `${baseUrl}/parts`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${baseUrl}/vehicles`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${baseUrl}/machinery`, changeFrequency: 'daily', priority: 0.85 },
+    { url: `${baseUrl}/categories`, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${baseUrl}/blog`, changeFrequency: 'daily', priority: 0.8 },
+    { url: `${baseUrl}/reviews`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/offers`, changeFrequency: 'daily', priority: 0.7 },
+    { url: `${baseUrl}/about`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/contact`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${baseUrl}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${baseUrl}/terms`, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${baseUrl}/cookie-policy`, changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${baseUrl}/banking`, changeFrequency: 'monthly', priority: 0.4 },
   ];
 
   try {
@@ -39,7 +41,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       (vehicles || []).length > 0
         ? EXPORT_MARKETS.map((market) => ({
             url: `${baseUrl}/markets/${market.code.toLowerCase()}`,
-            lastModified: new Date(),
             changeFrequency: 'weekly' as const,
             priority: 0.65,
           }))
