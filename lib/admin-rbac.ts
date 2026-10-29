@@ -1,5 +1,13 @@
 import type { AdminRole } from '@/lib/types';
 
+/** Reject missing activation and unknown roles before applying route permissions. */
+export function isActiveAdminProfile(
+  profile: { role?: unknown; is_active?: unknown } | null | undefined
+): profile is { role: AdminRole; is_active: true } {
+  return profile?.is_active === true && typeof profile.role === 'string'
+    && ['admin', 'staff', 'sales', 'freelancer', 'manager', 'accounts'].includes(profile.role);
+}
+
 /** Catalog browse + reservation + draft proforma only (sales / contractor). */
 export function isFieldAgentRole(role: string | null | undefined): boolean {
   return role === 'sales' || role === 'freelancer';

@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   ChevronDown,
   ChevronRight,
@@ -67,7 +68,7 @@ export function SiteHeader() {
   const { cartCount, favoritesCount } = useCustomerLists();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -78,24 +79,17 @@ export function SiteHeader() {
 
   useEffect(() => {
     setMobileOpen(false);
-    setMoreOpen(false);
+    if (moreRef.current) moreRef.current.open = false;
   }, [pathname]);
 
   useEffect(() => {
-    // Lock page scroll when drawer is open without clearing overflow-x: clip.
-    const html = document.documentElement;
-    if (mobileOpen) {
-      html.style.overflowY = 'hidden';
-      document.body.style.overflowY = 'hidden';
-    } else {
-      html.style.overflowY = '';
-      document.body.style.overflowY = '';
-    }
-    return () => {
-      html.style.overflowY = '';
-      document.body.style.overflowY = '';
-    };
-  }, [mobileOpen]);
+    // A hidden modal must not keep focus or scroll locked after a desktop resize.
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const closeOnDesktop = () => { if (desktop.matches) setMobileOpen(false); };
+    closeOnDesktop();
+    desktop.addEventListener('change', closeOnDesktop);
+    return () => desktop.removeEventListener('change', closeOnDesktop);
+  }, []);
 
   const handleSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -106,6 +100,7 @@ export function SiteHeader() {
   };
 
   return (
+    <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
     <header className="sticky top-0 z-[100] w-full min-w-0 max-w-full overflow-x-clip">
       <a
         href="#main-content"
@@ -200,9 +195,11 @@ export function SiteHeader() {
               <CountBadge count={cartCount} />
             </Link>
             
-            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl border border-accent/15 bg-accent/10 text-accent shadow-sm md:hidden sm:h-11 sm:w-11" onClick={() => setMobileOpen((open) => !open)} aria-expanded={mobileOpen} aria-controls="mobile-site-menu" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+            <Dialog.Trigger asChild>
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl border border-accent/15 bg-accent/10 text-accent shadow-sm md:hidden sm:h-11 sm:w-11" aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
               {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
+            </Dialog.Trigger>
           </div>
         </div>
 
@@ -252,32 +249,26 @@ export function SiteHeader() {
                 );
               })}
               <details
+                ref={moreRef}
                 className="group relative z-[120] flex h-full shrink-0 items-center"
                 onKeyDown={(event) => {
                   if (event.key === 'Escape') {
                     event.currentTarget.open = false;
-                    setMoreOpen(false);
                     event.currentTarget.querySelector<HTMLElement>('summary')?.focus();
                   }
                 }}
-                onToggle={(event) => setMoreOpen(event.currentTarget.open)}
               >
                 <summary
                   className={cn(
                     'relative flex h-full cursor-pointer list-none items-center gap-1 px-2.5 text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden lg:px-3 lg:text-sm',
                     desktopMoreLinks.some((link) => pathname.startsWith(link.href)) && 'text-accent'
                   )}
-                  aria-haspopup="menu"
-                  onClick={() => setMoreOpen((open) => !open)}
                 >
                   More <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
                 </summary>
-                <div className={cn(
-                  'absolute right-0 top-full z-[70] w-48 rounded-xl border border-border bg-background p-2 shadow-xl transition',
-                  moreOpen ? 'visible translate-y-0 opacity-100 pointer-events-auto' : 'invisible translate-y-2 opacity-0 pointer-events-none'
-                )} role="menu">
+                <div className="absolute right-0 top-full z-[70] w-48 rounded-xl border border-border bg-background p-2 shadow-xl">
                   {desktopMoreLinks.map((link) => (
-                    <Link key={link.href} href={link.href} className="block rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground" role="menuitem">
+                    <Link key={link.href} href={link.href} className="block rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground">
                       {link.label}
                     </Link>
                   ))}
@@ -291,26 +282,31 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {mobileOpen && (
-        <>
-          <button className="fixed inset-0 z-[58] bg-[#0b0c0f]/55 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close menu overlay" />
-          <div
-            id="mobile-site-menu"
-            className="mobile-drawer-glass fixed left-2 right-2 top-[calc(4.25rem+2.25rem+0.4rem)] z-[60] max-h-[calc(100dvh-4.25rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] overflow-x-clip overflow-y-auto overscroll-contain rounded-[1.5rem] border border-white/60 shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:left-4 sm:right-4 sm:top-[calc(4.875rem+2.25rem+0.5rem)] sm:max-h-[calc(100dvh-4.875rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] md:hidden"
+      <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-[150] bg-[#0b0c0f]/55 backdrop-blur-sm md:hidden" />
+          <Dialog.Content
+            className="mobile-drawer-glass fixed left-2 right-2 top-[calc(4.25rem+2.25rem+0.4rem)] z-[151] max-h-[calc(100dvh-4.25rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] overflow-x-clip overflow-y-auto overscroll-contain rounded-[1.5rem] border border-white/60 shadow-[0_24px_70px_rgba(15,23,42,0.28)] sm:left-4 sm:right-4 sm:top-[calc(4.875rem+2.25rem+0.5rem)] sm:max-h-[calc(100dvh-4.875rem-2.25rem-5rem-env(safe-area-inset-bottom,0px))] md:hidden"
           >
             <div className="space-y-4 p-4 pb-6 sm:p-5">
-              <div className="flex items-center justify-between rounded-2xl bg-[#101114] px-4 py-3 text-white">
-                <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-400">Explore ANSHA</p><p className="mt-0.5 text-sm font-bold">Stock, parts &amp; export support</p></div>
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-white/10"><PackageSearch className="h-4 w-4 text-red-400" /></span>
+              <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#101114] px-4 py-3 text-white">
+                <div>
+                  <Dialog.Title className="text-sm font-bold">Explore ANSHA</Dialog.Title>
+                  <Dialog.Description className="mt-0.5 text-xs text-white/80">Stock, parts &amp; export support</Dialog.Description>
+                </div>
+                <Dialog.Close asChild>
+                  <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0 text-white hover:bg-white/10 hover:text-white" aria-label="Close menu">
+                    <X className="h-5 w-5" aria-hidden="true" />
+                  </Button>
+                </Dialog.Close>
               </div>
               <form action="/search" onSubmit={handleSearch} className="md:hidden">
                 <div className="relative">
                   <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input name="q" type="search" placeholder="Vehicles, OEM, parts, chassis..." className="h-12 rounded-2xl border-accent/15 bg-white/80 pl-10 pr-20 shadow-sm dark:bg-card/80" />
+                  <Input name="q" type="search" aria-label="Search catalog" placeholder="Vehicles, OEM, parts, chassis..." className="h-12 rounded-2xl border-accent/15 bg-white/80 pl-10 pr-20 shadow-sm dark:bg-card/80" />
                   <Button type="submit" size="sm" variant="accent" className="absolute right-1.5 top-1.5 h-9 rounded-xl px-3">Go</Button>
                 </div>
               </form>
-              <nav className="grid grid-cols-2 gap-2">
+              <nav className="grid grid-cols-2 gap-2" aria-label="Mobile primary">
                 <Link
                   href="/offers"
                   className={cn(
@@ -351,9 +347,9 @@ export function SiteHeader() {
                 <a href={`mailto:${siteConfig.email}`} className="flex min-h-11 items-center gap-2 break-all"><Mail className="h-4 w-4 shrink-0 text-accent" />{siteConfig.email}</a>
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </Dialog.Content>
+      </Dialog.Portal>
     </header>
+    </Dialog.Root>
   );
 }

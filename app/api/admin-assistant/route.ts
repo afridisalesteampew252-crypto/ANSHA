@@ -18,6 +18,7 @@ import { createReadTools } from '@/lib/admin-assistant/read-tools';
 import type { AssistantToolContext } from '@/lib/admin-assistant/shared';
 import { createWriteTools } from '@/lib/admin-assistant/write-tools';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { readJsonObject, RequestBodyError } from '@/lib/request-json';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -74,12 +75,14 @@ export async function POST(req: Request) {
     );
   }
 
-  const raw = await req.text();
-  if (raw.length > MAX_BODY_BYTES) return json(413, 'Conversation is too long. Start a new chat.');
-  let body: { messages?: unknown };
+  let body: Record<string, unknown>;
   try {
-    body = JSON.parse(raw) as { messages?: unknown };
-  } catch {
+    body = await readJsonObject(req, MAX_BODY_BYTES);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return json(error.status, error.status === 413
+        ? 'Conversation is too long. Start a new chat.' : error.message);
+    }
     return json(400, 'Invalid JSON body.');
   }
   const messages = Array.isArray(body.messages) ? (body.messages as UIMessage[]) : [];

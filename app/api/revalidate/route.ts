@@ -1,9 +1,9 @@
 import { revalidatePublicListing } from '@/lib/revalidate-public-server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { isActiveAdminProfile } from '@/lib/admin-rbac';
+import { readJsonObject, RequestBodyError } from '@/lib/request-json';
 
 export const dynamic = 'force-dynamic';
-
-type Body = { kind?: unknown; slugs?: unknown };
 
 /**
  * On-demand ISR revalidation for public listing pages after a staff edit.
@@ -20,17 +20,20 @@ export async function POST(req: Request) {
   }
   const { data: profile } = await supabase
     .from('admin_profiles')
-    .select('id, is_active')
+    .select('id, role, is_active')
     .eq('id', user.id)
     .maybeSingle();
-  if (!profile || profile.is_active === false) {
+  if (!isActiveAdminProfile(profile)) {
     return Response.json({ error: 'Staff access required.' }, { status: 403 });
   }
 
-  let body: Body;
+  let body: Record<string, unknown>;
   try {
-    body = (await req.json()) as Body;
-  } catch {
+    body = await readJsonObject(req, 16 * 1024);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     return Response.json({ error: 'Invalid JSON body.' }, { status: 400 });
   }
 
