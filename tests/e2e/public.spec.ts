@@ -65,9 +65,53 @@ test('desktop More menu toggles on click', async ({ page }) => {
   await page.goto('/about');
   const more = page.locator('summary').filter({ hasText: 'More' });
   await more.click();
-  await expect(page.getByRole('menuitem', { name: 'Insights' })).toBeVisible();
+  await expect(page.locator('details').getByRole('link', { name: 'Insights' })).toBeVisible();
   await more.click();
-  await expect(page.getByRole('menuitem', { name: 'Insights' })).not.toBeVisible();
+  await expect(page.locator('details').getByRole('link', { name: 'Insights' })).not.toBeVisible();
+});
+
+test('mobile menu traps focus and Escape returns to its trigger', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/about');
+  const trigger = page.getByRole('button', { name: 'Open menu', exact: true });
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: 'Explore ANSHA' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('searchbox', { name: 'Search catalog' })).toBeVisible();
+  for (let i = 0; i < 35; i += 1) {
+    await page.keyboard.press('Tab');
+    await expect.poll(() => dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(trigger).toBeFocused();
+});
+
+test('mobile menu releases the modal when resized to desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/about');
+  await page.getByRole('button', { name: 'Open menu', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Explore ANSHA' })).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(page.getByRole('dialog', { name: 'Explore ANSHA' })).not.toBeVisible();
+  await expect.poll(() => page.locator('body').evaluate((node) => getComputedStyle(node).pointerEvents)).not.toBe('none');
+  await page.getByRole('searchbox', { name: 'Search catalog' }).fill('Toyota');
+});
+
+test('desktop More disclosure closes on Escape and after navigation', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/about');
+  const more = page.locator('summary').filter({ hasText: 'More' });
+  const details = page.locator('details').filter({ has: more });
+  await more.click();
+  await details.getByRole('link', { name: 'Contact', exact: true }).focus();
+  await page.keyboard.press('Escape');
+  await expect(more).toBeFocused();
+  await expect(details).not.toHaveAttribute('open', '');
+  await more.click();
+  await details.getByRole('link', { name: 'Contact', exact: true }).click();
+  await expect(page).toHaveURL(/\/contact$/);
+  await expect(details).not.toHaveAttribute('open', '');
 });
 
 function imageKey(src: string) {

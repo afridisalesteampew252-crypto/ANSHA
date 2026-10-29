@@ -19,6 +19,7 @@ import {
   FIELD_AGENT_NAV_HREFS,
   isAccountAdminRole,
   isAccountsRole,
+  isActiveAdminProfile,
   isFieldAgentRole,
   MANAGER_NAV_HREFS,
 } from '@/lib/admin-rbac';
@@ -146,7 +147,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             .eq('id', session.user.id).abortSignal(controller.signal).maybeSingle();
           if (error) throw new Error('Your workspace profile could not be loaded. Please retry.');
           if (!active) return null;
-          if (!data || data.is_active === false) {
+          if (!isActiveAdminProfile(data)) {
             await supabase.auth.signOut();
             if (active) router.replace(data?.is_active === false ? '/admin?error=inactive' : '/admin');
             return null;

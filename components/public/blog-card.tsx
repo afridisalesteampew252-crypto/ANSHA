@@ -23,7 +23,7 @@ export function BlogCard({ post }: BlogCardProps) {
   });
 
   return (
-    <Card className="group overflow-hidden rounded-xl border-border/85 border-t-2 border-t-accent bg-card shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+    <Card className="group overflow-hidden rounded-xl border-border/85 bg-card shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-accent/45 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] motion-reduce:transform-none motion-reduce:transition-none">
       <Link href={`/blog/${post.slug}`} className="block">
         <div className="relative aspect-[16/10] overflow-hidden bg-[linear-gradient(145deg,hsl(var(--secondary)),hsl(var(--surface-featured)))]">
           {imageUrl ? (

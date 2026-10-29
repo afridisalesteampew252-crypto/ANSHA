@@ -6,6 +6,7 @@ import {
   canAccessLiveChat,
   isAccountsAllowedPath,
   isAccountsRole,
+  isActiveAdminProfile,
   isFieldAgentAllowedPath,
   isFieldAgentRole,
   isManagerAllowedPath,
@@ -93,7 +94,7 @@ export async function proxy(request: NextRequest) {
       .eq('id', claims.sub)
       .maybeSingle();
 
-    if (!profile || profile.is_active === false) {
+    if (!isActiveAdminProfile(profile)) {
       if (isLoginPage) {
         // An inactive session must be able to reach sign in. Redirecting this
         // URL to itself prevents the page from rendering and loops forever.

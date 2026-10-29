@@ -11,7 +11,8 @@ export function PasswordInput({ className, ...props }: Omit<ComponentProps<typeo
     <div className="relative">
       <Input {...props} type={visible ? 'text' : 'password'} className={cn('pr-11', className)} />
       <button type="button" aria-label={visible ? 'Hide password' : 'Show password'} aria-pressed={visible} aria-controls={props.id}
-        className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+        disabled={props.disabled}
+        className="absolute inset-y-0 right-0 flex min-w-11 items-center justify-center rounded-md px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         onClick={() => setVisible((value) => !value)}>
         {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
       </button>
