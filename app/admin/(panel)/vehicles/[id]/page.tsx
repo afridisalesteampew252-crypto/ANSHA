@@ -581,22 +581,43 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     return `${supabaseUrl}/storage/v1/object/public/vehicle-images/${path}`;
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  /**
+   * Uploads vehicle photos. With `replaceExisting` (yard images), the current
+   * photos are deleted only after every new image uploaded successfully.
+   */
+  const handlePhotoUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    replaceExisting = false
+  ) => {
+    const input = e.target;
+    const files = input.files;
     if (!files || files.length === 0 || !vehicle) return;
+
+    const previousPhotos = replaceExisting ? [...photos] : [];
+    if (
+      replaceExisting &&
+      previousPhotos.length > 0 &&
+      !window.confirm(
+        `Upload ${files.length} yard image(s)? The ${previousPhotos.length} existing photo(s) will be permanently deleted once the upload completes.`
+      )
+    ) {
+      input.value = '';
+      return;
+    }
 
     setUploadingPhotos(true);
     setUploadProgress({ completed: 0, total: files.length });
     const folder = vehicle.slug || vehicle.id;
     let successCount = 0;
-    const startingCount = photos.length;
+    const startingCount = replaceExisting ? 0 : photos.length;
+    const uploaded: VehiclePhoto[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const auctionSheet = isAuctionSheetFilename(file.name);
       const optimized = await compressCatalogImage(
         file,
-        `${vehicle.make}-${vehicle.model}-${folder}-${auctionSheet ? 'auction-sheet' : startingCount + i + 1}`
+        `${vehicle.make}-${vehicle.model}-${folder}-${auctionSheet ? 'auction-sheet' : replaceExisting ? `yard-${i + 1}` : startingCount + i + 1}`
       );
       const fileName = `${folder}/${Date.now()}-${optimized.file.name}`;
 
@@ -615,7 +636,8 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         .insert({
           vehicle_id: vehicle.id,
           storage_path: fileName,
-          is_cover: !auctionSheet && startingCount === 0 && i === 0,
+          // When replacing, the cover is assigned after the old photos are removed.
+          is_cover: !replaceExisting && !auctionSheet && startingCount === 0 && i === 0,
           is_auction_sheet: auctionSheet,
           view_type: 'other',
           sort_order: startingCount + i,
@@ -624,6 +646,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
         .single();
 
       if (!photoErr && photoData) {
+        uploaded.push(photoData as VehiclePhoto);
         setPhotos((prev) => [...prev, photoData as VehiclePhoto]);
         successCount++;
       } else if (photoErr) {
@@ -633,12 +656,53 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       setUploadProgress((progress) => ({ ...progress, completed: progress.completed + 1 }));
     }
 
+    if (replaceExisting && successCount > 0) {
+      if (successCount < files.length) {
+        toast.error('Some yard images failed, so the existing photos were kept.');
+      } else if (previousPhotos.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from('vehicle-images')
+          .remove(previousPhotos.map((photo) => photo.storage_path));
+        const { error: databaseError } = await supabase
+          .from('vehicle_photos')
+          .delete()
+          .in('id', previousPhotos.map((photo) => photo.id));
+        if (storageError || databaseError) {
+          toast.error('Yard images uploaded, but some old photos could not be deleted.');
+          await load();
+        } else {
+          const previousIds = new Set(previousPhotos.map((photo) => photo.id));
+          const cover = uploaded.find((photo) => !photo.is_auction_sheet) || uploaded[0];
+          const { error: coverError } = await supabase
+            .from('vehicle_photos')
+            .update({ is_cover: true })
+            .eq('id', cover.id);
+          setPhotos((current) =>
+            current
+              .filter((photo) => !previousIds.has(photo.id))
+              .map((photo) => ({ ...photo, is_cover: !coverError && photo.id === cover.id }))
+          );
+        }
+      } else {
+        const cover = uploaded.find((photo) => !photo.is_auction_sheet) || uploaded[0];
+        const { error: coverError } = await supabase
+          .from('vehicle_photos')
+          .update({ is_cover: true })
+          .eq('id', cover.id);
+        if (!coverError) {
+          setPhotos((current) => current.map((photo) => ({ ...photo, is_cover: photo.id === cover.id })));
+        }
+      }
+    }
+
     setUploadingPhotos(false);
     if (successCount > 0) {
-      toast.success(`${successCount} photo(s) uploaded.`);
+      toast.success(
+        replaceExisting ? `${successCount} yard image(s) uploaded.` : `${successCount} photo(s) uploaded.`
+      );
       requestPublicRevalidation('vehicle', [vehicle?.slug]);
     }
-    e.target.value = '';
+    input.value = '';
   };
 
   const setCoverPhoto = async (photoId: string) => {
@@ -1058,6 +1122,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                 {photos.length} {photos.length === 1 ? 'image' : 'images'} · Drag photos to reorder
               </CardDescription>
             </div>
+            <div className="flex flex-wrap gap-2">
             <label>
               <input
                 type="file"
@@ -1076,6 +1141,23 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
                 </span>
               </Button>
             </label>
+            <label title="Upload yard images and delete the current photos once the upload finishes">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                className="hidden"
+                onChange={(event) => void handlePhotoUpload(event, true)}
+                disabled={uploadingPhotos}
+              />
+              <Button type="button" variant="outline" size="sm" asChild disabled={uploadingPhotos}>
+                <span>
+                  <Upload className="h-4 w-4" />
+                  Upload Yard Images
+                </span>
+              </Button>
+            </label>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-0 space-y-3">
