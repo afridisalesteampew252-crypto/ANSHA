@@ -669,7 +669,7 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
       if (successCount < files.length) {
         // Roll back the partial yard set so the vehicle never shows a mix of old and new photos.
         const uploadedIds = new Set(uploaded.map((photo) => photo.id));
-        await supabase.from('vehicle_photos').delete().in('id', [...uploadedIds]);
+        await supabase.from('vehicle_photos').delete().in('id', uploaded.map((photo) => photo.id));
         await supabase.storage.from('vehicle-images').remove(uploaded.map((photo) => photo.storage_path));
         setPhotos((current) => current.filter((photo) => !uploadedIds.has(photo.id)));
         successCount = 0;
