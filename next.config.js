@@ -145,8 +145,9 @@ const nextConfig = {
     ];
   },
   images: {
-    // Use the Next/Vercel image pipeline so mobile clients receive appropriately sized AVIF/WebP
-    // instead of the full original catalog upload. Supabase public storage is allow-listed below.
+    // Vercel Image Optimization is off: images load directly from their original files.
+    // Remove this line to turn it back on. The settings below then apply again.
+    unoptimized: true,
     qualities: [65, 75],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30,
