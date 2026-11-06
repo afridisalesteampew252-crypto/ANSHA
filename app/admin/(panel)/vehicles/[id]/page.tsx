@@ -657,44 +657,64 @@ export default function AdminVehicleDetailPage(props: { params: Promise<{ id: st
     }
 
     if (replaceExisting && successCount > 0) {
-      if (successCount < files.length) {
-        toast.error('Some yard images failed, so the existing photos were kept.');
-      } else if (previousPhotos.length > 0) {
-        const { error: storageError } = await supabase.storage
-          .from('vehicle-images')
-          .remove(previousPhotos.map((photo) => photo.storage_path));
-        const { error: databaseError } = await supabase
-          .from('vehicle_photos')
-          .delete()
-          .in('id', previousPhotos.map((photo) => photo.id));
-        if (storageError || databaseError) {
-          toast.error('Yard images uploaded, but some old photos could not be deleted.');
-          await load();
-        } else {
-          const previousIds = new Set(previousPhotos.map((photo) => photo.id));
-          const cover = uploaded.find((photo) => !photo.is_auction_sheet) || uploaded[0];
-          const { error: coverError } = await supabase
-            .from('vehicle_photos')
-            .update({ is_cover: true })
-            .eq('id', cover.id);
-          setPhotos((current) =>
-            current
-              .filter((photo) => !previousIds.has(photo.id))
-              .map((photo) => ({ ...photo, is_cover: !coverError && photo.id === cover.id }))
-          );
-        }
-      } else {
+      const assignCover = async () => {
         const cover = uploaded.find((photo) => !photo.is_auction_sheet) || uploaded[0];
         const { error: coverError } = await supabase
           .from('vehicle_photos')
           .update({ is_cover: true })
           .eq('id', cover.id);
-        if (!coverError) {
-          setPhotos((current) => current.map((photo) => ({ ...photo, is_cover: photo.id === cover.id })));
+        return coverError ? null : cover.id;
+      };
+
+      if (successCount < files.length) {
+        // Roll back the partial yard set so the vehicle never shows a mix of old and new photos.
+        const uploadedIds = new Set(uploaded.map((photo) => photo.id));
+        await supabase.from('vehicle_photos').delete().in('id', [...uploadedIds]);
+        await supabase.storage.from('vehicle-images').remove(uploaded.map((photo) => photo.storage_path));
+        setPhotos((current) => current.filter((photo) => !uploadedIds.has(photo.id)));
+        successCount = 0;
+        toast.error('Some yard images failed to upload. Nothing was changed; please try again.');
+      } else {
+        if (previousPhotos.length > 0) {
+          // Delete database rows first so no photo ever points at a missing file.
+          const { error: databaseError } = await supabase
+            .from('vehicle_photos')
+            .delete()
+            .in('id', previousPhotos.map((photo) => photo.id));
+          if (databaseError) {
+            toast.error('Yard images uploaded, but the old photos could not be deleted.');
+            await load();
+          } else {
+            const { error: storageError } = await supabase.storage
+              .from('vehicle-images')
+              .remove(previousPhotos.map((photo) => photo.storage_path));
+            if (storageError) console.warn('Old vehicle image files were not removed from storage', storageError);
+            const previousIds = new Set(previousPhotos.map((photo) => photo.id));
+            const coverId = await assignCover();
+            setPhotos((current) =>
+              current
+                .filter((photo) => !previousIds.has(photo.id))
+                .map((photo) => ({ ...photo, is_cover: photo.id === coverId }))
+            );
+          }
+        } else {
+          const coverId = await assignCover();
+          if (coverId) {
+            setPhotos((current) => current.map((photo) => ({ ...photo, is_cover: photo.id === coverId })));
+          }
         }
+
+        // Best-effort audit trail on the vehicle timeline.
+        const { error: eventError } = await supabase.rpc('record_vehicle_lifecycle_event', {
+          p_vehicle_id: vehicle.id,
+          p_event_type: 'yard_images',
+          p_title: `${successCount} yard image(s) uploaded`,
+          p_notes: previousPhotos.length > 0 ? `Replaced ${previousPhotos.length} previous photo(s).` : null,
+          p_metadata: { uploaded: successCount, replaced: previousPhotos.length },
+        });
+        if (!eventError) void load();
       }
     }
-
     setUploadingPhotos(false);
     if (successCount > 0) {
       toast.success(
